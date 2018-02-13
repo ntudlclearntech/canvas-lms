@@ -82,7 +82,9 @@ class Login::SamlController < ApplicationController
     # yes, they could be _that_ busted that we put a dangling rescue here.
     provider_attributes = assertion&.attribute_statements&.first&.to_h || {} rescue {}
     subject_name_id = assertion&.subject&.name_id
-    unique_id = if aac.login_attribute == 'NameID'
+    unique_id = if ntu_email = provider_attributes["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress"]
+      ntu_email
+    elsif aac.login_attribute == 'NameID'
       subject_name_id&.id
     else
       provider_attributes[aac.login_attribute]
@@ -136,7 +138,7 @@ class Login::SamlController < ApplicationController
       end
 
       session[:saml_unique_id] = unique_id
-      session[:name_id] = subject_name_id&.id
+      session[:name_id] = unique_id
       session[:name_identifier_format] = subject_name_id&.format
       session[:name_qualifier] = subject_name_id&.name_qualifier
       session[:sp_name_qualifier] = subject_name_id&.sp_name_qualifier
