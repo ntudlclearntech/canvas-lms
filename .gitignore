@@ -18,6 +18,7 @@
 /app/views/info/styleguide.html.erb
 /config/*.yml
 /config/*.yml.cached
+/config/saml/*.pem
 /config/credentials.yml.enc
 !/config/brakeman.yml
 !/config/code_ownership.yml
