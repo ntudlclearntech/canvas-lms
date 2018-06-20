@@ -58,7 +58,7 @@ class GradebookExporter
   private
 
   def include_bom?(encoding)
-    encoding == 'UTF-8' && @user.feature_enabled?(:include_byte_order_mark_in_gradebook_exports)
+    encoding == 'UTF-8'
   end
 
   def buffer_column_headers(column_name)
