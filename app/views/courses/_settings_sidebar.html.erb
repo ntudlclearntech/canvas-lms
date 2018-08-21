@@ -59,19 +59,19 @@
   <% if can_do(@context, @current_user, :change_course_state, :manage_courses_conclude) %>
     <% if @context.completed? %>
       <%= form_tag context_url(@context, :context_unconclude_url) do %>
-        <button class="Button Button--link Button--link--has-divider Button--course-settings" type="submit">
+        <button class="Button Button--link Button--link--has-divider Button--course-settings un_conclude_course" type="submit">
           <i class="icon-add"></i><%= t('buttons.unconclude', 'Un-Conclude Course') %>
         </button>
       <% end %>
     <% elsif !@context.soft_concluded? %>
-      <%= link_to context_url(@context, :context_confirm_action_url, :event => 'conclude'), :class => 'Button Button--link Button--link--has-divider Button--course-settings' do %>
+      <%= link_to context_url(@context, :context_confirm_action_url, :event => 'conclude'), :class => 'Button Button--link Button--link--has-divider Button--course-settings conclude_course' do %>
         <i class="icon-lock"></i><%= t('links.conclude', 'Conclude this Course') %>
       <% end %>
     <% end %>
   <% end %>
 
   <% if can_do(@context, @current_user, :delete) && !@context.deleted? %>
-    <%= link_to context_url(@context, :context_confirm_action_url, :event => 'delete'), :class => 'Button Button--link Button--link--has-divider Button--course-settings' do %>
+    <%= link_to context_url(@context, :context_confirm_action_url, :event => 'delete'), :class => 'Button Button--link Button--link--has-divider Button--course-settings delete_course' do %>
       <i class="icon-trash"></i><%= t('links.delete', 'Delete this Course') %>
     <% end %>
   <% end %>
@@ -89,7 +89,7 @@
   <% end %>
 
   <% if can_do(@context, @current_user, :read) %>
-    <%= link_to context_url(@context, :course_content_exports_url), :class => 'Button Button--link Button--link--has-divider Button--course-settings' do %>
+    <%= link_to context_url(@context, :course_content_exports_url), :class => 'Button Button--link Button--link--has-divider Button--course-settings export_content' do %>
       <i class="icon-download"></i><%= t('links.export_content', 'Export Course Content') %>
     <% end %>
   <% end %>

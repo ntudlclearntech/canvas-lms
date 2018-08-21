@@ -163,7 +163,7 @@
   </tr>
   <% end %>
   <% if @domain_root_account == Account.default %>
-    <tr>
+    <tr class="user_subscribe_to_emails">
       <td colspan="2">
         <div class="edit_data">
           <label for="user_subscribe_to_emails" class="checkbox">
@@ -255,16 +255,16 @@
 
 <% unless (@domain_root_account && @domain_root_account.service_enabled?(:none)) %>
 <a name="registered_web_services"></a>
-<h2><%= t('headers.web_services', "Web Services") %></h2>
-<p><%= t(:web_services, <<~TEXT)
+<h2 class="registered_web_services_header"><%= t('headers.web_services', "Web Services") %></h2>
+<p class="registered_web_services_content"><%= t(:web_services, <<~TEXT)
 Canvas can make your life a lot easier by tying itself in with the web tools
 you already use.  Click any of the services in "Other Services" to see what we mean.
 TEXT
 %></p>
-<p>
+<p class="registered_web_services_content">
 <input type="checkbox" id="show_user_services" <%= 'checked' if @user.show_user_services %>/> <label for="show_user_services"><%= t('labels.show_user_services', "Let fellow course/group members see which services I've linked to my profile") %></label>
 </p>
-<table role="presentation" style="width: 100%;"><tr>
+<table class="registered_web_services_content" role="presentation" style="width: 100%;"><tr>
   <td class="services-cell">
     <div>
       <h3><%= t('headers.registered_services', "Registered Services") %></h3>
@@ -401,8 +401,8 @@ TEXT
   </td>
 </tr></table>
 <% end %>
-<h2><%= before_label(:'headers.approved_integrations', "Approved Integrations") %></h2>
-<div style="margin-<%= direction('left') %>: 20px;">
+<h2 class="approved_integration_headers"><%= before_label(:'headers.approved_integrations', "Approved Integrations") %></h2>
+<div class="approved_integration_content" style="margin-<%= direction('left') %>: 20px;">
   <% if AccessToken.visible_tokens(@user.access_tokens).empty? %>
     <div id="no_approved_integrations"><%= t(:no_approved_integrations, <<~TEXT)
       Third-party applications can request permission to access
