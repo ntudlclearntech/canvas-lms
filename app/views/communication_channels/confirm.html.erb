@@ -25,7 +25,7 @@
 
 <div id="modal-box" class="ic-Login-confirmation">
   <header class="ic-Login-confirmation__header">
-    <%= image_tag("login/canvas-logo@2x.png", class:"ic-Login-confirmation__logo", alt:"Canvas by Instructure") %>
+    <%= image_tag("cool_logo_blue_red.png", class:"ic-Login-confirmation__logo", alt:"NTU COOL") %>
   </header>
   <div class="ic-Login-confirmation__content">
   <h2 class="ic-Login-confirmation__headline"><%= t 'titles.welcome_aboard', "Welcome Aboard!" %></h2>
@@ -173,10 +173,10 @@ Which is you?", :count => @merge_opportunities.length %>
       </div>
       <% end %>
       <% if @pseudonym.account == Account.default %>
-      <div class="control-group">
+      <div class="control-group" style="display: none;">
         <div class="controls">
           <label for="user_subscribe_to_emails" class="checkbox">
-            <%= check_box :user, :subscribe_to_emails, :checked => true %>
+            <%= check_box :user, :subscribe_to_emails, :checked => false %>
             <%= t "labels.subscribe_to_emails", "I want to receive information, news and tips from Instructure" %>
           </label>
         </div>
