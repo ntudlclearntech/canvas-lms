@@ -1643,14 +1643,14 @@ describe Course, "gradebook_to_csv" do
     expect(csv).not_to be_nil
     rows = CSV.parse(csv, headers: true)
     expect(rows.length).to equal(2)
-    expect(rows[0]["Unposted Final Score"]).to eq "(read only)"
-    expect(rows[1]["Unposted Final Score"]).to eq "50.00"
-    expect(rows[0]["Final Score"]).to eq "(read only)"
-    expect(rows[1]["Final Score"]).to eq "50.00"
-    expect(rows[0]["Unposted Current Score"]).to eq "(read only)"
-    expect(rows[1]["Unposted Current Score"]).to eq "100.00"
-    expect(rows[0]["Current Score"]).to eq "(read only)"
-    expect(rows[1]["Current Score"]).to eq "100.00"
+    expect(rows[0]["Unposted Final Score"]).to eq "（唯讀）"
+    expect(rows[1]["Unposted Final Score"]).to eq "50.0"
+    expect(rows[0]["Final Score"]).to eq "（唯讀）"
+    expect(rows[1]["Final Score"]).to eq "50.0"
+    expect(rows[0]["Unposted Current Score"]).to eq "（唯讀）"
+    expect(rows[1]["Unposted Current Score"]).to eq "100.0"
+    expect(rows[0]["Current Score"]).to eq "（唯讀）"
+    expect(rows[1]["Current Score"]).to eq "100.0"
   end
 
   it "should order assignments and groups by position" do
@@ -1796,9 +1796,9 @@ describe Course, "gradebook_to_csv" do
     expect(csv).not_to be_nil
     rows = CSV.parse(csv)
     expect(rows.length).to equal(5)
-    expect(rows[2][3]).to eq "COMPSCI 123 DIS 101 and COMPSCI 123 LEC 001"
+    expect(rows[2][3]).to eq "COMPSCI 123 DIS 101 以及 COMPSCI 123 LEC 001"
     expect(rows[3][3]).to eq "COMPSCI 123 LEC 001"
-    expect(rows[4][3]).to eq "COMPSCI 123 DIS 101, COMPSCI 123 DIS 102, and COMPSCI 123 LEC 001"
+    expect(rows[4][3]).to eq "COMPSCI 123 DIS 101，COMPSCI 123 DIS 102，以及 COMPSCI 123 LEC 001"
   end
 
   it "should generate csv with final grade if enabled" do
@@ -1818,22 +1818,22 @@ describe Course, "gradebook_to_csv" do
     expect(csv).not_to be_nil
     rows = CSV.parse(csv, headers: true)
     expect(rows.length).to equal(2)
-    expect(rows[0]["Unposted Final Grade"]).to eq "(read only)"
+    expect(rows[0]["Unposted Final Grade"]).to eq "（唯讀）"
     expect(rows[1]["Unposted Final Grade"]).to eq "A+"
-    expect(rows[0]["Final Grade"]).to eq "(read only)"
+    expect(rows[0]["Final Grade"]).to eq "（唯讀）"
     expect(rows[1]["Final Grade"]).to eq "A+"
-    expect(rows[0]["Unposted Current Grade"]).to eq "(read only)"
+    expect(rows[0]["Unposted Current Grade"]).to eq "（唯讀）"
     expect(rows[1]["Unposted Current Grade"]).to eq "A+"
-    expect(rows[0]["Current Grade"]).to eq "(read only)"
+    expect(rows[0]["Current Grade"]).to eq "（唯讀）"
     expect(rows[1]["Current Grade"]).to eq "A+"
-    expect(rows[0]["Unposted Final Score"]).to eq "(read only)"
-    expect(rows[1]["Unposted Final Score"]).to eq "90.00"
-    expect(rows[0]["Final Score"]).to eq "(read only)"
-    expect(rows[1]["Final Score"]).to eq "90.00"
-    expect(rows[0]["Unposted Current Score"]).to eq "(read only)"
-    expect(rows[1]["Unposted Current Score"]).to eq "90.00"
-    expect(rows[0]["Current Score"]).to eq "(read only)"
-    expect(rows[1]["Current Score"]).to eq "90.00"
+    expect(rows[0]["Unposted Final Score"]).to eq "（唯讀）"
+    expect(rows[1]["Unposted Final Score"]).to eq "90.0"
+    expect(rows[0]["Final Score"]).to eq "（唯讀）"
+    expect(rows[1]["Final Score"]).to eq "90.0"
+    expect(rows[0]["Unposted Current Score"]).to eq "（唯讀）"
+    expect(rows[1]["Unposted Current Score"]).to eq "90.0"
+    expect(rows[0]["Current Score"]).to eq "（唯讀）"
+    expect(rows[1]["Current Score"]).to eq "90.0"
   end
 
   it "should include sis ids if enabled" do
@@ -1866,7 +1866,7 @@ describe Course, "gradebook_to_csv" do
     expect(rows[1][2]).to eq nil
     expect(rows[1][3]).to eq nil
     expect(rows[1][4]).to eq nil
-    expect(rows[1][-1]).to eq '(read only)'
+    expect(rows[1][-1]).to eq '（唯讀）'
     expect(rows[2][1]).to eq @user1.id.to_s
     expect(rows[2][2]).to eq 'SISUSERID'
     expect(rows[2][3]).to eq @user1.pseudonym.unique_id
@@ -1950,14 +1950,14 @@ describe Course, "gradebook_to_csv" do
 
     it "includes points for unweighted courses" do
       csv = CSV.parse(GradebookExporter.new(@course, @teacher).to_csv, headers: true)
-      expect(csv[0]["Assignments Current Points"]).to eq "(read only)"
-      expect(csv[1]["Assignments Current Points"]).to eq "8.00"
-      expect(csv[0]["Assignments Final Points"]).to eq "(read only)"
-      expect(csv[1]["Assignments Final Points"]).to eq "8.00"
-      expect(csv[0]["Current Points"]).to eq "(read only)"
-      expect(csv[1]["Current Points"]).to eq "8.00"
-      expect(csv[0]["Final Points"]).to eq "(read only)"
-      expect(csv[1]["Final Points"]).to eq "8.00"
+      expect(csv[0]["Assignments Current Points"]).to eq "（唯讀）"
+      expect(csv[1]["Assignments Current Points"]).to eq "8.0"
+      expect(csv[0]["Assignments Final Points"]).to eq "（唯讀）"
+      expect(csv[1]["Assignments Final Points"]).to eq "8.0"
+      expect(csv[0]["Current Points"]).to eq "（唯讀）"
+      expect(csv[1]["Current Points"]).to eq "8.0"
+      expect(csv[0]["Final Points"]).to eq "（唯讀）"
+      expect(csv[1]["Final Points"]).to eq "8.0"
     end
 
     it "doesn't include points for weighted courses" do
@@ -2020,7 +2020,7 @@ describe Course, "gradebook_to_csv" do
       expect(rows[2][2]).to eq nil
       expect(rows[2][3]).to eq nil
       expect(rows[2][4]).to eq nil
-      expect(rows[2][-1]).to eq '(read only)'
+      expect(rows[2][-1]).to eq '（唯讀）'
       expect(rows[3][1]).to eq @user1.id.to_s
       expect(rows[3][2]).to eq 'SISUSERID'
       expect(rows[3][3]).to eq @user1.pseudonym.unique_id
