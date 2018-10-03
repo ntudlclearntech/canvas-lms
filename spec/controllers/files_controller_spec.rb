@@ -143,7 +143,7 @@ describe FilesController do
       @course.update_attribute(:tab_configuration, [{'id'=>11,'hidden'=>true}])
       get 'index', params: {:course_id => @course.id}
       expect(response).to be_redirect
-      expect(flash[:notice]).to match(/That page has been disabled/)
+      expect(flash[:notice]).to match(/該頁面在此課程已被停用/)
     end
 
     it "should assign variables" do
@@ -468,7 +468,7 @@ describe FilesController do
         owned_file.destroy
         get 'show', params: {:course_id => @course.id, :id => owned_file.id}
         expect(response).to be_redirect
-        expect(flash[:notice]).to match(/has been deleted/)
+        expect(flash[:notice]).to match(/已被刪除/)
         expect(URI.parse(response['Location']).path).to eq "/courses/#{@course.id}/files"
       end
 
@@ -490,7 +490,7 @@ describe FilesController do
 
         get 'show', params: {:course_id => @course.id, :id => unowned_file.id}
         expect(response.status).to eq(404)
-        expect(assigns(:not_found_message)).to eq("This file has been deleted")
+        expect(assigns(:not_found_message)).to eq("此文件已被刪除。")
       end
 
       it "does not blow up for logged out users" do
@@ -502,7 +502,7 @@ describe FilesController do
         remove_user_session
         get 'show', params: {:course_id => @course.id, :id => unowned_file.id}
         expect(response.status).to eq(404)
-        expect(assigns(:not_found_message)).to eq("This file has been deleted")
+        expect(assigns(:not_found_message)).to eq("此文件已被刪除。")
       end
 
       it "should view file when student's submission was deleted" do
@@ -813,7 +813,7 @@ describe FilesController do
 
       it "should require authorization" do
         delete 'destroy', params: {:course_id => @course.id, :id => @file.id}
-        expect(response.body).to eql("{\"message\":\"Unauthorized to delete this file\"}")
+        expect(response.body).to eql("{\"message\":\"沒有刪除此文件的權限\"}")
         expect(assigns[:attachment].file_state).to eq 'available'
       end
 
@@ -846,7 +846,7 @@ describe FilesController do
 
       it "should not delete" do
         delete 'destroy', params: {:id => @file.id}
-        expect(response.body).to eql("{\"message\":\"Cannot delete a file that has been submitted as part of an assignment\"}")
+        expect(response.body).to eql("{\"message\":\"無法刪除已被繳交至作業的文件\"}")
         expect(assigns[:attachment].file_state).to eq 'available'
       end
     end

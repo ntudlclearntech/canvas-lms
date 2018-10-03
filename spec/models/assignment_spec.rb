@@ -4479,11 +4479,11 @@ describe Assignment do
           @assignment.do_notifications!
 
           messages_sent = @assignment.messages_sent['Assignment Created']
-          expect(messages_sent.detect{|m|m.user_id == @teacher.id}.body).to be_include "Multiple Dates"
-          expect(messages_sent.detect{|m|m.user_id == @studentA.id}.body).to be_include "Jan 1, 2011"
-          expect(messages_sent.detect{|m|m.user_id == @ta.id}.body).to be_include "Multiple Dates"
-          expect(messages_sent.detect{|m|m.user_id == @studentB.id}.body).to be_include "Jan 2, 2011"
-          expect(messages_sent.detect{|m|m.user_id == @ta2.id}.body).to be_include "Multiple Dates"
+          expect(messages_sent.detect{|m|m.user_id == @teacher.id}.body).to be_include "多個日期"
+          expect(messages_sent.detect{|m|m.user_id == @studentA.id}.body).to be_include "2011年1月1日"
+          expect(messages_sent.detect{|m|m.user_id == @ta.id}.body).to be_include "多個日期"
+          expect(messages_sent.detect{|m|m.user_id == @studentB.id}.body).to be_include "2011年1月2日"
+          expect(messages_sent.detect{|m|m.user_id == @ta2.id}.body).to be_include "多個日期"
         end
 
         it "should notify the correct people with differentiated_assignments enabled" do
@@ -4492,11 +4492,11 @@ describe Assignment do
           @assignment.do_notifications!
 
           messages_sent = @assignment.messages_sent['Assignment Created']
-          expect(messages_sent.detect{|m|m.user_id == @teacher.id}.body).to be_include "Multiple Dates"
-          expect(messages_sent.detect{|m|m.user_id == @studentA.id}.body).to be_include "Jan 1, 2011"
-          expect(messages_sent.detect{|m|m.user_id == @ta.id}.body).to be_include "Multiple Dates"
-          expect(messages_sent.detect{|m|m.user_id == @studentB.id}.body).to be_include "Jan 2, 2011"
-          expect(messages_sent.detect{|m|m.user_id == @ta2.id}.body).to be_include "Multiple Dates"
+          expect(messages_sent.detect{|m|m.user_id == @teacher.id}.body).to be_include "多個日期"
+          expect(messages_sent.detect{|m|m.user_id == @studentA.id}.body).to be_include "2011年1月1日"
+          expect(messages_sent.detect{|m|m.user_id == @ta.id}.body).to be_include "多個日期"
+          expect(messages_sent.detect{|m|m.user_id == @studentB.id}.body).to be_include "2011年1月2日"
+          expect(messages_sent.detect{|m|m.user_id == @ta2.id}.body).to be_include "多個日期"
           expect(messages_sent.detect{|m|m.user_id == student.id}).to be_nil
         end
 
@@ -4511,7 +4511,7 @@ describe Assignment do
 
           # when the override matches the default, show the default and not "Multiple"
           messages_sent = @assignment.messages_sent['Assignment Created']
-          messages_sent.each{|m| expect(m.body).to be_include "Jan 1, 2011"}
+          messages_sent.each{|m| expect(m.body).to be_include "2011年1月1日"}
         end
       end
 
@@ -4528,11 +4528,11 @@ describe Assignment do
           @assignment.save!
 
           messages_sent = @assignment.messages_sent['Assignment Due Date Changed']
-          expect(messages_sent.detect{|m|m.user_id == @teacher.id}.body).to be_include "Jan 9, 2011"
-          expect(messages_sent.detect{|m|m.user_id == @studentA.id}.body).to be_include "Jan 9, 2011"
-          expect(messages_sent.detect{|m|m.user_id == @ta.id}.body).to be_include "Jan 9, 2011"
+          expect(messages_sent.detect{|m|m.user_id == @teacher.id}.body).to be_include "2011年1月9日"
+          expect(messages_sent.detect{|m|m.user_id == @studentA.id}.body).to be_include "2011年1月9日"
+          expect(messages_sent.detect{|m|m.user_id == @ta.id}.body).to be_include "2011年1月9日"
           expect(messages_sent.detect{|m|m.user_id == @studentB.id}).to be_nil
-          expect(messages_sent.detect{|m|m.user_id == @ta2.id}.body).to be_include "Jan 9, 2011"
+          expect(messages_sent.detect{|m|m.user_id == @ta2.id}.body).to be_include "2011年1月9日"
         end
 
         it "should notify appropriate parties when an override due date changes" do
@@ -4544,12 +4544,12 @@ describe Assignment do
 
           messages_sent = override.messages_sent['Assignment Due Date Changed']
           expect(messages_sent.detect{|m|m.user_id == @studentA.id}).to be_nil
-          expect(messages_sent.detect{|m|m.user_id == @studentB.id}.body).to be_include "Jan 11, 2011"
+          expect(messages_sent.detect{|m|m.user_id == @studentB.id}.body).to be_include "2011年1月11日"
 
           messages_sent = override.messages_sent['Assignment Due Date Override Changed']
           expect(messages_sent.detect{|m|m.user_id == @ta.id}).to be_nil
-          expect(messages_sent.detect{|m|m.user_id == @teacher.id}.body).to be_include "Jan 11, 2011"
-          expect(messages_sent.detect{|m|m.user_id == @ta2.id}.body).to be_include "Jan 11, 2011"
+          expect(messages_sent.detect{|m|m.user_id == @teacher.id}.body).to be_include "2011年1月11日"
+          expect(messages_sent.detect{|m|m.user_id == @ta2.id}.body).to be_include "2011年1月11日"
         end
       end
 
