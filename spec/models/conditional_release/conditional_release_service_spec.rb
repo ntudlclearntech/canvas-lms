@@ -422,8 +422,8 @@ describe ConditionalRelease::Service do
       it 'includes grading scheme only for correct grading type' do
         expect(rules[0]['trigger_assignment_model'][:grading_scheme]).to be nil
         expect(rules[1]['trigger_assignment_model'][:grading_scheme]).to eq({
-          "A"=>0.94, "A-"=>0.9, "B+"=>0.87, "B"=>0.84, "B-"=>0.8, "C+"=>0.77,
-          "C"=>0.74, "C-"=>0.7, "D+"=>0.67, "D"=>0.64, "D-"=>0.61, "F"=>0.0
+          "A+"=>0.90, "A"=>0.85, "A-"=>0.80, "B+"=>0.77, "B"=>0.73, "B-"=>0.70,
+          "C+"=>0.67, "C"=>0.63, "C-"=>0.60, "F"=>0.0
         })
       end
     end

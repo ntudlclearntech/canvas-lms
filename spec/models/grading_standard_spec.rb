@@ -22,18 +22,16 @@ describe GradingStandard do
   before :once do
     course_with_teacher
     @default_standard_v1 = {
-      "A" => 1.0,
-      "A-" => 0.93,
-      "B+" => 0.89,
-      "B" => 0.86,
-      "B-" => 0.83,
-      "C+" => 0.79,
-      "C" => 0.76,
-      "C-" => 0.73,
-      "D+" => 0.69,
-      "D" => 0.66,
-      "D-" => 0.63,
-      "F" => 0.6
+      "A+" => 1.0,
+      "A" => 0.89,
+      "A-" => 0.84,
+      "B+" => 0.79,
+      "B" => 0.76,
+      "B-" => 0.72,
+      "C+" => 0.69,
+      "C" => 0.66,
+      "C-" => 0.62,
+      "F" => 0.59
     }.to_a.sort_by { |i| i[1] }.reverse
   end
 
@@ -206,7 +204,7 @@ describe GradingStandard do
 
     it "should return a score in the proper range for letter grades" do
       score = @gs.grade_to_score('B')
-      expect(score).to eql(86.0)
+      expect(score).to eql(75.0)
     end
 
     it "should return nil when no grade matches" do

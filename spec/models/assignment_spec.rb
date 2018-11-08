@@ -2424,14 +2424,14 @@ describe Assignment do
       @assignment.grading_type = 'letter_grade'
       @assignment.points_possible = 10
       grade = @assignment.score_to_grade(8.7)
-      expect(grade).to eql("B+")
+      expect(grade).to eql("A")
     end
 
     it "should properly allow decimal points in grading" do
       @assignment.grading_type = 'letter_grade'
       @assignment.points_possible = 10
       grade = @assignment.score_to_grade(8.6999)
-      expect(grade).to eql("B")
+      expect(grade).to eql("A")
     end
 
     it "should preserve letter grades grades with nil points possible" do
@@ -3468,22 +3468,22 @@ describe Assignment do
         @assignment.reload
         @sub = @assignment.grade_student(@student, :grader => @teacher, :grade => 'C').first
         expect(@sub.grade).to eql('C')
-        expect(@sub.score).to eql(15.2)
-        expect(@enrollment.reload.computed_current_score).to eq 76
+        expect(@sub.score).to eql(13.0)
+        expect(@enrollment.reload.computed_current_score).to eq 65
 
         @assignment.points_possible = 30
         @assignment.save!
         @sub.reload
-        expect(@sub.score).to eql(15.2)
+        expect(@sub.score).to eql(13.0)
         expect(@sub.grade).to eql('F')
-        expect(@enrollment.reload.computed_current_score).to eq 50.67
+        expect(@enrollment.reload.computed_current_score).to eq 43.33
       end
 
       it "should accept lowercase letter grades" do
         @assignment.reload
         @sub = @assignment.grade_student(@student, :grader => @teacher, :grade => 'c').first
         expect(@sub.grade).to eql('C')
-        expect(@sub.score).to eql(15.2)
+        expect(@sub.score).to eql(13.0)
       end
     end
 

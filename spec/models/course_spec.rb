@@ -1591,37 +1591,34 @@ end
 describe Course, "score_to_grade" do
   it "should correctly map scores to grades" do
     default = GradingStandard.default_grading_standard
-    expect(default.to_json).to eq([["A", 0.94], ["A-", 0.90], ["B+", 0.87], ["B", 0.84], ["B-", 0.80], ["C+", 0.77], ["C", 0.74], ["C-", 0.70], ["D+", 0.67], ["D", 0.64], ["D-", 0.61], ["F", 0.0]].to_json)
+    expect(default.to_json).to eq([["A+", 0.90], ["A", 0.85], ["A-", 0.80], ["B+", 0.77], ["B", 0.73], ["B-", 0.70], ["C+", 0.67], ["C", 0.63], ["C-", 0.60], ["F", 0.0]].to_json)
     course_model
     expect(@course.score_to_grade(95)).to eql(nil)
     @course.grading_standard_id = 0
-    expect(@course.score_to_grade(1005)).to eql("A")
-    expect(@course.score_to_grade(105)).to eql("A")
-    expect(@course.score_to_grade(100)).to eql("A")
-    expect(@course.score_to_grade(99)).to eql("A")
-    expect(@course.score_to_grade(94)).to eql("A")
-    expect(@course.score_to_grade(93.999)).to eql("A-")
-    expect(@course.score_to_grade(93.001)).to eql("A-")
-    expect(@course.score_to_grade(93)).to eql("A-")
-    expect(@course.score_to_grade(92.999)).to eql("A-")
-    expect(@course.score_to_grade(90)).to eql("A-")
-    expect(@course.score_to_grade(89)).to eql("B+")
-    expect(@course.score_to_grade(87)).to eql("B+")
-    expect(@course.score_to_grade(86)).to eql("B")
-    expect(@course.score_to_grade(85)).to eql("B")
-    expect(@course.score_to_grade(83)).to eql("B-")
-    expect(@course.score_to_grade(80)).to eql("B-")
-    expect(@course.score_to_grade(79)).to eql("C+")
-    expect(@course.score_to_grade(76)).to eql("C")
-    expect(@course.score_to_grade(73)).to eql("C-")
-    expect(@course.score_to_grade(71)).to eql("C-")
-    expect(@course.score_to_grade(69)).to eql("D+")
-    expect(@course.score_to_grade(67)).to eql("D+")
-    expect(@course.score_to_grade(66)).to eql("D")
-    expect(@course.score_to_grade(65)).to eql("D")
-    expect(@course.score_to_grade(62)).to eql("D-")
-    expect(@course.score_to_grade(60)).to eql("F")
+    expect(@course.score_to_grade(1005)).to eql("A+")
+    expect(@course.score_to_grade(105)).to eql("A+")
+    expect(@course.score_to_grade(100)).to eql("A+")
+    expect(@course.score_to_grade(99)).to eql("A+")
+    expect(@course.score_to_grade(90)).to eql("A+")
+    expect(@course.score_to_grade(89.999)).to eql("A")
+    expect(@course.score_to_grade(89.001)).to eql("A")
+    expect(@course.score_to_grade(89)).to eql("A")
+    expect(@course.score_to_grade(88.999)).to eql("A")
+    expect(@course.score_to_grade(85)).to eql("A")
+    expect(@course.score_to_grade(83)).to eql("A-")
+    expect(@course.score_to_grade(80)).to eql("A-")
+    expect(@course.score_to_grade(79)).to eql("B+")
+    expect(@course.score_to_grade(78)).to eql("B+")
+    expect(@course.score_to_grade(76)).to eql("B")
+    expect(@course.score_to_grade(73)).to eql("B")
+    expect(@course.score_to_grade(72)).to eql("B-")
+    expect(@course.score_to_grade(69)).to eql("C+")
+    expect(@course.score_to_grade(66)).to eql("C")
+    expect(@course.score_to_grade(64)).to eql("C")
+    expect(@course.score_to_grade(62)).to eql("C-")
+    expect(@course.score_to_grade(60)).to eql("C-")
     expect(@course.score_to_grade(59)).to eql("F")
+    expect(@course.score_to_grade(58)).to eql("F")
     expect(@course.score_to_grade(0)).to eql("F")
     expect(@course.score_to_grade(-100)).to eql("F")
   end
@@ -1822,13 +1819,13 @@ describe Course, "gradebook_to_csv" do
     rows = CSV.parse(csv, headers: true)
     expect(rows.length).to equal(2)
     expect(rows[0]["Unposted Final Grade"]).to eq "(read only)"
-    expect(rows[1]["Unposted Final Grade"]).to eq "A-"
+    expect(rows[1]["Unposted Final Grade"]).to eq "A+"
     expect(rows[0]["Final Grade"]).to eq "(read only)"
-    expect(rows[1]["Final Grade"]).to eq "A-"
+    expect(rows[1]["Final Grade"]).to eq "A+"
     expect(rows[0]["Unposted Current Grade"]).to eq "(read only)"
-    expect(rows[1]["Unposted Current Grade"]).to eq "A-"
+    expect(rows[1]["Unposted Current Grade"]).to eq "A+"
     expect(rows[0]["Current Grade"]).to eq "(read only)"
-    expect(rows[1]["Current Grade"]).to eq "A-"
+    expect(rows[1]["Current Grade"]).to eq "A+"
     expect(rows[0]["Unposted Final Score"]).to eq "(read only)"
     expect(rows[1]["Unposted Final Score"]).to eq "90.00"
     expect(rows[0]["Final Score"]).to eq "(read only)"
@@ -3261,16 +3258,16 @@ describe Course, 'grade_publishing' do
                ("publisher_id,publisher_sis_id,course_id,course_sis_id,section_id,section_sis_id," +
                 "student_id,student_sis_id,enrollment_id,enrollment_status," +
                 "score,grade\n" +
-                "#{@user.id},U1,#{@course.id},,#{@ase[0].course_section_id},,#{@ase[0].user.id},,#{@ase[0].id},active,95.0,A\n" +
-                "#{@user.id},U1,#{@course.id},,#{@ase[1].course_section_id},,#{@ase[1].user.id},,#{@ase[1].id},active,65.0,D\n" +
+                "#{@user.id},U1,#{@course.id},,#{@ase[0].course_section_id},,#{@ase[0].user.id},,#{@ase[0].id},active,95.0,A+\n" +
+                "#{@user.id},U1,#{@course.id},,#{@ase[1].course_section_id},,#{@ase[1].user.id},,#{@ase[1].id},active,65.0,C\n" +
                 "#{@user.id},U1,#{@course.id},,#{@ase[2].course_section_id},,#{@ase[2].user.id},,#{@ase[2].id},active,0.0,F\n" +
                 "#{@user.id},U1,#{@course.id},,#{@ase[3].course_section_id},,#{@ase[3].user.id},student3,#{@ase[3].id},active,0.0,F\n" +
                 "#{@user.id},U1,#{@course.id},,#{@ase[4].course_section_id},,#{@ase[4].user.id},student4a,#{@ase[4].id},active,0.0,F\n" +
                 "#{@user.id},U1,#{@course.id},,#{@ase[4].course_section_id},,#{@ase[4].user.id},student4b,#{@ase[4].id},active,0.0,F\n" +
                 "#{@user.id},U1,#{@course.id},,#{@ase[5].course_section_id},,#{@ase[5].user.id},,#{@ase[5].id},active,0.0,F\n" +
                 "#{@user.id},U1,#{@course.id},,#{@ase[6].course_section_id},,#{@ase[6].user.id},,#{@ase[6].id},active,0.0,F\n" +
-                "#{@user.id},U1,#{@course.id},,#{@ase[7].course_section_id},,#{@ase[7].user.id},student7a,#{@ase[7].id},active,85.0,B\n" +
-                "#{@user.id},U1,#{@course.id},,#{@ase[7].course_section_id},,#{@ase[7].user.id},student7b,#{@ase[7].id},active,85.0,B\n"),
+                "#{@user.id},U1,#{@course.id},,#{@ase[7].course_section_id},,#{@ase[7].user.id},student7a,#{@ase[7].id},active,85.0,A\n" +
+                "#{@user.id},U1,#{@course.id},,#{@ase[7].course_section_id},,#{@ase[7].user.id},student7b,#{@ase[7].id},active,85.0,A\n"),
            "text/csv"]
         ]
       end
@@ -3290,12 +3287,12 @@ describe Course, 'grade_publishing' do
                ("publisher_id,publisher_sis_id,course_id,course_sis_id,section_id,section_sis_id," +
                 "student_id,student_sis_id,enrollment_id,enrollment_status," +
                 "score,grade\n" +
-                "#{@user.id},U1,#{@course.id},,#{@ase[0].course_section_id},,#{@ase[0].user.id},,#{@ase[0].id},active,95.0,A\n" +
+                "#{@user.id},U1,#{@course.id},,#{@ase[0].course_section_id},,#{@ase[0].user.id},,#{@ase[0].id},active,95.0,A+\n" +
                 "#{@user.id},U1,#{@course.id},,#{@ase[2].course_section_id},,#{@ase[2].user.id},,#{@ase[2].id},active,0.0,F\n" +
                 "#{@user.id},U1,#{@course.id},,#{@ase[5].course_section_id},,#{@ase[5].user.id},,#{@ase[5].id},active,0.0,F\n" +
                 "#{@user.id},U1,#{@course.id},,#{@ase[6].course_section_id},,#{@ase[6].user.id},,#{@ase[6].id},active,0.0,F\n" +
-                "#{@user.id},U1,#{@course.id},,#{@ase[7].course_section_id},,#{@ase[7].user.id},student7a,#{@ase[7].id},active,85.0,B\n" +
-                "#{@user.id},U1,#{@course.id},,#{@ase[7].course_section_id},,#{@ase[7].user.id},student7b,#{@ase[7].id},active,85.0,B\n"),
+                "#{@user.id},U1,#{@course.id},,#{@ase[7].course_section_id},,#{@ase[7].user.id},student7a,#{@ase[7].id},active,85.0,A\n" +
+                "#{@user.id},U1,#{@course.id},,#{@ase[7].course_section_id},,#{@ase[7].user.id},student7b,#{@ase[7].id},active,85.0,A\n"),
            "text/csv"]
         ]
       end
@@ -3641,12 +3638,12 @@ describe Course, 'grade_publishing' do
       csv =
           "publisher_id,publisher_sis_id,course_id,course_sis_id,section_id,section_sis_id,student_id," +
           "student_sis_id,enrollment_id,enrollment_status,score,grade\n" +
-          "#{teacher.user.id},T1,#{@course.id},C1,#{getsection("S1").id},S1,#{getpseudonym("S1").user.id},S1,#{getenroll("S1", "S1").id},active,70.0,C-\n" +
-          "#{teacher.user.id},T1,#{@course.id},C1,#{getsection("S2").id},S2,#{getpseudonym("S2").user.id},S2,#{getenroll("S2", "S2").id},active,75.0,C\n" +
-          "#{teacher.user.id},T1,#{@course.id},C1,#{getsection("S2").id},S2,#{getpseudonym("S3").user.id},S3,#{getenroll("S3", "S2").id},active,80.0,B-\n" +
+          "#{teacher.user.id},T1,#{@course.id},C1,#{getsection("S1").id},S1,#{getpseudonym("S1").user.id},S1,#{getenroll("S1", "S1").id},active,70.0,B-\n" +
+          "#{teacher.user.id},T1,#{@course.id},C1,#{getsection("S2").id},S2,#{getpseudonym("S2").user.id},S2,#{getenroll("S2", "S2").id},active,75.0,B\n" +
+          "#{teacher.user.id},T1,#{@course.id},C1,#{getsection("S2").id},S2,#{getpseudonym("S3").user.id},S3,#{getenroll("S3", "S2").id},active,80.0,A-\n" +
           "#{teacher.user.id},T1,#{@course.id},C1,#{getsection("S1").id},S1,#{getpseudonym("S4").user.id},S4,#{getenroll("S4", "S1").id},active,0.0,F\n" +
-          "#{teacher.user.id},T1,#{@course.id},C1,#{getsection("S3").id},S3,#{stud5.user.id},,#{Enrollment.where(user_id: stud5.user, course_section_id: getsection("S3")).first.id},active,85.0,B\n" +
-          "#{teacher.user.id},T1,#{@course.id},C1,#{sec4.id},S4,#{stud6.user.id},,#{Enrollment.where(user_id: stud6.user, course_section_id: sec4.id).first.id},active,90.0,A-\n"
+          "#{teacher.user.id},T1,#{@course.id},C1,#{getsection("S3").id},S3,#{stud5.user.id},,#{Enrollment.where(user_id: stud5.user, course_section_id: getsection("S3")).first.id},active,85.0,A\n" +
+          "#{teacher.user.id},T1,#{@course.id},C1,#{sec4.id},S4,#{stud6.user.id},,#{Enrollment.where(user_id: stud6.user, course_section_id: sec4.id).first.id},active,90.0,A+\n"
       expect(SSLCommon).to receive(:post_data).with("http://localhost/endpoint", csv, "text/csv", {})
       @course.publish_final_grades(teacher.user)
 
@@ -3655,12 +3652,12 @@ describe Course, 'grade_publishing' do
       csv =
           "publisher_id,publisher_sis_id,course_id,course_sis_id,section_id,section_sis_id,student_id," +
           "student_sis_id,enrollment_id,enrollment_status,score,grade\n" +
-          "#{admin.id},,#{@course.id},C1,#{getsection("S1").id},S1,#{getpseudonym("S1").user.id},S1,#{getenroll("S1", "S1").id},active,70.0,C-\n" +
-          "#{admin.id},,#{@course.id},C1,#{getsection("S2").id},S2,#{getpseudonym("S2").user.id},S2,#{getenroll("S2", "S2").id},active,75.0,C\n" +
-          "#{admin.id},,#{@course.id},C1,#{getsection("S2").id},S2,#{getpseudonym("S3").user.id},S3,#{getenroll("S3", "S2").id},active,80.0,B-\n" +
+          "#{admin.id},,#{@course.id},C1,#{getsection("S1").id},S1,#{getpseudonym("S1").user.id},S1,#{getenroll("S1", "S1").id},active,70.0,B-\n" +
+          "#{admin.id},,#{@course.id},C1,#{getsection("S2").id},S2,#{getpseudonym("S2").user.id},S2,#{getenroll("S2", "S2").id},active,75.0,B\n" +
+          "#{admin.id},,#{@course.id},C1,#{getsection("S2").id},S2,#{getpseudonym("S3").user.id},S3,#{getenroll("S3", "S2").id},active,80.0,A-\n" +
           "#{admin.id},,#{@course.id},C1,#{getsection("S1").id},S1,#{getpseudonym("S4").user.id},S4,#{getenroll("S4", "S1").id},active,0.0,F\n" +
-          "#{admin.id},,#{@course.id},C1,#{getsection("S3").id},S3,#{stud5.user.id},,#{Enrollment.where(user_id: stud5.user, course_section_id: getsection("S3")).first.id},active,85.0,B\n" +
-          "#{admin.id},,#{@course.id},C1,#{sec4.id},S4,#{stud6.user.id},,#{Enrollment.where(user_id: stud6.user, course_section_id: sec4.id).first.id},active,90.0,A-\n"
+          "#{admin.id},,#{@course.id},C1,#{getsection("S3").id},S3,#{stud5.user.id},,#{Enrollment.where(user_id: stud5.user, course_section_id: getsection("S3")).first.id},active,85.0,A\n" +
+          "#{admin.id},,#{@course.id},C1,#{sec4.id},S4,#{stud6.user.id},,#{Enrollment.where(user_id: stud6.user, course_section_id: sec4.id).first.id},active,90.0,A+\n"
       expect(SSLCommon).to receive(:post_data).with("http://localhost/endpoint", csv, "text/csv", {})
       @course.publish_final_grades(admin)
     end
