@@ -98,6 +98,10 @@ class GradingStandard < ActiveRecord::Base
 
   # e.g. convert B to 86
   def grade_to_score(grade)
+    if self.default_standard?
+      return default_score_from_grade(grade)
+    end
+
     idx = place_in_scheme(grade)
     if idx == 0
       100.0
@@ -110,6 +114,24 @@ class GradingStandard < ActiveRecord::Base
       ordered_scheme[idx - 1].last * 100.0 - 1.0
     elsif idx
       ordered_scheme[idx - 1].last * 100.0 - 0.1
+    else
+      nil
+    end
+  end
+
+  def default_score_from_grade(grade)
+    idx = place_in_scheme(grade)
+    if idx == 0
+      95.0
+    elsif idx && !(['B-', 'C-', 'F'].include? grade)
+      bias = ((ordered_scheme[idx].last - ordered_scheme[idx - 1].last).abs * 100.0 / 2.0).round
+      ordered_scheme[idx - 1].last * 100.0 - bias
+    elsif idx && grade == 'B-'
+      70.0
+    elsif idx && grade == 'C-'
+      60.0
+    elsif idx && grade == 'F'
+      50.0
     else
       nil
     end
@@ -237,18 +259,16 @@ class GradingStandard < ActiveRecord::Base
 
   def self.default_grading_scheme
     {
-      "A" => 0.94,
-      "A-" => 0.90,
-      "B+" => 0.87,
-      "B" => 0.84,
-      "B-" => 0.80,
-      "C+" => 0.77,
-      "C" => 0.74,
-      "C-" => 0.70,
-      "D+" => 0.67,
-      "D" => 0.64,
-      "D-" => 0.61,
-      "F" => 0.0,
+      "A+" => 0.90,
+      "A" => 0.85,
+      "A-" => 0.80,
+      "B+" => 0.77,
+      "B" => 0.73,
+      "B-" => 0.70,
+      "C+" => 0.67,
+      "C" => 0.63,
+      "C-" => 0.60,
+      "F" => 0.00
     }
   end
 end
