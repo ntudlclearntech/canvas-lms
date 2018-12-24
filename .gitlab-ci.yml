@@ -1,0 +1,27 @@
+image: docker:stable
+services:
+- docker:dind
+
+variables:
+  GIT_STRATEGY: none
+  DOCKER_HOST: tcp://localhost:2375
+  DOCKER_DRIVER: overlay2
+  IMAGE_TAG_MAIN: $CI_REGISTRY_IMAGE:latest
+  IMAGE_TAG_COMMIT_REF: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+  IMAGE_TAG_COMMIT_HASH: $CI_REGISTRY_IMAGE:git-$CI_COMMIT_SHA
+
+before_script:
+  - docker info
+  - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
+
+build:
+  stage: build
+  variables:
+    GIT_STRATEGY: fetch
+  script:
+    - docker pull $IMAGE_TAG_COMMIT_REF || true
+    - docker build -f Dockerfile --network=host --cache-from $IMAGE_TAG_COMMIT_REF -t $IMAGE_TAG_COMMIT_REF -t $IMAGE_TAG_COMMIT_HASH .
+    - docker push $IMAGE_TAG_COMMIT_REF
+    - docker push $IMAGE_TAG_COMMIT_HASH
+    - if [ "$CI_COMMIT_REF_NAME" = 'master' ]; then docker tag $IMAGE_TAG_COMMIT_HASH $IMAGE_TAG_MAIN && docker push $IMAGE_TAG_MAIN; fi
+

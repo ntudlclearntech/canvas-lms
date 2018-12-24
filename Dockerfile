@@ -17,7 +17,8 @@ ENV DISABLE_V8_COMPILE_CACHE 1
 
 USER root
 WORKDIR /root
-RUN curl -sL https://deb.nodesource.com/setup_10.x | bash - \
+RUN sed -i 's_//archive.ubuntu_//tw.archive.ubuntu_' /etc/apt/sources.list \
+  && curl -sL https://deb.nodesource.com/setup_10.x | bash - \
   && curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - \
   && echo "deb https://dl.yarnpkg.com/debian/ stable main" > /etc/apt/sources.list.d/yarn.list \
   && printf 'path-exclude /usr/share/doc/*\npath-exclude /usr/share/man/*' > /etc/dpkg/dpkg.cfg.d/01_nodoc \
