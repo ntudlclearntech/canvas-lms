@@ -396,3 +396,40 @@ body.body--login-confirmation {
   vertical-align: middle;
   margin-#{direction(right)}: $ic-sp;
 }
+
+/* NTU COOL AGREEMENT table style */
+
+ul.cool-tos-nav {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 25px 0;
+}
+
+ul.cool-tos-nav li {
+  display: inline-flex;
+}
+
+ul.cool-tos-nav li a {
+  text-decoration: none;
+  color: darkgray;
+  padding: 10px;
+  transition: all .3s ease-in-out;
+  border-bottom: 1px solid transparent;
+}
+
+ul.cool-tos-nav li a:hover {
+  color: gray;
+}
+
+.cool-tos-nav .active a {
+  color: #07AAD6;
+  border-bottom: 1px solid #07AAD6;
+}
+
+.cool-tos-tab-pane {
+  display: none;
+}
+
+.cool-tos-tab-pane.active {
+  display: block;
+}

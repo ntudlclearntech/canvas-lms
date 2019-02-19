@@ -81,6 +81,30 @@ export default class TermsOfServiceModal extends React.Component {
         TERMS_OF_SERVICE_CUSTOM_CONTENT,
       }
     })
+    this.applyTabs();
+  }
+
+  applyTabs = () => {
+    setTimeout(() => {
+      function onTabClick(event) {
+        let activeTabs = document.querySelectorAll('.cool-tos-nav .active, .cool-tos-tab-content .active');
+        
+        activeTabs.forEach(function(tab) {
+          tab.className = tab.className.replace('active', '');
+        });
+        
+        event.target.parentElement.className += ' active';
+        document.getElementById(event.target.href.split('#')[1]).className += ' active';
+        setTimeout(() => {
+          document.getElementById('cool-tos-back-to-top').click();
+        }, 0);
+      }
+      
+      const element = document.getElementById('cool-tos-nav-tab');
+      if (element) { 
+        element.addEventListener('click', onTabClick, false);
+      }
+    }, 300);
   }
 
   render() {
