@@ -24,6 +24,8 @@ import template from 'jst/courses/roster/editRolesView'
 import '../../../jquery.rails_flash_notifications'
 import 'jquery.disableWhileLoading'
 
+import filterRoles from './filterRoles'
+
 export default class EditRolesView extends DialogBaseView {
   constructor(...args) {
     {
@@ -60,7 +62,7 @@ export default class EditRolesView extends DialogBaseView {
       json.role_id = this.role_id
     }
 
-    json.roles = ENV.ALL_ROLES
+    json.roles = filterRoles(ENV.ALL_ROLES, ENV.current_user_roles); 
     return json
   }
 

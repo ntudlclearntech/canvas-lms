@@ -22,6 +22,8 @@ import template from 'jst/courses/roster/index'
 import ValidatedMixin from '../../ValidatedMixin'
 import AddPeopleApp from 'jsx/add_people/add_people_app'
 
+import filterRoles from './filterRoles'
+
 export default class RosterView extends Backbone.View {
   constructor(...args) {
     {
@@ -68,11 +70,11 @@ export default class RosterView extends Backbone.View {
     this.$addUsersButton.on('click', this.showCreateUsersModal.bind(this))
 
     const canReadSIS = 'permissions' in ENV ? !!ENV.permissions.read_sis : true
-
+ 
     return (this.addPeopleApp = new AddPeopleApp(this.$createUsersModalHolder[0], {
       courseId: (ENV.course && ENV.course.id) || 0,
       defaultInstitutionName: ENV.ROOT_ACCOUNT_NAME || '',
-      roles: (ENV.ALL_ROLES || []).filter(role => role.manageable_by_user),
+      roles: (filterRoles(ENV.ALL_ROLES, ENV.current_user_roles) || []).filter(role => role.manageable_by_user),
       sections: ENV.SECTIONS || [],
       onClose: this.fetchOnCreateUsersClose,
       inviteUsersURL: ENV.INVITE_USERS_URL,
