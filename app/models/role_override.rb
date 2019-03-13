@@ -66,6 +66,14 @@ class RoleOverride < ActiveRecord::Base
     ENROLLMENT_TYPE_LABELS
   end
 
+  def self.get_custom_role_label(custom_role)
+    if custom_role.name == '旁聽生' || custom_role.name.downcase == 'auditor'
+      return t('roles.auditor', 'Auditor')
+    else
+      return custom_role.name
+    end
+  end
+
   # immediately register stock canvas-lms permissions
   # NOTE: manage_alerts = Global Announcements and manage_interaction_alerts = Alerts
   # for legacy reasons
