@@ -11856,6 +11856,7 @@ zh-Hant:
       pending: 擱置
       rejected: 已拒絕
   enrollmentNames: 
+    auditor: 旁聽生
     course_designer: 課程設計師
     designer: 設計師
     observer: 觀察者
@@ -25483,6 +25484,7 @@ zh-Hant:
       view_statistics: 檢視統計資料
     roles: 
       account_admin: 帳戶管理員
+      auditor: 旁聽生
       designer: 設計師
       designers: 設計師
       observer: 觀察者
