@@ -38,5 +38,9 @@ const types = {
 }
 
 export default function enrollmentName(type) {
-  return types[type] || type
+  if (type == '旁聽生' || type.toLowerCase() == 'auditor') {
+    return I18n.t('auditor', 'Auditor')
+  } else {
+    return types[type] || type
+  }
 }
