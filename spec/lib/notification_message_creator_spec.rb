@@ -225,12 +225,15 @@ describe NotificationMessageCreator do
       expect { NotificationMessageCreator.new(@notification, @assignment, :to_list => @user).create_message }.to change(DelayedMessage, :count).by 0
 
       nps.each { |np| np.frequency = 'never'; np.save! }
+      @user.reload
       expect { NotificationMessageCreator.new(@notification, @assignment, :to_list => @user).create_message }.to change(DelayedMessage, :count).by 0
 
       nps.each { |np| np.frequency = 'daily'; np.save! }
+      @user.reload
       expect { NotificationMessageCreator.new(@notification, @assignment, :to_list => @user).create_message }.to change(DelayedMessage, :count).by 3
 
       nps.each { |np| np.frequency = 'weekly'; np.save! }
+      @user.reload
       expect { NotificationMessageCreator.new(@notification, @assignment, :to_list => @user).create_message }.to change(DelayedMessage, :count).by 3
     end
 
@@ -258,6 +261,7 @@ describe NotificationMessageCreator do
       expect { NotificationMessageCreator.new(@notification, @assignment, :to_list => @user).create_message }.to change(DelayedMessage, :count).by 1
       DelayedMessage.delete_all
       NotificationPolicy.delete_all # gotta do this because create_message actually creates the default policy
+      @user.reload
       notification_policy_model(:notification => @notification,
                                 :communication_channel => @communication_channel,
                                 :frequency => 'immediately')
@@ -361,6 +365,7 @@ describe NotificationMessageCreator do
 
       @communication_channel.bounce_count = CommunicationChannel::RETIRE_THRESHOLD
       @communication_channel.save!
+      @user.reload
       messages = NotificationMessageCreator.new(@notification, @assignment, :to_list => @user).create_message
       expect(messages.select{|m| m.to == 'valid@example.com'}.size).to eq 0
     end
