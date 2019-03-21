@@ -56,6 +56,10 @@ describe FilesController do
   def account_js_file
     @file = factory_with_protected_attributes(@account.attachments, :uploaded_data => fixture_file_upload('test.js', 'text/javascript', false))
   end
+ 
+  def course_js_file
+    @file = factory_with_protected_attributes(@course.attachments, :uploaded_data => fixture_file_upload('test.js', 'text/javascript', false))
+  end
 
   def folder_file
     @file = @folder.active_file_attachments.build(:uploaded_data => io)
@@ -568,6 +572,35 @@ describe FilesController do
         expect(json_parse['canvadoc_session_url']).to be_present
       end
     end
+
+    context "account-context files" do
+      before :once do
+        @account = account_model
+      end
+
+      before :each do
+        allow(HostUrl).to receive(:file_host).and_return('files.test')
+        request.host = 'files.test'
+        user_session(@teacher)
+      end
+
+      it "should skip verification for an account-context file with download path" do
+        account_js_file
+        file_verifier = Attachments::Verification.new(@file).verifier_for_user(nil)
+        user_verifier = Users::AccessVerifier.generate(user: @teacher)
+        get 'show', params: user_verifier.merge(:download => 1, :inline => 1, :verifier => file_verifier, :account_id => @account.id, :id => @file.id, :file_path => @file.full_path)
+        expect(response).to be_successful
+      end
+
+      it "should enforce verification for contexts other than account with download path" do
+        course_js_file
+        file_verifier = Attachments::Verification.new(@file).verifier_for_user(nil)
+        user_verifier = Users::AccessVerifier.generate(user: @teacher)
+        get 'show', params: user_verifier.merge(:download => 1, :inline => 1, :verifier => file_verifier, :course_id => @course.id, :id => @file.id, :file_path => @file.full_path)
+        assert_unprocessable
+      end
+
+    end
   end
 
   describe "GET 'show_relative'" do
@@ -701,7 +734,7 @@ describe FilesController do
         user_session(@teacher)
       end
 
-      it "should skip verification for an account-context file" do
+      it "should skip verification for an account-context file with relative path" do
         account_js_file
         file_verifier = Attachments::Verification.new(@file).verifier_for_user(nil)
         user_verifier = Users::AccessVerifier.generate(user: @teacher)
@@ -709,12 +742,12 @@ describe FilesController do
         expect(response).to be_successful
       end
 
-      it "should enforce verification for contexts other than account" do
-        course_file
+      it "should enforce verification for contexts other than account with relative path" do
+        course_js_file
         file_verifier = Attachments::Verification.new(@file).verifier_for_user(nil)
         user_verifier = Users::AccessVerifier.generate(user: @teacher)
-        get 'show_relative', params: user_verifier.merge(:download => 1, :inline => 1, :verifier => file_verifier, :account_id => @account.id, :file_id => @file.id, :file_path => @file.full_path)
-        assert_unauthorized
+        get 'show_relative', params: user_verifier.merge(:download => 1, :inline => 1, :verifier => file_verifier, :course_id => @course.id, :file_id => @file.id, :file_path => @file.full_path)
+        assert_unprocessable
       end
 
     end
