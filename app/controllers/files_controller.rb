@@ -128,7 +128,7 @@ class FilesController < ApplicationController
   # brand-config-uploaded JS to work
   # verify_authenticity_token is manually-invoked where @context is not
   # an Account in show_relative
-  protect_from_forgery :except => [:api_capture, :show_relative], with: :exception
+  protect_from_forgery :except => [:api_capture, :show, :show_relative], with: :exception
 
   before_action :require_user, only: :create_pending
   before_action :require_context, except: [
@@ -481,6 +481,11 @@ class FilesController < ApplicationController
       original_params = params.dup
       params[:id] ||= params[:file_id]
       get_context
+
+      # Manually-invoke verify_authenticity_token for non-Account contexts
+      # This is to allow Account-level file downloads to skip request forgery protection
+      verify_authenticity_token unless @context.is_a?(Account)
+
       # note that the /files/XXX URL implicitly uses the current user as the
       # context, even though it doesn't search for the file using
       # @current_user.attachments.find , since it might not actually be a user
