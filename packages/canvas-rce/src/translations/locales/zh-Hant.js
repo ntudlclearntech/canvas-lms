@@ -61,7 +61,7 @@ const locale = {
   "angle_c5b4ec50": { "message": "角度" },
   "announcement_fb4cb645": { "message": "通告" },
   "announcement_list_da155734": { "message": "通告清單" },
-  "announcements_a4b8ed4a": { "message": "通告" },
+  "announcements_a4b8ed4a": { "message": "公告" },
   "apply_781a2546": { "message": "應用" },
   "apply_changes_to_all_instances_of_this_icon_maker__2642f466": {
     "message": "在課程中套用變更到此圖示製作者圖示的所有執行個體"
@@ -76,7 +76,7 @@ const locale = {
   "art_icon_8e1daad": { "message": "藝術圖示" },
   "aspect_ratio_will_be_preserved_cb5fdfb8": { "message": "外觀比例將被保留" },
   "assignment_976578a8": { "message": "作業" },
-  "assignments_1e02582c": { "message": "作業列表" },
+  "assignments_1e02582c": { "message": "作業" },
   "asterisk_82255584": { "message": "*" },
   "attributes_963ba262": { "message": "屬性" },
   "audio_and_video_recording_not_supported_please_use_5ce3f0d7": {
@@ -285,7 +285,7 @@ const locale = {
   "embed_content_from_external_tool_3397ad2d": {
     "message": "從外部工具嵌入的內容"
   },
-  "embed_image_1080badc": { "message": "嵌入影像" },
+  "embed_image_1080badc": { "message": "嵌入圖片" },
   "embed_video_a97a64af": { "message": "嵌入影片" },
   "embedded_content_aaeb4d3d": { "message": "嵌入內容" },
   "empty_set_91a92df4": { "message": "空集合" },
@@ -330,8 +330,8 @@ const locale = {
   "filename_file_icon_602eb5de": { "message": "{ filename } 檔案圖示" },
   "filename_image_preview_6cef8f26": { "message": "{ filename } 影像預覽" },
   "filename_text_preview_e41ca2d8": { "message": "{ filename } 文字預覽" },
-  "files_c300e900": { "message": "檔案" },
-  "files_index_af7c662b": { "message": "檔案索引" },
+  "files_c300e900": { "message": "文件" },
+  "files_index_af7c662b": { "message": "文件索引" },
   "find_8d605019": { "message": "尋找" },
   "find_and_replace_6e345933": { "message": "尋找和取代" },
   "finish_bc343002": { "message": "完成" },
@@ -371,7 +371,7 @@ const locale = {
   "group_link_63e626b3": { "message": "群組連結" },
   "group_links_9493129e": { "message": "群組連結" },
   "group_media_2f3d128a": { "message": "群組媒體" },
-  "group_navigation_99f191a": { "message": "群組導航" },
+  "group_navigation_99f191a": { "message": "小組導覽" },
   "h_bar_bb94deae": { "message": "H 列" },
   "hat_ea321e35": { "message": "揚抑符號" },
   "header_column_f27433cb": { "message": "標題欄" },
@@ -402,7 +402,7 @@ const locale = {
   "html_code_editor_fd967a44": { "message": "Html 代碼編輯器" },
   "html_editor_fb2ab713": { "message": "HTML 編輯器" },
   "i_have_obtained_permission_to_use_this_file_6386f087": {
-    "message": "我已經獲得了該文檔的使用權限。"
+    "message": "我已經獲得了該文件的使用權限。"
   },
   "i_hold_the_copyright_71ee91b1": { "message": "我持有該版權" },
   "icon_215a1dc6": { "message": "圖示" },
@@ -434,7 +434,7 @@ const locale = {
   "image_with_filename_file_aacd7180": {
     "message": "檔案名稱為 { file } 的圖像"
   },
-  "images_7ce26570": { "message": "影像" },
+  "images_7ce26570": { "message": "圖片" },
   "images_should_include_an_alt_attribute_describing__b86d6a86": {
     "message": "圖像應包括說明圖像內容的替代屬性。"
   },
@@ -573,7 +573,7 @@ const locale = {
   "misc_3b692ea7": { "message": "雜項" },
   "miscellaneous_e9818229": { "message": "雜項" },
   "module_90d9fd32": { "message": "單元" },
-  "modules_c4325335": { "message": "單元" },
+  "modules_c4325335": { "message": "課程內容" },
   "moving_image_to_crop_directionword_6f66cde2": {
     "message": "移動影像以裁剪 { directionWord }"
   },
@@ -726,7 +726,7 @@ const locale = {
   "purple_7678a9fc": { "message": "紫色" },
   "quaternions_877024e0": { "message": "四合數" },
   "quiz_e0dcce8f": { "message": "測驗" },
-  "quizzes_7e598f57": { "message": "測驗" },
+  "quizzes_7e598f57": { "message": "線上測驗" },
   "rational_numbers_80ddaa4a": { "message": "有理數" },
   "real_numbers_7c99df94": { "message": "實數" },
   "real_portion_of_complex_number_7dad33b5": {

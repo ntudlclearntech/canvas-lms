@@ -2163,7 +2163,7 @@ zh-Hans:
       round_mode: default
 zh-Hant:
   aliases: zh-TW
-  bigeasy_locale: zh_HK
+  bigeasy_locale: zh_TW
   date:
     abbr_month_names:
     -
@@ -2195,7 +2195,7 @@ zh-Hant:
       short_with_weekday: "%a, %b %-d"
       weekday: "%A"
   dow_offset: 1
-  fullcalendar_locale: zh-cn
+  fullcalendar_locale: zh-tw
   locales:
     zh-Hant: 繁體中文
   moment_locale: zh-tw
