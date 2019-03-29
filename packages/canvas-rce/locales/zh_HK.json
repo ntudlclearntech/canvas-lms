@@ -6,10 +6,10 @@
     "message": "公告清單"
   },
   "announcements_a4b8ed4a": {
-    "message": "通告"
+    "message": "公告"
   },
   "assignments_1e02582c": {
-    "message": "任務"
+    "message": "作業"
   },
   "background_color_press_down_to_select_ef99fdac": {
     "message": "背景顏色，按下以選擇"
@@ -18,10 +18,10 @@
     "message": "(c) 2001 Acme Inc."
   },
   "cancel_file_upload_9903e7b9": {
-    "message": "取消文檔上傳"
+    "message": "取消文件上傳"
   },
   "cancel_image_upload_2c771950": {
-    "message": "取消影像上傳"
+    "message": "取消圖片上傳"
   },
   "cc_attribution_f6de631f": {
     "message": "CC 屬性"
@@ -48,13 +48,13 @@
     "message": "選擇使用權限…"
   },
   "click_any_file_to_insert_a_download_link_for_that__a708fa4c": {
-    "message": "按一下任何文檔，以向該文檔中插入一個下載連結。"
+    "message": "點選任一文件，以插入該文件的下載連結。"
   },
   "click_any_image_to_embed_the_image_in_the_page_2cdd1136": {
-    "message": "按一下任何影像，以將該影像嵌入頁面中。"
+    "message": "點選任一圖片，以將該圖片嵌入頁面中。"
   },
   "click_any_page_to_insert_a_link_to_that_page_ac920c02": {
-    "message": "按一下任何頁面，以向該頁面中插入一個連結。"
+    "message": "點選任一課程內容，以插入該內容的連結。"
   },
   "click_to_embed_image_33107dd8": {
     "message": "按一下以嵌入影像"
@@ -93,25 +93,25 @@
     "message": "討論索引"
   },
   "embed_image_1080badc": {
-    "message": "嵌入影像"
+    "message": "嵌入圖片"
   },
   "enter_search_terms_e397b1f0": {
-    "message": "輸入搜索字詞"
+    "message": "輸入搜尋字詞"
   },
   "enter_the_alternative_text_for_this_image_88047c47": {
-    "message": "輸入此圖像的替代文字"
+    "message": "輸入此圖片的替代文字"
   },
   "file_upload_form_4aaad554": {
     "message": "文檔上傳表單"
   },
   "files_c300e900": {
-    "message": "文檔"
+    "message": "文件"
   },
   "files_index_af7c662b": {
-    "message": "文檔索引"
+    "message": "文件索引"
   },
   "folder_705fd2d7": {
-    "message": "文件夾"
+    "message": "資料夾"
   },
   "font_size_press_down_to_select_6c25dc2d": {
     "message": "字體大小，按下以選擇"
@@ -123,10 +123,10 @@
     "message": "成績"
   },
   "group_navigation_99f191a": {
-    "message": "群組導覽"
+    "message": "小組導覽"
   },
   "i_have_obtained_permission_to_use_this_file_6386f087": {
-    "message": "我已經獲得了該文檔的使用權限。"
+    "message": "我已經獲得了該文件的使用權限。"
   },
   "i_hold_the_copyright_71ee91b1": {
     "message": "我持有該版權"
@@ -138,7 +138,7 @@
     "message": "影像上傳表單"
   },
   "images_7ce26570": {
-    "message": "影像"
+    "message": "圖片"
   },
   "insert_equella_links_49a8dacd": {
     "message": "插入 Equella 連結"
@@ -159,7 +159,7 @@
     "message": "連接到課程中的其他內容。"
   },
   "link_to_other_content_in_the_group_3fe25379": {
-    "message": "連結到群組中的其他內容。"
+    "message": "連結到小組中的其他內容。"
   },
   "link_to_url_52dd935c": {
     "message": "連結到 URL"
@@ -180,7 +180,7 @@
     "message": "載入資料夾中..."
   },
   "modules_c4325335": {
-    "message": "單元"
+    "message": "課程內容"
   },
   "no_results_940393cf": {
     "message": "無結果。"
@@ -189,28 +189,28 @@
     "message": "頁面"
   },
   "people_b4ebb13c": {
-    "message": "人員"
+    "message": "成員"
   },
   "quizzes_7e598f57": {
-    "message": "測驗"
+    "message": "線上測驗"
   },
   "record_upload_media_5fdce166": {
-    "message": "錄製/上載媒體"
+    "message": "錄製/上傳媒體"
   },
   "rich_text_area_press_alt_f8_for_help_58f0f2c3": {
     "message": "富文本區。按 ALT+F8 尋求協助"
   },
   "search_280d00bd": {
-    "message": "搜索"
+    "message": "搜尋"
   },
   "search_flickr_6884b518": {
-    "message": "檢索"
+    "message": "搜尋"
   },
   "select_a_file_53ba40ac": {
     "message": "選取檔案"
   },
   "select_a_folder_to_upload_your_file_into_b82d12b": {
-    "message": "選擇一個文件夾，以上傳您的文檔"
+    "message": "選擇一個資料夾，以上傳您的文件"
   },
   "syllabus_f191f65b": {
     "message": "課程大綱"
@@ -234,10 +234,10 @@
     "message": "上傳"
   },
   "upload_a_new_file_96e6d4ff": {
-    "message": "上傳新文檔"
+    "message": "上傳新文件"
   },
   "upload_a_new_image_890df275": {
-    "message": "上傳新影像"
+    "message": "上傳新圖片"
   },
   "usage_right_ff96f3e2": {
     "message": "使用權："
