@@ -55,7 +55,7 @@ yarn-error.log
 # canvas-gems
 /gems/*/coverage
 /gems/*/tmp
-/gems/*/node_modules
+/gems/**/node_modules
 
 # user docker compose overrides
 docker-compose.local.*
