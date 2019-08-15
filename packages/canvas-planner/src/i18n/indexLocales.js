@@ -51,12 +51,12 @@ import sv from '../../config/locales/sv.json';
 import tr from '../../config/locales/tr.json';
 import ukUA from '../../config/locales/uk_UA.json';
 import vi from '../../config/locales/vi.json';
-import zhHans from '../../config/locales/zh.json';
-import zhHant from '../../config/locales/zh_HK.json';
+import zhHans from '../../config/locales/zh-Hans.json';
+import zhHant from '../../config/locales/zh-Hant.json';
 
 export default {
   enflip: flipAll(en), ar, bg, cs, da, de, el, 'en-AU': enAU, 'en-GB': enGB, en,
   es, 'fa-IR': faIR, 'fr-CA': frCA, fr, he, ht, hu, hy, it, ja, ko, mi, nl, nn,
   nb, pl, 'pt-BR': ptBR, pt, ro, ru, sq, sr, sv, tr, 'uk-UA': ukUA, vi,
-  'zh-Hans': zhHans, 'zh-Hant': zhHant,
+  'zh-Hans': zhHans, 'zh-Hant': zhHant, 'zh-tw': zhHant, 'zh-cn': zhHans,
 };
