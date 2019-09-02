@@ -127,13 +127,15 @@ class Login::SamlController < ApplicationController
       aac.apply_federated_attributes(pseudonym, provider_attributes)
     end
 
-    sis_user_id = subject_name_id&.id.downcase
-    sis_user_id += /^[a-zA-Z0-9]{9}$/.match(sis_user_id) ? "@ntu.edu.tw" : ""
-    pseudonym['sis_user_id'] = sis_user_id
+    if pseudonym['sis_user_id'].blank?
+      sis_user_id = subject_name_id&.id.downcase
+      sis_user_id += /^[a-zA-Z0-9]{9}$/.match(sis_user_id) ? "@ntu.edu.tw" : ""
+      pseudonym['sis_user_id'] = sis_user_id
 
-    if pseudonym.changed?
-      unless pseudonym.save
-        Rails.logger.warn("Unable to save federated pseudonym: #{pseudonym.errors}")
+      if pseudonym.changed?
+        unless pseudonym.save
+          Rails.logger.warn("Unable to save federated pseudonym: #{pseudonym.errors}")
+        end
       end
     end
 
