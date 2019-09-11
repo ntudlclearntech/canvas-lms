@@ -1048,7 +1048,7 @@ class Account < ActiveRecord::Base
       if !root_account.site_admin? && user
         scope = root_account.enrollments.active.where(user_id: user)
         result = root_account.teachers_can_create_courses? &&
-            scope.where(:type => ['TeacherEnrollment', 'DesignerEnrollment']).exists?
+            scope.where(:type => ['TeacherEnrollment', 'DesignerEnrollment', 'TaEnrollment']).exists?
         result ||= root_account.students_can_create_courses? &&
             scope.where(:type => ['StudentEnrollment', 'ObserverEnrollment']).exists?
         result ||= root_account.no_enrollments_can_create_courses? &&
