@@ -29,6 +29,8 @@ class GradebookUpload < ActiveRecord::Base
       p.user = user
     end
     gradebook_upload = GradebookUpload.create!(course: course, user: user, progress: progress)
+    Rails.logger.debug "gradebook upload attachment data"
+    Rails.logger.debug attachment_data.inspect
     gradebook_upload_attachment = gradebook_upload.attachments.create!(attachment_data)
     progress.process_job(GradebookImporter, :create_from, {}, gradebook_upload, user, gradebook_upload_attachment)
     progress

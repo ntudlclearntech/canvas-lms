@@ -540,7 +540,8 @@ class GradebookImporter
 
   def semicolon_delimited?(csv_file)
     first_lines = []
-    File.open(csv_file.path) do |csv|
+    # need to check if 8859 is ok in all scenarios
+    File.open(csv_file.path, "r:ISO-8859-1") do |csv|
       while !csv.eof? && first_lines.size < 3
         first_lines << csv.readline
       end
@@ -586,8 +587,15 @@ class GradebookImporter
     # using "foreach" rather than "parse" processes a chunk of the
     # file at a time rather than loading the whole file into memory
     # at once, a boon for memory consumption
-    CSV.foreach(csv_file.path, csv_parse_options) do |row|
-      yield row
+    begin
+      CSV.foreach(csv_file.path, csv_parse_options) do |row|
+        yield row
+      end
+rescue ArgumentError 
+      csv_parse_options[:encoding] = 'iso-8859-1'
+      CSV.foreach(csv_file.path, csv_parse_options) do |row|
+        yield row
+      end
     end
   end
 
