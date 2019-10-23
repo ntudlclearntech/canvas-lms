@@ -540,10 +540,18 @@ class GradebookImporter
 
   def semicolon_delimited?(csv_file)
     first_lines = []
-    # need to check if 8859 is ok in all scenarios
-    File.open(csv_file.path, "r:ISO-8859-1") do |csv|
-      while !csv.eof? && first_lines.size < 3
-        first_lines << csv.readline
+    # need to check if big5 is ok in all scenarios
+    begin
+      File.open(csv_file.path, "r:big5:utf-8") do |csv|
+        while !csv.eof? && first_lines.size < 3
+          first_lines << csv.readline
+        end
+      end
+    rescue Encoding::InvalidByteSequenceError
+      File.open(csv_file.path) do |csv|
+        while !csv.eof? && first_lines.size < 3
+          first_lines << csv.readline
+        end
       end
     end
 
@@ -588,11 +596,12 @@ class GradebookImporter
     # file at a time rather than loading the whole file into memory
     # at once, a boon for memory consumption
     begin
+      csv_parse_options[:encoding] = 'big5'
       CSV.foreach(csv_file.path, csv_parse_options) do |row|
         yield row
       end
-rescue ArgumentError 
-      csv_parse_options[:encoding] = 'iso-8859-1'
+    rescue Encoding::InvalidByteSequenceError
+      csv_parse_options[:encoding] = 'utf-8'
       CSV.foreach(csv_file.path, csv_parse_options) do |row|
         yield row
       end
