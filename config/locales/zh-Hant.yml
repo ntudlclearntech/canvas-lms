@@ -2949,6 +2949,12 @@ zh-Hant:
       assignment_not_available: 您所請求的作業不可用於您的課程班別。
       created: 作業已成功建立。
       updated: 作業已成功更新。
+    ntu-cool:
+      jsx:
+        due_dates:
+          DueDateCalendars:
+            Due: "超過此時間，視為遲交"
+            Until: "超過此時間無法繳交"
     number_of_assignments: 
       one: "%{count} 個作業"
       other: "%{count} 個作業"
