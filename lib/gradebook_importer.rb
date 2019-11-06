@@ -547,7 +547,7 @@ class GradebookImporter
           first_lines << csv.readline
         end
       end
-    rescue Encoding::InvalidByteSequenceError
+    rescue EncodingError
       File.open(csv_file.path) do |csv|
         while !csv.eof? && first_lines.size < 3
           first_lines << csv.readline
@@ -600,7 +600,7 @@ class GradebookImporter
       CSV.foreach(csv_file.path, csv_parse_options) do |row|
         yield row
       end
-    rescue Encoding::InvalidByteSequenceError
+    rescue EncodingError
       csv_parse_options[:encoding] = 'utf-8'
       CSV.foreach(csv_file.path, csv_parse_options) do |row|
         yield row
