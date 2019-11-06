@@ -24,6 +24,9 @@ import shortId from '../shared/shortid'
 import tz from 'timezone'
 import 'jquery.instructure_forms'
 import cx from 'classnames'
+import { Tooltip } from '@instructure/ui-overlays'
+import { IconQuestionLine } from '@instructure/ui-icons'
+import './DueDateCalendarPicker.css'
 
 const {string, func, bool, instanceOf, oneOfType} = PropTypes
 
@@ -41,7 +44,8 @@ class DueDateCalendarPicker extends React.Component {
     labelText: string.isRequired,
     labelClasses: string,
     name: string,
-    readonly: bool
+    readonly: bool,
+    tooltipContent: string
   }
 
   static defaultProps = {
@@ -113,6 +117,19 @@ class DueDateCalendarPicker extends React.Component {
   wrapperClassName = () =>
     this.props.dateType == 'due_at' ? 'DueDateInput__Container' : 'DueDateRow__LockUnlockInput'
 
+  renderTooltip = (content) => {
+    if (content){
+      return (
+        <Tooltip
+         tip={content}
+         placement="end"
+         variant="inverse"
+        >
+          <IconQuestionLine />
+        </Tooltip>
+    )}
+  }
+
   render() {
     if (this.props.disabled || this.props.readonly) {
       const className = cx('ic-Form-control', {readonly: this.props.readonly})
@@ -120,6 +137,7 @@ class DueDateCalendarPicker extends React.Component {
         <div className={className}>
           <label className={`${this.props.labelClasses} ic-Label`} htmlFor={this.props.dateType}>
             {this.props.labelText}
+            &nbsp;&nbsp;{this.renderTooltip(this.props.tooltipContent)}
           </label>
           <div className="ic-Input-group">
             <input
@@ -159,6 +177,7 @@ class DueDateCalendarPicker extends React.Component {
           htmlFor={this.uniqueId}
         >
           {this.props.labelText}
+          &nbsp;&nbsp;{this.renderTooltip(this.props.tooltipContent)}
         </label>
         <div ref="datePickerWrapper" className={this.wrapperClassName()}>
           <input
