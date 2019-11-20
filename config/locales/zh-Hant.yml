@@ -9035,7 +9035,7 @@ zh-Hant:
   france_33_90b595d7: "法國 (+33)"
   france_c25bfeae: 法國
   from_date_must_be_before_to_date_79f00046: 「從」日期必須在「至」日期之前
-  from_fdd4956d: 來自
+  from_fdd4956d: 原始分數
   from_from_to_to_e31f6422: "自 %{from} 至 %{to}"
   from_gravatar_58372d5a: "來自 Gravatar"
   front_page_must_be_set_first_4dbbfdbe: 必須先設定首頁
@@ -19108,7 +19108,7 @@ zh-Hant:
         find_on_flickr: "從 Flickr 搜尋圖片"
         grades_page: 成績
         modules: 所有單元
-        modules_page: 單元
+        modules_page: 課程內容
         new_page: 新頁面的連結
         quizzes: 測驗
         syllabus: 課程資訊
@@ -20585,7 +20585,7 @@ zh-Hant:
   tls_7a2eaba5: TLS
   to_1126ab55: 至
   to_35c6baa2: 至
-  to_51406be9: 至
+  to_51406be9: 修改分數
   to_access_assignment_submissions_through_assignmen_30c5c8f2: "要透過作業列表或成績單存取作業提交項目，並於 作業批改模式 內查看，必須同時啟用「成績 - 查看所有成績」或「成績 - 編輯」。"
   to_access_assignment_submissions_through_assignmen_ce438715: |-
       要透過作業列表及 作業批改模式 存取作業提交項目，必須同時啟用「成績 - 編輯」。
