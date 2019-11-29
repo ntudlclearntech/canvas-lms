@@ -2597,8 +2597,8 @@ zh-Hant:
   assignment_muter: 
     mute_assignment: 取消作業提醒
     muting_assignment: 正在取消作業提醒…
-    unmute_assignment: 開啟作業提醒
-    unmute_button: 開啟作業提醒
+    unmute_assignment: 開啟成績通知
+    unmute_button: 開啟成績通知
     unmute_dialog: 此作業目前處於取消提醒狀態。這意味著學生不能看到自己的成績和回饋。是否現在要開啟提醒？
     unmuting_assignment: 正在開啟作業提醒…
   assignment_name_12eadcbd: 作業名稱
@@ -5595,14 +5595,14 @@ zh-Hant:
         course: 課程
         select_course: 選擇課程
         subject: 主旨
-        to: 至
+        to: 收件者
       links: 
         media_comment: 記錄
       media_comment: 媒體評論
       no_course: 無課程
       no_subject: 無主題
       search_names_groups_courses: 搜索名稱、群組和課程
-      send_individual_messages: 給每個收件者發送一份個人郵件
+      send_individual_messages: 在「已發送」信件匣獨立顯示每個收件者的信件
       titles: 
         media_comment: 已記錄的媒體評論
         record_media_comment: 錄製音訊或視頻評論
@@ -9235,7 +9235,7 @@ zh-Hant:
       tooltip: t
     learning_outcome: 學習成果
     mic_blocked_message: "已屏蔽麥克風使用權限。前往 chrome://settings/contentExceptions#media-stream 修改權限"
-    mute_assignment: 取消作業提醒
+    mute_assignment: 關閉成績通知
     no_assignments_have_points_warning: 在作業有可能得分之前，無法計算分數
     no_submission_time: 沒有繳交時間
     nodetect_message: 未檢測到任何語音。您可能需要調整麥克風設置。
@@ -9311,7 +9311,7 @@ zh-Hant:
     column_header: 
       assignment_options: 作業選項
       points_out_of: "總分：%{assignment.points_possible}"
-      this_assignment_is_muted: 已取消作業提醒
+      this_assignment_is_muted: 關閉成績通知
       zero_point_assignment: 此群組中的作業無可能分數，無法包含在成績計算中
     concluded_course_error_message: 這是已結束的課程，所以只有已結束的註冊可用。
     course_average: 課程平均值
@@ -9440,8 +9440,8 @@ zh-Hant:
         save_changes: 儲存更改
       choose_option: "-- 選擇 --"
       headers: 
-        import_error: 我無法透過您上傳的資料弄清楚各種問題：
-        missing_assignment: 您上傳了一些在此以前不會出現在成績冊中的作業。如果這是一個新的作業，或者如果它代表一個現有的作業，請告訴我。
+        import_error: 請確認您上傳的新增項目：
+        missing_assignment: 您新增了一些成績冊中的項目，請確認下列項目是否正確。
         missing_student: 您為以下學生上傳了記錄行，我不能確定您班級中的學生分別是哪個。請告訴我他們都是哪些學生。
         no_changes: 您上傳的成績冊中沒有偵測到變更。
         past_grading_periods_prevent_editing: 下列作業不可編輯，因爲他們不再本評分期内：
@@ -9542,7 +9542,7 @@ zh-Hant:
       see_scoring_details_screenreader: 查看得分詳細資料
       see_turnitin_results: "檢視 Turnitin 結果"
       see_vericite_results: "查看 VeriCite 成績"
-      student_mute_legend: 您的導師正在評分。當您的導師正在評分時，成績和評論資訊不可用。
+      student_mute_legend: 您的教師正在評分，當您的教師正在評分時，您暫時無法查看您的成績與教師評語。
       student_mute_notification: 導師正在進行評分
       submission_score: "得分：*%{score}*；總分：%{possible}"
       titles: 
@@ -11169,7 +11169,7 @@ zh-Hant:
   let_students_see_the_correct_answers_dacc2faf: 允許學生檢視正確答案
   let_students_see_their_quiz_responses_fbc07d14: 允許學生檢視他們的測驗回應
   let_students_see_their_quiz_responses_incorrect_qu_f5c9cb70: "讓學生看見他們的測驗結果 ( 在學生回饋中標示不正確問題 )"
-  letter_grade_29ff1938: 字母成績
+  letter_grade_29ff1938: 等第成績
   letter_grade_f00fedc4: 字母分級
   lib: 
     angel: 
@@ -13849,20 +13849,20 @@ zh-Hant:
   must_view_assignment_56a31702: 必須瀏覽作業
   must_view_in_order_to_complete_this_module_item_dec2e583: 如需完成這個單元項目，必須對其檢視
   must_view_the_page_67eec19e: 必須瀏覽頁面
-  mute_assignment_bb505cd8: 取消作業提醒
+  mute_assignment_bb505cd8: 關閉成績通知
   mute_dialog: 
     curving_assignments: 繪製作業曲線
     grade_change_notifications: 成績更改通知
-    how_to_unmute: 在取消這個作業的提醒之後，您可以透過點選『開啟作業提醒』連結，以開始再次發送通知。
-    mute_assignment: 取消作業提醒
+    how_to_unmute: 當您將此項目的成績通知關閉後，您可以透過點選 『開啟成績通知』按鈕，開始再次發送通知，讓學生能查看個人成績與評論。
+    mute_assignment: 關閉成績通知
     score_change_notifications: 分數更改通知
     see_grade: 他們對作業的評分
-    students_will_see: 學生將能夠看到這個作業處於取消提醒狀態。
-    submission_comments: 提交項目評論
-    sure_you_want_to_mute: 您是否確定要將這項作業設為取消提醒？當這項作業處於取消提醒狀態時，學生將不會收到或看到相關的新通知：
-  mute_unmute_assignment_62608e44: 取消/開啟作業提醒
+    students_will_see: 學生將看到此項目為關閉成績提醒的狀態。
+    submission_comments: 繳交項目評論
+    sure_you_want_to_mute: 您是否確定希望關閉此成績通知？當關閉此成績通知時，學生將不會收到相關的新通知或看到以下項目：
+  mute_unmute_assignment_62608e44: 關閉/開啟成績通知
   muted_283cfa0f: （已取消提醒）
-  muted_3ff94739: 已取消提醒
+  muted_3ff94739: 已關閉成績通知
   muting_assignment_a9aeb5c7: 正在取消作業提醒…
   my_dashboard_b724020: 我的控制面板
   my_files_2f621040: 我的文件
@@ -15422,7 +15422,7 @@ zh-Hant:
   points_n_e0b20623: "總分 %{n}"
   points_out_of_total_24f61148: "*%{points}* 總分**%{total}**"
   points_points_b6b422e2: "分数：%{points}"
-  points_possible_1c0b3445: 可得分數
+  points_possible_1c0b3445: 總分
   points_possible_44cb4190: "/%{points_possible}"
   points_possible_720fc8fd: "%{points}/%{possible}"
   points_possible_must_be_0_or_more_for_selected_gra_f96a04e3: "對於已選評分類型而言，可得分數必須為 0 或更多"
@@ -18747,21 +18747,20 @@ zh-Hant:
       out_of_points: "總分 %{points_possible}"
     mute_dialog: 
       gradebook: 
-        mute_assignment: 取消作業提醒
+        mute_assignment: 關閉成績通知
       mute_dialog: |-
-          您是否確定希望將此作業取消提醒？
-          當取消此作業提醒時，學生將不會收到
-          相關的新通知或看到：
+          您是否確定希望關閉此成績通知？
+          當關閉此成績通知時，學生將不會收到
+          相關的新通知或看到以下項目：
           
           * 成績更改通知
-          * 作業繳交評論
+          * 繳交項目評論
           * 繪製作業曲線
-          * 分數更改通知
           
-          學生將能夠看到此作業處於取消提醒狀態。
+          學生將看到此項目為關閉成績提醒的狀態。
           
-          在將此作業設定取消提醒之後，您可以透過點選
-          『開啟作業提醒』連結，開始再次發送通知。
+          當您將此項目的成績通知關閉後，您可以透過點選
+          『開啟成績通知』按鈕，開始再次發送通知，讓學生能查看個人成績與評論。
     new_course_form: 
       cancel: 取消
       course_cose_explanation: 這將被顯示在具有較小空間的地方
@@ -19031,7 +19030,7 @@ zh-Hant:
         feedback: 請告訴我們您在尋找什麼
       title: 無效的摘要
     unmute_dialog: 
-      unmute_dialog: 作業現已設定為取消提醒。意即學生無法查看成績和回饋。是否要開啟提醒？
+      unmute_dialog: 作業現已設定為關閉成績通知，也就是學生無法查看成績和評語。若開啟成績通知，則學生可以查看成績和評語。請問是否要開啟通知？
     user_header_navigation: 
       navigation: 
         user_menu: 使用者功能表
@@ -19196,7 +19195,7 @@ zh-Hant:
   show_question_details_b059df00: 顯示問題詳細資料
   show_recent_activity_stream_2be4abc1: 顯示最近活動流
   show_rubric_dca783f2: 顯示評量指標
-  show_saved_what_if_scores_358bfe5f: 顯示已儲存的『假設分析』分數
+  show_saved_what_if_scores_358bfe5f: 顯示上次輸入的「成績試算」結果
   show_student_names_dcb40934: 顯示學生姓名
   show_sub_accounts_for_account_name_fa71a658: "顯示子帳戶%{account_name}"
   showing_all_announcements_36ff0cec: 正在顯示所有公告
@@ -20208,7 +20207,7 @@ zh-Hant:
   this_assignment_has_been_excused_87f1dc13: 此作業已被免除。
   this_assignment_has_no_points_possible_and_cannot__b0b4f829: 此作業沒有可能的分數，無法包含在評分計算中
   this_assignment_is_currently_being_moderated_ffd280f2: 此作業目前正在調整分數
-  this_assignment_is_currently_muted_that_means_stud_94d63139: 作業現已設定為取消提醒。意即學生無法查看成績和反饋。是否要開啟提醒？
+  this_assignment_is_currently_muted_that_means_stud_94d63139: 作業現已設定為關閉成績通知，也就是學生無法查看成績和評語。若開啟成績通知，則學生可以查看成績和評語。請問是否要開啟通知？
   this_assignment_is_dropped_and_will_not_be_conside_35c3e198: 該作業已被取消，不予計入總評分。
   this_assignment_is_excused_and_will_not_be_conside_5892de1f: 該作業已被免除，不予計入總評分
   this_assignment_is_in_a_closed_grading_period_for__a22bb4ed: 此作業正處於此學生的已關閉評分期。
@@ -20854,7 +20853,7 @@ zh-Hant:
   top_box_background_6db383e9: 頂部方框背景
   top_box_border_94cee4a7: 頂部方框邊界
   topic_podcast_feed_dff98ab0: 主題播客摘要
-  total_71a4807: 總計
+  total_71a4807: 學期成績
   total_column_options_4e6a6032: 總計欄選項
   total_messages_af025be6: 總訊息數
   total_options_351e2682: 總計選項
@@ -20986,7 +20985,7 @@ zh-Hant:
   unlocked_click_to_lock_53262ce7: 已解除鎖定。點擊鎖定。
   unlocking_a6b5c02d: 解除鎖定中...
   unmatched_login_list_283ca77: 不吻合的登入列表
-  unmute_assignment_29a49038: 開啟作業提醒
+  unmute_assignment_29a49038: 開啟成績通知
   unnamed_account_id_e688ad87: "未命名的帳戶 (%{id})"
   unnamed_tool_961cb95b: 未命名的工具
   unnamed_tool_logo_410f37d0: 未命名的工具標誌
@@ -22024,7 +22023,7 @@ zh-Hant:
   you_can_try_to_log_in_again_2b23ef0f: "您可以嘗試 *稍後登入*。"
   you_can_update_some_of_this_user_s_information_but_8e99a045: 您可以更新此使用者的一些資訊，但如果他們選擇進行更改，他們可以將其改回去。
   you_can_use_a_single_16x16_32x32_48x48_ico_file_85da88b5: "您可以使用單一的16x16、32x32、48x48 圖標文檔。"
-  you_can_view_your_grades_based_on_what_if_scores_s_a1aeae72: 你可以根據『假設分析』的分數查看成績，讓你了解分數會受即將發放的成績或重新提交的作業而影響。你可以測試已有分數的作業，或尚未評分的作業。
+  you_can_view_your_grades_based_on_what_if_scores_s_a1aeae72: 您可以使用「成績試算」的功能輸入成績，測試不同項目成績對總成績的影響。您可以測試已有分數的項目，或尚未評分的項目。
   you_cannot_assign_sections_to_a_group_discussion_t_fec73e05: 您不能將分班分配到群組討論主題
   you_cannot_assign_to_a_group_outside_of_the_assign_7869eb3b: 您無法為作業的小組類別之外的小組指派成員
   you_cannot_edit_themes_on_this_subaccount_63ceaaf3: 您無法編輯該子帳戶的內容。
