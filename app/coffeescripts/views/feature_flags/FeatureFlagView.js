@@ -38,6 +38,11 @@ export default class FeatureFlagView extends Backbone.View {
     }
   }
 
+  render() {
+    this.el.className = "feature-flag " + this.model.id
+    super.render();
+  }
+
   afterRender() {
     return this.$('.ui-buttonset').buttonset()
   }

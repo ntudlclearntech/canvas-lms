@@ -45,15 +45,15 @@ export default class NotificationGroupMappings {
       Discussions: ['discussion', 'discussion_entry'],
       Communication: ['added_to_conversation', 'conversation_message', 'conversation_created'],
       Scheduling: [
-        'student_appointment_signups',
-        'appointment_signups',
-        'appointment_cancelations',
-        'appointment_availability',
+        //'student_appointment_signups',
+        //'appointment_signups',
+        //'appointment_cancelations',
+        //'appointment_availability',
         'calendar',
       ],
       Parent: [],
       Groups: ['membership_update'],
-      Conferences: ['recording_ready'],
+      //Conferences: ['recording_ready'],
       Alerts: ['other', 'content_link_error'],
     }
   }
