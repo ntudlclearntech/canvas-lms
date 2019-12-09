@@ -169,6 +169,7 @@
           {{/if}}
         {{/if}}
         {{#if canModerate}}
+          <!-- 潘客摘要是podcast feed功能，但點入為亂碼，建議隱藏
           <div><label class="checkbox short-label podcast_enabled" for="podcast_enabled">
             {{checkbox "podcast_enabled"
               checked=podcast_url
@@ -176,6 +177,7 @@
               aria-controls="podcast_has_student_posts_container"}}
             {{#t "enable_podcast_feed"}}Enable podcast feed{{/t}}
           </label></div>
+          -->
 
           {{#if contextIsCourse}}
             <div><label id="podcast_has_student_posts_container"
