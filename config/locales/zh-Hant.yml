@@ -14362,6 +14362,7 @@ zh-Hant:
       other: 其他
       parent: 家長電子郵件
       scheduling: 排程
+    weekly_notification_range: "您的每週通知將在每週末發送。"
   notification_preferences_cf47083d: 通知偏好設定
   notifications_cbfa7704: 通知
   notifications_search_results_80a0b06f: 通知搜尋結果

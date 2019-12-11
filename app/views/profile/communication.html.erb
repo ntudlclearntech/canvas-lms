@@ -48,6 +48,8 @@
 <div id="notification-preferences" class="notification-table-wrapper">
 </div>
 
+<% if false %>
+<%# this code have been moved into ./coffeescripts/notifications/NotificationPreferences.js %>
 <span class='weekly_notification_range'>
   <% weekly_notification_range = @current_user.weekly_notification_range %>
   <%= t "weekly_notification_range", "Your weekly notifications will be sent %{weekday} between %{start_time} and %{end_time}.",
@@ -55,3 +57,4 @@
     :start_time => time_string(weekly_notification_range.first),
     :end_time => time_string(weekly_notification_range.last) %>
 </span>
+<% end %>
