@@ -35,6 +35,7 @@ export default class PolicyCell extends React.Component {
     channelId: PropTypes.string,
     buttonData: PropTypes.array,
     onValueChanged: PropTypes.func,
+    weekly_notification_range_moved: PropTypes.array,
   }
 
   handleValueChanged (newValue) {

@@ -62,6 +62,14 @@ export default class NotificationPreferences {
       text: I18n.t('frequencies.never', 'Never'),
       title: I18n.t('frequencies.title.never', 'Do not send me anything'),
     }]
+    this.weekly_notification_range_moved = {
+        message: I18n.t('weekly_notification_range', 'Your weekly notifications will be sent on weekends.',
+        {
+          weekday: ENV.weekly_notification_range.weekday,
+          start_time: ENV.weekly_notification_range.start_time,
+          end_time: ENV.weekly_notification_range.end_time
+        })
+    }
 
     this.limitedButtonData = [_.first(this.buttonData), _.last(this.buttonData)]
 
@@ -173,6 +181,7 @@ export default class NotificationPreferences {
       channels: this.channels,
       eventGroups,
       buttonData: this.buttonData,
+      weekly_notification_range_moved: this.weekly_notification_range_moved,
       showObservedNames: {
         available: this.showObservedNames != null,
         name: 'send_observed_names_in_notifications',

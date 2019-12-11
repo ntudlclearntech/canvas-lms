@@ -246,7 +246,12 @@ class ProfileController < ApplicationController
       :show_observed_names => @user.observer_enrollments.any? || @user.as_observer_observation_links.any? ? @user.send_observed_names_in_notifications? : nil
       },
       :READ_PRIVACY_INFO => @user.preferences[:read_notification_privacy_info],
-      :ACCOUNT_PRIVACY_NOTICE => @domain_root_account.settings[:external_notification_warning]
+      :ACCOUNT_PRIVACY_NOTICE => @domain_root_account.settings[:external_notification_warning],
+      :weekly_notification_range => {
+      :weekday => I18n.l(@current_user.weekly_notification_range.first.in_time_zone.to_date, :format => :weekday),
+      :start_time => time_string(@current_user.weekly_notification_range.first),
+      :end_time => time_string(@current_user.weekly_notification_range.last)
+      }
   end
 
   def communication_update
