@@ -49,7 +49,7 @@ class FilePreviewsController < ApplicationController
         redirect_to url and return
       # google docs
       elsif GoogleDocsPreview.previewable?(@domain_root_account, @file)
-        url = GoogleDocsPreview.url_for(@file)
+        url = verified_google_preview_file_download_url(@file)
         redirect_to('//docs.google.com/viewer?' + { embedded: true, url: url }.to_query) and return
       # images
       elsif @file.content_type =~ %r{\Aimage/}
