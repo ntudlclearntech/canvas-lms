@@ -149,6 +149,13 @@ PATH
     canvas_crummy (0.0.1)
 
 PATH
+  remote: gems/canvas_dynamodb
+  specs:
+    canvas_dynamodb (0.0.1)
+      aws-sdk-applicationautoscaling (~> 1.8)
+      aws-sdk-dynamodb (~> 1.5)
+
+PATH
   remote: gems/canvas_ext
   specs:
     canvas_ext (1.0.0)
@@ -523,6 +530,9 @@ GEM
     awesome_print (1.8.0)
     aws-eventstream (1.0.3)
     aws-partitions (1.207.0)
+    aws-sdk-applicationautoscaling (1.15.0)
+      aws-sdk-core (~> 3, >= 3.26.0)
+      aws-sigv4 (~> 1.0)
     aws-sdk-autoscaling (1.5.0)
       aws-sdk-core (~> 3)
       aws-sigv4 (~> 1.0)
@@ -531,6 +541,9 @@ GEM
       aws-partitions (~> 1.0)
       aws-sigv4 (~> 1.0)
       jmespath (~> 1.0)
+    aws-sdk-dynamodb (1.5.0)
+      aws-sdk-core (~> 3)
+      aws-sigv4 (~> 1.0)
     aws-sdk-kinesis (1.6.0)
       aws-sdk-core (~> 3, >= 3.26.0)
       aws-sigv4 (~> 1.0)
@@ -553,6 +566,8 @@ GEM
     bindata (2.4.4)
     bluecloth (2.2.0)
     brakeman (4.6.1)
+    brotli (0.2.0)
+    browser (2.5.3)
     builder (3.2.3)
     byebug (11.0.0)
     canvas_connect (0.3.11)
@@ -571,7 +586,7 @@ GEM
     concurrent-ruby (1.1.5)
     crack (0.4.3)
       safe_yaml (~> 1.0.0)
-    crass (1.0.4)
+    crass (1.0.6)
     crocodoc-ruby (0.0.1)
       json
     database_cleaner (1.7.0)
@@ -707,6 +722,7 @@ GEM
       addressable (~> 2.3)
     letter_opener (1.6.0)
       launchy (~> 2.2)
+    link_header (0.0.8)
     loofah (2.2.3)
       crass (~> 1.0.2)
       nokogiri (>= 1.5.9)
@@ -723,7 +739,7 @@ GEM
     mini_magick (4.8.0)
     mini_mime (1.0.0)
     mini_portile2 (2.4.0)
-    minitest (5.11.3)
+    minitest (5.14.0)
     moodle2cc (0.2.41)
       builder
       instructure-happymapper (~> 0.5.10)
@@ -744,9 +760,9 @@ GEM
     nokogiri-xmlsec-instructure (0.9.6)
       nokogiri
     oauth (0.5.4)
-    oauth2 (1.2.0)
-      faraday (>= 0.8, < 0.10)
-      jwt (~> 1.0)
+    oauth2 (1.4.1)
+      faraday (>= 0.8, < 0.16.0)
+      jwt (>= 1.0, < 3.0)
       multi_json (~> 1.3)
       multi_xml (~> 0.5)
       rack (>= 1.2, < 3)
@@ -906,7 +922,7 @@ GEM
       sexp_processor (~> 4.9)
     rubycas-client (2.3.9)
       activesupport
-    rubyzip (1.2.1)
+    rubyzip (1.2.2)
     rufus-scheduler (3.4.2)
       et-orbi (~> 1.0)
     safe_yaml (1.0.4)
@@ -921,9 +937,9 @@ GEM
       rest-client (~> 2.0)
     scrypt (3.0.6)
       ffi-compiler (>= 1.0, < 2.0)
-    selenium-webdriver (3.14.0)
-      childprocess (~> 0.5)
-      rubyzip (~> 1.2)
+    selenium-webdriver (3.142.3)
+      childprocess (>= 0.5, < 2.0)
+      rubyzip (~> 1.2, >= 1.2.2)
     sentry-raven (2.7.2)
       faraday (>= 0.7.6, < 1.0)
     sexp_processor (4.12.1)
@@ -962,7 +978,7 @@ GEM
       sprockets (>= 3.0.0)
     sqlite3 (1.3.13)
     statsd-ruby (1.4.0)
-    switchman (1.12.16)
+    switchman (1.13.2)
       activerecord (>= 5.0, < 5.3)
       open4 (~> 1.3.0)
       railties (>= 5.0, < 5.3)
@@ -1000,7 +1016,6 @@ GEM
     unicode-display_width (1.6.0)
     uniform_notifier (1.11.0)
     uri_template (0.7.0)
-    useragent (0.16.10)
     vericite_api (1.5.3)
       json (>= 1.4.6)
     webmock (3.5.1)
@@ -1008,7 +1023,6 @@ GEM
       crack (>= 0.3.2)
       hashdiff
     webrick (1.4.2)
-    websocket (1.2.5)
     websocket-driver (0.6.5)
       websocket-extensions (>= 0.1.0)
     websocket-extensions (0.1.4)
@@ -1040,6 +1054,7 @@ DEPENDENCIES
   autoextend!
   aws-sdk-autoscaling (= 1.5.0)
   aws-sdk-core (= 3.27.0)
+  aws-sdk-dynamodb (= 1.5.0)
   aws-sdk-kinesis (= 1.6.0)
   aws-sdk-kms (= 1.9.0)
   aws-sdk-s3 (= 1.19.0)
@@ -1052,15 +1067,18 @@ DEPENDENCIES
   bookmarked_collection!
   brakeman
   broadcast_policy!
+  brotli (= 0.2.0)
+  browser (= 2.5.3)
   builder (= 3.2.3)
   bullet (= 5.7.5)!
-  bundler (>= 1.13.3, <= 1.17.2)
+  bundler (>= 1.13.3, <= 1.17.3)
   byebug (= 11.0.0)
   canvas_breach_mitigation!
   canvas_cassandra!
   canvas_color!
   canvas_connect (= 0.3.11)
   canvas_crummy!
+  canvas_dynamodb!
   canvas_ext!
   canvas_http!
   canvas_kaltura!
@@ -1129,6 +1147,7 @@ DEPENDENCIES
   json_token!
   jwt (= 1.5.6)
   letter_opener (= 1.6.0)
+  link_header (= 0.0.8)
   linked_in!
   live_events!
   loofah (= 2.2.3)
@@ -1149,7 +1168,7 @@ DEPENDENCIES
   nokogiri (= 1.10.1)
   nokogiri-xmlsec-instructure (= 0.9.6)
   oauth (= 0.5.4)
-  oauth2 (= 1.2.0)
+  oauth2 (= 1.4.1)
   oj (= 3.3.9)
   once-ler (= 0.1.4)
   open4 (= 1.3.4)
@@ -1196,14 +1215,14 @@ DEPENDENCIES
   ruby2ruby (= 2.4.1)
   ruby_parser (= 3.11.0)
   rubycas-client (= 2.3.9)
-  rubyzip (= 1.2.1)
+  rubyzip (= 1.2.2)
   rufus-scheduler (= 3.4.2)
   safe_yaml (= 1.0.4)
   saml2 (= 3.0.7)
   sanitize (= 2.1.1)
   sauce_whisk (= 0.1.0)
   scrypt (= 3.0.6)
-  selenium-webdriver (= 3.14.0)
+  selenium-webdriver (= 3.142.3)
   selinimum (= 0.0.1)!
   sentry-raven (= 2.7.2)
   shackles (= 1.4.1)
@@ -1218,7 +1237,7 @@ DEPENDENCIES
   sqlite3 (= 1.3.13)
   statsd-ruby (= 1.4.0)
   stringify_ids!
-  switchman (= 1.12.16)
+  switchman (= 1.13.2)
   switchman-inst-jobs (= 1.3.3)
   test-queue!
   testingbot
@@ -1229,11 +1248,9 @@ DEPENDENCIES
   twilio-ruby (= 5.7.2)
   twitter!
   tzinfo (= 1.2.5)
-  useragent (= 0.16.10)
   utf8_cleaner!
   vericite_api (= 1.5.3)
   webmock (= 3.5.1)
-  websocket (= 1.2.5)
   will_paginate (= 3.1.6)
   workflow!
   yard (= 0.9.5)
