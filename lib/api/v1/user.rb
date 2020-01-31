@@ -192,7 +192,7 @@ module Api::V1::User
       display_name: user.short_name,
       avatar_image_url: avatar_url_for_user(user),
       html_url: participant_url,
-      sis_user_id: sis_pseudonym_for(user)&.sis_user_id || ""
+      sis_user_id: SisPseudonym.for(user, @domain_root_account, type: :trusted)&.sis_user_id || ""
     }
     hash[:avatar_is_fallback] = user.avatar_image_url.nil? if includes.include?(:avatar_is_fallback) && avatars_enabled_for_user?(user)
     hash[:fake_student] = true if user.fake_student?
