@@ -254,4 +254,101 @@ describe "/gradebooks/grade_summary" do
       end
     end
   end
+
+  describe "hidden indicator" do
+    let_once(:course) { Course.create! }
+    let_once(:student) { course.enroll_student(User.create!(name: "Fred"), active_all: true).user }
+    let_once(:assignment) { course.assignments.create!(title: 'hi') }
+
+    before(:once) do
+      assign(:presenter, GradeSummaryPresenter.new(course, student, student.id))
+      assign(:current_user, student)
+      assign(:context, course)
+    end
+
+    context "when post policies are enabled" do
+      before(:once) do
+        course.enable_feature!(:new_gradebook)
+        PostPolicy.enable_feature!
+      end
+
+      context "when a submission is unposted" do
+        it "displays the 'hidden' icon" do
+          render "gradebooks/grade_summary"
+          expect(response).to have_tag(".assignment_score i[@class='icon-off']")
+        end
+
+        it "adds the 'Hidden' title to the icon" do
+          render "gradebooks/grade_summary"
+          expect(response).to have_tag(".assignment_score i[@title='Hidden']")
+        end
+      end
+
+      it "does not display the 'hidden' icon when a submission is posted" do
+        assignment.post_submissions
+
+        render "gradebooks/grade_summary"
+        expect(response).not_to have_tag(".assignment_score i[@class='icon-off']")
+      end
+    end
+
+    context "when post policies are not enabled" do
+      context "when a submission's assignment is muted" do
+        before(:once) { assignment.mute! }
+
+        it "displays the 'muted' icon" do
+          render "gradebooks/grade_summary"
+          expect(response).to have_tag(".assignment_score i[@class='icon-muted']")
+        end
+
+        it "adds the 'Muted' title to the icon" do
+          render "gradebooks/grade_summary"
+          expect(response).to have_tag(".assignment_score i[@title='Muted']")
+        end
+      end
+
+      it "does not display the 'muted' icon when a submission's assignment is not muted" do
+        render "gradebooks/grade_summary"
+        expect(response).not_to have_tag(".assignment_score i[@class='icon-muted']")
+      end
+    end
+  end
+
+  describe "comments toggle button" do
+    let(:course) { Course.create! }
+    let(:student) { course.enroll_student(User.create!, active_all: true).user }
+    let(:teacher) { course.enroll_teacher(User.create!, active_all: true).user }
+    let(:assignment) { course.assignments.create!}
+
+    before(:each) do
+      view_context(course, student)
+      assign(:presenter, GradeSummaryPresenter.new(course, student, nil))
+    end
+     
+    context "when comments exist" do
+      before (:each) do
+        submission = assignment.submission_for_student(student)
+        submission.add_comment(author: teacher, comment: "hello")
+      end
+
+      it "is visible when assignment not muted" do
+        render "gradebooks/grade_summary"
+        expect(response).to have_tag(".toggle_comments_link[@role='button']")
+      end
+
+      it "is not visible when assignment is muted" do
+        assignment.mute!
+        render "gradebooks/grade_summary"
+        expect(response).to have_tag(".toggle_comments_link[@aria-hidden='true']")
+      end
+    end
+
+    context "when no comments exist" do
+      it "not visible" do
+        course.assignments.create!
+        render "gradebooks/grade_summary"
+        expect(response).to have_tag(".toggle_comments_link[@aria-hidden='true']")
+      end
+    end
+  end
 end

@@ -18,7 +18,7 @@
 
 import $ from 'jquery'
 import round from 'compiled/util/round'
-import I18n from 'i18n!gradebook'
+import I18n from 'i18n!gradezilla'
 import {scoreToGrade} from '../../../../gradebook/GradingSchemeHelper'
 import {scoreToPercentage} from '../../../../gradebook/shared/helpers/GradeCalculationHelper'
 import 'jquery.instructure_misc_helpers' // $.toSentence
@@ -28,11 +28,11 @@ function getGradePercentage(score, pointsPossible) {
   return round(grade, round.DEFAULT)
 }
 
-function buildMutedAssignmentsWarning() {
+function buildHiddenAssignmentsWarning() {
   return {
-    icon: 'icon-muted',
+    icon: 'icon-off',
     warningText: I18n.t(
-      "This grade differs from the student's view of the grade because some assignments are muted"
+      "This grade differs from the student's view of the grade because some assignment grades are not yet posted"
     )
   }
 }
@@ -127,7 +127,7 @@ export default class TotalGradeCellFormatter {
       listInvalidAssignmentGroups() {
         return gradebook.listInvalidAssignmentGroups()
       },
-      listMutedAssignments() {
+      listHiddenAssignments() {
         return gradebook.listMutedAssignments()
       },
       shouldShowPoints() {
@@ -153,8 +153,8 @@ export default class TotalGradeCellFormatter {
     }
 
     let warning
-    if (this.options.listMutedAssignments().length > 0) {
-      warning = buildMutedAssignmentsWarning()
+    if (this.options.listHiddenAssignments().length > 0) {
+      warning = buildHiddenAssignmentsWarning()
     }
 
     if (!warning) {

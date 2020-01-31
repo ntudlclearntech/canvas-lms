@@ -354,12 +354,14 @@ class GradebookImporter
       @sis_login_id_column = 2
       @student_columns += 1
     elsif row[2] =~ /SIS\s+User\s+ID/ && row[3] =~ /SIS\s+Login\s+ID/
+      # Integration id might be after sis id and login id, ignore it.
+      i = row[4] =~ /Integration\s+ID/ ? 1 : 0
       @sis_user_id_column = 2
       @sis_login_id_column = 3
-      @student_columns += 2
-      if row[4] =~ /Root\s+Account/
-        @student_columns +=1
-        @root_account_column = 4
+      @student_columns += 2 + i
+      if row[4 + i] =~ /Root\s+Account/
+        @student_columns += 1
+        @root_account_column = 4 + i
       end
     end
 
@@ -575,8 +577,9 @@ class GradebookImporter
       return true
     end
 
-    if row.compact.all? { |c| c.strip =~ /^(Muted|)$/i }
-      # this row is muted or empty and should not be processed at all
+    if row.compact.all? { |column| column =~ /^\s*(Muted|Manual Posting)?\s*$/i }
+      # This row indicates muted assignments (or manually posted assignments if
+      # post policies is enabled) and should not be processed at all
       return true
     end
 

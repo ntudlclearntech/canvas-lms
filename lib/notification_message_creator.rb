@@ -281,8 +281,8 @@ class NotificationMessageCreator
   def immediate_channels_for(user)
     return [] unless user.registered?
 
-    active_channel_scope = user.communication_channels.active.for(@notification)
-    immediate_channel_scope = user.communication_channels.active.for_notification_frequency(@notification, 'immediately')
+    active_channel_scope = user.communication_channels.select { |cc| cc.active? && cc.notification_policies.find { |np| np.notification_id == @notification.id } }
+    immediate_channel_scope = active_channel_scope.select { |cc| cc.notification_policies.find { |np| np.notification_id == @notification.id && np.frequency == 'immediately' } }
 
     user_has_a_policy = active_channel_scope.where.not(path_type: 'push').exists?
     if !user_has_a_policy && @notification.default_frequency(user) == 'immediately'
