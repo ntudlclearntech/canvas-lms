@@ -99,6 +99,7 @@ class Submission < ActiveRecord::Base
   has_many :originality_reports
   has_one :rubric_assessment, -> { where(assessment_type: 'grading') }, as: :artifact, inverse_of: :artifact
   has_one :lti_result, inverse_of: :submission, class_name: 'Lti::Result', dependent: :destroy
+  has_many :submission_drafts, inverse_of: :submission, dependent: :destroy
 
   # we no longer link submission comments and conversations, but we haven't fixed up existing
   # linked conversations so this relation might be useful
@@ -266,10 +267,12 @@ class Submission < ActiveRecord::Base
 
   scope :needs_grading, -> {
     all.primary_shard.activate do
-      joins("INNER JOIN #{Enrollment.quoted_table_name} ON submissions.user_id=enrollments.user_id")
-      .where(needs_grading_conditions)
-      .where(Enrollment.active_student_conditions)
-      .distinct
+      joins(:assignment).
+        joins("INNER JOIN #{Enrollment.quoted_table_name} ON submissions.user_id=enrollments.user_id
+                                                         AND assignments.context_id = enrollments.course_id").
+        where(needs_grading_conditions).
+        where(Enrollment.active_student_conditions).
+        distinct
     end
   }
 
@@ -296,6 +299,7 @@ class Submission < ActiveRecord::Base
   before_save :check_url_changed
   before_save :check_reset_graded_anonymously
   after_save :touch_user
+  after_save :clear_user_submissions_cache
   after_save :touch_graders
   after_save :update_assignment
   after_save :update_attachment_associations
@@ -313,6 +317,7 @@ class Submission < ActiveRecord::Base
   after_save :reset_regraded
   after_save :create_audit_event!
   after_save :handle_posted_at_changed, if: :saved_change_to_posted_at?
+  after_save :delete_submission_drafts!, if: :saved_change_to_attempt?
 
   def reset_regraded
     @regraded = false
@@ -373,6 +378,7 @@ class Submission < ActiveRecord::Base
   def new_version_needed?
     turnitin_data_changed? || vericite_data_changed? || (changes.keys - [
       "updated_at",
+      "posted_at",
       "processed",
       "process_attempts",
       "grade_matches_current_submission",
@@ -393,7 +399,7 @@ class Submission < ActiveRecord::Base
     given do |user|
       user &&
         user.id == self.user_id &&
-        !self.assignment.muted?
+        self.posted?
     end
     can :read_grade
 
@@ -433,7 +439,7 @@ class Submission < ActiveRecord::Base
 
     given do |user|
       self.assignment &&
-        !self.assignment.muted? &&
+        self.posted? &&
         self.assignment.context &&
         user &&
         self.user &&
@@ -512,7 +518,7 @@ class Submission < ActiveRecord::Base
     # improves performance by checking permissions on the assignment before the submission
     return true if self.assignment.user_can_read_grades?(user, session)
 
-    return false if self.assignment.muted? # if you don't have manage rights from the assignment you can't read if it's muted
+    return false unless self.posted?
     return true if user && user.id == self.user_id # this is fast, so skip the policy cache check if possible
 
     self.grants_right?(user, session, :read_grade)
@@ -725,7 +731,8 @@ class Submission < ActiveRecord::Base
         similarity_score: originality_report.originality_score&.round(2),
         state: originality_report.state,
         report_url: originality_report.originality_report_url,
-        status: originality_report.workflow_state
+        status: originality_report.workflow_state,
+        error_message: originality_report.error_message
       }
     end
     ret_val = turnitin_data.merge(data)
@@ -1179,13 +1186,19 @@ class Submission < ActiveRecord::Base
   # End Plagiarism functions
 
   def external_tool_url
-    URI.encode(url) if self.submission_type == 'basic_lti_launch'
+    URI.encode(url) if url && self.submission_type == 'basic_lti_launch'
+  end
+
+  def clear_user_submissions_cache
+    self.class.connection.after_transaction_commit do
+      User.clear_cache_keys([self.user_id], :submissions)
+    end
   end
 
   def touch_graders
     self.class.connection.after_transaction_commit do
       if self.assignment && self.user && self.assignment.context.is_a?(Course)
-        self.assignment.context.touch_admins_later
+        self.assignment.context.clear_todo_list_cache_later(:admins)
       end
     end
   end
@@ -2361,6 +2374,10 @@ class Submission < ActiveRecord::Base
     true
   end
 
+  def delete_submission_drafts!
+    self.submission_drafts.destroy_all
+  end
+
   def point_data?
     !!(self.score || self.grade)
   end
@@ -2429,7 +2446,11 @@ class Submission < ActiveRecord::Base
   end
 
   def posted?
-    posted_at.present?
+    if PostPolicy.feature_enabled?
+      posted_at.present?
+    else
+      !assignment.muted?
+    end
   end
 
   def assignment_muted_changed
@@ -2441,7 +2462,7 @@ class Submission < ActiveRecord::Base
   end
 
   def visible_rubric_assessments_for(viewing_user)
-    return [] if self.assignment.muted? && !grants_right?(viewing_user, :read_grade)
+    return [] unless posted? || grants_right?(viewing_user, :read_grade)
     return [] unless self.assignment.rubric_association
 
     filtered_assessments = self.rubric_assessments.select do |a|
@@ -2545,7 +2566,7 @@ class Submission < ActiveRecord::Base
       progress.fail
     end
   ensure
-    context.touch_admins_later
+    context.clear_todo_list_cache_later(:admins)
     user_ids = graded_user_ids.to_a
     if user_ids.any?
       Rails.logger.debug "GRADES: recomputing scores in course #{context.id} for users #{user_ids} because of bulk submission update"
@@ -2646,7 +2667,7 @@ class Submission < ActiveRecord::Base
     # where all submissions in a section are updated. In this case, we call
     # [un]post_submissions to follow the normal workflow, but skip updating the
     # posted_at date since that already happened.
-    return unless assignment.course.feature_enabled?(:post_policies)
+    return unless assignment.course.post_policies_enabled?
 
     previously_posted = posted_at_before_last_save.present?
     if posted? && !previously_posted

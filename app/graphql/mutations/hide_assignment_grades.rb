@@ -33,7 +33,7 @@ class Mutations::HideAssignmentGrades < Mutations::BaseMutation
     end
 
     verify_authorized_action!(assignment, :grade)
-    raise GraphQL::ExecutionError, "Post Policies feature not enabled" unless course.feature_enabled?(:post_policies)
+    raise GraphQL::ExecutionError, "Post Policies feature not enabled" unless course.post_policies_enabled?
 
     unless assignment.grades_published?
       raise GraphQL::ExecutionError, "Assignments under moderation cannot be hidden before grades are published"
@@ -43,7 +43,13 @@ class Mutations::HideAssignmentGrades < Mutations::BaseMutation
     progress = course.progresses.new(tag: "hide_assignment_grades")
 
     if progress.save
-      progress.process_job(assignment, :hide_submissions, {preserve_method_args: true}, submission_ids: submission_ids)
+      progress.process_job(
+        assignment,
+        :hide_submissions,
+        {preserve_method_args: true},
+        progress: progress,
+        submission_ids: submission_ids
+      )
       return {assignment: assignment, progress: progress}
     else
       raise GraphQL::ExecutionError, "Error hiding assignment grades"

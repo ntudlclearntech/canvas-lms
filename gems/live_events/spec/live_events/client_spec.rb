@@ -48,6 +48,8 @@ describe LiveEvents::Client do
     allow(Aws::Kinesis::Client).to receive(:new).and_return(@kclient)
 
     @client = LiveEvents::Client.new
+    LiveEvents::AsyncWorker.any_instance.stub(:at_exit)
+    allow(LiveEvents.logger).to receive(:info)
   end
 
   RSpec::Matchers.define :a_live_events_payload do |payload|
@@ -80,7 +82,7 @@ describe LiveEvents::Client do
         data: {
           "attributes" => {
             "event_name" => 'event',
-            "event_time" => now.utc.iso8601
+            "event_time" => now.utc.iso8601(3)
           },
           "body" => {}
         },
@@ -100,7 +102,7 @@ describe LiveEvents::Client do
         data: {
           "attributes" => {
             "event_name" => 'event',
-            "event_time" => now.utc.iso8601,
+            "event_time" => now.utc.iso8601(3),
             "user_id" => 123,
             "real_user_id" => 321,
             "login" => 'loginname',
@@ -125,7 +127,7 @@ describe LiveEvents::Client do
             data: {
               "attributes" => {
                 "event_name" => 'event',
-                "event_time" => now.utc.iso8601
+                "event_time" => now.utc.iso8601(3)
               },
               "body" => {}
             },
@@ -152,7 +154,7 @@ describe LiveEvents::Client do
         data: {
           "attributes" => {
             "event_name" => 'event',
-            "event_time" => now.utc.iso8601,
+            "event_time" => now.utc.iso8601(3),
             "user_id" => 123
           },
           "body" => {}
@@ -180,7 +182,7 @@ describe LiveEvents::Client do
         data: {
           "attributes" => {
             "event_name" => 'event',
-            "event_time" => now.utc.iso8601
+            "event_time" => now.utc.iso8601(3)
           },
           "body" => {}
         },
@@ -208,7 +210,7 @@ describe LiveEvents::Client do
           data: {
             "attributes" => {
               "event_name" => 'event',
-              "event_time" => now.utc.iso8601
+              "event_time" => now.utc.iso8601(3)
             },
             "body" => {}
           },
