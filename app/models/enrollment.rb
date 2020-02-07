@@ -405,11 +405,12 @@ class Enrollment < ActiveRecord::Base
     end
   end
 
-  def update_linked_enrollments
+  def update_linked_enrollments(restore: false)
     observers.each do |observer|
-      if enrollment = active_linked_enrollment_for(observer)
+      enrollment = restore ? linked_enrollment_for(observer) : active_linked_enrollment_for(observer)
+      if enrollment
         enrollment.update_from(self)
-      elsif self.saved_change_to_workflow_state? && self.workflow_state_before_last_save == 'inactive'
+      elsif restore || (self.saved_change_to_workflow_state? && self.workflow_state_before_last_save == 'inactive')
         create_linked_enrollment_for(observer)
       end
     end
@@ -453,7 +454,9 @@ class Enrollment < ActiveRecord::Base
 
   def update_cached_due_dates
     if @update_cached_due_dates
-      update_grades = being_restored?(to_state: 'active') || being_restored?(to_state: 'inactive')
+      update_grades = being_restored?(to_state: 'active') ||
+        being_restored?(to_state: 'inactive') ||
+        saved_change_to_id?
       DueDateCacher.recompute_users_for_course(user_id, course, nil, update_grades: update_grades)
     end
   end
@@ -1130,7 +1133,6 @@ class Enrollment < ActiveRecord::Base
       if association(:course).loaded?
         assn = result.association(:course)
         assn.target = course
-        Bullet::Detector::Association.add_object_associations(result, :course) if defined?(Bullet) && Bullet.start?
       end
     end
     result
@@ -1532,7 +1534,7 @@ class Enrollment < ActiveRecord::Base
       course_id: course,
       user_id: user,
       type: Array.wrap(types)
-    ).where.not(id: id, workflow_state: :deleted)
+    ).where.not(id: id).where.not(workflow_state: :deleted)
   end
 
   def remove_user_as_final_grader?

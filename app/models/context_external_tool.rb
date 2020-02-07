@@ -14,6 +14,7 @@
 #
 # You should have received a copy of the GNU Affero General Public License along
 # with this program. If not, see <http://www.gnu.org/licenses/>.
+require 'redcarpet'
 
 class ContextExternalTool < ActiveRecord::Base
   include Workflow
@@ -46,6 +47,7 @@ class ContextExternalTool < ActiveRecord::Base
   validate :check_for_xml_error
 
   scope :disabled, -> { where(workflow_state: DISABLED_STATE) }
+  scope :quiz_lti, -> { where(tool_id: QUIZ_LTI) }
 
   CUSTOM_EXTENSION_KEYS = {
     :file_menu => [:accept_media_types].freeze,
@@ -53,6 +55,9 @@ class ContextExternalTool < ActiveRecord::Base
   }.freeze
 
   DISABLED_STATE = 'disabled'.freeze
+  QUIZ_LTI = 'Quizzes 2'.freeze
+  ANALYTICS_2 = 'fd75124a-140e-470f-944c-114d2d93bb40'.freeze
+  TOOL_FEATURE_MAPPING = { ANALYTICS_2 => :analytics_2 }.freeze
 
   workflow do
     state :anonymous
@@ -96,10 +101,6 @@ class ContextExternalTool < ActiveRecord::Base
       settings['content_migration'].is_a?(Hash) &&
       settings['content_migration'].key?('export_start_url') &&
       settings['content_migration'].key?('import_start_url')
-  end
-
-  def lti_1_3_enabled?
-    use_1_3? && context.root_account.feature_enabled?(:lti_1_3)
   end
 
   def extension_setting(type, property = nil)
@@ -298,6 +299,7 @@ class ContextExternalTool < ActiveRecord::Base
   def process_extended_configuration
     return unless (config_type == 'by_url' && config_url) || (config_type == 'by_xml' && config_xml)
     tool_hash = nil
+    @config_errors = []
     begin
        converter = CC::Importer::BLTIConverter.new
        if config_type == 'by_url'
@@ -309,8 +311,6 @@ class ContextExternalTool < ActiveRecord::Base
        tool_hash = {:error => e.message}
     end
 
-
-    @config_errors = []
     error_field = config_type == 'by_xml' ? 'config_xml' : 'config_url'
     converter = CC::Importer::BLTIConverter.new
     tool_hash = if config_type == 'by_url'
@@ -330,7 +330,7 @@ class ContextExternalTool < ActiveRecord::Base
     self.name = real_name unless real_name.blank?
   rescue CC::Importer::BLTIConverter::CCImportError => e
     @config_errors << [error_field, e.message]
-  rescue URI::Error
+  rescue URI::Error, CanvasHttp::Error
     @config_errors << [:config_url, "Invalid URL"]
   rescue ActiveRecord::RecordInvalid => e
     @config_errors += Array(e.record.errors)
@@ -608,20 +608,8 @@ end
     end
   end
 
-  LOR_TYPES = [:course_home_sub_navigation, :course_settings_sub_navigation, :global_navigation,
-               :assignment_menu, :file_menu, :discussion_topic_menu, :module_menu, :quiz_menu,
-               :wiki_page_menu]
   def self.all_tools_for(context, options={})
-    #options[:type] is deprecated, use options[:placements] instead
     placements =* options[:placements] || options[:type]
-
-    #special LOR feature flag
-    unless (options[:root_account] && options[:root_account].feature_enabled?(:lor_for_account))
-      valid_placements = placements.select{|placement| !LOR_TYPES.include?(placement.to_sym)}
-      return [] if valid_placements.size == 0 && placements.size > 0
-      placements = valid_placements
-    end
-
     contexts = []
     if options[:user]
       contexts << options[:user]
@@ -633,6 +621,7 @@ end
       scope = ContextExternalTool.shard(context.shard).polymorphic_where(context: contexts).active
       scope = scope.placements(*placements)
       scope = scope.selectable if Canvas::Plugin.value_to_boolean(options[:selectable])
+      scope = scope.where(tool_id: options[:tool_ids]) if options[:tool_ids].present?
       if Canvas::Plugin.value_to_boolean(options[:only_visible])
         scope = scope.visible(options[:current_user], context, options[:session], options[:visibility_placements], scope)
       end
@@ -803,6 +792,10 @@ end
 
   def visible_with_permission_check?(launch_type, user, context, session=nil)
     return false unless self.class.visible?(self.extension_setting(launch_type, 'visibility'), user, context, session)
+    permission_given?(launch_type, user, context, session)
+  end
+
+  def permission_given?(launch_type, user, context, session=nil)
     if (required_permissions_str = self.extension_setting(launch_type, 'required_permissions'))
       # if configured with a comma-separated string of permissions, will only show the link
       # if all permissions are granted
@@ -810,6 +803,15 @@ end
     else
       true
     end
+  end
+
+  def quiz_lti?
+    tool_id == QUIZ_LTI
+  end
+
+  def feature_flag_enabled?(context = nil)
+    feature = TOOL_FEATURE_MAPPING[tool_id]
+    !feature || (context || self.context).feature_enabled?(feature)
   end
 
   private
@@ -879,6 +881,7 @@ end
 
   def self.editor_button_json(tools, context, user, session=nil)
     tools.select! {|tool| visible?(tool.editor_button['visibility'], user, context, session)}
+    markdown = Redcarpet::Markdown.new(Redcarpet::Render::HTML.new({link_attributes: {target: '_blank'}}))
     tools.map do |tool|
       {
           :name => tool.label_for(:editor_button, I18n.locale),
@@ -888,7 +891,12 @@ end
           :canvas_icon_class => tool.editor_button(:canvas_icon_class),
           :width => tool.editor_button(:selection_width),
           :height => tool.editor_button(:selection_height),
-          :use_tray => tool.editor_button(:use_tray) == "true"
+          :use_tray => tool.editor_button(:use_tray) == "true",
+          :description => if tool.description
+                            Sanitize.clean(markdown.render(tool.description), CanvasSanitize::SANITIZE)
+                          else
+                            ""
+                          end
       }
     end
   end

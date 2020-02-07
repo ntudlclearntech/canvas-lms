@@ -16,15 +16,13 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import React, {Fragment} from 'react'
+import React from 'react'
 import {arrayOf, bool, func, number, shape, string} from 'prop-types'
 
-import Badge from '@instructure/ui-elements/lib/components/Badge'
-import Button from '@instructure/ui-buttons/lib/components/Button'
-import Flex, {FlexItem} from '@instructure/ui-layout/lib/components/Flex'
-import Spinner from '@instructure/ui-elements/lib/components/Spinner'
-import Text from '@instructure/ui-elements/lib/components/Text'
-import View from '@instructure/ui-layout/lib/components/View'
+import {AccessibleContent} from '@instructure/ui-a11y'
+import {Badge, Spinner, Text} from '@instructure/ui-elements'
+import {Button} from '@instructure/ui-buttons'
+import {Flex, View} from '@instructure/ui-layout'
 
 import I18n from 'i18n!post_assignment_grades_tray'
 
@@ -48,7 +46,7 @@ export default function FormContent({
   if (postingGrades) {
     return (
       <View as="div" textAlign="center" padding="large">
-        <Spinner title={I18n.t('Posting grades')} size="large" />
+        <Spinner renderTitle={I18n.t('Posting grades')} size="large" />
       </View>
     )
   }
@@ -56,21 +54,23 @@ export default function FormContent({
   const hasSections = sections.length > 0
 
   return (
-    <Fragment>
+    <>
       {unpostedCount > 0 && (
         <div id="PostAssignmentGradesTray__Layout__UnpostedSummary">
-          <Badge
-            count={unpostedCount}
-            countUntil={99}
-            margin="0 0 small large"
-            placement="start center"
-            type="count"
-            variant="danger"
-          >
-            <View as="div" margin="0 0 0 small">
-              <Text size="small">{I18n.t('Hidden')}</Text>
-            </View>
-          </Badge>
+          <AccessibleContent alt={I18n.t('%{count} hidden', {count: unpostedCount})}>
+            <Badge
+              count={unpostedCount}
+              countUntil={99}
+              margin="0 0 small large"
+              placement="start center"
+              type="count"
+              variant="danger"
+            >
+              <View as="div" margin="0 0 0 small">
+                <Text size="small">{I18n.t('Hidden')}</Text>
+              </View>
+            </Badge>
+          </AccessibleContent>
         </div>
       )}
 
@@ -102,20 +102,20 @@ export default function FormContent({
 
       <View as="div" margin="medium 0 0" padding="0 medium">
         <Flex justifyItems="end">
-          <FlexItem margin="0 small 0 0">
+          <Flex.Item margin="0 small 0 0">
             <Button disabled={!gradesPublished} onClick={dismiss}>
               {I18n.t('Close')}
             </Button>
-          </FlexItem>
+          </Flex.Item>
 
-          <FlexItem>
+          <Flex.Item>
             <Button disabled={!gradesPublished} onClick={onPostClick} variant="primary">
               {I18n.t('Post')}
             </Button>
-          </FlexItem>
+          </Flex.Item>
         </Flex>
       </View>
-    </Fragment>
+    </>
   )
 }
 

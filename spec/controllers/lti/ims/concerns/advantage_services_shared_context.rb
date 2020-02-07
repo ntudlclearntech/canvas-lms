@@ -20,7 +20,7 @@ require File.expand_path(File.dirname(__FILE__) + '/../../../../spec_helper')
 
 shared_context 'advantage services context' do
   let_once(:root_account) do
-    enable_1_3(Account.default)
+    Account.default
   end
   let_once(:developer_key) do
     dk = DeveloperKey.create!(account: root_account)
@@ -28,10 +28,19 @@ shared_context 'advantage services context' do
     dk
   end
   let(:access_token_scopes) do
-    %w(https://purl.imsglobal.org/spec/lti-ags/scope/lineitem
+    %w(
+       https://purl.imsglobal.org/spec/lti-ags/scope/lineitem
        https://purl.imsglobal.org/spec/lti-ags/scope/result.readonly
        https://purl.imsglobal.org/spec/lti-nrps/scope/contextmembership.readonly
-       https://canvas.instructure.com/lti/public_jwk/scope/update).join(' ')
+       https://canvas.instructure.com/lti/public_jwk/scope/update
+       https://canvas.instructure.com/lti/data_services/scope/create
+       https://canvas.instructure.com/lti/data_services/scope/show
+       https://canvas.instructure.com/lti/data_services/scope/update
+       https://canvas.instructure.com/lti/data_services/scope/list
+       https://canvas.instructure.com/lti/data_services/scope/destroy
+       https://canvas.instructure.com/lti/data_services/scope/list_event_types
+       https://canvas.instructure.com/lti/feature_flags/scope/show
+      ).join(' ')
   end
   let(:access_token_signing_key) { Canvas::Security.encryption_key }
   let(:test_request_host) { 'test.host' }
@@ -104,27 +113,5 @@ shared_context 'advantage services context' do
       split(' ').
       reject { |s| scopes_to_remove.include? s }.
       join(' ')
-  end
-
-  def enable_1_3(enableable)
-    if enableable.is_a?(ContextExternalTool)
-      enableable.use_1_3 = true
-    elsif enableable.is_a?(Account)
-      enableable.enable_feature!(:lti_1_3)
-    else raise "LTI 1.3/Advantage features not relevant for #{enableable.class}"
-    end
-    enableable.save!
-    enableable
-  end
-
-  def disable_1_3(enableable)
-    if enableable.is_a?(ContextExternalTool)
-      enableable.use_1_3 = false
-    elsif enableable.is_a?(Account)
-      enableable.disable_feature!(:lti_1_3)
-    else raise "LTI 1.3/Advantage features not relevant for #{enableable.class}"
-    end
-    enableable.save!
-    enableable
   end
 end

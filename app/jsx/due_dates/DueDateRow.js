@@ -19,9 +19,9 @@
 import _ from 'underscore'
 import React from 'react'
 import PropTypes from 'prop-types'
-import DueDateTokenWrapper from '../due_dates/DueDateTokenWrapper'
-import DueDateCalendars from '../due_dates/DueDateCalendars'
-import DueDateRemoveRowLink from '../due_dates/DueDateRemoveRowLink'
+import DueDateTokenWrapper from './DueDateTokenWrapper'
+import DueDateCalendars from './DueDateCalendars'
+import DueDateRemoveRowLink from './DueDateRemoveRowLink'
 import I18n from 'i18n!DueDateRow'
 
 class DueDateRow extends React.Component {
@@ -102,7 +102,7 @@ class DueDateRow extends React.Component {
     return _.reduce(
       adhocOverrides,
       (overrideTokens, ov) => {
-        const tokensForStudents = _.map(ov.get('student_ids'), this.tokenFromStudentId, this)
+        const tokensForStudents = _.map(ov.get('student_ids'), this.tokenFromStudentId.bind(this))
         return overrideTokens.concat(tokensForStudents)
       },
       []

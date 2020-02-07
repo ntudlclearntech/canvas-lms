@@ -20,6 +20,7 @@ module Api::V1::SubmissionComment
   include GradebookSettingsHelpers
 
   ANONYMOUS_MODERATED_JSON_ATTRIBUTES = %i[
+    attempt
     author_id
     author_name
     cached_attachments
@@ -141,7 +142,7 @@ module Api::V1::SubmissionComment
   def students(course:, assignment:, current_user:)
     @students ||= begin
       includes = gradebook_includes(user: current_user, course: course)
-      assignment.representatives(current_user, includes: includes)
+      assignment.representatives(user: current_user, includes: includes)
     end
   end
 

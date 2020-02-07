@@ -101,6 +101,11 @@ class ContentMigration < ActiveRecord::Base
     read_or_initialize_attribute(:migration_settings, {}.with_indifferent_access)
   end
 
+  # this is needed by Attachment#clone_for, which is used to allow a ContentExport to be directly imported
+  def attachments
+    Attachment.where(id: self.attachment_id)
+  end
+
   def update_migration_settings(new_settings)
     new_settings.each do |key, val|
       migration_settings[key] = val
@@ -143,7 +148,9 @@ class ContentMigration < ActiveRecord::Base
   end
 
   def n_strand
-    ["migrations:import_content", self.root_account.try(:global_id) || "global"]
+    account_identifier = self.root_account.try(:global_id) || "global"
+    type = self.for_master_course_import? ? "master_course" : self.initiated_source
+    ["migrations:import_content", "#{type}_#{account_identifier}"]
   end
 
   def migration_ids_to_import=(val)

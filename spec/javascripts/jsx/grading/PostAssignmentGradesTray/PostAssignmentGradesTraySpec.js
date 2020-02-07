@@ -18,7 +18,7 @@
 
 import React from 'react'
 import ReactDOM from 'react-dom'
-import {waitForElement, wait} from 'react-testing-library'
+import {waitForElement, wait} from '@testing-library/react'
 
 import PostAssignmentGradesTray from 'jsx/grading/PostAssignmentGradesTray'
 import * as Api from 'jsx/grading/PostAssignmentGradesTray/Api'
@@ -51,14 +51,16 @@ QUnit.module('PostAssignmentGradesTray', suiteHooks => {
     ReactDOM.render(<PostAssignmentGradesTray ref={bindRef} />, $container)
   })
 
-  suiteHooks.afterEach(async () => {
+  suiteHooks.afterEach(() => {
+    let thingToWaitOn
     if (getTrayElement()) {
       getCloseButton().click()
-      await waitForTrayClosed()
+      thingToWaitOn = waitForTrayClosed()
     }
-
-    ReactDOM.unmountComponentAtNode($container)
-    $container.remove()
+    return Promise.resolve(thingToWaitOn).then(() => {
+      ReactDOM.unmountComponentAtNode($container)
+      $container.remove()
+    })
   })
 
   function getTrayElement() {
@@ -113,9 +115,9 @@ QUnit.module('PostAssignmentGradesTray', suiteHooks => {
     )
   }
 
-  async function show() {
+  function show() {
     tray.show(context)
-    await waitForElement(getTrayElement)
+    return waitForElement(getTrayElement)
   }
 
   function getUnpostedCount() {
@@ -126,7 +128,7 @@ QUnit.module('PostAssignmentGradesTray', suiteHooks => {
     return getTrayElement().querySelector('div#PostAssignmentGradesTray__Layout__UnpostedSummary')
   }
 
-  async function waitForTrayClosed() {
+  function waitForTrayClosed() {
     return wait(() => {
       if (context.onExited.callCount > 0) {
         return
@@ -136,9 +138,7 @@ QUnit.module('PostAssignmentGradesTray', suiteHooks => {
   }
 
   QUnit.module('#show()', hooks => {
-    hooks.beforeEach(async () => {
-      await show()
-    })
+    hooks.beforeEach(show)
 
     test('opens the tray', () => {
       ok(getTrayElement())
@@ -157,21 +157,22 @@ QUnit.module('PostAssignmentGradesTray', suiteHooks => {
 
     test('resets the selected sections', async () => {
       const postAssignmentGradesForSectionsStub = sinon.stub(Api, 'postAssignmentGradesForSections')
-      getSectionToggleInput().click()
-      getInputByLabel('Sophomores').click()
-      await show()
-      getSectionToggleInput().click()
-      getInputByLabel('Freshmen').click()
-      getPostButton().click()
-      deepEqual(postAssignmentGradesForSectionsStub.firstCall.args[1], ['2001'])
-      postAssignmentGradesForSectionsStub.restore()
+      try {
+        getSectionToggleInput().click()
+        getInputByLabel('Sophomores').click()
+        await show()
+        getSectionToggleInput().click()
+        getInputByLabel('Freshmen').click()
+        getPostButton().click()
+        deepEqual(postAssignmentGradesForSectionsStub.firstCall.args[1], ['2001'])
+      } finally {
+        postAssignmentGradesForSectionsStub.restore()
+      }
     })
   })
 
   QUnit.module('"Close" Button', hooks => {
-    hooks.beforeEach(async () => {
-      await show()
-    })
+    hooks.beforeEach(show)
 
     test('closes the tray', async () => {
       getCloseButton().click()
@@ -190,9 +191,7 @@ QUnit.module('PostAssignmentGradesTray', suiteHooks => {
   })
 
   QUnit.module('"Specific Sections" toggle', hooks => {
-    hooks.beforeEach(async () => {
-      await show()
-    })
+    hooks.beforeEach(show)
 
     test('is present', () => ok(getSectionToggleInput()))
 
@@ -213,9 +212,7 @@ QUnit.module('PostAssignmentGradesTray', suiteHooks => {
   })
 
   QUnit.module('"Close" Icon Button', hooks => {
-    hooks.beforeEach(async () => {
-      await show()
-    })
+    hooks.beforeEach(show)
 
     test('is present', () => ok(getCloseButton()))
 
@@ -249,13 +246,13 @@ QUnit.module('PostAssignmentGradesTray', suiteHooks => {
     })
 
     QUnit.module('with no unposted submissions', unpostedSubmissionsHooks => {
-      unpostedSubmissionsHooks.beforeEach(async () => {
+      unpostedSubmissionsHooks.beforeEach(() => {
         context.submissions = [
           {postedAt: new Date().toISOString(), score: 1, workflowState: 'graded'},
           {postedAt: new Date().toISOString(), score: 1, workflowState: 'graded'}
         ]
 
-        await show()
+        return show()
       })
 
       test('a summary of unposted submissions is not displayed', () => {
@@ -287,14 +284,14 @@ QUnit.module('PostAssignmentGradesTray', suiteHooks => {
       await waitForPosting()
     }
 
-    hooks.beforeEach(async () => {
+    hooks.beforeEach(() => {
       resolvePostAssignmentGradesStatusStub = sinon.stub(Api, 'resolvePostAssignmentGradesStatus')
       postAssignmentGradesStub = sinon
         .stub(Api, 'postAssignmentGrades')
         .returns(Promise.resolve({id: PROGRESS_ID, workflowState: 'queued'}))
       showFlashAlertStub = sinon.stub(FlashAlert, 'showFlashAlert')
 
-      await show()
+      return show()
     })
 
     hooks.afterEach(() => {
@@ -345,9 +342,9 @@ QUnit.module('PostAssignmentGradesTray', suiteHooks => {
         getPostButton().click()
       })
 
-      pendingRequestHooks.afterEach(async () => {
+      pendingRequestHooks.afterEach(() => {
         resolvePostAssignmentGradesStatusPromise.resolve()
-        await waitForPosting()
+        return waitForPosting()
       })
 
       test('displays a spinner', () => {
@@ -405,12 +402,12 @@ QUnit.module('PostAssignmentGradesTray', suiteHooks => {
     })
 
     QUnit.module('on failure', contextHooks => {
-      contextHooks.beforeEach(async () => {
+      contextHooks.beforeEach(() => {
         postAssignmentGradesStub.restore()
         postAssignmentGradesStub = sinon
           .stub(Api, 'postAssignmentGrades')
           .returns(Promise.reject(new Error('ERROR')))
-        await clickPost()
+        return clickPost()
       })
 
       test('renders an error alert', async () => {
@@ -434,7 +431,7 @@ QUnit.module('PostAssignmentGradesTray', suiteHooks => {
     QUnit.module('when posting assignment grades for sections', contextHooks => {
       let postAssignmentGradesForSectionsStub
 
-      contextHooks.beforeEach(async () => {
+      contextHooks.beforeEach(() => {
         postAssignmentGradesForSectionsStub = sinon
           .stub(Api, 'postAssignmentGradesForSections')
           .returns(Promise.resolve({id: PROGRESS_ID, workflowState: 'queued'}))
@@ -458,9 +455,8 @@ QUnit.module('PostAssignmentGradesTray', suiteHooks => {
       QUnit.module(
         'given the tray is open and section toggle has been clicked',
         sectionToggleClickedHooks => {
-          sectionToggleClickedHooks.beforeEach(async () => {
-            await show()
-            getSectionToggleInput().click()
+          sectionToggleClickedHooks.beforeEach(() => {
+            return show().then(() => getSectionToggleInput().click())
           })
 
           test('renders an error when no sections are selected', async () => {

@@ -17,7 +17,7 @@
  */
 
 import React from 'react'
-import {render} from 'react-testing-library'
+import {render} from '@testing-library/react'
 import StepItem from '../index'
 
 it('should render', () => {
@@ -40,8 +40,9 @@ it('should render unavailable status', () => {
 })
 
 it('should render label correctly', () => {
-  const {getByText} = render(
-    <StepItem status="complete" label={status => `progress 2 ${status}`} />
-  )
-  expect(getByText('progress 2 complete')).toBeInTheDocument()
+  const {getByText} = render(<StepItem status="complete" label="progress 2" />)
+  // visible label
+  expect(getByText('progress 2')).toBeInTheDocument()
+  // screenreader text for status
+  expect(getByText('complete')).toBeInTheDocument()
 })

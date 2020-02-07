@@ -31,7 +31,9 @@ class RoleOverride < ActiveRecord::Base
 
   def clear_caches
     self.class.connection.after_transaction_commit do
-      self.account.send_later_if_production(:clear_downstream_caches, :role_overrides)
+      self.account.send_later_if_production_enqueue_args(:clear_downstream_caches,
+        {:singleton => "clear_downstream_role_caches:#{self.account.global_id}"},
+        :role_overrides)
       self.role.touch
     end
   end
@@ -146,12 +148,25 @@ class RoleOverride < ActiveRecord::Base
          'AccountAdmin'
        ]
      },
+     :manage_data_services => {
+       :label => lambda { t('permissions.manage_data_services', "Manage data services") },
+       :label_v2 => lambda { t("Data Services - manage ") },
+       :account_only => true,
+       :true_for => %w(AccountAdmin),
+       :available_to => %w(AccountAdmin AccountMembership),
+     },
      :manage_developer_keys => {
        :label => lambda { t('permissions.manage_developer_keys', "Manage developer keys") },
        :label_v2 => lambda { t("Developer Keys - manage ") },
        :account_only => true,
        :true_for => %w(AccountAdmin),
        :available_to => %w(AccountAdmin AccountMembership),
+     },
+     :view_feature_flags => {
+       :label => lambda { t("View feature settings at an account level") },
+       :label_v2 => lambda { t("Feature Options - view") },
+       :true_for => %w(AccountAdmin),
+       :available_to => %w(AccountAdmin AccountMembership)
      },
      :manage_feature_flags => {
        :label => lambda { t('permissions.manage_feature_flags', "Enable or disable features at an account level") },

@@ -19,13 +19,13 @@
 import React, {useState} from 'react'
 import {func, oneOf, string} from 'prop-types'
 import {linkShape} from './propTypes'
-import {StyleSheet, css} from "aphrodite";
-import formatMessage from '../../../../format-message';
-import {renderLink as renderLinkHtml} from "../../../../rce/contentRendering";
-import dragHtml from "../../../../sidebar/dragHtml";
+import formatMessage from '../../../../format-message'
+import {renderLink as renderLinkHtml} from '../../../contentRendering'
+import dragHtml from '../../../../sidebar/dragHtml'
 import {AccessibleContent} from '@instructure/ui-a11y'
 import {Flex, View} from '@instructure/ui-layout'
 import {Text} from '@instructure/ui-elements'
+import {Focusable} from '@instructure/ui-focusable'
 import {SVGIcon} from '@instructure/ui-svg-images'
 import {
   IconDragHandleLine,
@@ -42,13 +42,13 @@ import {
 function IconBlank() {
   return (
     <SVGIcon name="IconBlank" viewBox="0 0 1920 1920">
-      <g role="presentation"></g>
+      <g role="presentation" />
     </SVGIcon>
   )
 }
 
 function getIcon(type) {
-  switch(type) {
+  switch (type) {
     case 'assignments':
       return IconAssignmentLine
     case 'discussions':
@@ -75,23 +75,23 @@ export default function Link(props) {
   const color = published ? 'success' : 'primary'
   let dateString = null
   if (date) {
-    if (date === 'multiple' ) {
+    if (date === 'multiple') {
       dateString = formatMessage('Due: Multiple Dates')
     } else {
       const when = formatMessage.date(Date.parse(date), 'long')
-      switch(date_type) {
+      switch (date_type) {
         case 'todo':
           dateString = formatMessage('To Do: {when}', {when})
           break
         case 'published':
           dateString = formatMessage('Published: {when}', {when})
-          break;
+          break
         case 'posted':
           dateString = formatMessage('Posted: {when}', {when})
-          break;
+          break
         case 'delayed_post':
           dateString = formatMessage('To Be Posted: {when}', {when})
-          break;
+          break
         case 'due':
         default:
           dateString = formatMessage('Due: {when}', {when})
@@ -99,11 +99,13 @@ export default function Link(props) {
       }
     }
   }
-  const publishedMsg = props.link.published ? formatMessage('published') : formatMessage('unpublished')
+  const publishedMsg = props.link.published
+    ? formatMessage('published')
+    : formatMessage('unpublished')
 
   function handleLinkClick(e) {
-    e.preventDefault();
-    props.onClick(props.link);
+    e.preventDefault()
+    props.onClick(props.link)
   }
 
   function handleLinkKey(e) {
@@ -114,7 +116,11 @@ export default function Link(props) {
   }
 
   function handleDragStart(e) {
-    dragHtml(e, renderLinkHtml(props.link));
+    dragHtml(e, renderLinkHtml(props.link, props.link.title))
+  }
+
+  function handleDragEnd(e) {
+    document.body.click() // closes the tray
   }
 
   function handleHover(e) {
@@ -126,55 +132,68 @@ export default function Link(props) {
       data-testid="instructure_links-Link"
       draggable
       onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
       onMouseEnter={handleHover}
       onMouseLeave={handleHover}
       style={{position: 'relative'}}
     >
-      <View
-        className={css(styles.link)}
-        as="div"
-        role="button"
-        tabIndex="0"
-        background="default"
-        display="block"
-        width="100%"
-        borderWidth="0 0 small 0"
-        padding="x-small"
-        aria-describedby={props.describedByID}
-        onClick={handleLinkClick}
-        onKeyDown={handleLinkKey}
-        elementRef={props.elementRef}
-      >
-        <div style={{pointerEvents: 'none'}}>
-          <Flex>
-            <Flex.Item margin="0 xx-small 0 0" size="1.125rem">
-              {isHovering ? <IconDragHandleLine size="x-small" inline={false} /> : null}
-            </Flex.Item>
-            <Flex.Item grow shrink>
+      <Focusable>
+        {({focused}) => (
+          <View
+            focused={focused}
+            focusPosition="inset"
+            position="relative"
+            as="div"
+            role="button"
+            tabIndex="0"
+            background="default"
+            display="block"
+            width="100%"
+            borderWidth="0 0 small 0"
+            padding="x-small"
+            aria-describedby={props.describedByID}
+            onClick={handleLinkClick}
+            onKeyDown={handleLinkKey}
+            elementRef={props.elementRef}
+          >
+            <div style={{pointerEvents: 'none'}}>
               <Flex>
-                <Flex.Item padding="0 x-small 0 0">
-                  <Text color={color}>
-                    <Icon size="x-small" inline={false} />
-                  </Text>
+                <Flex.Item margin="0 xx-small 0 0" size="1.125rem">
+                  {isHovering ? <IconDragHandleLine size="x-small" inline={false} /> : null}
                 </Flex.Item>
-                <Flex.Item padding="0 x-small 0 0" grow shrink textAlign="start">
-                  <View as="div" margin="0">{title}</View>
-                  {dateString ? (<View as="div">{dateString}</View>) : null}
-                </Flex.Item>
-                {'published' in props.link && (
-                  <Flex.Item>
-                    <AccessibleContent alt={publishedMsg}>
+                <Flex.Item grow shrink>
+                  <Flex>
+                    <Flex.Item padding="0 x-small 0 0">
                       <Text color={color}>
-                        {published ? <IconPublishSolid inline={false}/> : <IconUnpublishedSolid inline={false} />}
+                        <Icon size="x-small" inline={false} />
                       </Text>
-                    </AccessibleContent>
-                  </Flex.Item>
-                )}
+                    </Flex.Item>
+                    <Flex.Item padding="0 x-small 0 0" grow shrink textAlign="start">
+                      <View as="div" margin="0">
+                        {title}
+                      </View>
+                      {dateString ? <View as="div">{dateString}</View> : null}
+                    </Flex.Item>
+                    {'published' in props.link && (
+                      <Flex.Item>
+                        <AccessibleContent alt={publishedMsg}>
+                          <Text color={color}>
+                            {published ? (
+                              <IconPublishSolid inline={false} />
+                            ) : (
+                              <IconUnpublishedSolid inline={false} />
+                            )}
+                          </Text>
+                        </AccessibleContent>
+                      </Flex.Item>
+                    )}
+                  </Flex>
+                </Flex.Item>
               </Flex>
-            </Flex.Item>
-          </Flex>
-        </div>
-      </View>
+            </div>
+          </View>
+        )}
+      </Focusable>
     </div>
   )
 }
@@ -182,18 +201,15 @@ export default function Link(props) {
 Link.propTypes = {
   link: linkShape.isRequired,
   type: oneOf([
-    'assignments', 'discussions', 'modules', 'quizzes',
-    'announcements', 'wikiPages', 'navigation'
+    'assignments',
+    'discussions',
+    'modules',
+    'quizzes',
+    'announcements',
+    'wikiPages',
+    'navigation'
   ]).isRequired,
   onClick: func.isRequired,
   describedByID: string.isRequired,
   elementRef: func
 }
-
-const styles = StyleSheet.create({
-  link: {
-    ':focus': {
-      'outline-offset': '-4px'
-    }
-  }
-});

@@ -17,7 +17,7 @@
  */
 
 import React from 'react'
-import {render, fireEvent} from 'react-testing-library'
+import {render, fireEvent} from '@testing-library/react'
 import MockDate from 'mockdate'
 import CanvasValidatedMockedProvider from 'jsx/__tests__/CanvasValidatedMockedProvider'
 import {STUDENT_SEARCH_QUERY} from '../../../assignmentData'
@@ -71,6 +71,20 @@ describe('StudentsSearcher', () => {
     const {getByText} = renderStudentsSearcher()
     expect(closest(getByText('Speedgrader'), 'a')).toBeTruthy()
     expect(closest(getByText('Message Students'), 'button')).toBeTruthy()
+  })
+
+  it('enables "Message Students" when students are not anonymized', () => {
+    const assignment = mockAssignment({anonymizeStudents: false})
+    const {getByText} = renderStudentsSearcher([], assignment)
+    const button = closest(getByText('Message Students'), 'button')
+    expect(button.disabled).toBeFalsy()
+  })
+
+  it('disables "Message Students" when students are anonymized', () => {
+    const assignment = mockAssignment({anonymizeStudents: true})
+    const {getByText} = renderStudentsSearcher([], assignment)
+    const button = closest(getByText('Message Students'), 'button')
+    expect(button.disabled).toBeTruthy()
   })
 
   it('should open speedgrader link in a new tab', () => {

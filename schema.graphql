@@ -1,3 +1,33 @@
+type Account implements LegacyIDInterface & Node {
+  """
+  legacy canvas id
+  """
+  _id: ID!
+  id: ID!
+  name: String
+  proficiencyRatingsConnection(
+    """
+    Returns the elements in the list that come after the specified cursor.
+    """
+    after: String
+
+    """
+    Returns the elements in the list that come before the specified cursor.
+    """
+    before: String
+
+    """
+    Returns the first _n_ elements from the list.
+    """
+    first: Int
+
+    """
+    Returns the last _n_ elements from the list.
+    """
+    last: Int
+  ): ProficiencyRatingConnection
+}
+
 """
 A list of students that an `AssignmentOverride` applies to
 """
@@ -5,7 +35,16 @@ type AdhocStudents {
   students: [User!]
 }
 
-type Assignment implements ModuleItemInterface & Node & Timestamped {
+"""
+The type of assessment
+"""
+enum AssessmentType {
+  grading
+  peer_review
+  provisional_grade
+}
+
+type Assignment implements LegacyIDInterface & ModuleItemInterface & Node & Timestamped {
   """
   legacy canvas id
   """
@@ -56,7 +95,15 @@ type Assignment implements ModuleItemInterface & Node & Timestamped {
   """
   when this assignment is due
   """
-  dueAt: DateTime
+  dueAt(
+    """
+    When true, return the overridden dates.
+
+    Not all roles have permission to view un-overridden dates (in which
+    case the overridden dates will be returned)
+    """
+    applyOverrides: Boolean = true
+  ): DateTime
   dueDateRequired: Boolean
   expectsExternalSubmission: Boolean
   expectsSubmission: Boolean
@@ -69,6 +116,33 @@ type Assignment implements ModuleItemInterface & Node & Timestamped {
   groupSet: GroupSet
 
   """
+  returns submissions grouped to one submission object per group
+  """
+  groupSubmissionsConnection(
+    """
+    Returns the elements in the list that come after the specified cursor.
+    """
+    after: String
+
+    """
+    Returns the elements in the list that come before the specified cursor.
+    """
+    before: String
+    filter: SubmissionSearchFilterInput
+
+    """
+    Returns the first _n_ elements from the list.
+    """
+    first: Int
+
+    """
+    Returns the last _n_ elements from the list.
+    """
+    last: Int
+    orderBy: [SubmissionSearchOrder!]
+  ): SubmissionConnection
+
+  """
   If true, the assignment has been submitted to by at least one student
   """
   hasSubmittedSubmissions: Boolean
@@ -77,9 +151,17 @@ type Assignment implements ModuleItemInterface & Node & Timestamped {
   inClosedGradingPeriod: Boolean
 
   """
-  the lock date (assignment is locked after this date).
+  the lock date (assignment is locked after this date)
   """
-  lockAt: DateTime
+  lockAt(
+    """
+    When true, return the overridden dates.
+
+    Not all roles have permission to view un-overridden dates (in which
+    case the overridden dates will be returned)
+    """
+    applyOverrides: Boolean = true
+  ): DateTime
   lockInfo: LockInfo
   moderatedGrading: ModeratedGrading
   modules: [Module!]
@@ -152,7 +234,15 @@ type Assignment implements ModuleItemInterface & Node & Timestamped {
   """
   the unlock date (assignment is unlocked after this date)
   """
-  unlockAt: DateTime
+  unlockAt(
+    """
+    When true, return the overridden dates.
+
+    Not all roles have permission to view un-overridden dates (in which
+    case the overridden dates will be returned)
+    """
+    applyOverrides: Boolean = true
+  ): DateTime
   updatedAt: DateTime
 }
 
@@ -200,7 +290,7 @@ input AssignmentFilter {
   gradingPeriodId: ID
 }
 
-type AssignmentGroup implements AssignmentsConnectionInterface & Node & Timestamped {
+type AssignmentGroup implements AssignmentsConnectionInterface & LegacyIDInterface & Node & Timestamped {
   """
   legacy canvas id
   """
@@ -336,7 +426,7 @@ input AssignmentModeratedGradingUpdate {
   gradersAnonymousToGraders: Boolean
 }
 
-type AssignmentOverride implements Node & Timestamped {
+type AssignmentOverride implements LegacyIDInterface & Node & Timestamped {
   """
   legacy canvas id
   """
@@ -462,6 +552,36 @@ interface AssignmentsConnectionInterface {
   ): AssignmentConnection
 }
 
+type AuditLogs {
+  """
+  A list of all recent graphql mutations run on the specified object
+  """
+  mutationLogs(
+    """
+    Returns the elements in the list that come after the specified cursor.
+    """
+    after: String
+    assetString: String!
+
+    """
+    Returns the elements in the list that come before the specified cursor.
+    """
+    before: String
+    endTime: DateTime
+
+    """
+    Returns the first _n_ elements from the list.
+    """
+    first: Int
+
+    """
+    Returns the last _n_ elements from the list.
+    """
+    last: Int
+    startTime: DateTime
+  ): MutationLogConnection
+}
+
 """
 Determines if/how a leader is chosen for each group
 """
@@ -477,11 +597,12 @@ enum AutoLeaderPolicy {
   random
 }
 
-type Course implements AssignmentsConnectionInterface & Node & Timestamped {
+type Course implements AssignmentsConnectionInterface & LegacyIDInterface & Node & Timestamped {
   """
   legacy canvas id
   """
   _id: ID!
+  account: Account
   assignmentGroupsConnection(
     """
     Returns the elements in the list that come after the specified cursor.
@@ -565,6 +686,28 @@ type Course implements AssignmentsConnectionInterface & Node & Timestamped {
   """
   courseCode: String
   createdAt: DateTime
+  externalToolsConnection(
+    """
+    Returns the elements in the list that come after the specified cursor.
+    """
+    after: String
+
+    """
+    Returns the elements in the list that come before the specified cursor.
+    """
+    before: String
+    filter: ExternalToolFilterInput = {}
+
+    """
+    Returns the first _n_ elements from the list.
+    """
+    first: Int
+
+    """
+    Returns the last _n_ elements from the list.
+    """
+    last: Int
+  ): ExternalToolConnection
   gradingPeriodsConnection(
     """
     Returns the elements in the list that come after the specified cursor.
@@ -717,7 +860,7 @@ type Course implements AssignmentsConnectionInterface & Node & Timestamped {
     """
     Only return submissions for the given students.
     """
-    studentIds: [ID!]!
+    studentIds: [ID!]
   ): SubmissionConnection
   term: Term
   updatedAt: DateTime
@@ -930,9 +1073,12 @@ type CreateSubmissionCommentPayload {
 Autogenerated input type of CreateSubmissionDraft
 """
 input CreateSubmissionDraftInput {
+  activeSubmissionType: DraftableSubmissionType!
   attempt: Int
+  body: String
   fileIds: [ID!]
   submissionId: ID!
+  url: String
 }
 
 """
@@ -948,8 +1094,10 @@ Autogenerated input type of CreateSubmission
 """
 input CreateSubmissionInput {
   assignmentId: ID!
+  body: String
   fileIds: [ID!]
   submissionType: OnlineSubmissionType!
+  url: String
 }
 
 """
@@ -965,7 +1113,7 @@ an ISO8601 formatted time string
 """
 scalar DateTime
 
-type Discussion implements ModuleItemInterface & Node & Timestamped {
+type Discussion implements LegacyIDInterface & ModuleItemInterface & Node & Timestamped {
   """
   legacy canvas id
   """
@@ -976,7 +1124,16 @@ type Discussion implements ModuleItemInterface & Node & Timestamped {
   updatedAt: DateTime
 }
 
-type Enrollment implements Node & Timestamped {
+"""
+Types of submissions that can have a submission draft
+"""
+enum DraftableSubmissionType {
+  online_text_entry
+  online_upload
+  online_url
+}
+
+type Enrollment implements LegacyIDInterface & Node & Timestamped {
   """
   legacy canvas id
   """
@@ -1019,17 +1176,95 @@ enum EnrollmentWorkflowState {
   rejected
 }
 
-type ExternalTool implements ModuleItemInterface & Timestamped {
+type ExternalTool implements LegacyIDInterface & ModuleItemInterface & Timestamped {
   """
   legacy canvas id
   """
   _id: ID!
   createdAt: DateTime
+  description: String
   modules: [Module!]
+  name: String
+  settings: ExternalToolSettings
+  state: ExternalToolState
   updatedAt: DateTime
+  url: URL
 }
 
-type ExternalUrl implements ModuleItemInterface & Timestamped {
+"""
+The connection type for ExternalTool.
+"""
+type ExternalToolConnection {
+  """
+  A list of edges.
+  """
+  edges: [ExternalToolEdge]
+
+  """
+  A list of nodes.
+  """
+  nodes: [ExternalTool]
+
+  """
+  Information to aid in pagination.
+  """
+  pageInfo: PageInfo!
+}
+
+"""
+An edge in a connection.
+"""
+type ExternalToolEdge {
+  """
+  A cursor for use in pagination.
+  """
+  cursor: String!
+
+  """
+  The item at the end of the edge.
+  """
+  node: ExternalTool
+}
+
+input ExternalToolFilterInput {
+  placement: ExternalToolPlacement = null
+  state: ExternalToolState = null
+}
+
+"""
+Placements that an External Tool can have
+"""
+enum ExternalToolPlacement {
+  homework_submission
+}
+
+type ExternalToolPlacements {
+  canvasIconClass: String
+  iconUrl: URL
+  messageType: String
+  text: String
+  url: URL
+}
+
+type ExternalToolSettings {
+  homeworkSubmission: ExternalToolPlacements
+  iconUrl: URL
+  selectionHeight: Int
+  selectionWidth: Int
+  text: String
+}
+
+"""
+States that an External Tool can be in
+"""
+enum ExternalToolState {
+  anonymous
+  email_only
+  name_only
+  public
+}
+
+type ExternalUrl implements LegacyIDInterface & ModuleItemInterface & Timestamped {
   """
   legacy canvas id
   """
@@ -1041,7 +1276,7 @@ type ExternalUrl implements ModuleItemInterface & Timestamped {
   url: String
 }
 
-type File implements ModuleItemInterface & Node & Timestamped {
+type File implements LegacyIDInterface & ModuleItemInterface & Node & Timestamped {
   """
   legacy canvas id
   """
@@ -1144,7 +1379,7 @@ type GradesEdge {
   node: Grades
 }
 
-type GradingPeriod implements Node & Timestamped {
+type GradingPeriod implements LegacyIDInterface & Node & Timestamped {
   """
   legacy canvas id
   """
@@ -1212,7 +1447,7 @@ enum GradingType {
   points
 }
 
-type Group implements Node & Timestamped {
+type Group implements LegacyIDInterface & Node & Timestamped {
   """
   legacy canvas id
   """
@@ -1279,7 +1514,7 @@ type GroupEdge {
   node: Group
 }
 
-type GroupMembership implements Timestamped {
+type GroupMembership implements LegacyIDInterface & Timestamped {
   """
   legacy canvas id
   """
@@ -1333,7 +1568,7 @@ enum GroupMembershipState {
   requested
 }
 
-type GroupSet implements Node {
+type GroupSet implements LegacyIDInterface & Node {
   """
   legacy canvas id
   """
@@ -1429,6 +1664,9 @@ Autogenerated input type of HideAssignmentGrades
 """
 input HideAssignmentGradesInput {
   assignmentId: ID!
+  onlyStudentIds: [ID!]
+  sectionIds: [ID!]
+  skipStudentIds: [ID!]
 }
 
 """
@@ -1438,12 +1676,25 @@ type HideAssignmentGradesPayload {
   assignment: Assignment
   errors: [ValidationError!]
   progress: Progress
+  sections: [Section!]
 }
+
+"""
+Represents untyped JSON
+"""
+scalar JSON
 
 enum LatePolicyStatusType {
   late
   missing
   none
+}
+
+interface LegacyIDInterface {
+  """
+  legacy canvas id
+  """
+  _id: ID!
 }
 
 type LockInfo {
@@ -1460,6 +1711,22 @@ Types that can be locked
 """
 union Lockable = Assignment | Discussion | Module | Page | Quiz
 
+"""
+Autogenerated input type of MarkSubmissionCommentsRead
+"""
+input MarkSubmissionCommentsReadInput {
+  submissionCommentIds: [ID!]!
+  submissionId: ID!
+}
+
+"""
+Autogenerated return type of MarkSubmissionCommentsRead
+"""
+type MarkSubmissionCommentsReadPayload {
+  errors: [ValidationError!]
+  submissionComments: [SubmissionComment!]
+}
+
 type MediaObject implements Node {
   """
   legacy canvas id
@@ -1468,6 +1735,7 @@ type MediaObject implements Node {
   canAddCaptions: Boolean
   id: ID!
   mediaSources: [MediaSource!]
+  mediaTracks: [MediaTrack!]
   mediaType: MediaType
   title: String
 }
@@ -1481,6 +1749,18 @@ type MediaSource {
   size: String
   url: URL
   width: String
+}
+
+type MediaTrack implements LegacyIDInterface {
+  """
+  legacy canvas id
+  """
+  _id: ID!
+  content: String!
+  kind: String
+  locale: String
+  mediaObject: MediaObject
+  webvttContent: String
 }
 
 enum MediaType {
@@ -1523,7 +1803,7 @@ type ModeratedGrading {
   gradersAnonymousToGraders: Boolean
 }
 
-type Module implements Node & Timestamped {
+type Module implements LegacyIDInterface & Node & Timestamped {
   """
   legacy canvas id
   """
@@ -1572,7 +1852,7 @@ type ModuleEdge {
   node: Module
 }
 
-type ModuleExternalTool implements ModuleItemInterface & Timestamped {
+type ModuleExternalTool implements LegacyIDInterface & ModuleItemInterface & Timestamped {
   """
   legacy canvas id
   """
@@ -1583,7 +1863,7 @@ type ModuleExternalTool implements ModuleItemInterface & Timestamped {
   url: String
 }
 
-type ModuleItem implements Node & Timestamped {
+type ModuleItem implements LegacyIDInterface & Node & Timestamped {
   """
   legacy canvas id
   """
@@ -1618,6 +1898,7 @@ type Mutation {
   createSubmissionDraft(input: CreateSubmissionDraftInput!): CreateSubmissionDraftPayload
   hideAssignmentGrades(input: HideAssignmentGradesInput!): HideAssignmentGradesPayload
   hideAssignmentGradesForSections(input: HideAssignmentGradesForSectionsInput!): HideAssignmentGradesForSectionsPayload
+  markSubmissionCommentsRead(input: MarkSubmissionCommentsReadInput!): MarkSubmissionCommentsReadPayload
   postAssignmentGrades(input: PostAssignmentGradesInput!): PostAssignmentGradesPayload
   postAssignmentGradesForSections(input: PostAssignmentGradesForSectionsInput!): PostAssignmentGradesForSectionsPayload
 
@@ -1640,6 +1921,56 @@ type Mutation {
   updateAssignment(input: UpdateAssignmentInput!): UpdateAssignmentPayload
 }
 
+type MutationLog {
+  assetString: ID!
+  mutationId: ID!
+  mutationName: String!
+  params: JSON
+
+  """
+  If the mutation was performed by a user masquerading as another user,
+  this field returns the "real" (logged-in) user.
+  """
+  realUser: User
+  timestamp: DateTime
+  user: User
+}
+
+"""
+The connection type for MutationLog.
+"""
+type MutationLogConnection {
+  """
+  A list of edges.
+  """
+  edges: [MutationLogEdge]
+
+  """
+  A list of nodes.
+  """
+  nodes: [MutationLog]
+
+  """
+  Information to aid in pagination.
+  """
+  pageInfo: PageInfo!
+}
+
+"""
+An edge in a connection.
+"""
+type MutationLogEdge {
+  """
+  A cursor for use in pagination.
+  """
+  cursor: String!
+
+  """
+  The item at the end of the edge.
+  """
+  node: MutationLog
+}
+
 """
 An object with an ID.
 """
@@ -1651,6 +1982,7 @@ interface Node {
 }
 
 enum NodeType {
+  Account
   Assignment
   AssignmentGroup
   Course
@@ -1666,6 +1998,7 @@ enum NodeType {
   Page
   PostPolicy
   Progress
+  Rubric
   Section
   Submission
   Term
@@ -1676,7 +2009,9 @@ enum NodeType {
 Types that can be submitted online
 """
 enum OnlineSubmissionType {
+  online_text_entry
   online_upload
+  online_url
 }
 
 enum OrderDirection {
@@ -1684,7 +2019,14 @@ enum OrderDirection {
   descending
 }
 
-type Page implements ModuleItemInterface & Node & Timestamped {
+type Outcome implements LegacyIDInterface {
+  """
+  legacy canvas id
+  """
+  _id: ID!
+}
+
+type Page implements LegacyIDInterface & ModuleItemInterface & Node & Timestamped {
   """
   legacy canvas id
   """
@@ -1800,6 +2142,9 @@ Autogenerated input type of PostAssignmentGrades
 input PostAssignmentGradesInput {
   assignmentId: ID!
   gradedOnly: Boolean
+  onlyStudentIds: [ID!]
+  sectionIds: [ID!]
+  skipStudentIds: [ID!]
 }
 
 """
@@ -1809,6 +2154,7 @@ type PostAssignmentGradesPayload {
   assignment: Assignment
   errors: [ValidationError!]
   progress: Progress
+  sections: [Section!]
 }
 
 """
@@ -1816,7 +2162,7 @@ A PostPolicy sets the policy for whether a Submission's grades are posted
 automatically or manually. A PostPolicy can be set at the Course and/or
 Assignment level.
 """
-type PostPolicy implements Node {
+type PostPolicy implements LegacyIDInterface & Node {
   """
   legacy canvas id
   """
@@ -1867,9 +2213,58 @@ type PostPolicyEdge {
 }
 
 """
+Customized proficiency ratings
+"""
+type ProficiencyRating implements LegacyIDInterface {
+  """
+  legacy canvas id
+  """
+  _id: ID!
+  color: String
+  description: String
+  mastery: Boolean!
+  points: Float
+}
+
+"""
+The connection type for ProficiencyRating.
+"""
+type ProficiencyRatingConnection {
+  """
+  A list of edges.
+  """
+  edges: [ProficiencyRatingEdge]
+
+  """
+  A list of nodes.
+  """
+  nodes: [ProficiencyRating]
+
+  """
+  Information to aid in pagination.
+  """
+  pageInfo: PageInfo!
+}
+
+"""
+An edge in a connection.
+"""
+type ProficiencyRatingEdge {
+  """
+  A cursor for use in pagination.
+  """
+  cursor: String!
+
+  """
+  The item at the end of the edge.
+  """
+  node: ProficiencyRating
+}
+
+"""
 Returns completion status and progress information about an asynchronous job
 """
-type Progress implements Node & Timestamped {
+type Progress implements LegacyIDInterface & Node & Timestamped {
   """
   legacy canvas id
   """
@@ -1906,6 +2301,13 @@ enum ProgressState {
 }
 
 type Query {
+  account(
+    """
+    a graphql or legacy id
+    """
+    id: ID!
+  ): Account
+
   """
   All courses viewable by the current user
   """
@@ -1922,6 +2324,7 @@ type Query {
     """
     id: ID!
   ): AssignmentGroup
+  auditLogs: AuditLogs
   course(
     """
     a graphql or legacy id
@@ -1953,6 +2356,12 @@ type Query {
     """
     id: ID!
   ): Node
+  submission(
+    """
+    a graphql or legacy id
+    """
+    id: ID!
+  ): Submission
   term(
     """
     a graphql or legacy id
@@ -1961,7 +2370,7 @@ type Query {
   ): Term
 }
 
-type Quiz implements ModuleItemInterface & Node & Timestamped {
+type Quiz implements LegacyIDInterface & ModuleItemInterface & Node & Timestamped {
   """
   legacy canvas id
   """
@@ -1972,16 +2381,147 @@ type Quiz implements ModuleItemInterface & Node & Timestamped {
   updatedAt: DateTime
 }
 
-type Rubric {
+type Rubric implements LegacyIDInterface & Node {
   """
   legacy canvas id
   """
   _id: ID!
-  freeFormCriterionComments: Boolean
+
+  """
+  The different criteria that makes up this rubric
+  """
+  criteria: [RubricCriterion!]!
+  freeFormCriterionComments: Boolean!
+  hideScoreTotal: Boolean!
   id: ID!
+  pointsPossible: Float
+  title: String
 }
 
-type Section implements Node & Timestamped {
+"""
+An assessment for a rubric
+"""
+type RubricAssessment implements LegacyIDInterface {
+  """
+  legacy canvas id
+  """
+  _id: ID!
+
+  """
+  The assessments for the individual criteria in this rubric
+  """
+  assessmentRatings: [RubricAssessmentRating!]!
+  assessmentType: AssessmentType!
+  assessor: User
+  rubricAssociation: RubricAssociation
+  score: Float
+  user: User
+}
+
+"""
+The connection type for RubricAssessment.
+"""
+type RubricAssessmentConnection {
+  """
+  A list of edges.
+  """
+  edges: [RubricAssessmentEdge]
+
+  """
+  A list of nodes.
+  """
+  nodes: [RubricAssessment]
+
+  """
+  Information to aid in pagination.
+  """
+  pageInfo: PageInfo!
+}
+
+"""
+An edge in a connection.
+"""
+type RubricAssessmentEdge {
+  """
+  A cursor for use in pagination.
+  """
+  cursor: String!
+
+  """
+  The item at the end of the edge.
+  """
+  node: RubricAssessment
+}
+
+"""
+An assessment for a specific criteria in a rubric
+"""
+type RubricAssessmentRating {
+  """
+  legacy canvas id
+  """
+  _id: ID
+  comments: String
+  commentsHtml: String
+
+  """
+  The rubric criteria that this assessment is for
+  """
+  criterion: RubricCriterion
+  description: String
+  outcome: Outcome
+  points: Float
+}
+
+"""
+How a rubric is being used in a context
+"""
+type RubricAssociation implements LegacyIDInterface {
+  """
+  legacy canvas id
+  """
+  _id: ID!
+  hidePoints: Boolean!
+  hideScoreTotal: Boolean!
+  useForGrading: Boolean!
+}
+
+"""
+Individual criteria for a rubric
+"""
+type RubricCriterion implements LegacyIDInterface {
+  """
+  legacy canvas id
+  """
+  _id: ID!
+  criterionUseRange: Boolean!
+  description: String
+  ignoreForScoring: Boolean!
+  longDescription: String
+  masteryPoints: Float
+  outcome: Outcome
+  points: Float
+
+  """
+  The possible ratings available for this criterion
+  """
+  ratings: [RubricRating!]
+}
+
+"""
+Possible rating for a rubric criterion
+"""
+type RubricRating implements LegacyIDInterface {
+  """
+  legacy canvas id
+  """
+  _id: ID!
+  description: String!
+  longDescription: String
+  points: Float!
+}
+
+type Section implements LegacyIDInterface & Node & Timestamped {
   """
   legacy canvas id
   """
@@ -2106,14 +2646,21 @@ type StudentSummaryAnalytics {
   tardinessBreakdown: TardinessBreakdown
 }
 
-type Submission implements Node & SubmissionInterface & Timestamped {
+type SubHeader implements ModuleItemInterface {
+  modules: [Module!]
+  title: String
+}
+
+type Submission implements LegacyIDInterface & Node & SubmissionInterface & Timestamped {
   """
   legacy canvas id
   """
   _id: ID!
   assignment: Assignment
+  attachment: File
   attachments: [File!]
   attempt: Int!
+  body: String
   commentsConnection(
     """
     Returns the elements in the list that come after the specified cursor.
@@ -2158,11 +2705,42 @@ type Submission implements Node & SubmissionInterface & Timestamped {
   """
   excused: Boolean
   grade: String
+  gradeHidden: Boolean!
+
+  """
+  was the grade given on the current submission (resubmission)
+  """
+  gradeMatchesCurrentSubmission: Boolean
   gradedAt: DateTime
-  gradingStatus: String
+  gradingStatus: SubmissionGradingStatus
   id: ID!
+  late: Boolean
   latePolicyStatus: LatePolicyStatusType
+  missing: Boolean
+  posted: Boolean!
   postedAt: DateTime
+  rubricAssessmentsConnection(
+    """
+    Returns the elements in the list that come after the specified cursor.
+    """
+    after: String
+
+    """
+    Returns the elements in the list that come before the specified cursor.
+    """
+    before: String
+    filter: SubmissionRubricAssessmentFilterInput = {}
+
+    """
+    Returns the first _n_ elements from the list.
+    """
+    first: Int
+
+    """
+    Returns the last _n_ elements from the list.
+    """
+    last: Int
+  ): RubricAssessmentConnection
   score: Float
   state: SubmissionState!
   submissionDraft: SubmissionDraft
@@ -2189,22 +2767,27 @@ type Submission implements Node & SubmissionInterface & Timestamped {
     last: Int
   ): SubmissionHistoryConnection
   submissionStatus: String
+  submissionType: SubmissionType
   submittedAt: DateTime
+  turnitinData: [TurnitinData!]
+  unreadCommentCount: Int!
   updatedAt: DateTime
+  url: URL
   user: User
 }
 
-type SubmissionComment implements Timestamped {
+type SubmissionComment implements LegacyIDInterface & Timestamped {
   """
   legacy canvas id
   """
-  _id: ID
+  _id: ID!
   attachments: [File!]
   attempt: Int!
   author: User
   comment: String
   createdAt: DateTime
   mediaObject: MediaObject
+  read: Boolean!
   updatedAt: DateTime
 }
 
@@ -2277,13 +2860,20 @@ type SubmissionConnection {
   pageInfo: PageInfo!
 }
 
-type SubmissionDraft {
+type SubmissionDraft implements LegacyIDInterface {
   """
   legacy canvas id
   """
   _id: ID!
+  activeSubmissionType: DraftableSubmissionType
   attachments: [File!]
+  body: String
+  meetsAssignmentCriteria: Boolean!
+  meetsTextEntryCriteria: Boolean!
+  meetsUploadCriteria: Boolean!
+  meetsUrlCriteria: Boolean!
   submissionAttempt: Int!
+  url: URL
 }
 
 """
@@ -2302,14 +2892,25 @@ type SubmissionEdge {
 }
 
 input SubmissionFilterInput {
+  gradedSince: DateTime
   sectionIds: [ID!]
   states: [SubmissionState!] = [submitted, pending_review, graded]
+  submittedSince: DateTime
+}
+
+enum SubmissionGradingStatus {
+  excused
+  graded
+  needs_grading
+  needs_review
 }
 
 type SubmissionHistory implements SubmissionInterface & Timestamped {
   assignment: Assignment
+  attachment: File
   attachments: [File!]
   attempt: Int!
+  body: String
   commentsConnection(
     """
     Returns the elements in the list that come after the specified cursor.
@@ -2354,21 +2955,56 @@ type SubmissionHistory implements SubmissionInterface & Timestamped {
   """
   excused: Boolean
   grade: String
+  gradeHidden: Boolean!
+
+  """
+  was the grade given on the current submission (resubmission)
+  """
+  gradeMatchesCurrentSubmission: Boolean
   gradedAt: DateTime
-  gradingStatus: String
+  gradingStatus: SubmissionGradingStatus
+  late: Boolean
   latePolicyStatus: LatePolicyStatusType
+  missing: Boolean
+  posted: Boolean!
   postedAt: DateTime
 
   """
   The canvas legacy id of the root submission this history belongs to
   """
   rootId: ID!
+  rubricAssessmentsConnection(
+    """
+    Returns the elements in the list that come after the specified cursor.
+    """
+    after: String
+
+    """
+    Returns the elements in the list that come before the specified cursor.
+    """
+    before: String
+    filter: SubmissionRubricAssessmentFilterInput = {}
+
+    """
+    Returns the first _n_ elements from the list.
+    """
+    first: Int
+
+    """
+    Returns the last _n_ elements from the list.
+    """
+    last: Int
+  ): RubricAssessmentConnection
   score: Float
   state: SubmissionState!
   submissionDraft: SubmissionDraft
   submissionStatus: String
+  submissionType: SubmissionType
   submittedAt: DateTime
+  turnitinData: [TurnitinData!]
+  unreadCommentCount: Int!
   updatedAt: DateTime
+  url: URL
   user: User
 }
 
@@ -2421,8 +3057,10 @@ Types for submission or submission history
 """
 interface SubmissionInterface {
   assignment: Assignment
+  attachment: File
   attachments: [File!]
   attempt: Int!
+  body: String
   commentsConnection(
     """
     Returns the elements in the list that come after the specified cursor.
@@ -2466,15 +3104,50 @@ interface SubmissionInterface {
   """
   excused: Boolean
   grade: String
+  gradeHidden: Boolean!
+
+  """
+  was the grade given on the current submission (resubmission)
+  """
+  gradeMatchesCurrentSubmission: Boolean
   gradedAt: DateTime
-  gradingStatus: String
+  gradingStatus: SubmissionGradingStatus
+  late: Boolean
   latePolicyStatus: LatePolicyStatusType
+  missing: Boolean
+  posted: Boolean!
   postedAt: DateTime
+  rubricAssessmentsConnection(
+    """
+    Returns the elements in the list that come after the specified cursor.
+    """
+    after: String
+
+    """
+    Returns the elements in the list that come before the specified cursor.
+    """
+    before: String
+    filter: SubmissionRubricAssessmentFilterInput = {}
+
+    """
+    Returns the first _n_ elements from the list.
+    """
+    first: Int
+
+    """
+    Returns the last _n_ elements from the list.
+    """
+    last: Int
+  ): RubricAssessmentConnection
   score: Float
   state: SubmissionState!
   submissionDraft: SubmissionDraft
   submissionStatus: String
+  submissionType: SubmissionType
   submittedAt: DateTime
+  turnitinData: [TurnitinData!]
+  unreadCommentCount: Int!
+  url: URL
   user: User
 }
 
@@ -2488,8 +3161,27 @@ enum SubmissionOrderField {
   gradedAt
 }
 
+input SubmissionRubricAssessmentFilterInput {
+  """
+  What submission attempt the rubric assessment should be returned for. If not
+  specified, it will return the rubric assessment for the current submisssion
+  or submission history.
+  """
+  forAttempt: Int = null
+}
+
 input SubmissionSearchFilterInput {
   enrollmentTypes: [EnrollmentType!]
+
+  """
+  Limit results by grading status
+  """
+  gradingStatus: SubmissionGradingStatus
+
+  """
+  Limit results to submissions that are late
+  """
+  late: Boolean
 
   """
   Limit results to submissions that scored below the specified value
@@ -2566,7 +3258,7 @@ type TardinessBreakdown {
   total: Int
 }
 
-type Term implements Node {
+type Term implements LegacyIDInterface & Node {
   """
   legacy canvas id
   """
@@ -2599,6 +3291,7 @@ type Term implements Node {
   endAt: DateTime
   id: ID!
   name: String
+  sisTermId: ID
   startAt: DateTime
 }
 
@@ -2608,6 +3301,14 @@ Contains timestamp metadata
 interface Timestamped {
   createdAt: DateTime
   updatedAt: DateTime
+}
+
+union TurnitinContext = File | Submission
+
+type TurnitinData {
+  score: Float
+  status: String
+  target: TurnitinContext!
 }
 
 scalar URL
@@ -2656,7 +3357,7 @@ type UpdateAssignmentPayload {
   errors: [ValidationError!]
 }
 
-type User implements Node & Timestamped {
+type User implements LegacyIDInterface & Node & Timestamped {
   """
   legacy canvas id
   """
@@ -2670,8 +3371,10 @@ type User implements Node & Timestamped {
     """
     courseId: ID
   ): [Enrollment!]!
+  groups: [Group!]
   id: ID!
   name: String
+  pronoun: String
 
   """
   A short name the user has selected, for use in conversations or other less formal places through the site.

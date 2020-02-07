@@ -56,6 +56,7 @@ class User < ActiveRecord::Base
   has_one :communication_channel, -> { where("workflow_state<>'retired'").order(:position) }
   has_many :ignores
   has_many :planner_notes, :dependent => :destroy
+  has_many :viewed_submission_comments, :dependent => :destroy
 
   has_many :enrollments, :dependent => :destroy
 
@@ -145,6 +146,9 @@ class User < ActiveRecord::Base
   has_many :media_objects, :as => :context, :inverse_of => :context
   has_many :user_generated_media_objects, :class_name => 'MediaObject'
   has_many :user_notes
+  has_many :content_shares, dependent: :destroy
+  has_many :received_content_shares
+  has_many :sent_content_shares
   has_many :account_reports, inverse_of: :user
   has_many :stream_item_instances, :dependent => :delete_all
   has_many :all_conversations, -> { preload(:conversation) }, class_name: 'ConversationParticipant'
@@ -168,6 +172,7 @@ class User < ActiveRecord::Base
   has_many :past_lti_ids, class_name: 'UserPastLtiId', inverse_of: :user
 
   belongs_to :otp_communication_channel, :class_name => 'CommunicationChannel'
+  belongs_to :account_pronoun
 
   include StickySisFields
   are_sis_sticky :name, :sortable_name, :short_name
@@ -865,6 +870,7 @@ class User < ActiveRecord::Base
       cc.user = self
     end
     cc.move_to_top
+    cc.workflow_state = 'unconfirmed' if cc.retired?
     cc.save!
     self.reload
     self.clear_email_cache!
@@ -1069,7 +1075,7 @@ class User < ActiveRecord::Base
     given { |user| user == self }
     can :read and can :read_grades and can :read_profile and can :read_as_admin and can :manage and
       can :manage_content and can :manage_files and can :manage_calendar and can :send_messages and
-      can :update_avatar and can :manage_feature_flags and can :api_show_user and
+      can :update_avatar and can :view_feature_flags and can :manage_feature_flags and can :api_show_user and
       can :read_email_addresses and can :view_user_logins and can :generate_observer_pairing_code
 
     given { |user| user == self && user.user_can_edit_name? }
@@ -1118,7 +1124,7 @@ class User < ActiveRecord::Base
       self.check_accounts_right?(user, :manage_user_logins) && self.adminable_accounts.select(&:root_account?).all? {|a| has_subset_of_account_permissions?(user, a) }
     end
     can :manage_user_details and can :rename and can :update_avatar and can :remove_avatar and
-      can :manage_feature_flags
+      can :manage_feature_flags and can :view_feature_flags
 
     given{ |user| self.pseudonyms.shard(self).any?{ |p| p.grants_right?(user, :update) } }
     can :merge
@@ -1438,7 +1444,20 @@ class User < ActiveRecord::Base
   end
 
   def custom_colors
-    preferences[:custom_colors] ||= {}
+    colors_hash = (preferences[:custom_colors] ||= {})
+    if Shard.current != self.shard
+      # translate asset strings to be relative to current shard
+      colors_hash = Hash[
+        colors_hash.map do |asset_string, value|
+          opts = asset_string.split("_")
+          id_relative_to_user_shard = opts.pop.to_i
+          next if id_relative_to_user_shard > Shard::IDS_PER_SHARD && Shard.shard_for(id_relative_to_user_shard) == self.shard # this is old data and should be ignored
+          new_id = Shard.relative_id_for(id_relative_to_user_shard, self.shard, Shard.current)
+          ["#{opts.join('_')}_#{new_id}", value]
+        end.compact
+      ]
+    end
+    colors_hash
   end
 
   def dashboard_positions
@@ -1790,6 +1809,12 @@ class User < ActiveRecord::Base
     end
   end
 
+  def participating_current_and_concluded_course_ids
+    cached_course_ids('current_and_concluded') do |enrollments|
+      enrollments.current_and_concluded.not_inactive_by_date_ignoring_access
+    end
+  end
+
   def participating_student_current_and_concluded_course_ids
     cached_course_ids('student_current_and_concluded') do |enrollments|
       enrollments.current_and_concluded.not_inactive_by_date_ignoring_access.where(type: %w{StudentEnrollment StudentViewEnrollment})
@@ -1854,15 +1879,15 @@ class User < ActiveRecord::Base
 
         Shackles.activate(:slave) do
           submissions = []
-          submissions += self.submissions.where("GREATEST(submissions.submitted_at, submissions.created_at) > ?", start_at).
+          submissions += self.submissions.posted.where("GREATEST(submissions.submitted_at, submissions.created_at) > ?", start_at).
             for_context_codes(context_codes).eager_load(:assignment).
-            where("submissions.score IS NOT NULL AND assignments.workflow_state=? AND assignments.muted=?", 'published', false).
+            where("submissions.score IS NOT NULL AND assignments.workflow_state=?", 'published').
             order('submissions.created_at DESC').
             limit(limit).to_a
 
-          submissions += Submission.active.where(user_id: self).for_context_codes(context_codes).
+          submissions += Submission.active.posted.where(user_id: self).for_context_codes(context_codes).
             joins(:assignment).
-            where(assignments: {muted: false, workflow_state: 'published'}).
+            where(assignments: {workflow_state: 'published'}).
             where('last_comment_at > ?', start_at).
             limit(limit).order("last_comment_at").to_a
 

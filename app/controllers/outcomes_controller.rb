@@ -124,6 +124,14 @@ class OutcomesController < ApplicationController
     end
     @results = LearningOutcomeResult.for_user(@user).for_outcome_ids(@outcomes.map(&:id)) #.for_context_codes(@codes)
     @results_for_outcome = @results.group_by(&:learning_outcome_id)
+
+    @google_analytics_page_title = t("Outcomes for Student")
+    @page_title = t :outcomes_for, "Outcomes for %{user_name}", :user_name => @user.name
+
+    css_bundle :learning_outcomes
+    js_bundle :rubric_assessment
+
+    render stream: can_stream_template?
   end
 
   def list
@@ -228,14 +236,6 @@ class OutcomesController < ApplicationController
       flash[:error] = "Unrecognized artifact type: #{@result.try(:artifact_type) || 'nil'}"
       redirect_to named_context_url(@context, :context_outcome_url, @outcome.id)
     end
-  end
-
-  def reorder_alignments
-    return unless authorized_action(@context, @current_user, :manage_outcomes)
-
-    @outcome = @context.linked_learning_outcomes.find(params[:outcome_id])
-    @alignments = @outcome.reorder_alignments(@context, params[:order].split(","))
-    render :json => @alignments.map{ |a| a.as_json(include: :learning_outcome) }
   end
 
   def create

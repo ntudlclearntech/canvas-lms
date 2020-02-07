@@ -16,7 +16,7 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import {AssignmentShape, SubmissionShape} from '../assignmentData'
+import {Assignment} from '../graphqlData/Assignment'
 import AssignmentToggleDetails from '../../shared/AssignmentToggleDetails'
 import ContentTabs from './ContentTabs'
 import Header from './Header'
@@ -24,7 +24,8 @@ import I18n from 'i18n!assignments_2_student_content'
 import LockedAssignment from './LockedAssignment'
 import MissingPrereqs from './MissingPrereqs'
 import React, {Suspense, lazy} from 'react'
-import Spinner from '@instructure/ui-elements/lib/components/Spinner'
+import {Spinner} from '@instructure/ui-elements'
+import {Submission} from '../graphqlData/Submission'
 
 const LoggedOutTabs = lazy(() => import('./LoggedOutTabs'))
 
@@ -37,21 +38,21 @@ function renderContentBaseOnAvailability({assignment, submission}) {
   } else if (submission === null) {
     // NOTE: handles case where user is not logged in
     return (
-      <React.Fragment>
+      <>
         <AssignmentToggleDetails description={assignment.description} />
         <Suspense
-          fallback={<Spinner title={I18n.t('Loading')} size="large" margin="0 0 0 medium" />}
+          fallback={<Spinner renderTitle={I18n.t('Loading')} size="large" margin="0 0 0 medium" />}
         >
           <LoggedOutTabs assignment={assignment} />
         </Suspense>
-      </React.Fragment>
+      </>
     )
   } else {
     return (
-      <React.Fragment>
+      <>
         <AssignmentToggleDetails description={assignment.description} />
         <ContentTabs assignment={assignment} submission={submission} />
-      </React.Fragment>
+      </>
     )
   }
 }
@@ -67,8 +68,8 @@ function StudentContent(props) {
 }
 
 StudentContent.propTypes = {
-  assignment: AssignmentShape,
-  submission: SubmissionShape
+  assignment: Assignment.shape,
+  submission: Submission.shape
 }
 
 export default StudentContent

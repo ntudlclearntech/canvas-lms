@@ -17,14 +17,14 @@
  */
 
 import React from 'react'
-import {render, fireEvent} from 'react-testing-library'
-import {toLocaleString, browserTimeZone} from '@instructure/ui-i18n/lib/DateTime'
+import {render, fireEvent} from '@testing-library/react'
+import {DateTime} from '@instructure/ui-i18n'
 import moment from 'moment'
 
 import EditableDateTime from '../EditableDateTime'
 
 const locale = 'en'
-const timeZone = browserTimeZone()
+const timeZone = DateTime.browserTimeZone()
 
 function renderEditableDateTime(props = {}) {
   return render(
@@ -50,21 +50,21 @@ describe('EditableDateTime', () => {
     const value = '2019-04-11T13:00:00-05:00'
     const {getByText} = renderEditableDateTime({value})
 
-    const dtstring = toLocaleString(value, locale, timeZone, 'lll')
+    const dtstring = DateTime.toLocaleString(value, locale, timeZone, 'lll')
     expect(getByText('Edit Due')).toBeInTheDocument()
     expect(getByText(dtstring)).toBeInTheDocument()
   })
 
   it('renders in edit mode', () => {
     const value = '2019-04-11T13:00:00-05:00'
-    const {getByText, getByLabelText} = renderEditableDateTime({mode: 'edit', value})
+    const {getAllByText, getByLabelText} = renderEditableDateTime({mode: 'edit', value})
 
-    const dtstring = toLocaleString(value, locale, timeZone, 'LLL')
-    const datestr = toLocaleString(value, locale, timeZone, 'LL')
-    const timestr = toLocaleString(value, locale, timeZone, 'LT')
+    const dtstring = DateTime.toLocaleString(value, locale, timeZone, 'LLL')
+    const datestr = DateTime.toLocaleString(value, locale, timeZone, 'LL')
+    const timestr = DateTime.toLocaleString(value, locale, timeZone, 'LT')
     expect(getByLabelText('Date').value).toBe(datestr)
     expect(getByLabelText('Time').value).toBe(timestr)
-    expect(getByText(dtstring)).toBeInTheDocument()
+    expect(getAllByText(dtstring)[0]).toBeInTheDocument()
   })
 
   it('exits edit mode and reverts to previous value on Escape', () => {
@@ -78,8 +78,8 @@ describe('EditableDateTime', () => {
       value
     })
 
-    const datestr = toLocaleString(value, locale, timeZone, 'LL')
-    const timestr = toLocaleString(value, locale, timeZone, 'LT')
+    const datestr = DateTime.toLocaleString(value, locale, timeZone, 'LL')
+    const timestr = DateTime.toLocaleString(value, locale, timeZone, 'LT')
     const dinput = getByDisplayValue(datestr)
     const tinput = getByDisplayValue(timestr)
     // enter a new date

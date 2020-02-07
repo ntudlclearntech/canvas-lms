@@ -30,7 +30,12 @@ module ApplicationHelper
     user_id = user.id if user.is_a?(User) || user.is_a?(OpenObject)
     Rails.cache.fetch(['context_user_name', context, user_id].cache_key, {:expires_in=>15.minutes}) do
       user = user.respond_to?(:short_name) ? user : User.find(user_id)
-      user.short_name || user.name
+      name = user.short_name || user.name
+      if user.account_pronoun && @domain_root_account.settings[:can_add_pronouns] && Account.site_admin.feature_enabled?(:account_pronouns)
+        pronoun = user.account_pronoun.display_pronoun
+        name = "#{ERB::Util.h(name)} <i>(#{ERB::Util.h(pronoun)})</i>".html_safe
+      end
+      name
     end
   end
 
@@ -170,6 +175,19 @@ module ApplicationHelper
     (use_optimized_js? ? '/dist/webpack-production' : '/dist/webpack-dev').freeze
   end
 
+  def load_scripts_async_in_order(script_urls)
+    # this is how you execute scripts in order, in a way that doesn’t block rendering,
+    # and without having to use 'defer' to wait until the whole DOM is loaded.
+    # see: https://www.html5rocks.com/en/tutorials/speed/script-loading/
+    javascript_tag "
+      ;#{script_urls.map{ |url| javascript_path(url)}}.forEach(function(src) {
+        var s = document.createElement('script')
+        s.src = src
+        s.async = false
+        document.head.appendChild(s)
+      });"
+  end
+
   # puts the "main" webpack entry and the moment & timezone files in the <head> of the document
   def include_head_js
     paths = []
@@ -197,7 +215,9 @@ module ApplicationHelper
       paths.each { |url| concat preload_link_tag(javascript_path(url)) }
       chunk_urls.each { |url| concat preload_link_tag(url) }
 
-      concat javascript_include_tag(*(paths + chunk_urls), defer: true)
+
+      concat load_scripts_async_in_order(paths + chunk_urls)
+      concat include_js_bundles
     end
   end
 
@@ -206,10 +226,16 @@ module ApplicationHelper
     # and let the browser know it needs to start downloading all of these chunks
     # even before any webpack code runs. It will put a <link rel="preload" ...>
     # for every chunk that is needed by any of the things you `js_bundle` in your rails controllers/views
-    preload_chunks = js_bundles.map do |(bundle, plugin)|
+    @rendered_js_bundles ||= []
+    new_js_bundles = js_bundles - @rendered_js_bundles
+    @rendered_js_bundles += new_js_bundles
+
+    @rendered_preload_chunks ||= []
+    preload_chunks = new_js_bundles.map do |(bundle, plugin)|
       key = "#{plugin ? "#{plugin}-" : ''}#{bundle}"
       Canvas::Cdn::RevManifest.all_webpack_chunks_for(key)
-    end.flatten.uniq - @script_chunks # subtract out the ones we already preloaded in the <head>
+    end.flatten.uniq - @script_chunks - @rendered_preload_chunks # subtract out the ones we already preloaded in the <head>
+    @rendered_preload_chunks += preload_chunks
 
     capture do
       preload_chunks.each { |url| concat preload_link_tag("#{js_base_url}/#{url}") }
@@ -219,15 +245,19 @@ module ApplicationHelper
       # to load that "js_bundle". And by the time that runs, the browser will have already
       # started downloading those script urls because of those preload tags above,
       # so it will not cause a new request to be made.
-      concat javascript_tag js_bundles.map { |(bundle, plugin)|
+      concat javascript_tag new_js_bundles.map { |(bundle, plugin)|
         "(window.bundles || (window.bundles = [])).push('#{plugin ? "#{plugin}-" : ''}#{bundle}');"
-      }.join("\n")
+      }.join("\n") if new_js_bundles.present?
     end
   end
 
   def include_css_bundles
-    unless css_bundles.empty?
-      bundles = css_bundles.map do |(bundle,plugin)|
+    @rendered_css_bundles ||= []
+    new_css_bundles = css_bundles - @rendered_css_bundles
+    @rendered_css_bundles += new_css_bundles
+
+    unless new_css_bundles.empty?
+      bundles = new_css_bundles.map do |(bundle,plugin)|
         css_url_for(bundle, plugin)
       end
       bundles << css_url_for("disable_transitions") if disable_css_transitions?
@@ -335,8 +365,8 @@ module ApplicationHelper
       !@body_class_no_headers &&
       @current_user &&
       @context.is_a?(Course) &&
-      embedded_chat_enabled &&
-      external_tool_tab_visible('chat')
+      external_tool_tab_visible('chat') &&
+      embedded_chat_enabled
   end
 
   def active_external_tool_by_id(tool_id)
@@ -362,9 +392,10 @@ module ApplicationHelper
   end
 
   def external_tool_tab_visible(tool_id)
+    return false unless available_section_tabs.any?{|tc| tc[:external]} # if the course has no external tool tabs, we know it won't have a chat one so we can bail early before querying the db/redis for it
     tool = active_external_tool_by_id(tool_id)
     return false unless tool
-    @context.tabs_available(@current_user).find {|tc| tc[:id] == tool.asset_string}.present?
+    available_section_tabs.find {|tc| tc[:id] == tool.asset_string}.present?
   end
 
   def license_help_link
@@ -433,17 +464,24 @@ module ApplicationHelper
 
   def inst_env
     global_inst_object = { :environment =>  Rails.env }
+
+    # TODO: get these kaltura settings out of the global INST object completely.
+    # Only load them when trying to record a video
+    if @context.try_rescue(:allow_media_comments?) || controller_name == 'conversations'
+      kalturaConfig = CanvasKaltura::ClientV3.config
+      if kalturaConfig
+        global_inst_object[:allowMediaComments] = true
+        global_inst_object[:kalturaSettings] = kalturaConfig.try(:slice,
+          'domain', 'resource_domain', 'rtmp_domain',
+          'partner_id', 'subpartner_id', 'player_ui_conf',
+          'player_cache_st', 'kcw_ui_conf', 'upload_ui_conf',
+          'max_file_size_bytes', 'do_analytics', 'hide_rte_button', 'js_uploader'
+        )
+      end
+    end
+
     {
-      :allowMediaComments       => CanvasKaltura::ClientV3.config && @context.try_rescue(:allow_media_comments?),
-      :kalturaSettings          => CanvasKaltura::ClientV3.config.try(:slice,
-                                    'domain', 'resource_domain', 'rtmp_domain',
-                                    'partner_id', 'subpartner_id', 'player_ui_conf',
-                                    'player_cache_st', 'kcw_ui_conf', 'upload_ui_conf',
-                                    'max_file_size_bytes', 'do_analytics', 'hide_rte_button', 'js_uploader'),
       :equellaEnabled           => !!equella_enabled?,
-      :googleAnalyticsAccount   => Setting.get('google_analytics_key', nil),
-      :http_status              => @status,
-      :error_id                 => @error && @error.id,
       :disableGooglePreviews    => !service_enabled?(:google_docs_previews),
       :disableCrocodocPreviews  => !feature_enabled?(:crocodoc),
       :logPageViews             => !@body_class_no_headers,
@@ -688,7 +726,7 @@ module ApplicationHelper
   end
   private :brand_config_account
 
-  def include_account_js(options = {})
+  def include_account_js
     return if params[:global_includes] == '0' || !@domain_root_account
 
     includes = if @domain_root_account.allow_global_includes? && (abc = active_brand_config(ignore_high_contrast_preference: true))
@@ -698,8 +736,9 @@ module ApplicationHelper
     end
 
     if includes.present?
-      includes.unshift("/node_modules/jquery/jquery.js") if options[:raw]
-      javascript_include_tag(*includes, defer: true)
+      # Loading them like this puts them in the same queue as our script tags we load in
+      # include_head_js. We need that because we need them to load _after_ our jquery loads.
+      load_scripts_async_in_order(includes)
     end
   end
 
@@ -854,8 +893,16 @@ module ApplicationHelper
     end
   end
 
+  def content_for_head(string)
+    (@content_for_head ||= []) << string
+  end
+
+  def add_meta_tag(tag)
+    @meta_tags ||= []
+    @meta_tags << tag
+  end
+
   def include_custom_meta_tags
-    add_csp_for_root
     js_env(csp: csp_iframe_attribute) if csp_enforced?
 
     output = []
@@ -885,7 +932,7 @@ module ApplicationHelper
           # search for an attachment association
           aas = attachment.attachment_associations.where(context_type: 'Submission').preload(:context).to_a
           ActiveRecord::Associations::Preloader.new.preload(aas.map(&:submission), assignment: :context)
-          courses = aas.map { |aa| aa.submission.assignment.course }.uniq
+          courses = aas.map { |aa| aa&.submission&.assignment&.course }.uniq
           if courses.length == 1
             @csp_context_is_submission = true
             courses.first
@@ -941,6 +988,7 @@ module ApplicationHelper
   end
 
   def add_csp_for_root
+    return unless request.format.html? || request.format == "*/*"
     return unless csp_enabled?
     return if csp_report_uri.empty? && !csp_enforced?
 
@@ -1014,14 +1062,15 @@ module ApplicationHelper
     super
   end
 
-  def generate_access_verifier(return_url: nil)
+  def generate_access_verifier(return_url: nil, fallback_url: nil)
     Users::AccessVerifier.generate(
       user: @current_user,
       real_user: logged_in_user,
       developer_key: @access_token&.developer_key,
       root_account: @domain_root_account,
       oauth_host: request.host_with_port,
-      return_url: return_url
+      return_url: return_url,
+      fallback_url: fallback_url
     )
   end
 
@@ -1195,15 +1244,12 @@ module ApplicationHelper
     super(attachment, uuid || attachment.uuid, url_options)
   end
 
-  if CANVAS_RAILS5_1
-    # this is for rails 5.1. it can be deleted when we upgrade to RAILS_5.2. rails 5.2 includes a preload_link_tag method
-    def preload_link_tag(source, options = {})
-      tag.link({
-        rel: "preload",
-        href: asset_path(source),
-        as: "script",
-        type: "text/javascript"
-      }.merge(options.symbolize_keys))
+  def prefetch_assignment_external_tools
+    content_tag(:div, id: 'assignment_external_tools') do
+      prefetch_xhr(api_v1_course_launch_definitions_path(
+        @context,
+        'placements[]' => 'assignment_view'
+      ))
     end
   end
 

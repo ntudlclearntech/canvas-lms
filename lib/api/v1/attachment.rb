@@ -43,7 +43,6 @@ module Api::V1::Attachment
       'folder_id' => attachment.folder_id,
       'display_name' => attachment.display_name,
       'filename' => attachment.filename,
-      'workflow_state' => attachment.workflow_state,
       'upload_status' => AttachmentUploadStatus.upload_status(attachment)
     }
     return hash if options[:only] && options[:only].include?('names')
@@ -250,7 +249,8 @@ module Api::V1::Attachment
 
         if progress_context.is_a? Assignment
           additional_capture_params = {
-            eula_agreement_timestamp: params[:eula_agreement_timestamp]
+            eula_agreement_timestamp: params[:eula_agreement_timestamp],
+            submit_assignment: opts[:submit_assignment]
           }
         end
 
@@ -298,7 +298,7 @@ module Api::V1::Attachment
         )
 
         Services::SubmitHomeworkService.submit_job(
-          @attachment, progress, params[:eula_agreement_timestamp], executor
+          @attachment, progress, params[:eula_agreement_timestamp], executor, opts[:submit_assignment]
         )
 
         json = { progress: progress_json(progress, @current_user, session) }

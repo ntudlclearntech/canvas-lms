@@ -21,7 +21,7 @@ import 'jqueryui/dialog'
 import 'jquery.instructure_misc_plugins'
 import 'jquery.loadingImg'
 
-$('.visibility_help_link').live('click', (event) => {
+$('.visibility_help_link').live('click', event => {
   event.preventDefault()
   let $dialog = $('#visibility_help_dialog')
   if ($dialog.length === 0) {
@@ -35,9 +35,11 @@ $('.visibility_help_link').live('click', (event) => {
         width: 330
       })
 
-    $('#course_course_visibility option').each(function(_i, element) {
-      $dialog.append($("<div/>").append($("<b/>", {text: element.innerText})))
-      $dialog.append($("<div/>", {text: ENV.COURSE_VISIBILITY_OPTION_DESCRIPTIONS[element.value] || ''}))
+    $('#course_course_visibility option').each((_i, element) => {
+      $dialog.append($('<div/>').append($('<b/>', {text: element.innerText})))
+      $dialog.append(
+        $('<div/>', {text: ENV.COURSE_VISIBILITY_OPTION_DESCRIPTIONS[element.value] || ''})
+      )
     })
   }
   $dialog.dialog('open')

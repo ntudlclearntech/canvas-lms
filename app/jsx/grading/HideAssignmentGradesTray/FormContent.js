@@ -16,13 +16,12 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import React, {Fragment} from 'react'
+import React from 'react'
 import {arrayOf, bool, func, shape, string} from 'prop-types'
 
-import Button from '@instructure/ui-buttons/lib/components/Button'
-import Flex, {FlexItem} from '@instructure/ui-layout/lib/components/Flex'
-import Spinner from '@instructure/ui-elements/lib/components/Spinner'
-import View from '@instructure/ui-layout/lib/components/View'
+import {Button} from '@instructure/ui-buttons'
+import {Flex, View} from '@instructure/ui-layout'
+import {Spinner} from '@instructure/ui-elements'
 
 import I18n from 'i18n!hide_assignment_grades_tray'
 
@@ -43,7 +42,7 @@ export default function FormContent({
   if (hidingGrades) {
     return (
       <View as="div" textAlign="center" padding="large">
-        <Spinner title={I18n.t('Hiding grades')} size="large" />
+        <Spinner renderTitle={I18n.t('Hiding grades')} size="large" />
       </View>
     )
   }
@@ -51,7 +50,7 @@ export default function FormContent({
   const hasSections = sections.length > 0
 
   return (
-    <Fragment>
+    <>
       {hasSections && (
         <SpecificSections
           checked={hideBySections}
@@ -75,20 +74,20 @@ export default function FormContent({
 
       <View as="div" margin="medium 0 0" padding="0 medium">
         <Flex justifyItems="end">
-          <FlexItem margin="0 small 0 0">
+          <Flex.Item margin="0 small 0 0">
             <Button onClick={dismiss} disabled={!gradesPublished}>
               {I18n.t('Close')}
             </Button>
-          </FlexItem>
+          </Flex.Item>
 
-          <FlexItem>
+          <Flex.Item>
             <Button onClick={onHideClick} disabled={!gradesPublished} variant="primary">
               {I18n.t('Hide')}
             </Button>
-          </FlexItem>
+          </Flex.Item>
         </Flex>
       </View>
-    </Fragment>
+    </>
   )
 }
 

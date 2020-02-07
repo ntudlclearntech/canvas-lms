@@ -43,6 +43,7 @@ class CanvasSchema < GraphQL::Schema
 
   def self.resolve_type(type, obj, _ctx)
     case obj
+    when Account then Types::AccountType
     when Course then Types::CourseType
     when Assignment then Types::AssignmentType
     when AssignmentGroup then Types::AssignmentGroupType
@@ -63,11 +64,15 @@ class CanvasSchema < GraphQL::Schema
     when DiscussionTopic then Types::DiscussionType
     when Quizzes::Quiz then Types::QuizType
     when Progress then Types::ProgressType
+    when Rubric then Types::RubricType
     when MediaObject then Types::MediaObjectType
     when ContentTag
-      if !type.nil? && type.name == "ModuleItemInterface"
-        return Types::ExternalUrlType if obj.content_type == "ExternalUrl"
-        return Types::ModuleExternalToolType if obj.content_type == "ContextExternalTool"
+      if type&.name == "ModuleItemInterface"
+        case obj.content_type
+        when "ContextModuleSubHeader" then Types::ModuleSubHeaderType
+        when "ExternalUrl" then Types::ExternalUrlType
+        when "ContextExternalTool" then Types::ModuleExternalToolType
+        end
       else
         Types::ModuleItemType
       end
@@ -75,7 +80,13 @@ class CanvasSchema < GraphQL::Schema
     end
   end
 
+  def self.unauthorized_object(error)
+    raise GraphQL::ExecutionError,
+      I18n.t("An object of type %{graphql_type} was hidden due to insufficient scopes on access token",
+             graphql_type: error.type.graphql_name)
+  end
+
   orphan_types [Types::PageType, Types::FileType, Types::ExternalUrlType,
                 Types::ExternalToolType, Types::ModuleExternalToolType,
-                Types::ProgressType]
+                Types::ProgressType, Types::ModuleSubHeaderType]
 end

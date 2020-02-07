@@ -16,18 +16,39 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import Modal, { ModalBody} from './components/InstuiModal'
+import Modal from './components/InstuiModal'
 import $ from 'jquery'
 import React from 'react'
-import { bool } from 'prop-types'
+import {bool} from 'prop-types'
 import I18n from 'i18n!terms_of_service_modal'
 import RichContentEditor from './rce/RichContentEditor'
 
 const termsOfServiceText = I18n.t('Acceptable Use Policy')
 
+class TermsOfServiceCustomContents extends React.Component {
+  state = {
+    TERMS_OF_SERVICE_CUSTOM_CONTENT: undefined
+  }
+
+  async componentDidMount() {
+    const url = '/api/v1/terms_of_service_custom_content'
+    const TERMS_OF_SERVICE_CUSTOM_CONTENT = await (await fetch(url)).text()
+
+    this.setState({TERMS_OF_SERVICE_CUSTOM_CONTENT})
+  }
+
+  render() {
+    return this.state.TERMS_OF_SERVICE_CUSTOM_CONTENT ? (
+      <div dangerouslySetInnerHTML={{__html: this.state.TERMS_OF_SERVICE_CUSTOM_CONTENT}} />
+    ) : (
+      <span>{I18n.t('Loading...')}</span>
+    )
+  }
+}
+
 export default class TermsOfServiceModal extends React.Component {
   static propTypes = {
-    preview: bool,
+    preview: bool
   }
 
   static defaultProps = {
@@ -35,63 +56,61 @@ export default class TermsOfServiceModal extends React.Component {
   }
 
   state = {
-    open: false,
+    open: false
   }
 
   handleCloseModal = () => {
     this.link.focus()
-    this.setState({ open: false })
+    this.setState({open: false})
   }
 
   handleLinkClick = () => {
-    const $rce_container = $('#custom_tos_rce_container')
-    if ($rce_container.length > 0) {
-      const $textarea = $rce_container.find('textarea');
-      ENV.TERMS_OF_SERVICE_CUSTOM_CONTENT = RichContentEditor.callOnRCE($textarea, 'get_code')
-    }
-    this.setState((state) => ({ open: !state.open }))
-    this.applyTabs();
-  }
+    this.setState(state => {
+      const $rce_container = $('#custom_tos_rce_container')
+      let TERMS_OF_SERVICE_CUSTOM_CONTENT
+      if ($rce_container.length > 0) {
+        const $textarea = $rce_container.find('textarea')
+        TERMS_OF_SERVICE_CUSTOM_CONTENT = RichContentEditor.callOnRCE($textarea, 'get_code')
+      }
 
-  applyTabs = () => {
-    setTimeout(() => {
-      function onTabClick(event) {
-        let activeTabs = document.querySelectorAll('.cool-tos-nav .active, .cool-tos-tab-content .active');
-        
-        activeTabs.forEach(function(tab) {
-          tab.className = tab.className.replace('active', '');
-        });
-        
-        event.target.parentElement.className += ' active';
-        document.getElementById(event.target.href.split('#')[1]).className += ' active';
-        setTimeout(() => {
-          document.getElementById('cool-tos-back-to-top').click();
-        }, 0);
+      return {
+        open: !state.open,
+        TERMS_OF_SERVICE_CUSTOM_CONTENT
       }
-      
-      const element = document.getElementById('cool-tos-nav-tab');
-      if (element) { 
-        element.addEventListener('click', onTabClick, false);
-      }
-    }, 300);
+    })
   }
 
   render() {
     return (
       <span id="terms_of_service_modal">
-       <a className="terms_link"  href="#" ref={(c) => { this.link = c; }} onClick={this.handleLinkClick}>
-         {this.props.preview ? I18n.t('Preview') : termsOfServiceText}
-       </a>
-       <Modal
-         open={this.state.open}
-         onDismiss={this.handleCloseModal}
-         size="fullscreen"
-         label={termsOfServiceText}
-       >
-         <ModalBody>
-           <div dangerouslySetInnerHTML={{__html: ENV.TERMS_OF_SERVICE_CUSTOM_CONTENT}} />
-         </ModalBody>
-       </Modal>
+        <a
+          className="terms_link"
+          href="#"
+          ref={c => {
+            this.link = c
+          }}
+          onClick={this.handleLinkClick}
+        >
+          {this.props.preview ? I18n.t('Preview') : termsOfServiceText}
+        </a>
+        {this.state.open && (
+          <Modal
+            open={this.state.open}
+            onDismiss={this.handleCloseModal}
+            size="fullscreen"
+            label={termsOfServiceText}
+          >
+            <Modal.Body>
+              {this.props.preview ? (
+                <div
+                  dangerouslySetInnerHTML={{__html: this.state.TERMS_OF_SERVICE_CUSTOM_CONTENT}}
+                />
+              ) : (
+                <TermsOfServiceCustomContents />
+              )}
+            </Modal.Body>
+          </Modal>
+        )}
       </span>
     )
   }

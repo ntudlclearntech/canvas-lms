@@ -18,21 +18,17 @@
 
 import K5Uploader from '@instructure/k5uploader'
 
-/*eslint no-console: 0*/
+/* eslint no-console: 0 */
 export default class Bridge {
   constructor() {
     this.focusedEditor = null
     this.resolveEditorRendered = null
 
-    this.embedImage = this.embedImage.bind(this)
-
     this._editorRendered = new Promise(resolve => {
       this.resolveEditorRendered = resolve
     })
 
-    this.insertLink = this.insertLink.bind(this)
-
-    this.trayProps = new WeakMap();
+    this.trayProps = new WeakMap()
   }
 
   get editorRendered() {
@@ -44,19 +40,21 @@ export default class Bridge {
   }
 
   activeEditor() {
-    return this.focusedEditor;
+    return this.focusedEditor
   }
 
   focusEditor(editor) {
-    this.focusedEditor = editor;
+    this.focusedEditor = editor
   }
 
   focusActiveEditor(skipFocus = false) {
-    this.getEditor().mceInstance().focus(skipFocus)
+    this.getEditor()
+      .mceInstance()
+      .focus(skipFocus)
   }
 
   get mediaServerSession() {
-    return this._mediaServerSession;
+    return this._mediaServerSession
   }
 
   get mediaServerUploader() {
@@ -64,7 +62,7 @@ export default class Bridge {
   }
 
   setMediaServerSession(session) {
-    this._mediaServerSession = session;
+    this._mediaServerSession = session
     if (this._mediaServerUploader) {
       this._mediaServerUploader.destroy()
       this._mediaServerUploader = null
@@ -74,18 +72,18 @@ export default class Bridge {
 
   detachEditor(editor) {
     if (editor === this.focusedEditor) {
-      this.focusedEditor = null;
+      this.focusedEditor = null
     }
   }
 
   getEditor() {
-    return this.focusedEditor;
+    return this.focusedEditor
   }
 
   renderEditor(editor) {
-    this.resolveEditorRendered();
+    this.resolveEditorRendered()
     if (this.focusedEditor === null) {
-      this.focusedEditor = editor;
+      this.focusEditor(editor)
     }
   }
 
@@ -103,73 +101,97 @@ export default class Bridge {
 
   existingContentToLink() {
     if (this.focusedEditor) {
-      return this.focusedEditor.existingContentToLink();
+      return this.focusedEditor.existingContentToLink()
     }
-    return false;
+    return false
   }
 
   existingContentToLinkIsImg() {
     if (this.focusedEditor) {
-      return this.focusedEditor.existingContentToLinkIsImg();
+      return this.focusedEditor.existingContentToLinkIsImg()
     }
-    return false;
+    return false
   }
 
-  insertLink(link) {
+  insertLink = (link, fromTray = true) => {
     if (this.focusedEditor) {
-      const { selection } = this.focusedEditor.props.tinymce.get(
-        this.focusedEditor.props.textareaId
-      );
+      const {selection} = this.focusedEditor.props.tinymce.get(this.focusedEditor.props.textareaId)
       link.selectionDetails = {
         node: selection.getNode(),
         range: selection.getRng()
-      };
-      this.focusedEditor.insertLink(link);
-      if (this.controller) {
+      }
+      if (!link.text) {
+        link.text = link.title || link.href
+      }
+      this.focusedEditor.insertLink(link)
+      if (fromTray && this.controller) {
         this.controller.hideTray()
       }
     } else {
-      console.warn("clicked sidebar link without a focused editor");
+      console.warn('clicked sidebar link without a focused editor')
     }
   }
 
   insertImage(image) {
     if (this.focusedEditor) {
-      this.focusedEditor.insertImage(image);
+      this.focusedEditor.insertImage(image)
       if (this.controller) {
         this.controller.hideTray()
       }
     } else {
-      console.warn("clicked sidebar image without a focused editor");
+      console.warn('clicked sidebar image without a focused editor')
     }
   }
 
   insertImagePlaceholder(fileMetaProps) {
     if (this.focusedEditor) {
-      this.focusedEditor.insertImagePlaceholder(fileMetaProps);
+      this.focusedEditor.insertImagePlaceholder(fileMetaProps)
     } else {
-      console.warn("clicked sidebar image without a focused editor");
+      console.warn('clicked sidebar image without a focused editor')
     }
   }
 
   removePlaceholders(name) {
     if (this.focusedEditor) {
-      this.focusedEditor.removePlaceholders(name);
+      this.focusedEditor.removePlaceholders(name)
     }
   }
 
-  embedImage(image) {
-    if (
-      this.existingContentToLink() &&
-      !this.existingContentToLinkIsImg()
-    ) {
+  embedImage = image => {
+    if (this.existingContentToLink() && !this.existingContentToLinkIsImg()) {
       this.insertLink({
         title: image.display_name,
         href: image.href,
-        embed: { type: "image" }
-      });
+        embed: {type: 'image'}
+      })
     } else {
-      this.insertImage(image);
+      this.insertImage(image)
+    }
+  }
+
+  embedMedia = media => {
+    if (/video/.test(media.type || media.content_type)) {
+      this.insertVideo(media)
+    } else {
+      this.insertAudio(media)
+    }
+  }
+
+  insertVideo = video => {
+    if (this.focusedEditor) {
+      this.focusedEditor.insertVideo(video)
+    }
+    if (this.controller) {
+      this.controller.hideTray()
+    }
+  }
+
+  insertAudio = audio => {
+    if (this.focusedEditor) {
+      this.focusedEditor.insertAudio(audio)
+    }
+    if (this.controller) {
+      this.controller.hideTray()
     }
   }
 }

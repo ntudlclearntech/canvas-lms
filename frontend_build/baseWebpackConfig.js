@@ -27,7 +27,7 @@ const TerserPlugin = require('terser-webpack-plugin')
 const MomentTimezoneDataPlugin = require('moment-timezone-data-webpack-plugin')
 const path = require('path')
 const webpack = require('webpack')
-const CleanWebpackPlugin = require('clean-webpack-plugin')
+const {CleanWebpackPlugin} = require('clean-webpack-plugin')
 const StatsWriterPlugin = require('webpack-stats-plugin').StatsWriterPlugin
 const BundleExtensionsPlugin = require('./BundleExtensionsPlugin')
 const ClientAppsPlugin = require('./clientAppPlugin')
@@ -66,6 +66,7 @@ module.exports = {
     assetFilter: assetFilename => {
       const thingsWeKnowAreWayTooBig = [
         'canvas-rce-async-chunk',
+        'canvas-rce-old-async-chunk',
         'permissions_index',
         'gradezilla',
         'screenreader_gradebook',
@@ -81,6 +82,7 @@ module.exports = {
     }
   },
   optimization: {
+    // concatenateModules: false, // uncomment if you want to get more accurate stuff from `yarn webpack:analyze`
     moduleIds: 'hashed',
     minimizer: [
       new TerserPlugin({
@@ -163,6 +165,15 @@ module.exports = {
   resolve: {
     alias: {
       d3: 'd3/d3',
+
+      // this is to make instUI themeable work with real es `class`es
+      // it is a change that was backported and is fixed in instUI 6
+      // the file is the same as the on published to npm but we added a
+      // `require('newless')` to make it work
+      './themeable$': path.resolve(__dirname, '../app/jsx/@instructure/ui-themeable/es/themeable-with-newless.js'),
+      '../themeable$': path.resolve(__dirname, '../app/jsx/@instructure/ui-themeable/es/themeable-with-newless.js'),
+      '@instructure/ui-themeable/es/themeable$': path.resolve(__dirname, '../app/jsx/@instructure/ui-themeable/es/themeable-with-newless.js'),
+
       'node_modules-version-of-backbone': require.resolve('backbone'),
       'node_modules-version-of-react-modal': require.resolve('react-modal'),
 
@@ -288,7 +299,8 @@ module.exports = {
     new webpack.EnvironmentPlugin({
       NODE_ENV: null,
       DEPRECATION_SENTRY_DSN: null,
-      GIT_COMMIT: null
+      GIT_COMMIT: null,
+      ALWAYS_APPEND_UI_TESTABLE_LOCATORS: null
     }),
 
     // Only include timezone data starting from 2011 (canvaseption) to 15 years from now,

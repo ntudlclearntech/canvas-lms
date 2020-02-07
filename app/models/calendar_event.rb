@@ -356,6 +356,7 @@ class CalendarEvent < ActiveRecord::Base
         context.touch if context_type == 'AppointmentGroup' # ensures end_at/start_at get updated
         # when deleting an appointment or appointment_participant, make sure we reset the cache
         appointment_group.clear_cached_available_slots!
+        appointment_group.save!
       end
       if parent_event && parent_event.locked? && parent_event.child_events.size == 0
         parent_event.workflow_state = 'active'
@@ -541,7 +542,7 @@ class CalendarEvent < ActiveRecord::Base
   end
 
   def all_day
-    read_attribute(:all_day) || (self.new_record? && self.start_at && self.start_at.strftime("%H:%M") == '00:00')
+    read_attribute(:all_day) || (self.new_record? && self.start_at && self.start_at == self.end_at && self.start_at.strftime("%H:%M") == '00:00')
   end
 
   def to_atom(opts={})

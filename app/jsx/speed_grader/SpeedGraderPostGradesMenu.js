@@ -18,41 +18,42 @@
 
 import React from 'react'
 import {bool, func} from 'prop-types'
-import Button from '@instructure/ui-buttons/lib/components/Button'
-import IconEye from '@instructure/ui-icons/lib/Line/IconEye'
-import IconOff from '@instructure/ui-icons/lib/Line/IconOff'
-import Menu, {MenuItem} from '@instructure/ui-menu/lib/components/Menu'
-import ScreenReaderContent from '@instructure/ui-a11y/lib/components/ScreenReaderContent'
-import Text from '@instructure/ui-elements/lib/components/Text'
+import {Button} from '@instructure/ui-buttons'
+import {IconEyeLine, IconOffLine} from '@instructure/ui-icons'
+import {Menu} from '@instructure/ui-menu'
+import {Text} from '@instructure/ui-elements'
 import I18n from 'i18n!SpeedGraderPostGradesMenu'
 
 export default function SpeedGraderPostGradesMenu(props) {
+  const Icon = props.allowPostingGrades ? IconOffLine : IconEyeLine
   const menuTrigger = (
-    <Button variant="icon-inverse" icon={props.allowPostingGrades ? IconOff : IconEye}>
-      <ScreenReaderContent>{I18n.t('Post or Hide Grades')}</ScreenReaderContent>
-    </Button>
+    <Button
+      icon={<Icon className="speedgrader-postgradesmenu-icon" />}
+      title={I18n.t('Post or Hide Grades')}
+      variant="icon"
+    />
   )
 
   return (
     <Menu placement="bottom end" trigger={menuTrigger}>
-      {props.allowPostingGrades ? (
-        <MenuItem name="postGrades" onSelect={props.onPostGrades}>
+      {props.allowPostingGrades && props.hasGrades ? (
+        <Menu.Item name="postGrades" onSelect={props.onPostGrades}>
           <Text>{I18n.t('Post Grades')}</Text>
-        </MenuItem>
+        </Menu.Item>
       ) : (
-        <MenuItem name="postGrades" disabled>
-          <Text>{I18n.t('All Grades Posted')}</Text>
-        </MenuItem>
+        <Menu.Item name="postGrades" disabled>
+          <Text>{props.hasGrades ? I18n.t('All Grades Posted') : I18n.t('No Grades to Post')}</Text>
+        </Menu.Item>
       )}
 
-      {props.allowHidingGrades ? (
-        <MenuItem name="hideGrades" onSelect={props.onHideGrades}>
+      {props.allowHidingGrades && props.hasGrades ? (
+        <Menu.Item name="hideGrades" onSelect={props.onHideGrades}>
           <Text>{I18n.t('Hide Grades')}</Text>
-        </MenuItem>
+        </Menu.Item>
       ) : (
-        <MenuItem name="hideGrades" disabled>
-          <Text>{I18n.t('All Grades Hidden')}</Text>
-        </MenuItem>
+        <Menu.Item name="hideGrades" disabled>
+          <Text>{props.hasGrades ? I18n.t('All Grades Hidden') : I18n.t('No Grades to Hide')}</Text>
+        </Menu.Item>
       )}
     </Menu>
   )
@@ -61,6 +62,7 @@ export default function SpeedGraderPostGradesMenu(props) {
 SpeedGraderPostGradesMenu.propTypes = {
   allowHidingGrades: bool.isRequired,
   allowPostingGrades: bool.isRequired,
+  hasGrades: bool.isRequired,
   onHideGrades: func.isRequired,
   onPostGrades: func.isRequired
 }

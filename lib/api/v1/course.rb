@@ -31,12 +31,15 @@ module Api::V1::Course
     settings[:allow_student_discussion_topics] = course.allow_student_discussion_topics?
     settings[:allow_student_forum_attachments] = course.allow_student_forum_attachments?
     settings[:allow_student_discussion_editing] = course.allow_student_discussion_editing?
+    settings[:filter_speed_grader_by_student_group] = course.filter_speed_grader_by_student_group?
     settings[:grading_standard_enabled] = course.grading_standard_enabled?
     settings[:grading_standard_id] = course.grading_standard_id
+    settings[:grade_passback_setting] = course.grade_passback_setting
     settings[:allow_student_organized_groups] = course.allow_student_organized_groups?
     settings[:hide_final_grades] = course.hide_final_grades?
     settings[:hide_distribution_graphs] = course.hide_distribution_graphs?
     settings[:lock_all_announcements] = course.lock_all_announcements?
+    settings[:usage_rights_required] = course.usage_rights_required?
     settings[:restrict_student_past_view] = course.restrict_student_past_view?
     settings[:restrict_student_future_view] = course.restrict_student_future_view?
     settings[:show_announcements_on_home_page] = course.show_announcements_on_home_page?
@@ -96,10 +99,16 @@ module Api::V1::Course
                                                      preloaded_progressions: preloaded_progressions).to_json
       end
       hash['apply_assignment_group_weights'] = course.apply_group_weights?
-      hash['sections'] = section_enrollments_json(enrollments) if includes.include?('sections')
+      if includes.include?('sections')
+        hash['sections'] = if enrollments.any?
+          section_enrollments_json(enrollments)
+        else
+          course.course_sections.map { |section| section.attributes.slice(*%w(id name start_at end_at)) }
+        end
+      end
       hash['total_students'] = course.student_count || course.student_enrollments.not_fake.distinct.count(:user_id) if includes.include?('total_students')
       hash['passback_status'] = post_grades_status_json(course) if includes.include?('passback_status')
-      hash['is_favorite'] = course.favorite_for_user?(user) if includes.include?('favorites')
+      hash['is_favorite'] = course.favorite_for_user?(subject_user) if includes.include?('favorites')
       if includes.include?('teachers')
         if course.teacher_count
           hash['teacher_count'] = course.teacher_count

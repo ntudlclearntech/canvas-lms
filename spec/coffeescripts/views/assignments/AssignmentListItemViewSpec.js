@@ -138,6 +138,8 @@ const createView = function(model, options) {
 
   ENV.POST_TO_SIS = options.post_to_sis
   ENV.DUPLICATE_ENABLED = options.duplicateEnabled
+  ENV.DIRECT_SHARE_ENABLED = options.directShareEnabled
+
   const view = new AssignmentListItemView({
     model,
     userIsAdmin: options.userIsAdmin
@@ -288,6 +290,22 @@ test('does not initialize sis toggle if sis enabled, can manage and is unpublish
     post_to_sis: true
   })
   ok(!view.sisButtonView)
+})
+
+test('shows sharing and copying menu items if DIRECT_SHARE_ENABLED', function() {
+  const view = createView(this.model, {
+    directShareEnabled: true
+  })
+  ok(view.$('.send_assignment_to').length)
+  ok(view.$('.copy_assignment_to').length)
+})
+
+test('does not show sharing and copying menu items if not DIRECT_SHARE_ENABLED', function() {
+  const view = createView(this.model, {
+    directShareEnabled: false
+  })
+  strictEqual(view.$('.send_assignment_to').length, 0)
+  strictEqual(view.$('.copy_assignment_to').length, 0)
 })
 
 test('upatePublishState toggles ig-published', function() {
@@ -726,6 +744,19 @@ test('clicks on Retry button to trigger another duplicating request', () => {
   ok(model.duplicate_failed.called)
 })
 
+test('clicks on Retry button to trigger another migrating request', () => {
+  const model = buildAssignment({
+    id: 2,
+    title: 'Foo Copy',
+    original_assignment_name: 'Foo',
+    workflow_state: 'failed_to_migrate'
+  })
+  const view = createView(model)
+  sandbox.spy(model, 'retry_migration')
+  view.$(`#assignment_${model.id} .migrate-failed-retry`).click()
+  ok(model.retry_migration.called)
+})
+
 test('cannot duplicate when user is not admin', () => {
   const model = buildAssignment({
     id: 1,
@@ -742,7 +773,7 @@ test('cannot duplicate when user is not admin', () => {
   equal(view.$('.duplicate_assignment').length, 0)
 })
 
-test('displays duplicating message when assignment is duplicating', function() {
+test('displays duplicating message when assignment is duplicating', () => {
   const model = buildAssignment({
     id: 2,
     title: 'Foo Copy',
@@ -753,7 +784,7 @@ test('displays duplicating message when assignment is duplicating', function() {
   ok(view.$el.text().includes('Making a copy of "Foo"'))
 })
 
-test('displays failed to duplicate message when assignment failed to duplicate', function() {
+test('displays failed to duplicate message when assignment failed to duplicate', () => {
   const model = buildAssignment({
     id: 2,
     title: 'Foo Copy',
@@ -908,7 +939,7 @@ QUnit.module('AssignmentListItemViewSpec - editing assignments', function(hooks)
       individualAssignmentPermissions: {update: true}
     })
 
-    strictEqual(view.$('.edit_assignment').hasClass('disabled'), false);
+    strictEqual(view.$('.edit_assignment').hasClass('disabled'), false)
   })
 
   test('edit link is disabled when the individual assignment is not editable', function() {
@@ -916,9 +947,9 @@ QUnit.module('AssignmentListItemViewSpec - editing assignments', function(hooks)
       individualAssignmentPermissions: {update: false}
     })
 
-    strictEqual(view.$('.edit_assignment').hasClass('disabled'), true);
+    strictEqual(view.$('.edit_assignment').hasClass('disabled'), true)
   })
-});
+})
 
 QUnit.module('AssignmentListItemViewSpec - deleting assignments', function(hooks) {
   hooks.beforeEach(function() {
@@ -969,7 +1000,7 @@ QUnit.module('AssignmentListItemViewSpec - deleting assignments', function(hooks
       individualAssignmentPermissions: {update: true}
     })
 
-    strictEqual(view.$('.delete_assignment').hasClass('disabled'), false);
+    strictEqual(view.$('.delete_assignment').hasClass('disabled'), false)
   })
 
   test('delete link is disabled when canDelete returns false', function() {
@@ -977,7 +1008,7 @@ QUnit.module('AssignmentListItemViewSpec - deleting assignments', function(hooks
       individualAssignmentPermissions: {update: false}
     })
 
-    strictEqual(view.$('.delete_assignment').hasClass('disabled'), true);
+    strictEqual(view.$('.delete_assignment').hasClass('disabled'), true)
   })
 })
 
@@ -1002,7 +1033,7 @@ QUnit.module('AssignmentListItemViewSpec - publish/unpublish icon', function(hoo
     })
 
     const json = view.toJSON()
-    strictEqual(view.$('.publish-icon').hasClass('disabled'), false);
+    strictEqual(view.$('.publish-icon').hasClass('disabled'), false)
   })
 
   test('publish icon is enabled if canManage is true and the individual assignment can be updated', function() {
@@ -1012,7 +1043,7 @@ QUnit.module('AssignmentListItemViewSpec - publish/unpublish icon', function(hoo
     })
 
     const json = view.toJSON()
-    strictEqual(view.$('.publish-icon').hasClass('disabled'), false);
+    strictEqual(view.$('.publish-icon').hasClass('disabled'), false)
   })
 
   test('publish icon is disabled if canManage is true and the individual assignment cannot be updated', function() {
@@ -1022,7 +1053,7 @@ QUnit.module('AssignmentListItemViewSpec - publish/unpublish icon', function(hoo
     })
 
     const json = view.toJSON()
-    strictEqual(view.$('.publish-icon').hasClass('disabled'), true);
+    strictEqual(view.$('.publish-icon').hasClass('disabled'), true)
   })
 })
 
@@ -1327,4 +1358,78 @@ test('renders for assignment if assignment is released by a rule', () => {
   })
   const view = createView(model)
   equal(view.$('.mastery-path-icon').length, 1)
+})
+
+QUnit.module('AssignListItemViewSpec - assignment icons', {
+  setup() {
+    fakeENV.setup({
+      current_user_roles: ['teacher'],
+      URLS: {assignment_sort_base_url: 'test'}
+    })
+  },
+  teardown() {
+    fakeENV.teardown()
+  }
+})
+
+test('renders discussion icon for discussion topic', () => {
+  const model = buildAssignment({
+    id: 1,
+    title: 'Foo',
+    submission_types: ['discussion_topic']
+  })
+  const view = createView(model)
+  equal(view.$('i.icon-discussion').length, 1)
+})
+
+test('renders quiz icon for old quizzes', () => {
+  const model = buildAssignment({
+    id: 1,
+    title: 'Foo',
+    submission_types: ['online_quiz']
+  })
+  const view = createView(model)
+  equal(view.$('i.icon-quiz').length, 1)
+})
+
+test('renders page icon for wiki page', () => {
+  const model = buildAssignment({
+    id: 1,
+    title: 'Foo',
+    submission_types: ['wiki_page']
+  })
+  const view = createView(model)
+  equal(view.$('i.icon-document').length, 1)
+})
+
+test('renders solid quiz icon for new quizzes', () => {
+  ENV.FLAGS = {newquizzes_on_quiz_page: true}
+  const model = buildAssignment({
+    id: 1,
+    title: 'Foo',
+    is_quiz_lti_assignment: true
+  })
+  const view = createView(model)
+  equal(view.$('i.icon-quiz.icon-Solid').length, 1)
+})
+
+test('renders assignment icon for new quizzes if FF is off', () => {
+  ENV.FLAGS = {newquizzes_on_quiz_page: false}
+  const model = buildAssignment({
+    id: 1,
+    title: 'Foo',
+    is_quiz_lti_assignment: true
+  })
+  const view = createView(model)
+  equal(view.$('i.icon-quiz.icon-Solid').length, 0)
+  equal(view.$('i.icon-assignment').length, 1)
+})
+
+test('renders assignment icon for other assignments', () => {
+  const model = buildAssignment({
+    id: 1,
+    title: 'Foo'
+  })
+  const view = createView(model)
+  equal(view.$('i.icon-assignment').length, 1)
 })

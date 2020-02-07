@@ -67,7 +67,7 @@ module CC::Importer::Canvas
        'open_enrollment', 'allow_wiki_comments',
        'self_enrollment', 'hide_final_grade', 'grading_standard_enabled',
        'hide_distribution_graphs', 'allow_student_discussion_topics',
-       'allow_student_discussion_editing', 'show_announcements_on_home_page',
+       'allow_student_discussion_editing', 'show_announcements_on_home_page', 'usage_rights_required',
        'restrict_student_future_view', 'restrict_student_past_view', 'show_total_grade_as_points',
        'organize_epub_by_content_type', 'enable_offline_web_export', 'restrict_enrollments_to_course_dates'
       ].each do |bool_val|
@@ -95,6 +95,9 @@ module CC::Importer::Canvas
           add_warning(I18n.t('errors.bad_navigation_config', "Invalid course tab configuration"), $!)
         end
       end
+
+      post_manually = get_bool_val(doc, 'default_post_policy post_manually')
+      course[:default_post_policy] = {post_manually: post_manually} unless post_manually.nil?
 
       course
     end

@@ -70,15 +70,9 @@ describe Types::AssignmentType do
   end
 
   it "works with rubric" do
-    rubric = Rubric.create!(title: 'hi', context: course)
-    assignment.build_rubric_association(:rubric => rubric,
-                                         :purpose => 'grading',
-                                         :use_for_grading => true,
-                                         :context => course)
-    assignment.rubric_association.save!
-    expect(assignment_type.resolve("rubric { _id }")).to eq rubric.id.to_s
-    expect(assignment_type.resolve("rubric { freeFormCriterionComments }")).to eq assignment.rubric.free_form_criterion_comments
-    expect(assignment_type.resolve("rubric { freeFormCriterionComments }")).to eq rubric.free_form_criterion_comments
+    rubric_for_course
+    rubric_association_model(context: course, rubric: @rubric, association_object: assignment, purpose: 'grading')
+    expect(assignment_type.resolve("rubric { _id }")).to eq @rubric.id.to_s
   end
 
   it "works with moderated grading" do
@@ -195,6 +189,7 @@ describe Types::AssignmentType do
             userSearch: foo,
             scoredLessThan: 3
             scoredMoreThan: 1
+            gradingStatus: needs_grading
           }
           orderBy: {field: username, direction: descending}
         ) { nodes { _id } }
@@ -206,6 +201,7 @@ describe Types::AssignmentType do
         user_search: 'foo',
         scored_less_than: 3.0,
         scored_more_than: 1.0,
+        grading_status: :needs_grading,
         order_by: [{
           field: "username",
           direction: "descending"
@@ -289,6 +285,77 @@ describe Types::AssignmentType do
     end
   end
 
+  describe 'groupSubmissionConnection' do
+    before(:once) do
+      course_with_teacher()
+      assignment_model(group_category: 'GROUPS!')
+      @group_category.create_groups(2)
+      2.times {
+        student_in_course()
+        @group_category.groups.first.add_user(@user)
+      }
+      2.times {
+        student_in_course()
+        @group_category.groups.last.add_user(@user)
+      }
+      @assignment.submit_homework(@group_category.groups.first.users.first, body: 'Submit!')
+      @assignment.submit_homework(@group_category.groups.last.users.first, body: 'Submit!')
+
+      @assignment_type = GraphQLTypeTester.new(@assignment, current_user: @teacher)
+    end
+
+    it "plumbs through filter options to SubmissionSearch" do
+      allow(SubmissionSearch).to receive(:new).and_call_original
+      @assignment_type.resolve(<<~GQL, current_user: @teacher)
+        groupSubmissionsConnection(
+          filter: {
+            states: submitted,
+            sectionIds: 42,
+            enrollmentTypes: StudentEnrollment,
+            userSearch: foo,
+            scoredLessThan: 3
+            scoredMoreThan: 1
+            gradingStatus: needs_grading
+          }
+        ) { nodes { _id } }
+      GQL
+      expect(SubmissionSearch).to have_received(:new).with(@assignment, @teacher, nil, {
+        states: ["submitted"],
+        section_ids: ["42"],
+        enrollment_types: ["StudentEnrollment"],
+        user_search: 'foo',
+        scored_less_than: 3.0,
+        scored_more_than: 1.0,
+        grading_status: :needs_grading,
+        order_by: []
+      })
+    end
+
+    it "returns nil if not a group assignment" do
+      assignment = @course.assignments.create!
+      type = GraphQLTypeTester.new(assignment, current_user: @teacher)
+      result = type.resolve(<<~GQL, current_user: @teacher)
+        groupSubmissionsConnection {
+          edges { node { _id } }
+        }
+      GQL
+      expect(result).to be_nil
+    end
+
+    it "returns submissions grouped up" do
+      result = @assignment_type.resolve(<<~GQL, current_user: @teacher)
+        groupSubmissionsConnection(
+          filter: {
+            states: submitted
+          }
+        ) {
+          edges { node { _id } }
+        }
+      GQL
+      expect(result.count).to eq 2
+    end
+  end
+
   xit "validate assignment 404 return correctly with override instrumenter (ADMIN-2407)" do
     result = CanvasSchema.execute(<<~GQL, context: {current_user: @teacher})
       query {
@@ -363,6 +430,26 @@ describe Types::AssignmentType do
 
       expect(overridden_assignment_type.resolve("lockAt", current_user: student)).to eq @overridden_lock_at.iso8601
       expect(overridden_assignment_type.resolve("unlockAt", current_user: student)).to eq @overridden_unlock_at.iso8601
+    end
+
+    it "allows opting out of overrides" do
+      # need to make the assignment due sooner so we can tell that the teacher
+      # is getting the un-overridden date (not the most lenient date)
+      @overridden_assignment.update(due_at: 1.hour.from_now)
+      expect(
+        overridden_assignment_type.resolve("dueAt(applyOverrides: false)", current_user: @teacher)
+      ).to eq @overridden_assignment.without_overrides.due_at.iso8601
+
+      # students still get overrides
+      expect(
+        overridden_assignment_type.resolve("dueAt(applyOverrides: false)", current_user: @student)
+      ).to eq @overridden_due_at.iso8601
+      expect(
+        overridden_assignment_type.resolve("lockAt(applyOverrides: false)", current_user: @student)
+      ).to eq @overridden_lock_at.iso8601
+      expect(
+        overridden_assignment_type.resolve("unlockAt(applyOverrides: false)", current_user: @student)
+      ).to eq @overridden_unlock_at.iso8601
     end
   end
 

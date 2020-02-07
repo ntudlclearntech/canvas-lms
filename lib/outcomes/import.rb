@@ -135,7 +135,7 @@ module Outcomes
       model.calculation_method = outcome[:calculation_method].presence || model.default_calculation_method
       model.calculation_int = outcome[:calculation_int].presence || model.default_calculation_int
       # let removing the outcome_links content tags delete the underlying outcome
-      model.workflow_state = 'active' if outcome[:workflow_state] == 'active'
+      model.workflow_state = 'active' unless outcome[:workflow_state] == 'deleted'
 
       prior_rubric = model.rubric_criterion || {}
       changed = ->(k) { outcome[k].present? && outcome[k] != prior_rubric[k] }
@@ -200,7 +200,7 @@ module Outcomes
         end
       else
         vendor_guid = outcome[:vendor_guid]
-        prior = LearningOutcome.find_by(vendor_clause(vendor_guid))
+        prior = LearningOutcome.where(vendor_clause(vendor_guid)).active_first.first
         return prior if prior
         LearningOutcome.new(vendor_guid: vendor_guid)
       end
@@ -209,8 +209,7 @@ module Outcomes
     def find_prior_group(group)
       vendor_guid = group[:vendor_guid]
       clause = vendor_clause(group[:vendor_guid])
-
-      prior = LearningOutcomeGroup.where(clause).find_by(context: context)
+      prior = LearningOutcomeGroup.where(context: context).where(clause).active_first.first
       return prior if prior
 
       match = /canvas_outcome_group:(\d+)/.match(group[:vendor_guid])

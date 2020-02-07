@@ -10,27 +10,76 @@ exports[`the Rubric component hides the score total when needed 1`] = `
   }
 >
   <Table
-    caption="Point Rubric"
+    caption={
+      <ScreenReaderContent
+        as="span"
+      >
+        Point Rubric
+      </ScreenReaderContent>
+    }
     hover={false}
     layout="auto"
     size="medium"
   >
     <thead>
-      <tr>
+      <tr
+        style={
+          Object {
+            "visibility": "collapse",
+          }
+        }
+      >
         <th
           className="rubric-criteria"
+          key="TableHeadingCriteria"
           scope="col"
         >
           Criteria
         </th>
         <th
           className="ratings"
+          colSpan={null}
+          key="TableHeadingRatings"
           scope="col"
         >
           Ratings
         </th>
         <th
           className="rubric-points"
+          key="TableHeadingPoints"
+          scope="col"
+        >
+          Pts
+        </th>
+      </tr>
+      <tr>
+        <th
+          className="rubric-title"
+          colSpan="3"
+          scope="colgroup"
+        >
+          Point Rubric
+        </th>
+      </tr>
+      <tr>
+        <th
+          className="rubric-criteria"
+          key="TableHeadingCriteria"
+          scope="col"
+        >
+          Criteria
+        </th>
+        <th
+          className="ratings"
+          colSpan={null}
+          key="TableHeadingRatings"
+          scope="col"
+        >
+          Ratings
+        </th>
+        <th
+          className="rubric-points"
+          key="TableHeadingPoints"
           scope="col"
         >
           Pts
@@ -179,27 +228,76 @@ exports[`the Rubric component renders as expected 1`] = `
   }
 >
   <Table
-    caption="Point Rubric"
+    caption={
+      <ScreenReaderContent
+        as="span"
+      >
+        Point Rubric
+      </ScreenReaderContent>
+    }
     hover={false}
     layout="auto"
     size="medium"
   >
     <thead>
-      <tr>
+      <tr
+        style={
+          Object {
+            "visibility": "collapse",
+          }
+        }
+      >
         <th
           className="rubric-criteria"
+          key="TableHeadingCriteria"
           scope="col"
         >
           Criteria
         </th>
         <th
           className="ratings"
+          colSpan={null}
+          key="TableHeadingRatings"
           scope="col"
         >
           Ratings
         </th>
         <th
           className="rubric-points"
+          key="TableHeadingPoints"
+          scope="col"
+        >
+          Pts
+        </th>
+      </tr>
+      <tr>
+        <th
+          className="rubric-title"
+          colSpan="3"
+          scope="colgroup"
+        >
+          Point Rubric
+        </th>
+      </tr>
+      <tr>
+        <th
+          className="rubric-criteria"
+          key="TableHeadingCriteria"
+          scope="col"
+        >
+          Criteria
+        </th>
+        <th
+          className="ratings"
+          colSpan={null}
+          key="TableHeadingRatings"
+          scope="col"
+        >
+          Ratings
+        </th>
+        <th
+          className="rubric-points"
+          key="TableHeadingPoints"
           scope="col"
         >
           Pts
@@ -340,6 +438,7 @@ exports[`the Rubric component renders as expected 1`] = `
           <Flex
             as="span"
             direction="row"
+            elementRef={[Function]}
             inline={false}
             justifyItems="end"
             visualDebug={false}
@@ -348,6 +447,7 @@ exports[`the Rubric component renders as expected 1`] = `
             <FlexItem
               as="span"
               data-selenium="rubric_total"
+              elementRef={[Function]}
               grow={false}
               shrink={false}
             >
@@ -371,27 +471,76 @@ exports[`the Rubric component renders properly with no assessment 1`] = `
   }
 >
   <Table
-    caption="Point Rubric"
+    caption={
+      <ScreenReaderContent
+        as="span"
+      >
+        Point Rubric
+      </ScreenReaderContent>
+    }
     hover={false}
     layout="auto"
     size="medium"
   >
     <thead>
-      <tr>
+      <tr
+        style={
+          Object {
+            "visibility": "collapse",
+          }
+        }
+      >
         <th
           className="rubric-criteria"
+          key="TableHeadingCriteria"
           scope="col"
         >
           Criteria
         </th>
         <th
           className="ratings"
+          colSpan={null}
+          key="TableHeadingRatings"
           scope="col"
         >
           Ratings
         </th>
         <th
           className="rubric-points"
+          key="TableHeadingPoints"
+          scope="col"
+        >
+          Pts
+        </th>
+      </tr>
+      <tr>
+        <th
+          className="rubric-title"
+          colSpan="3"
+          scope="colgroup"
+        >
+          Point Rubric
+        </th>
+      </tr>
+      <tr>
+        <th
+          className="rubric-criteria"
+          key="TableHeadingCriteria"
+          scope="col"
+        >
+          Criteria
+        </th>
+        <th
+          className="ratings"
+          colSpan={null}
+          key="TableHeadingRatings"
+          scope="col"
+        >
+          Ratings
+        </th>
+        <th
+          className="rubric-points"
+          key="TableHeadingPoints"
           scope="col"
         >
           Pts
@@ -501,6 +650,7 @@ exports[`the Rubric component renders properly with no assessment 1`] = `
           <Flex
             as="span"
             direction="row"
+            elementRef={[Function]}
             inline={false}
             justifyItems="end"
             visualDebug={false}
@@ -509,6 +659,7 @@ exports[`the Rubric component renders properly with no assessment 1`] = `
             <FlexItem
               as="span"
               data-selenium="rubric_total"
+              elementRef={[Function]}
               grow={false}
               shrink={false}
             >
@@ -532,27 +683,76 @@ exports[`the Rubric component updates the total score when an individual criteri
   }
 >
   <Table
-    caption="Point Rubric"
+    caption={
+      <ScreenReaderContent
+        as="span"
+      >
+        Point Rubric
+      </ScreenReaderContent>
+    }
     hover={false}
     layout="auto"
     size="medium"
   >
     <thead>
-      <tr>
+      <tr
+        style={
+          Object {
+            "visibility": "collapse",
+          }
+        }
+      >
         <th
           className="rubric-criteria"
+          key="TableHeadingCriteria"
           scope="col"
         >
           Criteria
         </th>
         <th
           className="ratings"
+          colSpan={null}
+          key="TableHeadingRatings"
           scope="col"
         >
           Ratings
         </th>
         <th
           className="rubric-points"
+          key="TableHeadingPoints"
+          scope="col"
+        >
+          Pts
+        </th>
+      </tr>
+      <tr>
+        <th
+          className="rubric-title"
+          colSpan="3"
+          scope="colgroup"
+        >
+          Point Rubric
+        </th>
+      </tr>
+      <tr>
+        <th
+          className="rubric-criteria"
+          key="TableHeadingCriteria"
+          scope="col"
+        >
+          Criteria
+        </th>
+        <th
+          className="ratings"
+          colSpan={null}
+          key="TableHeadingRatings"
+          scope="col"
+        >
+          Ratings
+        </th>
+        <th
+          className="rubric-points"
+          key="TableHeadingPoints"
           scope="col"
         >
           Pts
@@ -692,6 +892,7 @@ exports[`the Rubric component updates the total score when an individual criteri
           <Flex
             as="span"
             direction="row"
+            elementRef={[Function]}
             inline={false}
             justifyItems="end"
             visualDebug={false}
@@ -700,6 +901,7 @@ exports[`the Rubric component updates the total score when an individual criteri
             <FlexItem
               as="span"
               data-selenium="rubric_total"
+              elementRef={[Function]}
               grow={false}
               shrink={false}
             >

@@ -111,6 +111,7 @@ module FilesCommon
         ff('.ui-datepicker-trigger.btn')[0].click
         fln("15").click
         ff('.ui-datepicker-trigger.btn')[0].send_keys(:enter) # close the calendar
+        wait_for_ajaximations
         ff('.ui-datepicker-trigger.btn')[1].click
         fln("25").click
         ff('.ui-datepicker-trigger.btn')[1].send_keys(:enter) # close the calendar
@@ -179,24 +180,18 @@ module FilesCommon
     driver.find_elements(:class, 'ef-item-row')
   end
 
-  def insert_file_from_rce(insert_into = nil)
-    wait_for_ajaximations
-    skip("CORE-2714 figure out why the files tab shows up as disabled on the rcs sidebar in jenkins")
+  def insert_file_from_rce(insert_into = nil, filename = nil)
     fj('[role=tablist] [role=presentation]:not([aria-disabled]):contains("Files")').click
-    wait_for_ajaximations
     fj('[role=tabpanel] button:contains("unfiled")').click
-    wait_for_ajaximations
     fj('[role=tabpanel] button:contains("some test file")').click
-    wait_for_ajaximations
     if insert_into == :quiz
-      ff(".name.text")[3].click
-      ff(".btn-primary")[3].click
+      fj("[role=tabpanel] button:contains('#{filename}')").click
+      f(".save_quiz_button").click
     elsif insert_into == :discussion
       f("#edit_discussion_form_buttons .btn-primary").click
     else
       f(".btn-primary").click
     end
-    wait_for_ajaximations
     expect(fln("some test file")).to be_displayed
   end
 end

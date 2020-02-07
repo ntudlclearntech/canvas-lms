@@ -143,7 +143,8 @@ class ContextController < ApplicationController
         :resend_invitations_url => course_re_send_invitations_url(@context),
         :permissions => {
           :read_sis => @context.grants_any_right?(@current_user, session, :read_sis, :manage_sis),
-          :manage_students => (manage_students = @context.grants_right?(@current_user, session, :manage_students)),
+          :view_user_logins => @context.grants_right?(@current_user, session, :view_user_logins),
+          :manage_students => (manage_students = @context.grants_right?(@current_user, session, :manage_students) && !MasterCourses::MasterTemplate.is_master_course?(@context)),
           :manage_admin_users => (manage_admins = @context.grants_right?(@current_user, session, :manage_admin_users)),
           :add_users => manage_students || manage_admins,
           :read_reports => @context.grants_right?(@current_user, session, :read_reports)
@@ -172,11 +173,11 @@ class ContextController < ApplicationController
       end
     elsif @context.is_a?(Group)
       if @context.grants_right?(@current_user, :read_as_admin)
-        @users = @context.participating_users.distinct.order_by_sortable_name
+        @users = @context.participating_users
       else
-        @users = @context.participating_users_in_context(sort: true).distinct.order_by_sortable_name
+        @users = @context.participating_users_in_context(sort: true)
       end
-      @primary_users = { t('roster.group_members', 'Group Members') => @users }
+      @primary_users = { t('roster.group_members', 'Group Members') => @users.preload(:account_pronoun).distinct.order_by_sortable_name.to_a }
       if course = @context.context.try(:is_a?, Course) && @context.context
         @secondary_users = { t('roster.teachers_and_tas', 'Teachers & TAs') => course.participating_instructors.order_by_sortable_name.distinct }
       end
@@ -288,6 +289,10 @@ class ContextController < ApplicationController
 
       js_env(CONTEXT_USER_DISPLAY_NAME: @user.short_name)
 
+      js_bundle :user_name, "legacy/context_roster_user"
+      css_bundle :roster_user, :pairing_code
+      @google_analytics_page_title = "#{@context.name} People"
+
       if @domain_root_account.enable_profiles?
         @user_data = profile_data(
           @user.profile,
@@ -295,7 +300,14 @@ class ContextController < ApplicationController
           session,
           ['links', 'user_services']
         )
-        render :new_roster_user
+        add_body_class 'not-editing'
+
+        add_crumb(t('#crumbs.people', 'People'), context_url(@context, :context_users_url))
+        add_crumb(@user.name, context_url(@context, :context_user_url, @user))
+        add_crumb(t('#crumbs.access_report', "Access Report"))
+        set_active_tab "people"
+
+        render :new_roster_user, stream: can_stream_template?
         return false
       end
 
@@ -311,6 +323,11 @@ class ContextController < ApplicationController
         @messages = @messages.select{|m| m.grants_right?(@current_user, session, :read) }.sort_by{|e| e.created_at }.reverse
       end
 
+      add_crumb(t('#crumbs.people', "People"), context_url(@context, :context_users_url))
+      add_crumb(context_user_name(@context, @user), context_url(@context, :context_user_url, @user))
+      set_active_tab "people"
+
+      render stream: can_stream_template?
       true
     end
   end

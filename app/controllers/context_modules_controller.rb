@@ -55,6 +55,7 @@ class ContextModulesController < ApplicationController
       @collapsed_modules = ContextModuleProgression.for_user(@current_user).for_modules(@modules).pluck(:context_module_id, :collapsed).select{|cm_id, collapsed| !!collapsed }.map(&:first)
 
       @can_edit = can_do(@context, @current_user, :manage_content)
+      @can_view_grades = can_do(@context, @current_user, :view_all_grades)
       @is_student = @context.grants_right?(@current_user, session, :participate_as_student)
       @can_view_unpublished = @context.grants_right?(@current_user, session, :read_as_admin)
 
@@ -79,7 +80,7 @@ class ContextModulesController < ApplicationController
         :FILES_CONTEXTS => [{asset_string: @context.asset_string}],
         :MODULE_FILE_DETAILS => module_file_details,
         :MODULE_FILE_PERMISSIONS => {
-           usage_rights_required: @context.feature_enabled?(:usage_rights_required),
+           usage_rights_required: @context.usage_rights_required?,
            manage_files: @context.grants_right?(@current_user, session, :manage_files)
         }
 
@@ -105,10 +106,15 @@ class ContextModulesController < ApplicationController
 
       set_tutorial_js_env
 
-      if @is_student && tab_enabled?(@context.class::TAB_MODULES)
+      if @is_student
+        return unless tab_enabled?(@context.class::TAB_MODULES)
         @modules.each{|m| m.evaluate_for(@current_user) }
         session[:module_progressions_initialized] = true
       end
+      add_body_class('padless-content')
+      js_bundle :context_modules
+      css_bundle :content_next, :context_modules2
+      render stream: can_stream_template?
     end
   end
 

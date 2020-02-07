@@ -56,6 +56,17 @@ describe Account do
     # account_model
     # @a.to_atom.should be_is_a(Atom::Entry)
   # end
+  #
+  it "should list all account pronouns" do
+    account1 = Account.create!
+    account2 = Account.create!
+    AccountPronoun.create_defaults
+    ap1 = AccountPronoun.create!(pronoun: "account 1 pronoun", account: account1)
+    AccountPronoun.create!(pronoun: "account 2 pronoun", account: account2)
+    expect(account1.pronouns.count).to eq 4
+    expect(account1.pronouns).to include(ap1)
+    expect(account2.pronouns).not_to include(ap1)
+  end
 
   context "course lists" do
     before :once do
@@ -885,7 +896,7 @@ describe Account do
       tool.settings[:account_navigation] = account_navigation
       tool.save!
 
-      tabs = @account.external_tool_tabs({})
+      tabs = @account.external_tool_tabs({}, User.new)
 
       expect(tabs.first[:label]).to eq "English Label"
     end
@@ -1721,7 +1732,7 @@ describe Account do
   end
 
   context "fancy redis caching" do
-    specs_require_cache(:redis_store)
+    specs_require_cache(:redis_cache_store)
 
     describe "cached_account_users_for" do
       before :each do

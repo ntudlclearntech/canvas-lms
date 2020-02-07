@@ -29,7 +29,6 @@ export default class EditRubricPage {
   }
 
   constructor() {
-    this.onFindOutcome = this.onFindOutcome.bind(this)
     this.rootOutcomeGroup = new OutcomeGroup(ENV.ROOT_OUTCOME_GROUP)
     this.attachInitialEvent()
     this.dialogCreated = false
@@ -53,7 +52,7 @@ export default class EditRubricPage {
     return (this.dialogCreated = true)
   }
 
-  onFindOutcome(e) {
+  onFindOutcome = e => {
     e.preventDefault()
     if (!this.dialogCreated) {
       this.createDialog()

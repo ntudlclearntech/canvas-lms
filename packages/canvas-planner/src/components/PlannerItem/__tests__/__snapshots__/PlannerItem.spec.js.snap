@@ -32,6 +32,7 @@ exports[`does not render end time if the same as start time 1`] = `
             Calendar Event This Assignment is about awesome stuff is not marked as done.
           </ScreenReaderContent>
         }
+        labelPlacement="end"
         onChange={[Function]}
         readOnly={false}
         size="medium"
@@ -48,7 +49,7 @@ exports[`does not render end time if the same as start time 1`] = `
       }
     }
   >
-    <IconCalendarMonth />
+    <IconCalendarMonthLine />
   </div>
   <div
     className="PlannerItem-styles__layout"
@@ -67,6 +68,7 @@ exports[`does not render end time if the same as start time 1`] = `
             color="secondary"
             letterSpacing="normal"
             size="x-small"
+            wrap="normal"
           >
             A Course about being Diffrient Calendar Event
           </Text>
@@ -79,14 +81,22 @@ exports[`does not render end time if the same as start time 1`] = `
             }
           }
         >
-          <Link
+          <Button
             as="button"
-            disabled={false}
-            ellipsis={true}
-            iconPlacement="start"
-            linkRef={[Function]}
+            buttonRef={[Function]}
+            cursor="pointer"
+            fluidWidth={false}
+            margin="0"
             onClick={[Function]}
-            variant="default"
+            size="medium"
+            theme={
+              Object {
+                "mediumHeight": "normal",
+                "mediumPadding": "0",
+              }
+            }
+            type="button"
+            variant="link"
           >
             <ScreenReaderContent
               as="span"
@@ -96,14 +106,7 @@ exports[`does not render end time if the same as start time 1`] = `
             <PresentationContent
               as="span"
             >
-              <Text
-                as="span"
-                color="primary"
-                letterSpacing="normal"
-                size="medium"
-              >
-                This Assignment is about awesome stuff
-              </Text>
+              This Assignment is about awesome stuff
             </PresentationContent>
             <CalendarEventModal
               allDay={false}
@@ -124,7 +127,7 @@ exports[`does not render end time if the same as start time 1`] = `
               timeZone="America/Denver"
               title="This Assignment is about awesome stuff"
             />
-          </Link>
+          </Button>
         </div>
       </div>
       <div
@@ -144,6 +147,7 @@ exports[`does not render end time if the same as start time 1`] = `
               color="secondary"
               letterSpacing="normal"
               size="x-small"
+              wrap="normal"
             >
               <PresentationContent
                 as="span"
@@ -191,6 +195,7 @@ exports[`prefers to render feedback if it and the location are available 1`] = `
             Assignment This Assignment is about awesome stuff is not marked as done.
           </ScreenReaderContent>
         }
+        labelPlacement="end"
         onChange={[Function]}
         readOnly={false}
         size="medium"
@@ -207,7 +212,7 @@ exports[`prefers to render feedback if it and the location are available 1`] = `
       }
     }
   >
-    <IconAssignment />
+    <IconAssignmentLine />
   </div>
   <div
     className="PlannerItem-styles__layout"
@@ -226,6 +231,7 @@ exports[`prefers to render feedback if it and the location are available 1`] = `
             color="secondary"
             letterSpacing="normal"
             size="x-small"
+            wrap="normal"
           >
             A Course about being Diffrient Assignment
           </Text>
@@ -238,14 +244,22 @@ exports[`prefers to render feedback if it and the location are available 1`] = `
             }
           }
         >
-          <Link
+          <Button
             as="button"
-            disabled={false}
-            ellipsis={true}
+            buttonRef={[Function]}
+            cursor="pointer"
+            fluidWidth={false}
             href="http://example.com"
-            iconPlacement="start"
-            linkRef={[Function]}
-            variant="default"
+            margin="0"
+            size="medium"
+            theme={
+              Object {
+                "mediumHeight": "normal",
+                "mediumPadding": "0",
+              }
+            }
+            type="button"
+            variant="link"
           >
             <ScreenReaderContent
               as="span"
@@ -255,16 +269,9 @@ exports[`prefers to render feedback if it and the location are available 1`] = `
             <PresentationContent
               as="span"
             >
-              <Text
-                as="span"
-                color="primary"
-                letterSpacing="normal"
-                size="medium"
-              >
-                This Assignment is about awesome stuff
-              </Text>
+              This Assignment is about awesome stuff
             </PresentationContent>
-          </Link>
+          </Button>
         </div>
       </div>
       <div
@@ -284,6 +291,7 @@ exports[`prefers to render feedback if it and the location are available 1`] = `
               color="secondary"
               letterSpacing="normal"
               size="x-small"
+              wrap="normal"
             >
               <PresentationContent
                 as="span"
@@ -318,6 +326,7 @@ exports[`prefers to render feedback if it and the location are available 1`] = `
           fontStyle="italic"
           letterSpacing="normal"
           size="medium"
+          wrap="normal"
         >
           Open the pod bay doors, HAL.
         </Text>
@@ -359,6 +368,7 @@ exports[`renders Announcement correctly with everything 1`] = `
             Announcement I am an Announcement is marked as done.
           </ScreenReaderContent>
         }
+        labelPlacement="end"
         onChange={[Function]}
         readOnly={false}
         size="medium"
@@ -375,7 +385,7 @@ exports[`renders Announcement correctly with everything 1`] = `
       }
     }
   >
-    <IconAnnouncement />
+    <IconAnnouncementLine />
   </div>
   <div
     className="PlannerItem-styles__layout"
@@ -394,6 +404,7 @@ exports[`renders Announcement correctly with everything 1`] = `
             color="secondary"
             letterSpacing="normal"
             size="x-small"
+            wrap="normal"
           >
             A Course about being Diffrient Announcement
           </Text>
@@ -406,14 +417,22 @@ exports[`renders Announcement correctly with everything 1`] = `
             }
           }
         >
-          <Link
+          <Button
             as="button"
-            disabled={false}
-            ellipsis={true}
+            buttonRef={[Function]}
+            cursor="pointer"
+            fluidWidth={false}
             href="http://example.com"
-            iconPlacement="start"
-            linkRef={[Function]}
-            variant="default"
+            margin="0"
+            size="medium"
+            theme={
+              Object {
+                "mediumHeight": "normal",
+                "mediumPadding": "0",
+              }
+            }
+            type="button"
+            variant="link"
           >
             <ScreenReaderContent
               as="span"
@@ -423,16 +442,9 @@ exports[`renders Announcement correctly with everything 1`] = `
             <PresentationContent
               as="span"
             >
-              <Text
-                as="span"
-                color="primary"
-                letterSpacing="normal"
-                size="medium"
-              >
-                I am an Announcement
-              </Text>
+              I am an Announcement
             </PresentationContent>
-          </Link>
+          </Button>
         </div>
       </div>
       <div
@@ -452,11 +464,13 @@ exports[`renders Announcement correctly with everything 1`] = `
               color="secondary"
               letterSpacing="normal"
               size="medium"
+              wrap="normal"
             >
               <Text
                 as="span"
                 letterSpacing="normal"
                 size="large"
+                wrap="normal"
               >
                 4
               </Text>
@@ -464,6 +478,7 @@ exports[`renders Announcement correctly with everything 1`] = `
                 as="span"
                 letterSpacing="normal"
                 size="x-small"
+                wrap="normal"
               >
                  
                 pts
@@ -478,6 +493,7 @@ exports[`renders Announcement correctly with everything 1`] = `
               color="secondary"
               letterSpacing="normal"
               size="x-small"
+              wrap="normal"
             >
               <PresentationContent
                 as="span"
@@ -525,6 +541,7 @@ exports[`renders Announcement correctly with just date 1`] = `
             Announcement I am an Announcement is not marked as done.
           </ScreenReaderContent>
         }
+        labelPlacement="end"
         onChange={[Function]}
         readOnly={false}
         size="medium"
@@ -541,7 +558,7 @@ exports[`renders Announcement correctly with just date 1`] = `
       }
     }
   >
-    <IconAnnouncement />
+    <IconAnnouncementLine />
   </div>
   <div
     className="PlannerItem-styles__layout"
@@ -560,6 +577,7 @@ exports[`renders Announcement correctly with just date 1`] = `
             color="secondary"
             letterSpacing="normal"
             size="x-small"
+            wrap="normal"
           >
             A Course about being Diffrient Announcement
           </Text>
@@ -572,14 +590,22 @@ exports[`renders Announcement correctly with just date 1`] = `
             }
           }
         >
-          <Link
+          <Button
             as="button"
-            disabled={false}
-            ellipsis={true}
+            buttonRef={[Function]}
+            cursor="pointer"
+            fluidWidth={false}
             href="http://example.com"
-            iconPlacement="start"
-            linkRef={[Function]}
-            variant="default"
+            margin="0"
+            size="medium"
+            theme={
+              Object {
+                "mediumHeight": "normal",
+                "mediumPadding": "0",
+              }
+            }
+            type="button"
+            variant="link"
           >
             <ScreenReaderContent
               as="span"
@@ -589,16 +615,9 @@ exports[`renders Announcement correctly with just date 1`] = `
             <PresentationContent
               as="span"
             >
-              <Text
-                as="span"
-                color="primary"
-                letterSpacing="normal"
-                size="medium"
-              >
-                I am an Announcement
-              </Text>
+              I am an Announcement
             </PresentationContent>
-          </Link>
+          </Button>
         </div>
       </div>
       <div
@@ -618,6 +637,7 @@ exports[`renders Announcement correctly with just date 1`] = `
               color="secondary"
               letterSpacing="normal"
               size="x-small"
+              wrap="normal"
             >
               <PresentationContent
                 as="span"
@@ -665,6 +685,7 @@ exports[`renders Announcement correctly with just points 1`] = `
             Announcement I am an Announcement is not marked as done.
           </ScreenReaderContent>
         }
+        labelPlacement="end"
         onChange={[Function]}
         readOnly={false}
         size="medium"
@@ -681,7 +702,7 @@ exports[`renders Announcement correctly with just points 1`] = `
       }
     }
   >
-    <IconAnnouncement />
+    <IconAnnouncementLine />
   </div>
   <div
     className="PlannerItem-styles__layout"
@@ -700,6 +721,7 @@ exports[`renders Announcement correctly with just points 1`] = `
             color="secondary"
             letterSpacing="normal"
             size="x-small"
+            wrap="normal"
           >
             A Course about being Diffrient Announcement
           </Text>
@@ -712,14 +734,22 @@ exports[`renders Announcement correctly with just points 1`] = `
             }
           }
         >
-          <Link
+          <Button
             as="button"
-            disabled={false}
-            ellipsis={true}
+            buttonRef={[Function]}
+            cursor="pointer"
+            fluidWidth={false}
             href="http://example.com"
-            iconPlacement="start"
-            linkRef={[Function]}
-            variant="default"
+            margin="0"
+            size="medium"
+            theme={
+              Object {
+                "mediumHeight": "normal",
+                "mediumPadding": "0",
+              }
+            }
+            type="button"
+            variant="link"
           >
             <ScreenReaderContent
               as="span"
@@ -729,16 +759,9 @@ exports[`renders Announcement correctly with just points 1`] = `
             <PresentationContent
               as="span"
             >
-              <Text
-                as="span"
-                color="primary"
-                letterSpacing="normal"
-                size="medium"
-              >
-                I am an Announcement
-              </Text>
+              I am an Announcement
             </PresentationContent>
-          </Link>
+          </Button>
         </div>
       </div>
       <div
@@ -758,11 +781,13 @@ exports[`renders Announcement correctly with just points 1`] = `
               color="secondary"
               letterSpacing="normal"
               size="medium"
+              wrap="normal"
             >
               <Text
                 as="span"
                 letterSpacing="normal"
                 size="large"
+                wrap="normal"
               >
                 2
               </Text>
@@ -770,6 +795,7 @@ exports[`renders Announcement correctly with just points 1`] = `
                 as="span"
                 letterSpacing="normal"
                 size="x-small"
+                wrap="normal"
               >
                  
                 pts
@@ -784,6 +810,7 @@ exports[`renders Announcement correctly with just points 1`] = `
               color="secondary"
               letterSpacing="normal"
               size="x-small"
+              wrap="normal"
             >
               <PresentationContent
                 as="span"
@@ -831,6 +858,7 @@ exports[`renders Announcement correctly without right side content 1`] = `
             Announcement I am an Announcement is not marked as done.
           </ScreenReaderContent>
         }
+        labelPlacement="end"
         onChange={[Function]}
         readOnly={false}
         size="medium"
@@ -847,7 +875,7 @@ exports[`renders Announcement correctly without right side content 1`] = `
       }
     }
   >
-    <IconAnnouncement />
+    <IconAnnouncementLine />
   </div>
   <div
     className="PlannerItem-styles__layout"
@@ -866,6 +894,7 @@ exports[`renders Announcement correctly without right side content 1`] = `
             color="secondary"
             letterSpacing="normal"
             size="x-small"
+            wrap="normal"
           >
             A Course about being Diffrient Announcement
           </Text>
@@ -878,14 +907,22 @@ exports[`renders Announcement correctly without right side content 1`] = `
             }
           }
         >
-          <Link
+          <Button
             as="button"
-            disabled={false}
-            ellipsis={true}
+            buttonRef={[Function]}
+            cursor="pointer"
+            fluidWidth={false}
             href="http://example.com"
-            iconPlacement="start"
-            linkRef={[Function]}
-            variant="default"
+            margin="0"
+            size="medium"
+            theme={
+              Object {
+                "mediumHeight": "normal",
+                "mediumPadding": "0",
+              }
+            }
+            type="button"
+            variant="link"
           >
             <ScreenReaderContent
               as="span"
@@ -895,16 +932,9 @@ exports[`renders Announcement correctly without right side content 1`] = `
             <PresentationContent
               as="span"
             >
-              <Text
-                as="span"
-                color="primary"
-                letterSpacing="normal"
-                size="medium"
-              >
-                I am an Announcement
-              </Text>
+              I am an Announcement
             </PresentationContent>
-          </Link>
+          </Button>
         </div>
       </div>
       <div
@@ -924,6 +954,7 @@ exports[`renders Announcement correctly without right side content 1`] = `
               color="secondary"
               letterSpacing="normal"
               size="x-small"
+              wrap="normal"
             >
               <PresentationContent
                 as="span"
@@ -971,6 +1002,7 @@ exports[`renders Assignment correctly with everything 1`] = `
             Assignment I am an Assignment is marked as done.
           </ScreenReaderContent>
         }
+        labelPlacement="end"
         onChange={[Function]}
         readOnly={false}
         size="medium"
@@ -987,7 +1019,7 @@ exports[`renders Assignment correctly with everything 1`] = `
       }
     }
   >
-    <IconAssignment />
+    <IconAssignmentLine />
   </div>
   <div
     className="PlannerItem-styles__layout"
@@ -1006,6 +1038,7 @@ exports[`renders Assignment correctly with everything 1`] = `
             color="secondary"
             letterSpacing="normal"
             size="x-small"
+            wrap="normal"
           >
             A Course about being Diffrient Assignment
           </Text>
@@ -1018,14 +1051,22 @@ exports[`renders Assignment correctly with everything 1`] = `
             }
           }
         >
-          <Link
+          <Button
             as="button"
-            disabled={false}
-            ellipsis={true}
+            buttonRef={[Function]}
+            cursor="pointer"
+            fluidWidth={false}
             href="http://www.non_default_url.com"
-            iconPlacement="start"
-            linkRef={[Function]}
-            variant="default"
+            margin="0"
+            size="medium"
+            theme={
+              Object {
+                "mediumHeight": "normal",
+                "mediumPadding": "0",
+              }
+            }
+            type="button"
+            variant="link"
           >
             <ScreenReaderContent
               as="span"
@@ -1035,16 +1076,9 @@ exports[`renders Assignment correctly with everything 1`] = `
             <PresentationContent
               as="span"
             >
-              <Text
-                as="span"
-                color="primary"
-                letterSpacing="normal"
-                size="medium"
-              >
-                I am an Assignment
-              </Text>
+              I am an Assignment
             </PresentationContent>
-          </Link>
+          </Button>
         </div>
       </div>
       <div
@@ -1064,11 +1098,13 @@ exports[`renders Assignment correctly with everything 1`] = `
               color="secondary"
               letterSpacing="normal"
               size="medium"
+              wrap="normal"
             >
               <Text
                 as="span"
                 letterSpacing="normal"
                 size="large"
+                wrap="normal"
               >
                 4
               </Text>
@@ -1076,6 +1112,7 @@ exports[`renders Assignment correctly with everything 1`] = `
                 as="span"
                 letterSpacing="normal"
                 size="x-small"
+                wrap="normal"
               >
                  
                 pts
@@ -1090,6 +1127,7 @@ exports[`renders Assignment correctly with everything 1`] = `
               color="secondary"
               letterSpacing="normal"
               size="x-small"
+              wrap="normal"
             >
               <PresentationContent
                 as="span"
@@ -1137,6 +1175,7 @@ exports[`renders Assignment correctly with just date 1`] = `
             Assignment I am an Assignment is not marked as done.
           </ScreenReaderContent>
         }
+        labelPlacement="end"
         onChange={[Function]}
         readOnly={false}
         size="medium"
@@ -1153,7 +1192,7 @@ exports[`renders Assignment correctly with just date 1`] = `
       }
     }
   >
-    <IconAssignment />
+    <IconAssignmentLine />
   </div>
   <div
     className="PlannerItem-styles__layout"
@@ -1172,6 +1211,7 @@ exports[`renders Assignment correctly with just date 1`] = `
             color="secondary"
             letterSpacing="normal"
             size="x-small"
+            wrap="normal"
           >
             A Course about being Diffrient Assignment
           </Text>
@@ -1184,14 +1224,22 @@ exports[`renders Assignment correctly with just date 1`] = `
             }
           }
         >
-          <Link
+          <Button
             as="button"
-            disabled={false}
-            ellipsis={true}
+            buttonRef={[Function]}
+            cursor="pointer"
+            fluidWidth={false}
             href="http://example.com"
-            iconPlacement="start"
-            linkRef={[Function]}
-            variant="default"
+            margin="0"
+            size="medium"
+            theme={
+              Object {
+                "mediumHeight": "normal",
+                "mediumPadding": "0",
+              }
+            }
+            type="button"
+            variant="link"
           >
             <ScreenReaderContent
               as="span"
@@ -1201,16 +1249,9 @@ exports[`renders Assignment correctly with just date 1`] = `
             <PresentationContent
               as="span"
             >
-              <Text
-                as="span"
-                color="primary"
-                letterSpacing="normal"
-                size="medium"
-              >
-                I am an Assignment
-              </Text>
+              I am an Assignment
             </PresentationContent>
-          </Link>
+          </Button>
         </div>
       </div>
       <div
@@ -1230,6 +1271,7 @@ exports[`renders Assignment correctly with just date 1`] = `
               color="secondary"
               letterSpacing="normal"
               size="x-small"
+              wrap="normal"
             >
               <PresentationContent
                 as="span"
@@ -1277,6 +1319,7 @@ exports[`renders Assignment correctly with just points 1`] = `
             Assignment I am an Assignment is not marked as done.
           </ScreenReaderContent>
         }
+        labelPlacement="end"
         onChange={[Function]}
         readOnly={false}
         size="medium"
@@ -1293,7 +1336,7 @@ exports[`renders Assignment correctly with just points 1`] = `
       }
     }
   >
-    <IconAssignment />
+    <IconAssignmentLine />
   </div>
   <div
     className="PlannerItem-styles__layout"
@@ -1312,6 +1355,7 @@ exports[`renders Assignment correctly with just points 1`] = `
             color="secondary"
             letterSpacing="normal"
             size="x-small"
+            wrap="normal"
           >
             A Course about being Diffrient Assignment
           </Text>
@@ -1324,14 +1368,22 @@ exports[`renders Assignment correctly with just points 1`] = `
             }
           }
         >
-          <Link
+          <Button
             as="button"
-            disabled={false}
-            ellipsis={true}
+            buttonRef={[Function]}
+            cursor="pointer"
+            fluidWidth={false}
             href="http://example.com"
-            iconPlacement="start"
-            linkRef={[Function]}
-            variant="default"
+            margin="0"
+            size="medium"
+            theme={
+              Object {
+                "mediumHeight": "normal",
+                "mediumPadding": "0",
+              }
+            }
+            type="button"
+            variant="link"
           >
             <ScreenReaderContent
               as="span"
@@ -1341,16 +1393,9 @@ exports[`renders Assignment correctly with just points 1`] = `
             <PresentationContent
               as="span"
             >
-              <Text
-                as="span"
-                color="primary"
-                letterSpacing="normal"
-                size="medium"
-              >
-                I am an Assignment
-              </Text>
+              I am an Assignment
             </PresentationContent>
-          </Link>
+          </Button>
         </div>
       </div>
       <div
@@ -1370,11 +1415,13 @@ exports[`renders Assignment correctly with just points 1`] = `
               color="secondary"
               letterSpacing="normal"
               size="medium"
+              wrap="normal"
             >
               <Text
                 as="span"
                 letterSpacing="normal"
                 size="large"
+                wrap="normal"
               >
                 2
               </Text>
@@ -1382,6 +1429,7 @@ exports[`renders Assignment correctly with just points 1`] = `
                 as="span"
                 letterSpacing="normal"
                 size="x-small"
+                wrap="normal"
               >
                  
                 pts
@@ -1396,6 +1444,7 @@ exports[`renders Assignment correctly with just points 1`] = `
               color="secondary"
               letterSpacing="normal"
               size="x-small"
+              wrap="normal"
             >
               <PresentationContent
                 as="span"
@@ -1443,6 +1492,7 @@ exports[`renders Assignment correctly without right side content 1`] = `
             Assignment I am an Assignment is not marked as done.
           </ScreenReaderContent>
         }
+        labelPlacement="end"
         onChange={[Function]}
         readOnly={false}
         size="medium"
@@ -1459,7 +1509,7 @@ exports[`renders Assignment correctly without right side content 1`] = `
       }
     }
   >
-    <IconAssignment />
+    <IconAssignmentLine />
   </div>
   <div
     className="PlannerItem-styles__layout"
@@ -1478,6 +1528,7 @@ exports[`renders Assignment correctly without right side content 1`] = `
             color="secondary"
             letterSpacing="normal"
             size="x-small"
+            wrap="normal"
           >
             A Course about being Diffrient Assignment
           </Text>
@@ -1490,14 +1541,22 @@ exports[`renders Assignment correctly without right side content 1`] = `
             }
           }
         >
-          <Link
+          <Button
             as="button"
-            disabled={false}
-            ellipsis={true}
+            buttonRef={[Function]}
+            cursor="pointer"
+            fluidWidth={false}
             href="http://example.com"
-            iconPlacement="start"
-            linkRef={[Function]}
-            variant="default"
+            margin="0"
+            size="medium"
+            theme={
+              Object {
+                "mediumHeight": "normal",
+                "mediumPadding": "0",
+              }
+            }
+            type="button"
+            variant="link"
           >
             <ScreenReaderContent
               as="span"
@@ -1507,16 +1566,9 @@ exports[`renders Assignment correctly without right side content 1`] = `
             <PresentationContent
               as="span"
             >
-              <Text
-                as="span"
-                color="primary"
-                letterSpacing="normal"
-                size="medium"
-              >
-                I am an Assignment
-              </Text>
+              I am an Assignment
             </PresentationContent>
-          </Link>
+          </Button>
         </div>
       </div>
       <div
@@ -1536,6 +1588,7 @@ exports[`renders Assignment correctly without right side content 1`] = `
               color="secondary"
               letterSpacing="normal"
               size="x-small"
+              wrap="normal"
             >
               <PresentationContent
                 as="span"
@@ -1583,6 +1636,7 @@ exports[`renders Calendar Event correctly with an all day date 1`] = `
             Calendar Event I am a Calendar Event is not marked as done.
           </ScreenReaderContent>
         }
+        labelPlacement="end"
         onChange={[Function]}
         readOnly={false}
         size="medium"
@@ -1599,7 +1653,7 @@ exports[`renders Calendar Event correctly with an all day date 1`] = `
       }
     }
   >
-    <IconCalendarMonth />
+    <IconCalendarMonthLine />
   </div>
   <div
     className="PlannerItem-styles__layout"
@@ -1618,6 +1672,7 @@ exports[`renders Calendar Event correctly with an all day date 1`] = `
             color="secondary"
             letterSpacing="normal"
             size="x-small"
+            wrap="normal"
           >
             A Course about being Diffrient Calendar Event
           </Text>
@@ -1630,14 +1685,22 @@ exports[`renders Calendar Event correctly with an all day date 1`] = `
             }
           }
         >
-          <Link
+          <Button
             as="button"
-            disabled={false}
-            ellipsis={true}
-            iconPlacement="start"
-            linkRef={[Function]}
+            buttonRef={[Function]}
+            cursor="pointer"
+            fluidWidth={false}
+            margin="0"
             onClick={[Function]}
-            variant="default"
+            size="medium"
+            theme={
+              Object {
+                "mediumHeight": "normal",
+                "mediumPadding": "0",
+              }
+            }
+            type="button"
+            variant="link"
           >
             <ScreenReaderContent
               as="span"
@@ -1647,14 +1710,7 @@ exports[`renders Calendar Event correctly with an all day date 1`] = `
             <PresentationContent
               as="span"
             >
-              <Text
-                as="span"
-                color="primary"
-                letterSpacing="normal"
-                size="medium"
-              >
-                I am a Calendar Event
-              </Text>
+              I am a Calendar Event
             </PresentationContent>
             <CalendarEventModal
               allDay={true}
@@ -1674,7 +1730,7 @@ exports[`renders Calendar Event correctly with an all day date 1`] = `
               timeZone="America/Denver"
               title="I am a Calendar Event"
             />
-          </Link>
+          </Button>
         </div>
       </div>
       <div
@@ -1694,6 +1750,7 @@ exports[`renders Calendar Event correctly with an all day date 1`] = `
               color="secondary"
               letterSpacing="normal"
               size="x-small"
+              wrap="normal"
             >
               <PresentationContent
                 as="span"
@@ -1741,6 +1798,7 @@ exports[`renders Calendar Event correctly with everything 1`] = `
             Calendar Event I am a Calendar Event is marked as done.
           </ScreenReaderContent>
         }
+        labelPlacement="end"
         onChange={[Function]}
         readOnly={false}
         size="medium"
@@ -1757,7 +1815,7 @@ exports[`renders Calendar Event correctly with everything 1`] = `
       }
     }
   >
-    <IconCalendarMonth />
+    <IconCalendarMonthLine />
   </div>
   <div
     className="PlannerItem-styles__layout"
@@ -1776,6 +1834,7 @@ exports[`renders Calendar Event correctly with everything 1`] = `
             color="secondary"
             letterSpacing="normal"
             size="x-small"
+            wrap="normal"
           >
             A Course about being Diffrient Calendar Event
           </Text>
@@ -1788,14 +1847,22 @@ exports[`renders Calendar Event correctly with everything 1`] = `
             }
           }
         >
-          <Link
+          <Button
             as="button"
-            disabled={false}
-            ellipsis={true}
-            iconPlacement="start"
-            linkRef={[Function]}
+            buttonRef={[Function]}
+            cursor="pointer"
+            fluidWidth={false}
+            margin="0"
             onClick={[Function]}
-            variant="default"
+            size="medium"
+            theme={
+              Object {
+                "mediumHeight": "normal",
+                "mediumPadding": "0",
+              }
+            }
+            type="button"
+            variant="link"
           >
             <ScreenReaderContent
               as="span"
@@ -1805,14 +1872,7 @@ exports[`renders Calendar Event correctly with everything 1`] = `
             <PresentationContent
               as="span"
             >
-              <Text
-                as="span"
-                color="primary"
-                letterSpacing="normal"
-                size="medium"
-              >
-                I am a Calendar Event
-              </Text>
+              I am a Calendar Event
             </PresentationContent>
             <CalendarEventModal
               allDay={false}
@@ -1832,7 +1892,7 @@ exports[`renders Calendar Event correctly with everything 1`] = `
               timeZone="America/Denver"
               title="I am a Calendar Event"
             />
-          </Link>
+          </Button>
         </div>
       </div>
       <div
@@ -1852,11 +1912,13 @@ exports[`renders Calendar Event correctly with everything 1`] = `
               color="secondary"
               letterSpacing="normal"
               size="medium"
+              wrap="normal"
             >
               <Text
                 as="span"
                 letterSpacing="normal"
                 size="large"
+                wrap="normal"
               >
                 4
               </Text>
@@ -1864,6 +1926,7 @@ exports[`renders Calendar Event correctly with everything 1`] = `
                 as="span"
                 letterSpacing="normal"
                 size="x-small"
+                wrap="normal"
               >
                  
                 pts
@@ -1878,6 +1941,7 @@ exports[`renders Calendar Event correctly with everything 1`] = `
               color="secondary"
               letterSpacing="normal"
               size="x-small"
+              wrap="normal"
             >
               <PresentationContent
                 as="span"
@@ -1925,6 +1989,7 @@ exports[`renders Calendar Event correctly with just date 1`] = `
             Calendar Event I am a Calendar Event is not marked as done.
           </ScreenReaderContent>
         }
+        labelPlacement="end"
         onChange={[Function]}
         readOnly={false}
         size="medium"
@@ -1941,7 +2006,7 @@ exports[`renders Calendar Event correctly with just date 1`] = `
       }
     }
   >
-    <IconCalendarMonth />
+    <IconCalendarMonthLine />
   </div>
   <div
     className="PlannerItem-styles__layout"
@@ -1960,6 +2025,7 @@ exports[`renders Calendar Event correctly with just date 1`] = `
             color="secondary"
             letterSpacing="normal"
             size="x-small"
+            wrap="normal"
           >
             A Course about being Diffrient Calendar Event
           </Text>
@@ -1972,14 +2038,22 @@ exports[`renders Calendar Event correctly with just date 1`] = `
             }
           }
         >
-          <Link
+          <Button
             as="button"
-            disabled={false}
-            ellipsis={true}
-            iconPlacement="start"
-            linkRef={[Function]}
+            buttonRef={[Function]}
+            cursor="pointer"
+            fluidWidth={false}
+            margin="0"
             onClick={[Function]}
-            variant="default"
+            size="medium"
+            theme={
+              Object {
+                "mediumHeight": "normal",
+                "mediumPadding": "0",
+              }
+            }
+            type="button"
+            variant="link"
           >
             <ScreenReaderContent
               as="span"
@@ -1989,14 +2063,7 @@ exports[`renders Calendar Event correctly with just date 1`] = `
             <PresentationContent
               as="span"
             >
-              <Text
-                as="span"
-                color="primary"
-                letterSpacing="normal"
-                size="medium"
-              >
-                I am a Calendar Event
-              </Text>
+              I am a Calendar Event
             </PresentationContent>
             <CalendarEventModal
               allDay={false}
@@ -2016,7 +2083,7 @@ exports[`renders Calendar Event correctly with just date 1`] = `
               timeZone="America/Denver"
               title="I am a Calendar Event"
             />
-          </Link>
+          </Button>
         </div>
       </div>
       <div
@@ -2036,6 +2103,7 @@ exports[`renders Calendar Event correctly with just date 1`] = `
               color="secondary"
               letterSpacing="normal"
               size="x-small"
+              wrap="normal"
             >
               <PresentationContent
                 as="span"
@@ -2083,6 +2151,7 @@ exports[`renders Calendar Event correctly with start and end time 1`] = `
             Calendar Event I am a Calendar Event is not marked as done.
           </ScreenReaderContent>
         }
+        labelPlacement="end"
         onChange={[Function]}
         readOnly={false}
         size="medium"
@@ -2099,7 +2168,7 @@ exports[`renders Calendar Event correctly with start and end time 1`] = `
       }
     }
   >
-    <IconCalendarMonth />
+    <IconCalendarMonthLine />
   </div>
   <div
     className="PlannerItem-styles__layout"
@@ -2118,6 +2187,7 @@ exports[`renders Calendar Event correctly with start and end time 1`] = `
             color="secondary"
             letterSpacing="normal"
             size="x-small"
+            wrap="normal"
           >
             A Course about being Diffrient Calendar Event
           </Text>
@@ -2130,14 +2200,22 @@ exports[`renders Calendar Event correctly with start and end time 1`] = `
             }
           }
         >
-          <Link
+          <Button
             as="button"
-            disabled={false}
-            ellipsis={true}
-            iconPlacement="start"
-            linkRef={[Function]}
+            buttonRef={[Function]}
+            cursor="pointer"
+            fluidWidth={false}
+            margin="0"
             onClick={[Function]}
-            variant="default"
+            size="medium"
+            theme={
+              Object {
+                "mediumHeight": "normal",
+                "mediumPadding": "0",
+              }
+            }
+            type="button"
+            variant="link"
           >
             <ScreenReaderContent
               as="span"
@@ -2147,14 +2225,7 @@ exports[`renders Calendar Event correctly with start and end time 1`] = `
             <PresentationContent
               as="span"
             >
-              <Text
-                as="span"
-                color="primary"
-                letterSpacing="normal"
-                size="medium"
-              >
-                I am a Calendar Event
-              </Text>
+              I am a Calendar Event
             </PresentationContent>
             <CalendarEventModal
               allDay={false}
@@ -2175,7 +2246,7 @@ exports[`renders Calendar Event correctly with start and end time 1`] = `
               timeZone="America/Denver"
               title="I am a Calendar Event"
             />
-          </Link>
+          </Button>
         </div>
       </div>
       <div
@@ -2195,6 +2266,7 @@ exports[`renders Calendar Event correctly with start and end time 1`] = `
               color="secondary"
               letterSpacing="normal"
               size="x-small"
+              wrap="normal"
             >
               <PresentationContent
                 as="span"
@@ -2242,6 +2314,7 @@ exports[`renders Calendar Event correctly without right side content 1`] = `
             Calendar Event I am a Calendar Event is not marked as done.
           </ScreenReaderContent>
         }
+        labelPlacement="end"
         onChange={[Function]}
         readOnly={false}
         size="medium"
@@ -2258,7 +2331,7 @@ exports[`renders Calendar Event correctly without right side content 1`] = `
       }
     }
   >
-    <IconCalendarMonth />
+    <IconCalendarMonthLine />
   </div>
   <div
     className="PlannerItem-styles__layout"
@@ -2277,6 +2350,7 @@ exports[`renders Calendar Event correctly without right side content 1`] = `
             color="secondary"
             letterSpacing="normal"
             size="x-small"
+            wrap="normal"
           >
             A Course about being Diffrient Calendar Event
           </Text>
@@ -2289,14 +2363,22 @@ exports[`renders Calendar Event correctly without right side content 1`] = `
             }
           }
         >
-          <Link
+          <Button
             as="button"
-            disabled={false}
-            ellipsis={true}
-            iconPlacement="start"
-            linkRef={[Function]}
+            buttonRef={[Function]}
+            cursor="pointer"
+            fluidWidth={false}
+            margin="0"
             onClick={[Function]}
-            variant="default"
+            size="medium"
+            theme={
+              Object {
+                "mediumHeight": "normal",
+                "mediumPadding": "0",
+              }
+            }
+            type="button"
+            variant="link"
           >
             <ScreenReaderContent
               as="span"
@@ -2306,14 +2388,7 @@ exports[`renders Calendar Event correctly without right side content 1`] = `
             <PresentationContent
               as="span"
             >
-              <Text
-                as="span"
-                color="primary"
-                letterSpacing="normal"
-                size="medium"
-              >
-                I am a Calendar Event
-              </Text>
+              I am a Calendar Event
             </PresentationContent>
             <CalendarEventModal
               allDay={false}
@@ -2333,7 +2408,7 @@ exports[`renders Calendar Event correctly without right side content 1`] = `
               timeZone="America/Denver"
               title="I am a Calendar Event"
             />
-          </Link>
+          </Button>
         </div>
       </div>
       <div
@@ -2353,6 +2428,7 @@ exports[`renders Calendar Event correctly without right side content 1`] = `
               color="secondary"
               letterSpacing="normal"
               size="x-small"
+              wrap="normal"
             >
               <PresentationContent
                 as="span"
@@ -2400,6 +2476,7 @@ exports[`renders Discussion correctly with everything 1`] = `
             Discussion I am a Discussion is marked as done.
           </ScreenReaderContent>
         }
+        labelPlacement="end"
         onChange={[Function]}
         readOnly={false}
         size="medium"
@@ -2416,7 +2493,7 @@ exports[`renders Discussion correctly with everything 1`] = `
       }
     }
   >
-    <IconDiscussion />
+    <IconDiscussionLine />
   </div>
   <div
     className="PlannerItem-styles__layout"
@@ -2435,6 +2512,7 @@ exports[`renders Discussion correctly with everything 1`] = `
             color="secondary"
             letterSpacing="normal"
             size="x-small"
+            wrap="normal"
           >
             A Course about being Diffrient Discussion
           </Text>
@@ -2447,14 +2525,22 @@ exports[`renders Discussion correctly with everything 1`] = `
             }
           }
         >
-          <Link
+          <Button
             as="button"
-            disabled={false}
-            ellipsis={true}
+            buttonRef={[Function]}
+            cursor="pointer"
+            fluidWidth={false}
             href="http://example.com"
-            iconPlacement="start"
-            linkRef={[Function]}
-            variant="default"
+            margin="0"
+            size="medium"
+            theme={
+              Object {
+                "mediumHeight": "normal",
+                "mediumPadding": "0",
+              }
+            }
+            type="button"
+            variant="link"
           >
             <ScreenReaderContent
               as="span"
@@ -2464,16 +2550,9 @@ exports[`renders Discussion correctly with everything 1`] = `
             <PresentationContent
               as="span"
             >
-              <Text
-                as="span"
-                color="primary"
-                letterSpacing="normal"
-                size="medium"
-              >
-                I am a Discussion
-              </Text>
+              I am a Discussion
             </PresentationContent>
-          </Link>
+          </Button>
         </div>
       </div>
       <div
@@ -2493,11 +2572,13 @@ exports[`renders Discussion correctly with everything 1`] = `
               color="secondary"
               letterSpacing="normal"
               size="medium"
+              wrap="normal"
             >
               <Text
                 as="span"
                 letterSpacing="normal"
                 size="large"
+                wrap="normal"
               >
                 4
               </Text>
@@ -2505,6 +2586,7 @@ exports[`renders Discussion correctly with everything 1`] = `
                 as="span"
                 letterSpacing="normal"
                 size="x-small"
+                wrap="normal"
               >
                  
                 pts
@@ -2519,6 +2601,7 @@ exports[`renders Discussion correctly with everything 1`] = `
               color="secondary"
               letterSpacing="normal"
               size="x-small"
+              wrap="normal"
             >
               <PresentationContent
                 as="span"
@@ -2566,6 +2649,7 @@ exports[`renders Discussion correctly with just date 1`] = `
             Discussion I am a Discussion is not marked as done.
           </ScreenReaderContent>
         }
+        labelPlacement="end"
         onChange={[Function]}
         readOnly={false}
         size="medium"
@@ -2582,7 +2666,7 @@ exports[`renders Discussion correctly with just date 1`] = `
       }
     }
   >
-    <IconDiscussion />
+    <IconDiscussionLine />
   </div>
   <div
     className="PlannerItem-styles__layout"
@@ -2601,6 +2685,7 @@ exports[`renders Discussion correctly with just date 1`] = `
             color="secondary"
             letterSpacing="normal"
             size="x-small"
+            wrap="normal"
           >
             A Course about being Diffrient Discussion
           </Text>
@@ -2613,14 +2698,22 @@ exports[`renders Discussion correctly with just date 1`] = `
             }
           }
         >
-          <Link
+          <Button
             as="button"
-            disabled={false}
-            ellipsis={true}
+            buttonRef={[Function]}
+            cursor="pointer"
+            fluidWidth={false}
             href="http://example.com"
-            iconPlacement="start"
-            linkRef={[Function]}
-            variant="default"
+            margin="0"
+            size="medium"
+            theme={
+              Object {
+                "mediumHeight": "normal",
+                "mediumPadding": "0",
+              }
+            }
+            type="button"
+            variant="link"
           >
             <ScreenReaderContent
               as="span"
@@ -2630,16 +2723,9 @@ exports[`renders Discussion correctly with just date 1`] = `
             <PresentationContent
               as="span"
             >
-              <Text
-                as="span"
-                color="primary"
-                letterSpacing="normal"
-                size="medium"
-              >
-                I am a Discussion
-              </Text>
+              I am a Discussion
             </PresentationContent>
-          </Link>
+          </Button>
         </div>
       </div>
       <div
@@ -2659,6 +2745,7 @@ exports[`renders Discussion correctly with just date 1`] = `
               color="secondary"
               letterSpacing="normal"
               size="x-small"
+              wrap="normal"
             >
               <PresentationContent
                 as="span"
@@ -2706,6 +2793,7 @@ exports[`renders Discussion correctly with just points 1`] = `
             Discussion I am a Discussion is not marked as done.
           </ScreenReaderContent>
         }
+        labelPlacement="end"
         onChange={[Function]}
         readOnly={false}
         size="medium"
@@ -2722,7 +2810,7 @@ exports[`renders Discussion correctly with just points 1`] = `
       }
     }
   >
-    <IconDiscussion />
+    <IconDiscussionLine />
   </div>
   <div
     className="PlannerItem-styles__layout"
@@ -2741,6 +2829,7 @@ exports[`renders Discussion correctly with just points 1`] = `
             color="secondary"
             letterSpacing="normal"
             size="x-small"
+            wrap="normal"
           >
             A Course about being Diffrient Discussion
           </Text>
@@ -2753,14 +2842,22 @@ exports[`renders Discussion correctly with just points 1`] = `
             }
           }
         >
-          <Link
+          <Button
             as="button"
-            disabled={false}
-            ellipsis={true}
+            buttonRef={[Function]}
+            cursor="pointer"
+            fluidWidth={false}
             href="http://example.com"
-            iconPlacement="start"
-            linkRef={[Function]}
-            variant="default"
+            margin="0"
+            size="medium"
+            theme={
+              Object {
+                "mediumHeight": "normal",
+                "mediumPadding": "0",
+              }
+            }
+            type="button"
+            variant="link"
           >
             <ScreenReaderContent
               as="span"
@@ -2770,16 +2867,9 @@ exports[`renders Discussion correctly with just points 1`] = `
             <PresentationContent
               as="span"
             >
-              <Text
-                as="span"
-                color="primary"
-                letterSpacing="normal"
-                size="medium"
-              >
-                I am a Discussion
-              </Text>
+              I am a Discussion
             </PresentationContent>
-          </Link>
+          </Button>
         </div>
       </div>
       <div
@@ -2799,11 +2889,13 @@ exports[`renders Discussion correctly with just points 1`] = `
               color="secondary"
               letterSpacing="normal"
               size="medium"
+              wrap="normal"
             >
               <Text
                 as="span"
                 letterSpacing="normal"
                 size="large"
+                wrap="normal"
               >
                 2
               </Text>
@@ -2811,6 +2903,7 @@ exports[`renders Discussion correctly with just points 1`] = `
                 as="span"
                 letterSpacing="normal"
                 size="x-small"
+                wrap="normal"
               >
                  
                 pts
@@ -2825,6 +2918,7 @@ exports[`renders Discussion correctly with just points 1`] = `
               color="secondary"
               letterSpacing="normal"
               size="x-small"
+              wrap="normal"
             >
               <PresentationContent
                 as="span"
@@ -2872,6 +2966,7 @@ exports[`renders Discussion correctly without right side content 1`] = `
             Discussion I am a Discussion is not marked as done.
           </ScreenReaderContent>
         }
+        labelPlacement="end"
         onChange={[Function]}
         readOnly={false}
         size="medium"
@@ -2888,7 +2983,7 @@ exports[`renders Discussion correctly without right side content 1`] = `
       }
     }
   >
-    <IconDiscussion />
+    <IconDiscussionLine />
   </div>
   <div
     className="PlannerItem-styles__layout"
@@ -2907,6 +3002,7 @@ exports[`renders Discussion correctly without right side content 1`] = `
             color="secondary"
             letterSpacing="normal"
             size="x-small"
+            wrap="normal"
           >
             A Course about being Diffrient Discussion
           </Text>
@@ -2919,14 +3015,22 @@ exports[`renders Discussion correctly without right side content 1`] = `
             }
           }
         >
-          <Link
+          <Button
             as="button"
-            disabled={false}
-            ellipsis={true}
+            buttonRef={[Function]}
+            cursor="pointer"
+            fluidWidth={false}
             href="http://example.com"
-            iconPlacement="start"
-            linkRef={[Function]}
-            variant="default"
+            margin="0"
+            size="medium"
+            theme={
+              Object {
+                "mediumHeight": "normal",
+                "mediumPadding": "0",
+              }
+            }
+            type="button"
+            variant="link"
           >
             <ScreenReaderContent
               as="span"
@@ -2936,16 +3040,9 @@ exports[`renders Discussion correctly without right side content 1`] = `
             <PresentationContent
               as="span"
             >
-              <Text
-                as="span"
-                color="primary"
-                letterSpacing="normal"
-                size="medium"
-              >
-                I am a Discussion
-              </Text>
+              I am a Discussion
             </PresentationContent>
-          </Link>
+          </Button>
         </div>
       </div>
       <div
@@ -2965,6 +3062,7 @@ exports[`renders Discussion correctly without right side content 1`] = `
               color="secondary"
               letterSpacing="normal"
               size="x-small"
+              wrap="normal"
             >
               <PresentationContent
                 as="span"
@@ -3012,6 +3110,7 @@ exports[`renders Note correctly with Group 1`] = `
             Page this is an account-level group page is not marked as done.
           </ScreenReaderContent>
         }
+        labelPlacement="end"
         onChange={[Function]}
         readOnly={false}
         size="medium"
@@ -3028,7 +3127,7 @@ exports[`renders Note correctly with Group 1`] = `
       }
     }
   >
-    <IconDocument />
+    <IconDocumentLine />
   </div>
   <div
     className="PlannerItem-styles__layout"
@@ -3047,6 +3146,7 @@ exports[`renders Note correctly with Group 1`] = `
             color="secondary"
             letterSpacing="normal"
             size="x-small"
+            wrap="normal"
           >
             Account-level group 1 Page
           </Text>
@@ -3059,14 +3159,22 @@ exports[`renders Note correctly with Group 1`] = `
             }
           }
         >
-          <Link
+          <Button
             as="button"
-            disabled={false}
-            ellipsis={true}
+            buttonRef={[Function]}
+            cursor="pointer"
+            fluidWidth={false}
             href="/groups/9/pages/this-is-an-account-level-group-page"
-            iconPlacement="start"
-            linkRef={[Function]}
-            variant="default"
+            margin="0"
+            size="medium"
+            theme={
+              Object {
+                "mediumHeight": "normal",
+                "mediumPadding": "0",
+              }
+            }
+            type="button"
+            variant="link"
           >
             <ScreenReaderContent
               as="span"
@@ -3076,16 +3184,9 @@ exports[`renders Note correctly with Group 1`] = `
             <PresentationContent
               as="span"
             >
-              <Text
-                as="span"
-                color="primary"
-                letterSpacing="normal"
-                size="medium"
-              >
-                this is an account-level group page
-              </Text>
+              this is an account-level group page
             </PresentationContent>
-          </Link>
+          </Button>
         </div>
       </div>
       <div
@@ -3105,6 +3206,7 @@ exports[`renders Note correctly with Group 1`] = `
               color="secondary"
               letterSpacing="normal"
               size="x-small"
+              wrap="normal"
             >
               <PresentationContent
                 as="span"
@@ -3152,6 +3254,7 @@ exports[`renders Note correctly with everything 1`] = `
             To Do I am a Note is marked as done.
           </ScreenReaderContent>
         }
+        labelPlacement="end"
         onChange={[Function]}
         readOnly={false}
         size="medium"
@@ -3194,6 +3297,7 @@ exports[`renders Note correctly with everything 1`] = `
             color="secondary"
             letterSpacing="normal"
             size="x-small"
+            wrap="normal"
           >
             Math 101 To Do
           </Text>
@@ -3206,14 +3310,22 @@ exports[`renders Note correctly with everything 1`] = `
             }
           }
         >
-          <Link
+          <Button
             as="button"
-            disabled={false}
-            ellipsis={true}
-            iconPlacement="start"
-            linkRef={[Function]}
+            buttonRef={[Function]}
+            cursor="pointer"
+            fluidWidth={false}
+            margin="0"
             onClick={[Function]}
-            variant="default"
+            size="medium"
+            theme={
+              Object {
+                "mediumHeight": "normal",
+                "mediumPadding": "0",
+              }
+            }
+            type="button"
+            variant="link"
           >
             <ScreenReaderContent
               as="span"
@@ -3223,16 +3335,9 @@ exports[`renders Note correctly with everything 1`] = `
             <PresentationContent
               as="span"
             >
-              <Text
-                as="span"
-                color="primary"
-                letterSpacing="normal"
-                size="medium"
-              >
-                I am a Note
-              </Text>
+              I am a Note
             </PresentationContent>
-          </Link>
+          </Button>
         </div>
       </div>
       <div
@@ -3285,6 +3390,7 @@ exports[`renders Note correctly with everything 1`] = `
               color="secondary"
               letterSpacing="normal"
               size="x-small"
+              wrap="normal"
             >
               <PresentationContent
                 as="span"
@@ -3332,6 +3438,7 @@ exports[`renders Note correctly without Course 1`] = `
             To Do I am a Note is not marked as done.
           </ScreenReaderContent>
         }
+        labelPlacement="end"
         onChange={[Function]}
         readOnly={false}
         size="medium"
@@ -3374,6 +3481,7 @@ exports[`renders Note correctly without Course 1`] = `
             color="secondary"
             letterSpacing="normal"
             size="x-small"
+            wrap="normal"
           >
              To Do
           </Text>
@@ -3386,14 +3494,22 @@ exports[`renders Note correctly without Course 1`] = `
             }
           }
         >
-          <Link
+          <Button
             as="button"
-            disabled={false}
-            ellipsis={true}
-            iconPlacement="start"
-            linkRef={[Function]}
+            buttonRef={[Function]}
+            cursor="pointer"
+            fluidWidth={false}
+            margin="0"
             onClick={[Function]}
-            variant="default"
+            size="medium"
+            theme={
+              Object {
+                "mediumHeight": "normal",
+                "mediumPadding": "0",
+              }
+            }
+            type="button"
+            variant="link"
           >
             <ScreenReaderContent
               as="span"
@@ -3403,16 +3519,9 @@ exports[`renders Note correctly without Course 1`] = `
             <PresentationContent
               as="span"
             >
-              <Text
-                as="span"
-                color="primary"
-                letterSpacing="normal"
-                size="medium"
-              >
-                I am a Note
-              </Text>
+              I am a Note
             </PresentationContent>
-          </Link>
+          </Button>
         </div>
       </div>
       <div
@@ -3465,6 +3574,7 @@ exports[`renders Note correctly without Course 1`] = `
               color="secondary"
               letterSpacing="normal"
               size="x-small"
+              wrap="normal"
             >
               <PresentationContent
                 as="span"
@@ -3512,6 +3622,7 @@ exports[`renders Page correctly with everything 1`] = `
             Page I am a Page is marked as done.
           </ScreenReaderContent>
         }
+        labelPlacement="end"
         onChange={[Function]}
         readOnly={false}
         size="medium"
@@ -3528,7 +3639,7 @@ exports[`renders Page correctly with everything 1`] = `
       }
     }
   >
-    <IconDocument />
+    <IconDocumentLine />
   </div>
   <div
     className="PlannerItem-styles__layout"
@@ -3547,6 +3658,7 @@ exports[`renders Page correctly with everything 1`] = `
             color="secondary"
             letterSpacing="normal"
             size="x-small"
+            wrap="normal"
           >
             A Course about being Diffrient Page
           </Text>
@@ -3559,14 +3671,22 @@ exports[`renders Page correctly with everything 1`] = `
             }
           }
         >
-          <Link
+          <Button
             as="button"
-            disabled={false}
-            ellipsis={true}
+            buttonRef={[Function]}
+            cursor="pointer"
+            fluidWidth={false}
             href="http://example.com"
-            iconPlacement="start"
-            linkRef={[Function]}
-            variant="default"
+            margin="0"
+            size="medium"
+            theme={
+              Object {
+                "mediumHeight": "normal",
+                "mediumPadding": "0",
+              }
+            }
+            type="button"
+            variant="link"
           >
             <ScreenReaderContent
               as="span"
@@ -3576,16 +3696,9 @@ exports[`renders Page correctly with everything 1`] = `
             <PresentationContent
               as="span"
             >
-              <Text
-                as="span"
-                color="primary"
-                letterSpacing="normal"
-                size="medium"
-              >
-                I am a Page
-              </Text>
+              I am a Page
             </PresentationContent>
-          </Link>
+          </Button>
         </div>
       </div>
       <div
@@ -3605,11 +3718,13 @@ exports[`renders Page correctly with everything 1`] = `
               color="secondary"
               letterSpacing="normal"
               size="medium"
+              wrap="normal"
             >
               <Text
                 as="span"
                 letterSpacing="normal"
                 size="large"
+                wrap="normal"
               >
                 4
               </Text>
@@ -3617,6 +3732,7 @@ exports[`renders Page correctly with everything 1`] = `
                 as="span"
                 letterSpacing="normal"
                 size="x-small"
+                wrap="normal"
               >
                  
                 pts
@@ -3631,6 +3747,7 @@ exports[`renders Page correctly with everything 1`] = `
               color="secondary"
               letterSpacing="normal"
               size="x-small"
+              wrap="normal"
             >
               <PresentationContent
                 as="span"
@@ -3678,6 +3795,7 @@ exports[`renders Page correctly with just date 1`] = `
             Page I am a Page is not marked as done.
           </ScreenReaderContent>
         }
+        labelPlacement="end"
         onChange={[Function]}
         readOnly={false}
         size="medium"
@@ -3694,7 +3812,7 @@ exports[`renders Page correctly with just date 1`] = `
       }
     }
   >
-    <IconDocument />
+    <IconDocumentLine />
   </div>
   <div
     className="PlannerItem-styles__layout"
@@ -3713,6 +3831,7 @@ exports[`renders Page correctly with just date 1`] = `
             color="secondary"
             letterSpacing="normal"
             size="x-small"
+            wrap="normal"
           >
              Page
           </Text>
@@ -3725,14 +3844,22 @@ exports[`renders Page correctly with just date 1`] = `
             }
           }
         >
-          <Link
+          <Button
             as="button"
-            disabled={false}
-            ellipsis={true}
+            buttonRef={[Function]}
+            cursor="pointer"
+            fluidWidth={false}
             href="http://example.com"
-            iconPlacement="start"
-            linkRef={[Function]}
-            variant="default"
+            margin="0"
+            size="medium"
+            theme={
+              Object {
+                "mediumHeight": "normal",
+                "mediumPadding": "0",
+              }
+            }
+            type="button"
+            variant="link"
           >
             <ScreenReaderContent
               as="span"
@@ -3742,16 +3869,9 @@ exports[`renders Page correctly with just date 1`] = `
             <PresentationContent
               as="span"
             >
-              <Text
-                as="span"
-                color="primary"
-                letterSpacing="normal"
-                size="medium"
-              >
-                I am a Page
-              </Text>
+              I am a Page
             </PresentationContent>
-          </Link>
+          </Button>
         </div>
       </div>
       <div
@@ -3771,6 +3891,7 @@ exports[`renders Page correctly with just date 1`] = `
               color="secondary"
               letterSpacing="normal"
               size="x-small"
+              wrap="normal"
             >
               <PresentationContent
                 as="span"
@@ -3818,6 +3939,7 @@ exports[`renders Page correctly with just points 1`] = `
             Page I am a Page is not marked as done.
           </ScreenReaderContent>
         }
+        labelPlacement="end"
         onChange={[Function]}
         readOnly={false}
         size="medium"
@@ -3834,7 +3956,7 @@ exports[`renders Page correctly with just points 1`] = `
       }
     }
   >
-    <IconDocument />
+    <IconDocumentLine />
   </div>
   <div
     className="PlannerItem-styles__layout"
@@ -3853,6 +3975,7 @@ exports[`renders Page correctly with just points 1`] = `
             color="secondary"
             letterSpacing="normal"
             size="x-small"
+            wrap="normal"
           >
             A Course about being Diffrient Page
           </Text>
@@ -3865,14 +3988,22 @@ exports[`renders Page correctly with just points 1`] = `
             }
           }
         >
-          <Link
+          <Button
             as="button"
-            disabled={false}
-            ellipsis={true}
+            buttonRef={[Function]}
+            cursor="pointer"
+            fluidWidth={false}
             href="http://example.com"
-            iconPlacement="start"
-            linkRef={[Function]}
-            variant="default"
+            margin="0"
+            size="medium"
+            theme={
+              Object {
+                "mediumHeight": "normal",
+                "mediumPadding": "0",
+              }
+            }
+            type="button"
+            variant="link"
           >
             <ScreenReaderContent
               as="span"
@@ -3882,16 +4013,9 @@ exports[`renders Page correctly with just points 1`] = `
             <PresentationContent
               as="span"
             >
-              <Text
-                as="span"
-                color="primary"
-                letterSpacing="normal"
-                size="medium"
-              >
-                I am a Page
-              </Text>
+              I am a Page
             </PresentationContent>
-          </Link>
+          </Button>
         </div>
       </div>
       <div
@@ -3911,11 +4035,13 @@ exports[`renders Page correctly with just points 1`] = `
               color="secondary"
               letterSpacing="normal"
               size="medium"
+              wrap="normal"
             >
               <Text
                 as="span"
                 letterSpacing="normal"
                 size="large"
+                wrap="normal"
               >
                 2
               </Text>
@@ -3923,6 +4049,7 @@ exports[`renders Page correctly with just points 1`] = `
                 as="span"
                 letterSpacing="normal"
                 size="x-small"
+                wrap="normal"
               >
                  
                 pts
@@ -3937,6 +4064,7 @@ exports[`renders Page correctly with just points 1`] = `
               color="secondary"
               letterSpacing="normal"
               size="x-small"
+              wrap="normal"
             >
               <PresentationContent
                 as="span"
@@ -3984,6 +4112,7 @@ exports[`renders Page correctly without right side content 1`] = `
             Page I am a Page is not marked as done.
           </ScreenReaderContent>
         }
+        labelPlacement="end"
         onChange={[Function]}
         readOnly={false}
         size="medium"
@@ -4000,7 +4129,7 @@ exports[`renders Page correctly without right side content 1`] = `
       }
     }
   >
-    <IconDocument />
+    <IconDocumentLine />
   </div>
   <div
     className="PlannerItem-styles__layout"
@@ -4019,6 +4148,7 @@ exports[`renders Page correctly without right side content 1`] = `
             color="secondary"
             letterSpacing="normal"
             size="x-small"
+            wrap="normal"
           >
             A Course about being Diffrient Page
           </Text>
@@ -4031,14 +4161,22 @@ exports[`renders Page correctly without right side content 1`] = `
             }
           }
         >
-          <Link
+          <Button
             as="button"
-            disabled={false}
-            ellipsis={true}
+            buttonRef={[Function]}
+            cursor="pointer"
+            fluidWidth={false}
             href="http://example.com"
-            iconPlacement="start"
-            linkRef={[Function]}
-            variant="default"
+            margin="0"
+            size="medium"
+            theme={
+              Object {
+                "mediumHeight": "normal",
+                "mediumPadding": "0",
+              }
+            }
+            type="button"
+            variant="link"
           >
             <ScreenReaderContent
               as="span"
@@ -4048,16 +4186,9 @@ exports[`renders Page correctly without right side content 1`] = `
             <PresentationContent
               as="span"
             >
-              <Text
-                as="span"
-                color="primary"
-                letterSpacing="normal"
-                size="medium"
-              >
-                I am a Page
-              </Text>
+              I am a Page
             </PresentationContent>
-          </Link>
+          </Button>
         </div>
       </div>
       <div
@@ -4077,6 +4208,7 @@ exports[`renders Page correctly without right side content 1`] = `
               color="secondary"
               letterSpacing="normal"
               size="x-small"
+              wrap="normal"
             >
               <PresentationContent
                 as="span"
@@ -4124,6 +4256,7 @@ exports[`renders Quiz correctly with everything 1`] = `
             Quiz I am a Quiz is marked as done.
           </ScreenReaderContent>
         }
+        labelPlacement="end"
         onChange={[Function]}
         readOnly={false}
         size="medium"
@@ -4140,7 +4273,7 @@ exports[`renders Quiz correctly with everything 1`] = `
       }
     }
   >
-    <IconQuiz />
+    <IconQuizLine />
   </div>
   <div
     className="PlannerItem-styles__layout"
@@ -4159,6 +4292,7 @@ exports[`renders Quiz correctly with everything 1`] = `
             color="secondary"
             letterSpacing="normal"
             size="x-small"
+            wrap="normal"
           >
             A Course about being Diffrient Quiz
           </Text>
@@ -4171,14 +4305,22 @@ exports[`renders Quiz correctly with everything 1`] = `
             }
           }
         >
-          <Link
+          <Button
             as="button"
-            disabled={false}
-            ellipsis={true}
+            buttonRef={[Function]}
+            cursor="pointer"
+            fluidWidth={false}
             href="http://example.com"
-            iconPlacement="start"
-            linkRef={[Function]}
-            variant="default"
+            margin="0"
+            size="medium"
+            theme={
+              Object {
+                "mediumHeight": "normal",
+                "mediumPadding": "0",
+              }
+            }
+            type="button"
+            variant="link"
           >
             <ScreenReaderContent
               as="span"
@@ -4188,16 +4330,9 @@ exports[`renders Quiz correctly with everything 1`] = `
             <PresentationContent
               as="span"
             >
-              <Text
-                as="span"
-                color="primary"
-                letterSpacing="normal"
-                size="medium"
-              >
-                I am a Quiz
-              </Text>
+              I am a Quiz
             </PresentationContent>
-          </Link>
+          </Button>
         </div>
       </div>
       <div
@@ -4217,11 +4352,13 @@ exports[`renders Quiz correctly with everything 1`] = `
               color="secondary"
               letterSpacing="normal"
               size="medium"
+              wrap="normal"
             >
               <Text
                 as="span"
                 letterSpacing="normal"
                 size="large"
+                wrap="normal"
               >
                 4
               </Text>
@@ -4229,6 +4366,7 @@ exports[`renders Quiz correctly with everything 1`] = `
                 as="span"
                 letterSpacing="normal"
                 size="x-small"
+                wrap="normal"
               >
                  
                 pts
@@ -4243,6 +4381,7 @@ exports[`renders Quiz correctly with everything 1`] = `
               color="secondary"
               letterSpacing="normal"
               size="x-small"
+              wrap="normal"
             >
               <PresentationContent
                 as="span"
@@ -4290,6 +4429,7 @@ exports[`renders Quiz correctly with just date 1`] = `
             Quiz I am a Quiz is not marked as done.
           </ScreenReaderContent>
         }
+        labelPlacement="end"
         onChange={[Function]}
         readOnly={false}
         size="medium"
@@ -4306,7 +4446,7 @@ exports[`renders Quiz correctly with just date 1`] = `
       }
     }
   >
-    <IconQuiz />
+    <IconQuizLine />
   </div>
   <div
     className="PlannerItem-styles__layout"
@@ -4325,6 +4465,7 @@ exports[`renders Quiz correctly with just date 1`] = `
             color="secondary"
             letterSpacing="normal"
             size="x-small"
+            wrap="normal"
           >
             A Course about being Diffrient Quiz
           </Text>
@@ -4337,14 +4478,22 @@ exports[`renders Quiz correctly with just date 1`] = `
             }
           }
         >
-          <Link
+          <Button
             as="button"
-            disabled={false}
-            ellipsis={true}
+            buttonRef={[Function]}
+            cursor="pointer"
+            fluidWidth={false}
             href="http://example.com"
-            iconPlacement="start"
-            linkRef={[Function]}
-            variant="default"
+            margin="0"
+            size="medium"
+            theme={
+              Object {
+                "mediumHeight": "normal",
+                "mediumPadding": "0",
+              }
+            }
+            type="button"
+            variant="link"
           >
             <ScreenReaderContent
               as="span"
@@ -4354,16 +4503,9 @@ exports[`renders Quiz correctly with just date 1`] = `
             <PresentationContent
               as="span"
             >
-              <Text
-                as="span"
-                color="primary"
-                letterSpacing="normal"
-                size="medium"
-              >
-                I am a Quiz
-              </Text>
+              I am a Quiz
             </PresentationContent>
-          </Link>
+          </Button>
         </div>
       </div>
       <div
@@ -4383,6 +4525,7 @@ exports[`renders Quiz correctly with just date 1`] = `
               color="secondary"
               letterSpacing="normal"
               size="x-small"
+              wrap="normal"
             >
               <PresentationContent
                 as="span"
@@ -4430,6 +4573,7 @@ exports[`renders Quiz correctly with just points 1`] = `
             Quiz I am a Quiz is not marked as done.
           </ScreenReaderContent>
         }
+        labelPlacement="end"
         onChange={[Function]}
         readOnly={false}
         size="medium"
@@ -4446,7 +4590,7 @@ exports[`renders Quiz correctly with just points 1`] = `
       }
     }
   >
-    <IconQuiz />
+    <IconQuizLine />
   </div>
   <div
     className="PlannerItem-styles__layout"
@@ -4465,6 +4609,7 @@ exports[`renders Quiz correctly with just points 1`] = `
             color="secondary"
             letterSpacing="normal"
             size="x-small"
+            wrap="normal"
           >
             A Course about being Diffrient Quiz
           </Text>
@@ -4477,14 +4622,22 @@ exports[`renders Quiz correctly with just points 1`] = `
             }
           }
         >
-          <Link
+          <Button
             as="button"
-            disabled={false}
-            ellipsis={true}
+            buttonRef={[Function]}
+            cursor="pointer"
+            fluidWidth={false}
             href="http://example.com"
-            iconPlacement="start"
-            linkRef={[Function]}
-            variant="default"
+            margin="0"
+            size="medium"
+            theme={
+              Object {
+                "mediumHeight": "normal",
+                "mediumPadding": "0",
+              }
+            }
+            type="button"
+            variant="link"
           >
             <ScreenReaderContent
               as="span"
@@ -4494,16 +4647,9 @@ exports[`renders Quiz correctly with just points 1`] = `
             <PresentationContent
               as="span"
             >
-              <Text
-                as="span"
-                color="primary"
-                letterSpacing="normal"
-                size="medium"
-              >
-                I am a Quiz
-              </Text>
+              I am a Quiz
             </PresentationContent>
-          </Link>
+          </Button>
         </div>
       </div>
       <div
@@ -4523,11 +4669,13 @@ exports[`renders Quiz correctly with just points 1`] = `
               color="secondary"
               letterSpacing="normal"
               size="medium"
+              wrap="normal"
             >
               <Text
                 as="span"
                 letterSpacing="normal"
                 size="large"
+                wrap="normal"
               >
                 2
               </Text>
@@ -4535,6 +4683,7 @@ exports[`renders Quiz correctly with just points 1`] = `
                 as="span"
                 letterSpacing="normal"
                 size="x-small"
+                wrap="normal"
               >
                  
                 pts
@@ -4549,6 +4698,7 @@ exports[`renders Quiz correctly with just points 1`] = `
               color="secondary"
               letterSpacing="normal"
               size="x-small"
+              wrap="normal"
             >
               <PresentationContent
                 as="span"
@@ -4596,6 +4746,7 @@ exports[`renders Quiz correctly without right side content 1`] = `
             Quiz I am a Quiz is not marked as done.
           </ScreenReaderContent>
         }
+        labelPlacement="end"
         onChange={[Function]}
         readOnly={false}
         size="medium"
@@ -4612,7 +4763,7 @@ exports[`renders Quiz correctly without right side content 1`] = `
       }
     }
   >
-    <IconQuiz />
+    <IconQuizLine />
   </div>
   <div
     className="PlannerItem-styles__layout"
@@ -4631,6 +4782,7 @@ exports[`renders Quiz correctly without right side content 1`] = `
             color="secondary"
             letterSpacing="normal"
             size="x-small"
+            wrap="normal"
           >
             A Course about being Diffrient Quiz
           </Text>
@@ -4643,14 +4795,22 @@ exports[`renders Quiz correctly without right side content 1`] = `
             }
           }
         >
-          <Link
+          <Button
             as="button"
-            disabled={false}
-            ellipsis={true}
+            buttonRef={[Function]}
+            cursor="pointer"
+            fluidWidth={false}
             href="http://example.com"
-            iconPlacement="start"
-            linkRef={[Function]}
-            variant="default"
+            margin="0"
+            size="medium"
+            theme={
+              Object {
+                "mediumHeight": "normal",
+                "mediumPadding": "0",
+              }
+            }
+            type="button"
+            variant="link"
           >
             <ScreenReaderContent
               as="span"
@@ -4660,16 +4820,9 @@ exports[`renders Quiz correctly without right side content 1`] = `
             <PresentationContent
               as="span"
             >
-              <Text
-                as="span"
-                color="primary"
-                letterSpacing="normal"
-                size="medium"
-              >
-                I am a Quiz
-              </Text>
+              I am a Quiz
             </PresentationContent>
-          </Link>
+          </Button>
         </div>
       </div>
       <div
@@ -4689,6 +4842,7 @@ exports[`renders Quiz correctly without right side content 1`] = `
               color="secondary"
               letterSpacing="normal"
               size="x-small"
+              wrap="normal"
             >
               <PresentationContent
                 as="span"
@@ -4736,6 +4890,7 @@ exports[`renders assignment peer reviews correctly 1`] = `
             Peer Review some reviewable assignment is not marked as done.
           </ScreenReaderContent>
         }
+        labelPlacement="end"
         onChange={[Function]}
         readOnly={false}
         size="medium"
@@ -4752,7 +4907,7 @@ exports[`renders assignment peer reviews correctly 1`] = `
       }
     }
   >
-    <IconPeerReview />
+    <IconPeerReviewLine />
   </div>
   <div
     className="PlannerItem-styles__layout"
@@ -4771,6 +4926,7 @@ exports[`renders assignment peer reviews correctly 1`] = `
             color="secondary"
             letterSpacing="normal"
             size="x-small"
+            wrap="normal"
           >
             A Course about being Diffrient Peer Review
           </Text>
@@ -4783,14 +4939,22 @@ exports[`renders assignment peer reviews correctly 1`] = `
             }
           }
         >
-          <Link
+          <Button
             as="button"
-            disabled={false}
-            ellipsis={true}
+            buttonRef={[Function]}
+            cursor="pointer"
+            fluidWidth={false}
             href="http://example.com"
-            iconPlacement="start"
-            linkRef={[Function]}
-            variant="default"
+            margin="0"
+            size="medium"
+            theme={
+              Object {
+                "mediumHeight": "normal",
+                "mediumPadding": "0",
+              }
+            }
+            type="button"
+            variant="link"
           >
             <ScreenReaderContent
               as="span"
@@ -4800,16 +4964,9 @@ exports[`renders assignment peer reviews correctly 1`] = `
             <PresentationContent
               as="span"
             >
-              <Text
-                as="span"
-                color="primary"
-                letterSpacing="normal"
-                size="medium"
-              >
-                some reviewable assignment
-              </Text>
+              some reviewable assignment
             </PresentationContent>
-          </Link>
+          </Button>
         </div>
       </div>
       <div
@@ -4829,6 +4986,7 @@ exports[`renders assignment peer reviews correctly 1`] = `
               color="secondary"
               letterSpacing="normal"
               size="x-small"
+              wrap="normal"
             >
               <PresentationContent
                 as="span"
@@ -4876,6 +5034,7 @@ exports[`renders correctly 1`] = `
             Assignment This Assignment is about awesome stuff is not marked as done.
           </ScreenReaderContent>
         }
+        labelPlacement="end"
         onChange={[Function]}
         readOnly={false}
         size="medium"
@@ -4892,7 +5051,7 @@ exports[`renders correctly 1`] = `
       }
     }
   >
-    <IconAssignment />
+    <IconAssignmentLine />
   </div>
   <div
     className="PlannerItem-styles__layout"
@@ -4911,6 +5070,7 @@ exports[`renders correctly 1`] = `
             color="secondary"
             letterSpacing="normal"
             size="x-small"
+            wrap="normal"
           >
             A Course about being Diffrient Assignment
           </Text>
@@ -4923,14 +5083,22 @@ exports[`renders correctly 1`] = `
             }
           }
         >
-          <Link
+          <Button
             as="button"
-            disabled={false}
-            ellipsis={true}
+            buttonRef={[Function]}
+            cursor="pointer"
+            fluidWidth={false}
             href="http://example.com"
-            iconPlacement="start"
-            linkRef={[Function]}
-            variant="default"
+            margin="0"
+            size="medium"
+            theme={
+              Object {
+                "mediumHeight": "normal",
+                "mediumPadding": "0",
+              }
+            }
+            type="button"
+            variant="link"
           >
             <ScreenReaderContent
               as="span"
@@ -4940,16 +5108,9 @@ exports[`renders correctly 1`] = `
             <PresentationContent
               as="span"
             >
-              <Text
-                as="span"
-                color="primary"
-                letterSpacing="normal"
-                size="medium"
-              >
-                This Assignment is about awesome stuff
-              </Text>
+              This Assignment is about awesome stuff
             </PresentationContent>
-          </Link>
+          </Button>
         </div>
       </div>
       <div
@@ -4969,11 +5130,13 @@ exports[`renders correctly 1`] = `
               color="secondary"
               letterSpacing="normal"
               size="medium"
+              wrap="normal"
             >
               <Text
                 as="span"
                 letterSpacing="normal"
                 size="large"
+                wrap="normal"
               >
                 35
               </Text>
@@ -4981,6 +5144,7 @@ exports[`renders correctly 1`] = `
                 as="span"
                 letterSpacing="normal"
                 size="x-small"
+                wrap="normal"
               >
                  
                 pts
@@ -4995,6 +5159,7 @@ exports[`renders correctly 1`] = `
               color="secondary"
               letterSpacing="normal"
               size="x-small"
+              wrap="normal"
             >
               <PresentationContent
                 as="span"
@@ -5042,6 +5207,7 @@ exports[`renders feedback anonymously according to the assignment settings 1`] =
             Assignment This Assignment is about awesome stuff is not marked as done.
           </ScreenReaderContent>
         }
+        labelPlacement="end"
         onChange={[Function]}
         readOnly={false}
         size="medium"
@@ -5058,7 +5224,7 @@ exports[`renders feedback anonymously according to the assignment settings 1`] =
       }
     }
   >
-    <IconAssignment />
+    <IconAssignmentLine />
   </div>
   <div
     className="PlannerItem-styles__layout"
@@ -5077,6 +5243,7 @@ exports[`renders feedback anonymously according to the assignment settings 1`] =
             color="secondary"
             letterSpacing="normal"
             size="x-small"
+            wrap="normal"
           >
             A Course about being Diffrient Assignment
           </Text>
@@ -5089,14 +5256,22 @@ exports[`renders feedback anonymously according to the assignment settings 1`] =
             }
           }
         >
-          <Link
+          <Button
             as="button"
-            disabled={false}
-            ellipsis={true}
+            buttonRef={[Function]}
+            cursor="pointer"
+            fluidWidth={false}
             href="http://example.com"
-            iconPlacement="start"
-            linkRef={[Function]}
-            variant="default"
+            margin="0"
+            size="medium"
+            theme={
+              Object {
+                "mediumHeight": "normal",
+                "mediumPadding": "0",
+              }
+            }
+            type="button"
+            variant="link"
           >
             <ScreenReaderContent
               as="span"
@@ -5106,16 +5281,9 @@ exports[`renders feedback anonymously according to the assignment settings 1`] =
             <PresentationContent
               as="span"
             >
-              <Text
-                as="span"
-                color="primary"
-                letterSpacing="normal"
-                size="medium"
-              >
-                This Assignment is about awesome stuff
-              </Text>
+              This Assignment is about awesome stuff
             </PresentationContent>
-          </Link>
+          </Button>
         </div>
       </div>
       <div
@@ -5135,6 +5303,7 @@ exports[`renders feedback anonymously according to the assignment settings 1`] =
               color="secondary"
               letterSpacing="normal"
               size="x-small"
+              wrap="normal"
             >
               <PresentationContent
                 as="span"
@@ -5168,6 +5337,7 @@ exports[`renders feedback anonymously according to the assignment settings 1`] =
           fontStyle="italic"
           letterSpacing="normal"
           size="medium"
+          wrap="normal"
         >
           Open the pod bay doors, HAL.
         </Text>
@@ -5209,6 +5379,7 @@ exports[`renders feedback if available 1`] = `
             Assignment This Assignment is about awesome stuff is not marked as done.
           </ScreenReaderContent>
         }
+        labelPlacement="end"
         onChange={[Function]}
         readOnly={false}
         size="medium"
@@ -5225,7 +5396,7 @@ exports[`renders feedback if available 1`] = `
       }
     }
   >
-    <IconAssignment />
+    <IconAssignmentLine />
   </div>
   <div
     className="PlannerItem-styles__layout"
@@ -5244,6 +5415,7 @@ exports[`renders feedback if available 1`] = `
             color="secondary"
             letterSpacing="normal"
             size="x-small"
+            wrap="normal"
           >
             A Course about being Diffrient Assignment
           </Text>
@@ -5256,14 +5428,22 @@ exports[`renders feedback if available 1`] = `
             }
           }
         >
-          <Link
+          <Button
             as="button"
-            disabled={false}
-            ellipsis={true}
+            buttonRef={[Function]}
+            cursor="pointer"
+            fluidWidth={false}
             href="http://example.com"
-            iconPlacement="start"
-            linkRef={[Function]}
-            variant="default"
+            margin="0"
+            size="medium"
+            theme={
+              Object {
+                "mediumHeight": "normal",
+                "mediumPadding": "0",
+              }
+            }
+            type="button"
+            variant="link"
           >
             <ScreenReaderContent
               as="span"
@@ -5273,16 +5453,9 @@ exports[`renders feedback if available 1`] = `
             <PresentationContent
               as="span"
             >
-              <Text
-                as="span"
-                color="primary"
-                letterSpacing="normal"
-                size="medium"
-              >
-                This Assignment is about awesome stuff
-              </Text>
+              This Assignment is about awesome stuff
             </PresentationContent>
-          </Link>
+          </Button>
         </div>
       </div>
       <div
@@ -5302,6 +5475,7 @@ exports[`renders feedback if available 1`] = `
               color="secondary"
               letterSpacing="normal"
               size="x-small"
+              wrap="normal"
             >
               <PresentationContent
                 as="span"
@@ -5336,6 +5510,7 @@ exports[`renders feedback if available 1`] = `
           fontStyle="italic"
           letterSpacing="normal"
           size="medium"
+          wrap="normal"
         >
           Death will not be the end of your suffering.
         </Text>
@@ -5377,6 +5552,7 @@ exports[`renders media feedback if available 1`] = `
             Assignment This Assignment is about awesome stuff is not marked as done.
           </ScreenReaderContent>
         }
+        labelPlacement="end"
         onChange={[Function]}
         readOnly={false}
         size="medium"
@@ -5393,7 +5569,7 @@ exports[`renders media feedback if available 1`] = `
       }
     }
   >
-    <IconAssignment />
+    <IconAssignmentLine />
   </div>
   <div
     className="PlannerItem-styles__layout"
@@ -5412,6 +5588,7 @@ exports[`renders media feedback if available 1`] = `
             color="secondary"
             letterSpacing="normal"
             size="x-small"
+            wrap="normal"
           >
             A Course about being Diffrient Assignment
           </Text>
@@ -5424,14 +5601,22 @@ exports[`renders media feedback if available 1`] = `
             }
           }
         >
-          <Link
+          <Button
             as="button"
-            disabled={false}
-            ellipsis={true}
+            buttonRef={[Function]}
+            cursor="pointer"
+            fluidWidth={false}
             href="http://example.com"
-            iconPlacement="start"
-            linkRef={[Function]}
-            variant="default"
+            margin="0"
+            size="medium"
+            theme={
+              Object {
+                "mediumHeight": "normal",
+                "mediumPadding": "0",
+              }
+            }
+            type="button"
+            variant="link"
           >
             <ScreenReaderContent
               as="span"
@@ -5441,16 +5626,9 @@ exports[`renders media feedback if available 1`] = `
             <PresentationContent
               as="span"
             >
-              <Text
-                as="span"
-                color="primary"
-                letterSpacing="normal"
-                size="medium"
-              >
-                This Assignment is about awesome stuff
-              </Text>
+              This Assignment is about awesome stuff
             </PresentationContent>
-          </Link>
+          </Button>
         </div>
       </div>
       <div
@@ -5470,6 +5648,7 @@ exports[`renders media feedback if available 1`] = `
               color="secondary"
               letterSpacing="normal"
               size="x-small"
+              wrap="normal"
             >
               <PresentationContent
                 as="span"
@@ -5504,6 +5683,7 @@ exports[`renders media feedback if available 1`] = `
           fontStyle="italic"
           letterSpacing="normal"
           size="medium"
+          wrap="normal"
         >
           You have media feedback.
         </Text>
@@ -5545,6 +5725,7 @@ exports[`renders the end time if available 1`] = `
             Calendar Event This Assignment is about awesome stuff is not marked as done.
           </ScreenReaderContent>
         }
+        labelPlacement="end"
         onChange={[Function]}
         readOnly={false}
         size="medium"
@@ -5561,7 +5742,7 @@ exports[`renders the end time if available 1`] = `
       }
     }
   >
-    <IconCalendarMonth />
+    <IconCalendarMonthLine />
   </div>
   <div
     className="PlannerItem-styles__layout"
@@ -5580,6 +5761,7 @@ exports[`renders the end time if available 1`] = `
             color="secondary"
             letterSpacing="normal"
             size="x-small"
+            wrap="normal"
           >
             A Course about being Diffrient Calendar Event
           </Text>
@@ -5592,14 +5774,22 @@ exports[`renders the end time if available 1`] = `
             }
           }
         >
-          <Link
+          <Button
             as="button"
-            disabled={false}
-            ellipsis={true}
-            iconPlacement="start"
-            linkRef={[Function]}
+            buttonRef={[Function]}
+            cursor="pointer"
+            fluidWidth={false}
+            margin="0"
             onClick={[Function]}
-            variant="default"
+            size="medium"
+            theme={
+              Object {
+                "mediumHeight": "normal",
+                "mediumPadding": "0",
+              }
+            }
+            type="button"
+            variant="link"
           >
             <ScreenReaderContent
               as="span"
@@ -5609,14 +5799,7 @@ exports[`renders the end time if available 1`] = `
             <PresentationContent
               as="span"
             >
-              <Text
-                as="span"
-                color="primary"
-                letterSpacing="normal"
-                size="medium"
-              >
-                This Assignment is about awesome stuff
-              </Text>
+              This Assignment is about awesome stuff
             </PresentationContent>
             <CalendarEventModal
               allDay={false}
@@ -5637,7 +5820,7 @@ exports[`renders the end time if available 1`] = `
               timeZone="America/Denver"
               title="This Assignment is about awesome stuff"
             />
-          </Link>
+          </Button>
         </div>
       </div>
       <div
@@ -5657,6 +5840,7 @@ exports[`renders the end time if available 1`] = `
               color="secondary"
               letterSpacing="normal"
               size="x-small"
+              wrap="normal"
             >
               <PresentationContent
                 as="span"
@@ -5704,6 +5888,7 @@ exports[`renders the location if available 1`] = `
             Assignment This Assignment is about awesome stuff is not marked as done.
           </ScreenReaderContent>
         }
+        labelPlacement="end"
         onChange={[Function]}
         readOnly={false}
         size="medium"
@@ -5720,7 +5905,7 @@ exports[`renders the location if available 1`] = `
       }
     }
   >
-    <IconAssignment />
+    <IconAssignmentLine />
   </div>
   <div
     className="PlannerItem-styles__layout"
@@ -5739,6 +5924,7 @@ exports[`renders the location if available 1`] = `
             color="secondary"
             letterSpacing="normal"
             size="x-small"
+            wrap="normal"
           >
             A Course about being Diffrient Assignment
           </Text>
@@ -5751,14 +5937,22 @@ exports[`renders the location if available 1`] = `
             }
           }
         >
-          <Link
+          <Button
             as="button"
-            disabled={false}
-            ellipsis={true}
+            buttonRef={[Function]}
+            cursor="pointer"
+            fluidWidth={false}
             href="http://example.com"
-            iconPlacement="start"
-            linkRef={[Function]}
-            variant="default"
+            margin="0"
+            size="medium"
+            theme={
+              Object {
+                "mediumHeight": "normal",
+                "mediumPadding": "0",
+              }
+            }
+            type="button"
+            variant="link"
           >
             <ScreenReaderContent
               as="span"
@@ -5768,16 +5962,9 @@ exports[`renders the location if available 1`] = `
             <PresentationContent
               as="span"
             >
-              <Text
-                as="span"
-                color="primary"
-                letterSpacing="normal"
-                size="medium"
-              >
-                This Assignment is about awesome stuff
-              </Text>
+              This Assignment is about awesome stuff
             </PresentationContent>
-          </Link>
+          </Button>
         </div>
       </div>
       <div
@@ -5797,6 +5984,7 @@ exports[`renders the location if available 1`] = `
               color="secondary"
               letterSpacing="normal"
               size="x-small"
+              wrap="normal"
             >
               <PresentationContent
                 as="span"
@@ -5816,6 +6004,7 @@ exports[`renders the location if available 1`] = `
         color="secondary"
         letterSpacing="normal"
         size="medium"
+        wrap="normal"
       >
         Columbus, OH
       </Text>
@@ -5856,6 +6045,7 @@ exports[`renders user-created Todo correctly 1`] = `
             Task do that one thing is not marked as done.
           </ScreenReaderContent>
         }
+        labelPlacement="end"
         onChange={[Function]}
         readOnly={false}
         size="medium"
@@ -5898,6 +6088,7 @@ exports[`renders user-created Todo correctly 1`] = `
             color="secondary"
             letterSpacing="normal"
             size="x-small"
+            wrap="normal"
           >
             To Do TO DO
           </Text>
@@ -5910,14 +6101,22 @@ exports[`renders user-created Todo correctly 1`] = `
             }
           }
         >
-          <Link
+          <Button
             as="button"
-            disabled={false}
-            ellipsis={true}
+            buttonRef={[Function]}
+            cursor="pointer"
+            fluidWidth={false}
             href="http://example.com"
-            iconPlacement="start"
-            linkRef={[Function]}
-            variant="default"
+            margin="0"
+            size="medium"
+            theme={
+              Object {
+                "mediumHeight": "normal",
+                "mediumPadding": "0",
+              }
+            }
+            type="button"
+            variant="link"
           >
             <ScreenReaderContent
               as="span"
@@ -5927,16 +6126,9 @@ exports[`renders user-created Todo correctly 1`] = `
             <PresentationContent
               as="span"
             >
-              <Text
-                as="span"
-                color="primary"
-                letterSpacing="normal"
-                size="medium"
-              >
-                do that one thing
-              </Text>
+              do that one thing
             </PresentationContent>
-          </Link>
+          </Button>
         </div>
       </div>
       <div
@@ -5956,6 +6148,7 @@ exports[`renders user-created Todo correctly 1`] = `
               color="secondary"
               letterSpacing="normal"
               size="x-small"
+              wrap="normal"
             >
               <PresentationContent
                 as="span"

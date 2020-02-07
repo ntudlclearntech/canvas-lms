@@ -1,8 +1,9 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`renders the RubricManagement component 1`] = `
+exports[`RubricManagement renders the RubricManagement component 1`] = `
 <TabList
   defaultSelectedIndex={0}
+  elementRef={[Function]}
   focus={false}
   variant="simple"
 >

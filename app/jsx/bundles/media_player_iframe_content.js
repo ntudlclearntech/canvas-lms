@@ -16,19 +16,40 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import canvasBaseTheme from '@instructure/ui-themes/lib/canvas/base'
-import canvasHighContrastTheme from '@instructure/ui-themes/lib/canvas/high-contrast'
 import CanvasMediaPlayer from '../shared/media/CanvasMediaPlayer'
 import React from 'react'
 import ReactDOM from 'react-dom'
+import ready from '@instructure/ready'
 
-if (ENV.use_high_contrast) {
-  canvasHighContrastTheme.use()
-} else {
-  canvasBaseTheme.use()
-}
-const mountNode = document.body.appendChild(document.createElement('div'))
-ReactDOM.render(
-  <CanvasMediaPlayer mediaSources={ENV.media_sources} />,
-  mountNode
-)
+ready(() => {
+  // get the media_id from something like
+  //  `http://canvas.example.com/media_objects_iframe/m-48jGWTHdvcV5YPdZ9CKsqbtRzu1jURgu`
+  // or
+  //  `http://canvas.example.com/media_objects_iframe/?href=http://url/to/file.mov`
+  const media_id = window.location.pathname.split('media_objects_iframe/').pop()
+  const media_href_match = window.location.search.match(/mediahref=([^&]+)/)
+  const is_audio = /type=audio/.test(window.location.search)
+  let type = is_audio ? 'audio' : 'video'
+  let href_source
+
+  if (media_href_match) {
+    if (is_audio) {
+      type = 'audio'
+      href_source = decodeURIComponent(media_href_match[1])
+    } else {
+      href_source = [decodeURIComponent(media_href_match[1])]
+    }
+  }
+
+  document.body.setAttribute('style', 'margin: 0; padding: 0; border-style: none')
+
+  const div = document.body.firstElementChild
+  ReactDOM.render(
+    <CanvasMediaPlayer
+      media_id={media_id}
+      media_sources={href_source || ENV.media_sources}
+      type={type}
+    />,
+    document.body.appendChild(div)
+  )
+})

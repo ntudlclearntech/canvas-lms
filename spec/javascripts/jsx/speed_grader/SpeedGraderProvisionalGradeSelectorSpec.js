@@ -29,6 +29,7 @@ QUnit.module('SpeedGraderProvisionalGradeSelector', hooks => {
   hooks.beforeEach(() => {
     props = {
       detailsInitiallyVisible: true,
+      finalGraderId: '2',
       gradingType: 'points',
       onGradeSelected: () => {},
       pointsPossible: 123,
@@ -86,7 +87,7 @@ QUnit.module('SpeedGraderProvisionalGradeSelector', hooks => {
   }
 
   function mountComponent(additionalProps = {}, customState = {}) {
-    const allProps = Object.assign({}, props, additionalProps)
+    const allProps = {...props, ...additionalProps}
     wrapper = mount(<SpeedGraderProvisionalGradeSelector {...allProps} />, {appendTo: $container})
 
     wrapper.setState({detailsVisible: true, ...customState})
@@ -124,7 +125,7 @@ QUnit.module('SpeedGraderProvisionalGradeSelector', hooks => {
         .find('input')
         .first()
         .prop('value'),
-      '3'
+      '2'
     )
   })
 

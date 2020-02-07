@@ -154,42 +154,46 @@ describe AssignmentsApiController, type: :request do
       expect(assignment_ids.uniq.count).to eq(5)
     end
 
-    it "sorts the returned list of assignments" do
-      # the API returns the assignments sorted by
-      # [assignment_groups.position, assignments.position]
-      group1 = @course.assignment_groups.create!(:name => 'group1')
-      group1.update_attribute(:position, 10)
-      group2 = @course.assignment_groups.create!(:name => 'group2')
-      group2.update_attribute(:position, 7)
-      group3 = @course.assignment_groups.create!(:name => 'group3')
-      group3.update_attribute(:position, 12)
-      @course.assignments.create!(:title => 'assignment1',
-                                  :assignment_group => group2).
-                                  update_attribute(:position, 2)
-      @course.assignments.create!(:title => 'assignment2',
-                                  :assignment_group => group2).
-                                  update_attribute(:position, 1)
-      @course.assignments.create!(:title => 'assignment3',
-                                  :assignment_group => group1).
-                                  update_attribute(:position, 1)
-      @course.assignments.create!(:title => 'assignment4',
-                                  :assignment_group => group3).
-                                  update_attribute(:position, 3)
-      @course.assignments.create!(:title => 'assignment5',
-                                  :assignment_group => group1).
-                                  update_attribute(:position, 2)
-      @course.assignments.create!(:title => 'assignment6',
-                                  :assignment_group => group2).
-                                  update_attribute(:position, 3)
-      @course.assignments.create!(:title => 'assignment7',
-                                  :assignment_group => group3).
-                                  update_attribute(:position, 2)
-      @course.assignments.create!(:title => 'assignment8',
-                                  :assignment_group => group3).
-                                  update_attribute(:position, 1)
-      json = api_get_assignments_index_from_course(@course)
-      order = json.map { |a| a['name'] }
-      expect(order).to eq %w(assignment2
+    describe 'assignments' do
+      before :once do
+        @group1 = @course.assignment_groups.create!(:name => 'group1')
+        @group1.update_attribute(:position, 10)
+        @group2 = @course.assignment_groups.create!(:name => 'group2')
+        @group2.update_attribute(:position, 7)
+        group3 = @course.assignment_groups.create!(:name => 'group3')
+        group3.update_attribute(:position, 12)
+        @course.assignments.create!(:title => 'assignment1',
+                                    :assignment_group => @group2).
+          update_attribute(:position, 2)
+        @course.assignments.create!(:title => 'assignment2',
+                                    :assignment_group => @group2).
+          update_attribute(:position, 1)
+        @course.assignments.create!(:title => 'assignment3',
+                                    :assignment_group => @group1).
+          update_attribute(:position, 1)
+        @course.assignments.create!(:title => 'assignment4',
+                                    :assignment_group => group3).
+          update_attribute(:position, 3)
+        @course.assignments.create!(:title => 'assignment5',
+                                    :assignment_group => @group1).
+          update_attribute(:position, 2)
+        @course.assignments.create!(:title => 'assignment6',
+                                    :assignment_group => @group2).
+          update_attribute(:position, 3)
+        @course.assignments.create!(:title => 'assignment7',
+                                    :assignment_group => group3).
+          update_attribute(:position, 2)
+        @course.assignments.create!(:title => 'assignment8',
+                                    :assignment_group => group3).
+          update_attribute(:position, 1)
+      end
+
+      it "sorts the returned list of assignments" do
+        # the API returns the assignments sorted by
+        # [assignment_groups.position, assignments.position]
+        json = api_get_assignments_index_from_course(@course)
+        order = json.map { |a| a['name'] }
+        expect(order).to eq %w(assignment2
                           assignment1
                           assignment6
                           assignment3
@@ -197,52 +201,44 @@ describe AssignmentsApiController, type: :request do
                           assignment8
                           assignment7
                           assignment4)
-    end
+      end
 
-    it "sorts the returned list of assignments by name" do
-      # the API returns the assignments sorted by
-      # [assignment_groups.position, assignments.position]
-      group1 = @course.assignment_groups.create!(:name => 'group1')
-      group1.update_attribute(:position, 10)
-      group2 = @course.assignment_groups.create!(:name => 'group2')
-      group2.update_attribute(:position, 7)
-      group3 = @course.assignment_groups.create!(:name => 'group3')
-      group3.update_attribute(:position, 12)
-      @course.assignments.create!(:title => 'assignment1',
-                                  :assignment_group => group2).
-        update_attribute(:position, 2)
-      @course.assignments.create!(:title => 'assignment2',
-                                  :assignment_group => group2).
-        update_attribute(:position, 1)
-      @course.assignments.create!(:title => 'assignment3',
-                                  :assignment_group => group1).
-        update_attribute(:position, 1)
-      @course.assignments.create!(:title => 'assignment4',
-                                  :assignment_group => group3).
-        update_attribute(:position, 3)
-      @course.assignments.create!(:title => 'assignment5',
-                                  :assignment_group => group1).
-        update_attribute(:position, 2)
-      @course.assignments.create!(:title => 'assignment6',
-                                  :assignment_group => group2).
-        update_attribute(:position, 3)
-      @course.assignments.create!(:title => 'assignment7',
-                                  :assignment_group => group3).
-        update_attribute(:position, 2)
-      @course.assignments.create!(:title => 'assignment8',
-                                  :assignment_group => group3).
-        update_attribute(:position, 1)
-      json = api_call(:get,
-                      "/api/v1/courses/#{@course.id}/assignments.json?order_by=name",
-                      {
-                        controller: 'assignments_api',
-                        action: 'index',
-                        format: 'json',
-                        course_id: @course.id.to_s,
-                        order_by: 'name'
-                      })
-      order = json.map { |a| a['name'] }
-      expect(order).to eq %w(assignment1
+      it 'only returns post_to_sis assignments' do
+        Assignment.where(assignment_group_id: [@group1, @group2]).update_all(post_to_sis: true)
+        json = api_get_assignments_index_from_course(@course, post_to_sis: true)
+        post_to_sis = json.map { |a| a['name'] }
+        expect(post_to_sis).to eq %w(assignment2 assignment1 assignment6 assignment3 assignment5)
+      end
+
+      it 'only returns assignments that do not have post_to_sis' do
+        Assignment.where(assignment_group_id: [@group1, @group2]).update_all(post_to_sis: true)
+        json = api_get_assignments_index_from_course(@course, post_to_sis: false)
+        post_to_sis = json.map { |a| a['name'] }
+        expect(post_to_sis).to eq %w(assignment8 assignment7 assignment4)
+      end
+
+      it 'fails for post_to_sis assignments when user cannot manage assignments' do
+        Assignment.where(assignment_group_id: [@group1, @group2]).update_all(post_to_sis: true)
+        @user = User.create!(name:' no permissions')
+        json = api_call(:get,
+                        "/api/v1/courses/#{@course.id}/assignments.json",
+                        {
+                          controller: 'assignments_api',
+                          action: 'index',
+                          format: 'json',
+                          post_to_sis: true,
+                          course_id: @course.id.to_s
+                        }, {}, {}, expected_status: 401
+        )
+        expect(json['status']).to eq 'unauthorized'
+      end
+
+      it "sorts the returned list of assignments by name" do
+        # the API returns the assignments sorted by
+        # [assignment_groups.position, assignments.position]
+        json = api_get_assignments_index_from_course(@course, order_by: 'name')
+        order = json.map { |a| a['name'] }
+        expect(order).to eq %w(assignment1
                           assignment2
                           assignment3
                           assignment4
@@ -250,27 +246,72 @@ describe AssignmentsApiController, type: :request do
                           assignment6
                           assignment7
                           assignment8)
-    end
+      end
 
-    it "returns assignments by assignment group" do
-      group1 = @course.assignment_groups.create!(:name => 'group1')
-      group2 = @course.assignment_groups.create!(:name => 'group2')
-      @course.assignments.create!(:title => 'assignment1',
-                                  :assignment_group => group2)
-      @course.assignments.create!(:title => 'assignment2',
-                                  :assignment_group => group2)
-      @course.assignments.create!(:title => 'assignment3',
-                                  :assignment_group => group1)
-      json = api_call(:get,
-                      "/api/v1/courses/#{@course.id}/assignment_groups/#{group2.id}/assignments",
-                      {
-                        controller: 'assignments_api',
-                        action: 'index',
-                        format: 'json',
-                        course_id: @course.to_param,
-                        assignment_group_id: group2.to_param
-                      })
-      expect(json.map { |a| a['name'] }).to match_array(['assignment1', 'assignment2'])
+      context 'by due date' do
+        before :once do
+          @section1 = @course.course_sections.create! name: 'section1'
+          @student1 = student_in_course(name: 'student1', active_all: true, section: @section1).user
+
+          @section2 = @course.course_sections.create! name: 'section2'
+          @student2 = student_in_course(name: 'student2', active_all: true, section: @section2).user
+
+          due_at = 1.month.ago
+          @course.assignments.where(title: %w(assignment1 assignment4 assignment7)).each do |a|
+            a.due_at = due_at
+            a.save!
+          end
+          assignment_override_model(assignment: @course.assignments.where(title: 'assignment4').take,
+                                    set: @section1,
+                                    due_at: 2.months.from_now)
+
+          due_at = 1.month.from_now
+          @course.assignments.where(title: %w(assignment2 assignment3 assignment5)).each do |a|
+            a.due_at = due_at
+            a.save!
+          end
+          assignment_override_model(assignment: @course.assignments.where(title: 'assignment3').take,
+                                    set: @section2,
+                                    due_at: 2.months.ago)
+          assignment_override_model(assignment: @course.assignments.where(title: 'assignment3').take,
+                                    set: @course.default_section,
+                                    due_at: 3.months.from_now)
+
+          DueDateCacher.recompute_course(@course, run_immediately: true)
+        end
+
+        it "sorts the returned list of assignments by latest due date for teachers (nulls last)" do
+          json = api_get_assignments_user_index(@teacher, @course, @teacher, order_by: 'due_at')
+          order = %w(assignment1 assignment7 assignment2 assignment5 assignment4 assignment3 assignment6 assignment8)
+          expect(json.map { |a| a['name'] }).to eq order
+          expect(json.sort_by { |a| [a['due_at'] || CanvasSort::Last, a['name']] }.map { |a| a['name'] }).to eq order
+        end
+
+        it "sorts the returned list of assignments by overridden due date for students (nulls last)" do
+          json = api_get_assignments_user_index(@student1, @course, @teacher, order_by: 'due_at')
+          order = %w(assignment1 assignment7 assignment2 assignment3 assignment5 assignment4 assignment6 assignment8)
+          expect(json.map { |a| a['name'] }).to eq order
+          expect(json.sort_by { |a| [a['due_at'] || CanvasSort::Last, a['name']] }.map { |a| a['name'] }).to eq order
+
+          json = api_get_assignments_user_index(@student2, @course, @teacher, order_by: 'due_at')
+          order = %w(assignment3 assignment1 assignment4 assignment7 assignment2 assignment5 assignment6 assignment8)
+          expect(json.map { |a| a['name'] }).to eq order
+          expect(json.sort_by { |a| [a['due_at'] || CanvasSort::Last, a['name']] }.map { |a| a['name'] }).to eq order
+        end
+      end
+
+      it "returns assignments by assignment group" do
+        json = api_call(:get,
+                        "/api/v1/courses/#{@course.id}/assignment_groups/#{@group2.id}/assignments",
+                        {
+                          controller: 'assignments_api',
+                          action: 'index',
+                          format: 'json',
+                          course_id: @course.to_param,
+                          assignment_group_id: @group2.to_param
+                        })
+        expect(json.map { |a| a['name'] }).to match_array(['assignment1', 'assignment2', 'assignment6'])
+      end
     end
 
     it "should search for assignments by title" do
@@ -1097,24 +1138,6 @@ describe AssignmentsApiController, type: :request do
       expect(uri.path).to eq "/api/v1/courses/#{@course.id}/external_tools/sessionless_launch"
       expect(uri.query).to include('assignment_id=')
     end
-
-    context 'assignments tab is disabled' do
-      before :once do
-        @course.tab_configuration = [{ :id => Course::TAB_ASSIGNMENTS, :hidden => true }]
-        @course.save!
-      end
-
-      it "allows teachers to use #index" do
-        json = api_get_assignments_index_from_course(@course)
-        expect(json).to eq([])
-      end
-
-      it "does not allow students to use #index" do
-        student_in_course :active_all => true
-        json = api_get_assignments_index_from_course(@course)
-        expect(json['message']).to eq 'That page has been disabled for this course'
-      end
-    end
   end
 
   describe "GET /users/:user_id/courses/:course_id/assignments (#user_index)" do
@@ -1127,7 +1150,7 @@ describe AssignmentsApiController, type: :request do
 
     it "returns assignments for authorized observer" do
       course_with_student_submissions(:active_all => true)
-      parent = user_with_pseudonym
+      parent = User.create!
       add_linked_observer(@student, parent)
       json = api_get_assignments_user_index(@student, @course, parent)
       expect(json[0]['course_id']).to eq @course.id
@@ -1382,6 +1405,34 @@ describe AssignmentsApiController, type: :request do
         expect(duplicated_assignments.count).to eq 2
         new_assignment = duplicated_assignments.where.not(id: failed_assignment.id).first
         expect(new_assignment.workflow_state).to eq('duplicating')
+      end
+
+      context "when result_type is specified (Quizzes.Next serialization)" do
+        before do
+          @course.root_account.enable_feature!(:newquizzes_on_quiz_page)
+        end
+
+        it "outputs quiz shell json using quizzes.next serializer" do
+          url = "/api/v1/courses/#{@course.id}/assignments/#{assignment.id}/duplicate.json" \
+            "?target_assignment_id=#{failed_assignment.id}&target_course_id=#{course_copied.id}" \
+            "&result_type=Quiz"
+
+          json = api_call_as_user(
+            @teacher, :post,
+            url,
+            {
+              controller: "assignments_api",
+              action: "duplicate",
+              format: "json",
+              course_id: @course.id.to_s,
+              assignment_id: assignment.id.to_s,
+              target_assignment_id: failed_assignment.id,
+              target_course_id: course_copied.id,
+              result_type: 'Quiz'
+            }
+          )
+          expect(json['quiz_type']).to eq('quizzes.next')
+        end
       end
     end
   end
@@ -2625,6 +2676,20 @@ describe AssignmentsApiController, type: :request do
         expect(json["errors"]).to_not be_nil
         expect(json["errors"]&.keys).to eq ['title']
         expect(json["errors"]["title"].first["message"]).to eq("The title cannot be longer than 10 characters")
+      end
+
+      it 'caches overrides correctly' do
+        enable_cache(:redis_cache_store) do
+          sec1 = @course.course_sections.create! name: 'sec1'
+          sec2 = @course.course_sections.create! name: 'sec2'
+          json = api_create_assignment_in_course(@course,
+                     { name: 'test', post_to_sis: true, assignment_overrides: [
+                       { course_section_id: sec1.id, due_at: 1.week.from_now },
+                       { course_section_id: sec2.id, due_at: 2.weeks.from_now }]})
+          assignment = Assignment.find(json['id'])
+          cached_overrides = AssignmentOverrideApplicator.overrides_for_assignment_and_user(assignment, @teacher)
+          expect(cached_overrides.map(&:set)).to match_array([sec1, sec2])
+        end
       end
     end
   end
@@ -4519,6 +4584,25 @@ describe AssignmentsApiController, type: :request do
           expect(uri.query).to include('assignment_id=')
         end
       end
+
+      context "when result_type is specified (Quizzes.Next serialization)" do
+        before do
+          @course.root_account.enable_feature!(:newquizzes_on_quiz_page)
+        end
+
+        it "outputs quiz shell json using quizzes.next serializer" do
+          @assignment = @course.assignments.create!(:title => "Test Assignment",:description => "foo")
+          json = api_call(:get,
+                          "/api/v1/courses/#{@course.id}/assignments/#{@assignment.id}.json",
+                          { :controller => "assignments_api", :action => "show",
+                            :format => "json", :course_id => @course.id.to_s,
+                            :id => @assignment.id.to_s,
+                            :all_dates => true,
+                            result_type: 'Quiz'},
+                          {:override_assignment_dates => 'false'})
+          expect(json['quiz_type']).to eq('quizzes.next')
+        end
+      end
     end
 
     context "draft state" do
@@ -4792,6 +4876,20 @@ describe AssignmentsApiController, type: :request do
       expect(@assignment.integration_data).to eq({"key" => "value"})
     end
 
+    it "does not update sis_source_id when lacking permission" do
+      params = ActionController::Parameters.new({"sis_assignment_id" => "BLAH"})
+      update_from_params(@assignment, params, @user)
+      expect(@assignment.sis_source_id).to eq nil
+    end
+
+    it "updates sis_source_id with permission" do
+      params = ActionController::Parameters.new({"sis_assignment_id" => "BLAH"})
+      account_admin_user_with_role_changes(
+        :role_changes => {:manage_sis => true})
+      update_from_params(@assignment, params, @admin)
+      expect(@assignment.sis_source_id).to eq "BLAH"
+    end
+
     it "unmuting publishes hidden comments" do
       @assignment.mute!
       @assignment.update_submission @student, comment: "blah blah blah", author: @teacher
@@ -4962,6 +5060,7 @@ describe AssignmentsApiController, type: :request do
          "grading_period_id" => @submission.grading_period_id,
          "grade_matches_current_submission" => true,
          "graded_at" => nil,
+         "posted_at" => nil,
          "grader_id" => @teacher.id,
          "id" => @submission.id,
          "score" => 99.0,
@@ -5001,6 +5100,7 @@ describe AssignmentsApiController, type: :request do
          "grading_period_id" => @submission.grading_period_id,
          "grade_matches_current_submission" => true,
          "graded_at" => nil,
+         "posted_at" => nil,
          "grader_id" => @teacher.id,
          "id" => @submission.id,
          "score" => 99.0,
@@ -5147,18 +5247,18 @@ describe AssignmentsApiController, type: :request do
   end
 end
 
-def api_get_assignments_index_from_course(course)
-    api_call(:get,
-          "/api/v1/courses/#{course.id}/assignments.json",
-          {
-            :controller => 'assignments_api',
-            :action => 'index',
-            :format => 'json',
-            :course_id => course.id.to_s
-          })
+def api_get_assignments_index_from_course(course, params = {})
+  options = {
+    controller: 'assignments_api',
+    action: 'index',
+    format: 'json',
+    course_id: course.id.to_s
+  }
+  options = options.merge(params)
+  api_call(:get, "/api/v1/courses/#{course.id}/assignments.json", options)
 end
 
-def api_get_assignments_user_index(user, course, api_user = @user)
+def api_get_assignments_user_index(user, course, api_user = @user, params = {})
   api_call_as_user(api_user, :get,
            "/api/v1/users/#{user.id}/courses/#{course.id}/assignments.json",
            {
@@ -5167,7 +5267,7 @@ def api_get_assignments_user_index(user, course, api_user = @user)
                :format => 'json',
                :course_id => course.id.to_s,
                :user_id => user.id.to_s
-           })
+           }.merge(params))
 end
 
 def create_frozen_assignment_in_course(_course)

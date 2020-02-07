@@ -33,14 +33,18 @@ RSpec.describe Mutations::CreateSubmission do
   def mutation_str(
     assignment_id: @assignment.id,
     submission_type: 'online_upload',
-    file_ids: []
+    body: nil,
+    file_ids: [],
+    url: nil
   )
     <<~GQL
       mutation {
         createSubmission(input: {
           assignmentId: "#{assignment_id}"
           submissionType: #{submission_type}
+          #{"body: \"#{body}\"" if body}
           fileIds: #{file_ids}
+          #{"url: \"#{url}\"" if url}
         }) {
           submission {
             _id
@@ -49,6 +53,8 @@ RSpec.describe Mutations::CreateSubmission do
               _id
               displayName
             }
+            body
+            url
           }
           errors {
             attribute
@@ -60,7 +66,13 @@ RSpec.describe Mutations::CreateSubmission do
   end
 
   def run_mutation(opts = {}, current_user = @student)
-    result = CanvasSchema.execute(mutation_str(opts), context: {current_user: current_user})
+    result = CanvasSchema.execute(
+      mutation_str(opts),
+      context: {
+        current_user: current_user,
+        request: ActionDispatch::TestRequest.create
+      }
+    )
     result.to_h.with_indifferent_access
   end
 
@@ -116,6 +128,52 @@ RSpec.describe Mutations::CreateSubmission do
       ids = submission.attachment_ids.split(',')
       expect(ids.include?(result.dig(:data, :createSubmission, :submission, :attachments, 0, :_id))).to be true
       expect(ids.include?(result.dig(:data, :createSubmission, :submission, :attachments, 1, :_id))).to be true
+    end
+  end
+
+  context 'when the submission_type is an online_text_entry' do
+    it 'returns an error if the body is not provided' do
+      @assignment.update!(submission_types: 'online_text_entry')
+      result = run_mutation(submission_type: 'online_text_entry')
+      expect(result.dig(:data, :createSubmission, :errors, 0, :message)).to eq 'Text entry submission cannot be empty'
+    end
+
+    it 'returns an error if the body is empty' do
+      @assignment.update!(submission_types: 'online_text_entry')
+      result = run_mutation(submission_type: 'online_text_entry', body: '')
+      expect(result.dig(:data, :createSubmission, :errors, 0, :message)).to eq 'Text entry submission cannot be empty'
+    end
+
+    it 'saves the body to the submission' do
+      result = run_mutation(submission_type: 'online_text_entry', body: 'thundercougarfalconbird')
+      @assignment.update!(submission_types: 'online_text_entry')
+      submission = Submission.find(result.dig(:data, :createSubmission, :submission, :_id))
+
+      expect(submission.workflow_state).to eq 'submitted'
+      expect(result.dig(:data, :createSubmission, :submission, :body)).to eq('thundercougarfalconbird')
+    end
+  end
+
+  context 'when the submission_type is online_url' do
+    it 'returns an error if the url is not provided' do
+      @assignment.update!(submission_types: 'online_url')
+      result = run_mutation(submission_type: 'online_url')
+      expect(result.dig(:data, :createSubmission, :errors, 0, :message)).to eq 'URL entry submission cannot be empty'
+    end
+
+    it 'returns an error if the url is not valid' do
+      @assignment.update!(submission_types: 'online_url')
+      result = run_mutation(submission_type: 'online_url', url: 'not a valid url')
+      expect(result.dig(:data, :createSubmission, :errors, 0, :message)).to eq 'is not a valid URL'
+    end
+
+    it 'saves the url to the submission' do
+      @assignment.update!(submission_types: 'online_url')
+      result = run_mutation(submission_type: 'online_url', url: 'http://www.google.com')
+      submission = Submission.find(result.dig(:data, :createSubmission, :submission, :_id))
+
+      expect(submission.workflow_state).to eq 'submitted'
+      expect(result.dig(:data, :createSubmission, :submission, :url)).to eq 'http://www.google.com'
     end
   end
 

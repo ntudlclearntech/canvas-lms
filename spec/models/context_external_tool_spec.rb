@@ -1406,7 +1406,7 @@ describe ContextExternalTool do
 
     it "should update the visibility cache if enrollments are updated or user is touched" do
       time = Time.now
-      enable_cache(:redis_store) do
+      enable_cache(:redis_cache_store) do
         Timecop.freeze(time) do
           course_with_student(:account => @account, :active_all => true)
           expect(ContextExternalTool.global_navigation_visibility_for_user(@account, @user)).to eq 'members'
@@ -1575,6 +1575,43 @@ describe ContextExternalTool do
 
     end
 
+    describe '#feature_flag_enabled?' do
+      let(:tool) do
+        analytics_2_tool_factory
+      end
+
+      it 'should return true if the feature is enabled in context' do
+        @course.enable_feature!(:analytics_2)
+        expect(tool.feature_flag_enabled?(@course)).to be true
+      end
+
+      it 'should return true if the feature is enabled in higher context' do
+        Account.default.enable_feature!(:analytics_2)
+        expect(tool.feature_flag_enabled?(@course)).to be true
+      end
+
+      it 'should check the feature flag in the tool context if none provided' do
+        Account.default.enable_feature!(:analytics_2)
+        expect(tool.feature_flag_enabled?).to be true
+      end
+
+      it 'should return false if the feature is disabled' do
+        expect(tool.feature_flag_enabled?(@course)).to be false
+        expect(tool.feature_flag_enabled?).to be false
+      end
+
+      it "should return true if called on tools that aren't mapped to feature flags" do
+        other_tool = @course.context_external_tools.create!(
+          name: 'other_feature',
+          consumer_key: 'key',
+          shared_secret: 'secret',
+          url: 'http://example.com/launch',
+          tool_id: 'yo'
+        )
+        expect(other_tool.feature_flag_enabled?).to be true
+      end
+    end
+
     describe 'set_policy' do
       let(:tool) do
         @course.context_external_tools.create(
@@ -1610,49 +1647,6 @@ describe ContextExternalTool do
     end
   end
 
-  describe '#lti_1_3_enabled?' do
-
-    context 'when the tool is not configured for LTI 1.3 but the account is' do
-      let(:tool) do
-        @root_account.enable_feature!(:lti_1_3)
-        @root_account.save!
-        @root_account.context_external_tools.new(:name => "bob", :consumer_key => "bob", :shared_secret => "bob", :domain => "www.example.com")
-      end
-
-      it 'returns false' do
-        expect(tool).to_not be_lti_1_3_enabled
-      end
-    end
-
-    context 'when the account is not configured for LTI 1.3 but the tool is' do
-      let(:tool) do
-        tool = @root_account.context_external_tools.new(:name => "bob", :consumer_key => "bob", :shared_secret => "bob", :domain => "www.example.com")
-        tool.use_1_3 = true
-        tool.save!
-        tool
-      end
-
-      it 'returns false' do
-        expect(tool).to_not be_lti_1_3_enabled
-      end
-    end
-
-    context 'when both the tool and account are configured for LTI 1.3' do
-      let(:tool) do
-        @root_account.enable_feature!(:lti_1_3)
-        @root_account.save!
-        tool = @root_account.context_external_tools.new(:name => "bob", :consumer_key => "bob", :shared_secret => "bob", :domain => "www.example.com")
-        tool.settings['use_1_3'] = true
-        tool.save!
-        tool
-      end
-
-      it 'returns true' do
-        expect(tool).to be_lti_1_3_enabled
-      end
-    end
-  end
-
   describe 'editor_button_json' do
     let(:tool) { @root_account.context_external_tools.new(name: "editor thing", domain: "www.example.com") }
 
@@ -1666,6 +1660,22 @@ describe ContextExternalTool do
       tool.editor_button = { use_tray: "true" }
       json = ContextExternalTool.editor_button_json([tool], @course, user_with_pseudonym)
       expect(json[0][:use_tray]).to eq true
+    end
+
+    describe 'includes the description' do
+      it 'parsed into HTML' do
+        tool.editor_button = {}
+        tool.description = "the first paragraph.\n\nthe second paragraph."
+        json = ContextExternalTool.editor_button_json([tool], @course, user_with_pseudonym)
+        expect(json[0][:description]).to eq "<p>the first paragraph.</p>\n\n<p>the second paragraph.</p>\n"
+      end
+
+      it 'with target="_blank" on links' do
+        tool.editor_button = {}
+        tool.description = "[link text](http://the.url)"
+        json = ContextExternalTool.editor_button_json([tool], @course, user_with_pseudonym)
+        expect(json[0][:description]).to eq "<p><a href=\"http://the.url\" target=\"_blank\">link text</a></p>\n"
+      end
     end
   end
 end

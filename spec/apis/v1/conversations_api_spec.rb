@@ -987,7 +987,6 @@ describe ConversationsController, type: :request do
                   "id" => forwarded_message.id, "created_at" => forwarded_message.created_at.to_json[1, 20], "body" => "test", "author_id" => @bob.id, "generated" => false, "media_comment" => nil, "forwarded_messages" => [],
                   "attachments" => [{
                     'filename' => attachment.filename,
-                    'workflow_state' => 'processed',
                     'url' => "http://www.example.com/files/#{attachment.id}/download?download_frd=1&verifier=#{attachment.uuid}",
                     'content-type' => 'image/png',
                     'display_name' => 'test my file? hai!&.png',
@@ -1163,6 +1162,24 @@ describe ConversationsController, type: :request do
             { :recipients => [@other_student.id], :body => "test", :context_code => "course_#{@other_course.id}" })
           expect(@other_student.conversations.last.conversation.shard).to eq @shard1
         end
+
+        it "should create a conversation batch on the context's shard" do
+          @shard1.activate do
+            @other_account = Account.create
+            course_factory(:active_all => true, :account => @other_account)
+            @other_course = @course
+            @other_students = n_students_in_course(3, :course => @other_course)
+            teacher_in_course(:active_all => true, :course => @other_course, :user => @me)
+          end
+
+          @user = @me
+          api_call(:post, "/api/v1/conversations",
+            { :controller => 'conversations', :action => 'create', :format => 'json' },
+            { :recipients => @other_students.map(&:id), :body => "test", :context_code => "course_#{@other_course.id}" })
+          batch = @shard1.activate { ConversationBatch.last }
+          expect(batch).to be_sent
+          @other_students.each{|s| expect(s.conversations.last.conversation.shard).to eq @shard1 }
+        end
       end
     end
   end
@@ -1232,7 +1249,6 @@ describe ConversationsController, type: :request do
             "attachments" => [
               {
                 "filename" => "test.txt",
-                "workflow_state" => "processed",
                 "url" => "http://www.example.com/files/#{attachment.id}/download?download_frd=1&verifier=#{attachment.uuid}",
                 "content-type" => "unknown/unknown",
                 "display_name" => "test.txt",

@@ -31,6 +31,14 @@ module Types
       GraphQLNodeLoader.load(type, _id, context)
     end
 
+    field :account, Types::AccountType, null: true do
+      argument :id, ID, "a graphql or legacy id", required: true,
+        prepare: GraphQLHelpers.relay_or_legacy_id_prepare_func("Account")
+    end
+    def account(id:)
+      GraphQLNodeLoader.load("Account", id, context)
+    end
+
     field :course, Types::CourseType, null: true do
       argument :id, ID, "a graphql or legacy id", required: true,
         prepare: GraphQLHelpers.relay_or_legacy_id_prepare_func("Course")
@@ -53,6 +61,14 @@ module Types
     end
     def assignment_group(id:)
       GraphQLNodeLoader.load("AssignmentGroup", id, context)
+    end
+
+    field :submission, Types::SubmissionType, null: true do
+      argument :id, ID, "a graphql or legacy id", required: true,
+        prepare: GraphQLHelpers.relay_or_legacy_id_prepare_func("Submission")
+    end
+    def submission(id:)
+      GraphQLNodeLoader.load("Submission", id, context)
     end
 
     field :term, Types::TermType, null: true do
@@ -83,6 +99,11 @@ module Types
     end
     def module_item(id:)
       GraphQLNodeLoader.load("ModuleItem", id, context)
+    end
+
+    field :audit_logs, Types::AuditLogsType, null: true
+    def audit_logs
+      Canvas::DynamoDB::DatabaseBuilder.from_config(:auditors)
     end
   end
 end

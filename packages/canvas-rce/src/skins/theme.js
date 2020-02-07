@@ -16,10 +16,10 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import { darken, lighten, alpha } from '@instructure/ui-color-utils'
+import {darken, lighten, alpha} from '@instructure/ui-color-utils'
 
- // pull canvas theme values we need for the rce skin
-export default function generator ({ borders, colors, forms, shadows, spacing, typography }) {
+// pull canvas theme values we need for the rce skin
+export default function generator({borders, colors, forms, shadows, spacing, typography}) {
   const vars = {
     canvasBackgroundColor: colors.white,
     canvasTextColor: colors.textDarkest,
@@ -57,7 +57,6 @@ export default function generator ({ borders, colors, forms, shadows, spacing, t
     canvasPrimaryButtonHoverBackground: darken(colors.backgroundBrand, 10),
     canvasPrimaryButtonHoverColor: colors.textLightest,
 
-
     // the instui secondary button
     canvasSecondaryButtonBackground: colors.backgroundLight,
     canvasSecondaryButtonColor: colors.textDarkest,
@@ -68,6 +67,8 @@ export default function generator ({ borders, colors, forms, shadows, spacing, t
     canvasFocusBorderColor: borders.brand,
     canvasFocusBorderWidth: borders.widthSmall, // canvas really uses widthMedium
     canvasFocusBoxShadow: `0 0 0 2px ${colors.brand}`,
+    canvasEnabledColor: borders.brand,
+    canvasEnabledBoxShadow: `inset 0 0 0.1875rem 0.0625rem ${darken(colors.borderLightest, 25)}`,
 
     canvasFontFamily: typography.fontFamily,
     canvasFontSize: '1rem',
@@ -91,7 +92,7 @@ export default function generator ({ borders, colors, forms, shadows, spacing, t
   return vars
 }
 
-generator['canvas'] = function(variables) {
+generator.canvas = function(variables) {
   return {
     canvasLinkColor: variables['ic-link-color'],
     canvasLinkDecoration: variables['ic-link-decoration'],
@@ -100,6 +101,7 @@ generator['canvas'] = function(variables) {
 
     canvasFocusBorderColor: variables['ic-brand-primary'],
     canvasFocusBoxShadow: `0 0 0 2px ${variables['ic-brand-primary']}`,
+    canvasEnabledColor: variables['ic-brand-primary'],
 
     canvasPrimaryButtonBackground: variables['ic-brand-primary'],
     canvasPrimaryButtonColor: variables['ic-brand-button--primary-text'],
@@ -111,7 +113,7 @@ generator['canvas'] = function(variables) {
   }
 }
 
-generator['canvas-a11y'] = generator['canvas-high-contrast'] = function ({colors}) {
+generator['canvas-a11y'] = generator['canvas-high-contrast'] = function({colors}) {
   return {
     canvasButtonBackground: colors.backgroundLight,
     canvasSecondaryButtonBorderColor: colors.borderMedium,

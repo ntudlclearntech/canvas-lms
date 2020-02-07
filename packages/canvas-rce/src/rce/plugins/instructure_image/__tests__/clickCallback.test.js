@@ -17,20 +17,21 @@
  */
 
 import clickCallback from '../clickCallback'
-import {getByLabelText} from 'react-testing-library'
+import {getAllByLabelText} from '@testing-library/react'
 
 describe('Instructure Image Plugin: clickCallback', () => {
-  let trayProps;
+  let trayProps
   beforeEach(() => {
-      trayProps = {
-        source: {
-          initializeCollection () {},
-          initializeUpload () {},
-          initializeFlickr () {},
-          initializeImages() {},
-          initializeDocuments() {}
-        }
+    trayProps = {
+      source: {
+        initializeCollection() {},
+        initializeUpload() {},
+        initializeFlickr() {},
+        initializeImages() {},
+        initializeDocuments() {},
+        initializeMedia() {}
       }
+    }
   })
   afterEach(() => {
     document.querySelector('.canvas-rce-upload-container').remove()
@@ -52,9 +53,9 @@ describe('Instructure Image Plugin: clickCallback', () => {
   it('opens the UploadImage modal when called', async () => {
     await clickCallback({}, document, trayProps)
     expect(
-      getByLabelText(document, 'Upload Image', {
+      getAllByLabelText(document, 'Upload Image', {
         selector: 'form'
-      })
+      })[0]
     ).toBeVisible()
   })
 })

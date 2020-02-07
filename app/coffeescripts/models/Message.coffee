@@ -61,7 +61,10 @@ export default class Message extends Model
         for id in message.participating_user_ids when id isnt message.author_id
           if participant = findParticipant(id)
             message.participants.push participant
-            message.participantNames.push participant.name
+            if participant.pronoun
+              message.participantNames.push {name: participant.name, pronoun: participant.pronoun}
+            else
+              message.participantNames.push {name: participant.name}
 
         if message.participants.length > 2
           message.summarizedParticipantNames = message.participantNames.slice(0, 2)
@@ -69,6 +72,7 @@ export default class Message extends Model
         message.context_name = data.context_name
         message.has_attachments = message.media_comment || message.attachments.length
         message.bodyHTML = TextHelper.formatMessage(message.body)
+        message.text = TextHelper.plainText(message.body)
     data
 
   handleMessages: ->

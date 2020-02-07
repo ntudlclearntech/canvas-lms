@@ -17,11 +17,16 @@
  */
 
 import {
+  LINK_TYPE,
   FILE_LINK_TYPE,
   IMAGE_EMBED_TYPE,
   NONE_TYPE,
+  TEXT_TYPE,
   getContentFromEditor,
-  getContentFromElement
+  getContentFromElement,
+  isFileLink,
+  isImageEmbed,
+  isVideoElement
 } from '../ContentSelection'
 import FakeEditor from './FakeEditor'
 
@@ -75,14 +80,14 @@ describe('RCE > Plugins > Shared > Content Selection', () => {
         expect(getContentFromElement($element).type).toEqual(FILE_LINK_TYPE)
       })
 
-      it('returns content of type "none" when linking to unhandled canvas content', () => {
+      it('returns content of type "link" when linking to unhandled canvas content', () => {
         $element.href = 'http://example.instructure.com/courses/1201/grades'
-        expect(getContentFromElement($element).type).toEqual(NONE_TYPE)
+        expect(getContentFromElement($element).type).toEqual(LINK_TYPE)
       })
 
-      it('returns content of type "none" when the anchor links to an unhandled location', () => {
+      it('returns content of type "link" when the anchor links to an unhandled location', () => {
         $element.href = 'http://www.example.com/foo/bar'
-        expect(getContentFromElement($element).type).toEqual(NONE_TYPE)
+        expect(getContentFromElement($element).type).toEqual(LINK_TYPE)
       })
 
       it('returns content of type "none" when the anchor has no href attribute', () => {
@@ -101,12 +106,12 @@ describe('RCE > Plugins > Shared > Content Selection', () => {
       })
 
       it('returns None type if there are no children', () => {
-        $element.id = "media_object_1234"
+        $element.id = 'media_object_1234'
         expect(getContentFromElement($element).type).toEqual(NONE_TYPE)
       })
 
       it('returns None type if there are more than one children', () => {
-        $element.id = "media_object_1234"
+        $element.id = 'media_object_1234'
         $element.appendChild(document.createElement('iframe'))
         $element.appendChild(document.createElement('span'))
         $element.appendChild(document.createElement('span'))
@@ -114,13 +119,13 @@ describe('RCE > Plugins > Shared > Content Selection', () => {
       })
 
       it('returns None type if children element is not an iframe', () => {
-        $element.id = "media_object_1234"
+        $element.id = 'media_object_1234'
         $element.appendChild(document.createElement('span'))
         expect(getContentFromElement($element).type).toEqual(NONE_TYPE)
       })
 
       it('returns id if iframe and div are set', () => {
-        $element.id = "media_object_1234"
+        $element.id = 'media_object_1234'
         $element.appendChild(document.createElement('iframe'))
         expect(getContentFromElement($element).id).toEqual('1234')
       })
@@ -219,7 +224,7 @@ describe('RCE > Plugins > Shared > Content Selection', () => {
       expect(getContentFromEditor(editor).type).toEqual(FILE_LINK_TYPE)
     })
 
-    it('returns content of type "image embed" when a file link is selected', () => {
+    it('returns content of type "image embed" when an image is selected', () => {
       const $selectedNode = document.createElement('img')
       $selectedNode.src = 'https://www.fillmurray.com/200/200'
       editor.setSelectedNode($selectedNode)
@@ -229,6 +234,75 @@ describe('RCE > Plugins > Shared > Content Selection', () => {
     it('returns content of type "none" when the editor has no selection', () => {
       delete editor.selection
       expect(getContentFromEditor(editor).type).toEqual(NONE_TYPE)
+    })
+
+    it('returns content of type "none" when expandCollapsed is false and the selection is collapased', () => {
+      const $selectedNode = document.createElement('p')
+      $selectedNode.innerHTML = 'some text'
+      editor.setSelectedNode($selectedNode)
+      editor.selection.collapse()
+      expect(getContentFromEditor(editor, false).type).toEqual(NONE_TYPE)
+    })
+
+    it('returns content of type "text" when expandCollapsed is true and the selection is collapased', () => {
+      const $selectedNode = document.createElement('p')
+      $selectedNode.innerHTML = 'some text'
+      editor.setSelectedNode($selectedNode)
+      editor.selection.collapse()
+      expect(getContentFromEditor(editor, true).type).toEqual(TEXT_TYPE)
+    })
+
+    it('returns content of type "text" when expandCollapsed is false and the selection is not collapased', () => {
+      const $selectedNode = document.createElement('p')
+      $selectedNode.innerHTML = 'some text'
+      editor.setSelectedNode($selectedNode)
+      expect(getContentFromEditor(editor, false).type).toEqual(TEXT_TYPE)
+    })
+  })
+
+  describe('predicates', () => {
+    let editor
+
+    beforeEach(() => {
+      editor = new FakeEditor()
+      editor.initialize()
+    })
+
+    it('detect a canvas file link', () => {
+      const $selectedNode = document.createElement('a')
+      $selectedNode.href = 'http://example.instructure.com/files/3201/download'
+      editor.setSelectedNode($selectedNode)
+      expect(isFileLink($selectedNode)).toBeTruthy()
+      expect(isImageEmbed($selectedNode)).toBeFalsy()
+      expect(isVideoElement($selectedNode)).toBeFalsy()
+    })
+
+    it('detect an embeded image', () => {
+      const $selectedNode = document.createElement('img')
+      $selectedNode.src = 'https://www.fillmurray.com/200/200'
+      editor.setSelectedNode($selectedNode)
+      expect(isFileLink($selectedNode)).toBeFalsy()
+      expect(isImageEmbed($selectedNode)).toBeTruthy()
+      expect(isVideoElement($selectedNode)).toBeFalsy()
+    })
+
+    it('detect a video element', () => {
+      const $selectedNode = document.createElement('div')
+      $selectedNode.id = 'foo_media_object'
+      $selectedNode.innerHTML = '<iframe/>'
+      editor.setSelectedNode($selectedNode)
+      expect(isFileLink($selectedNode)).toBeFalsy()
+      expect(isImageEmbed($selectedNode)).toBeFalsy()
+      expect(isVideoElement($selectedNode)).toBeTruthy()
+    })
+
+    it('ignore some random markup', () => {
+      const $selectedNode = document.createElement('div')
+      $selectedNode.innerHTML = 'hello world'
+      editor.setSelectedNode($selectedNode)
+      expect(isFileLink($selectedNode)).toBeFalsy()
+      expect(isImageEmbed($selectedNode)).toBeFalsy()
+      expect(isVideoElement($selectedNode)).toBeFalsy()
     })
   })
 })

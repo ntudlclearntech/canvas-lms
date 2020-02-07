@@ -16,7 +16,8 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import formatMessage from "../format-message";
-import locale from "../../locales/hy.json";
-import "../rce/languages/hy";
-formatMessage.addLocale({ hy: locale });
+import formatMessage from '../format-message'
+import locale from '../../locales/hy.json'
+import '../rce/languages/hy'
+
+formatMessage.addLocale({hy: locale})

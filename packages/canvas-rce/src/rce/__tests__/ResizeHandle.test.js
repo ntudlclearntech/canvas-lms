@@ -16,10 +16,9 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 import React from 'react'
-import 'jest-dom/extend-expect'
-import {render, cleanup, fireEvent} from 'react-testing-library'
+import '@testing-library/jest-dom/extend-expect'
+import {render, cleanup, fireEvent} from '@testing-library/react'
 import keycode from 'keycode'
 import ResizeHandle from '../ResizeHandle'
 
@@ -28,9 +27,7 @@ afterEach(cleanup)
 describe('RCE StatusBar', () => {
   it('simulates drag using the keyboard', () => {
     const onDrag = jest.fn()
-    const {container} = render(
-      <ResizeHandle onDrag={onDrag} />
-    )
+    const {container} = render(<ResizeHandle onDrag={onDrag} />)
     const theHandle = container.firstElementChild
     theHandle.focus()
     fireEvent.keyDown(theHandle, {keyCode: keycode.codes.up})

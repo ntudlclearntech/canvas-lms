@@ -28,7 +28,7 @@ import set from 'lodash/set'
 import {showFlashAlert} from 'jsx/shared/FlashAlert'
 import ErrorBoundary from 'jsx/shared/components/ErrorBoundary'
 import GenericErrorPage from 'jsx/shared/components/GenericErrorPage/index'
-import errorShipUrl from '../../student/SVG/ErrorShip.svg'
+import errorShipUrl from 'jsx/shared/svg/ErrorShip.svg'
 
 import {Alert} from '@instructure/ui-alerts'
 import {Mask} from '@instructure/ui-overlays'
@@ -202,21 +202,39 @@ export default class TeacherView extends React.Component {
 
   handleSave(saveAssignment) {
     if (this.isAssignmentValid()) {
-      this.setState({isSaving: true}, () => {
-        const assignment = this.state.workingAssignment
-        saveAssignment({
-          variables: {
-            id: assignment.lid,
-            name: assignment.name,
-            description: assignment.description,
-            state: assignment.state,
-            pointsPossible: parseFloat(assignment.pointsPossible),
-            dueAt: assignment.dueAt,
-            unlockAt: assignment.unlockAt,
-            lockAt: assignment.lockAt
+      this.setState(
+        (state, props) => {
+          return {
+            isSaving: true,
+            isTogglingWorkstate: state.workingAssignment.state !== props.assignment.state
           }
-        })
-      })
+        },
+        () => {
+          const assignment = this.state.workingAssignment
+          saveAssignment({
+            variables: {
+              id: assignment.lid,
+              name: assignment.name,
+              description: assignment.description,
+              state: assignment.state,
+              pointsPossible: parseFloat(assignment.pointsPossible),
+              dueAt: assignment.dueAt && new Date(assignment.dueAt).toISOString(), // convert to iso8601 in UTC
+              unlockAt: assignment.unlockAt && new Date(assignment.unlockAt).toISOString(),
+              lockAt: assignment.lockAt && new Date(assignment.lockAt).toISOString(),
+              assignmentOverrides: assignment.assignmentOverrides.nodes.map(o => ({
+                id: o.lid,
+                dueAt: o.dueAt && new Date(o.dueAt).toISOString(),
+                lockAt: o.lockAt && new Date(o.lockAt).toISOString(),
+                unlockAt: o.unlockAt && new Date(o.unlockAt).toISOString(),
+                sectionId: o.set.__typename === 'Section' ? o.set.lid : undefined,
+                groupId: o.set.__typename === 'Group' ? o.set.lid : undefined,
+                studentIds:
+                  o.set.__typename === 'AdhocStudents' ? o.set.students.map(s => s.lid) : undefined
+              }))
+            }
+          })
+        }
+      )
     } else {
       showFlashAlert({
         message: I18n.t('You cannot save while there are errors'),
@@ -231,7 +249,8 @@ export default class TeacherView extends React.Component {
     this.setState((state, _props) => ({
       isSaving: false,
       isUnpublishing: false,
-      isDirty: state.isUnpublishing ? state.isDirty : false
+      isDirty: state.isUnpublishing ? state.isDirty : false,
+      isTogglingWorkstate: false
     }))
   }
 
@@ -242,7 +261,22 @@ export default class TeacherView extends React.Component {
       err: new Error(apolloErrors),
       type: 'error'
     })
-    this.setState({isSaving: false})
+
+    this.setState((state, _props) => {
+      // reset the published toggle if necessary
+      let workingAssignment = state.workingAssignment
+      if (state.isTogglingWorkstate) {
+        workingAssignment = this.updateWorkingAssignment(
+          'state',
+          workingAssignment.state === 'published' ? 'unpublished' : 'published'
+        )
+      }
+      return {
+        isSaving: false,
+        isTogglingWorkstate: false,
+        workingAssignment
+      }
+    })
   }
 
   handlePublish(saveAssignment) {
@@ -285,7 +319,9 @@ export default class TeacherView extends React.Component {
       this.setState(
         {
           workingAssignment: updatedAssignment,
-          isSaving: true
+          isSaving: true,
+          isDirty: true,
+          isTogglingWorkstate: true
         },
         () => {
           if (newState === 'unpublished') {
@@ -371,7 +407,7 @@ export default class TeacherView extends React.Component {
               onError={this.handleSaveError}
             >
               {saveAssignment => (
-                <React.Fragment>
+                <>
                   <Header
                     assignment={assignment}
                     onChangeAssignment={this.handleChangeAssignment}
@@ -397,12 +433,12 @@ export default class TeacherView extends React.Component {
                       onPublish={() => this.handlePublish(saveAssignment)}
                     />
                   ) : null}
-                </React.Fragment>
+                </>
               )}
             </Mutation>
             <Portal open={this.state.isSaving}>
               <Mask fullscreen>
-                <Spinner size="large" title={I18n.t('Saving assignment')} />
+                <Spinner size="large" renderTitle={I18n.t('Saving assignment')} />
               </Mask>
             </Portal>
           </div>

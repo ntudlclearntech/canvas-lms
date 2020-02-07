@@ -17,62 +17,92 @@
  */
 
 import ContentTabs from '../ContentTabs'
-import {mockAssignment, mockSubmission} from '../../test-utils'
-import {MockedProvider} from 'react-apollo/test-utils'
+import {mockAssignmentAndSubmission} from '../../mocks'
+import {MockedProvider} from '@apollo/react-testing'
 import React from 'react'
-import {render} from 'react-testing-library'
+import {render, fireEvent} from '@testing-library/react'
+import {SubmissionMocks} from '../../graphqlData/Submission'
 
 describe('ContentTabs', () => {
-  it('renders the content tabs', () => {
+  it('renders the content tabs', async () => {
+    const props = await mockAssignmentAndSubmission()
     const {getAllByTestId} = render(
       <MockedProvider>
-        <ContentTabs assignment={mockAssignment()} submission={mockSubmission()} />
+        <ContentTabs {...props} />
       </MockedProvider>
     )
     expect(getAllByTestId('assignment-2-student-content-tabs')).toHaveLength(1)
   })
 
-  it('renders the tabs in the correct order', () => {
-    const {getAllByRole, getByText} = render(
+  it('renders the tabs in the correct order when the assignment has a rubric', async () => {
+    const props = await mockAssignmentAndSubmission({
+      Assignment: {rubric: {}}
+    })
+
+    const {getAllByRole, getByText, getAllByText} = render(
       <MockedProvider>
-        <ContentTabs assignment={mockAssignment()} submission={mockSubmission()} />
+        <ContentTabs {...props} />
       </MockedProvider>
     )
     const tabs = getAllByRole('tab')
 
     expect(tabs).toHaveLength(3)
     expect(tabs[0]).toContainElement(getByText('Attempt 1'))
-    expect(tabs[1]).toContainElement(getByText('Comments'))
-    expect(tabs[2]).toContainElement(getByText('Rubric'))
+    expect(tabs[1]).toContainElement(getAllByText('Comments')[0])
+    expect(tabs[2]).toContainElement(getAllByText('Rubric')[0])
   })
 
-  it('titles the attempt tab as Attempt 1 on a brand new submission', () => {
+  it('does not render the Rubric tab when the assignment has no rubric', async () => {
+    const props = await mockAssignmentAndSubmission({
+      Assignment: {rubric: null}
+    })
+
+    const {getAllByRole, getByText, getAllByText} = render(
+      <MockedProvider>
+        <ContentTabs {...props} />
+      </MockedProvider>
+    )
+    const tabs = getAllByRole('tab')
+
+    expect(tabs).toHaveLength(2)
+    expect(tabs[0]).toContainElement(getByText('Attempt 1'))
+    expect(tabs[1]).toContainElement(getAllByText('Comments')[0])
+  })
+
+  it('titles the attempt tab as Attempt 1 on a brand new submission', async () => {
+    const props = await mockAssignmentAndSubmission({
+      Submission: {attempt: 0}
+    })
     const {getAllByRole, getByText} = render(
       <MockedProvider>
-        <ContentTabs assignment={mockAssignment()} submission={mockSubmission({attempt: 0})} />
+        <ContentTabs {...props} />
       </MockedProvider>
     )
     const tabs = getAllByRole('tab')
     expect(tabs[0]).toContainElement(getByText('Attempt 1'))
   })
 
-  it('titles the attempt tab with the correct attempt number on a submission with multiple attempts', () => {
+  it('titles the attempt tab with the correct attempt number on a submission with multiple attempts', async () => {
+    const props = await mockAssignmentAndSubmission({
+      Submission: {attempt: 50}
+    })
     const {getAllByRole, getByText} = render(
       <MockedProvider>
-        <ContentTabs assignment={mockAssignment()} submission={mockSubmission({attempt: 50})} />
+        <ContentTabs {...props} />
       </MockedProvider>
     )
     const tabs = getAllByRole('tab')
     expect(tabs[0]).toContainElement(getByText('Attempt 50'))
   })
 
-  it('displays the submitted time and grade of the current submission if it has been submitted', () => {
+  it('displays the submitted time and grade of the current submission if it has been submitted', async () => {
+    const props = await mockAssignmentAndSubmission({
+      Submission: SubmissionMocks.submitted
+    })
+
     const {getByTestId, getByText} = render(
       <MockedProvider>
-        <ContentTabs
-          assignment={mockAssignment()}
-          submission={mockSubmission({state: 'submitted'})}
-        />
+        <ContentTabs {...props} />
       </MockedProvider>
     )
 
@@ -81,13 +111,13 @@ describe('ContentTabs', () => {
     expect(getByTestId('grade-display')).toBeInTheDocument()
   })
 
-  it('displays Not submitted if the submission has been graded but not submitted', () => {
+  it('displays Not submitted if the submission has been graded but not submitted', async () => {
+    const props = await mockAssignmentAndSubmission({
+      Submission: {state: 'graded'}
+    })
     const {getByText, queryByTestId} = render(
       <MockedProvider>
-        <ContentTabs
-          assignment={mockAssignment()}
-          submission={mockSubmission({state: 'graded', submittedAt: null})}
-        />
+        <ContentTabs {...props} />
       </MockedProvider>
     )
 
@@ -95,10 +125,14 @@ describe('ContentTabs', () => {
     expect(getByText('Not submitted')).toBeInTheDocument()
   })
 
-  it('displays the submitted time and grade of the current submission if it has been graded', () => {
+  it('displays the submitted time and grade of the current submission if it has been graded', async () => {
+    const props = await mockAssignmentAndSubmission({
+      Submission: SubmissionMocks.graded
+    })
+
     const {getByTestId, getByText} = render(
       <MockedProvider>
-        <ContentTabs assignment={mockAssignment()} submission={mockSubmission({state: 'graded'})} />
+        <ContentTabs {...props} />
       </MockedProvider>
     )
 
@@ -107,18 +141,68 @@ describe('ContentTabs', () => {
     expect(getByTestId('grade-display')).toBeInTheDocument()
   })
 
-  it('does not display the submitted time or grade of the current submission if it is unsubmitted', () => {
+  it('does not display the grade of the current submission if it is submitted but not graded', async () => {
+    const props = await mockAssignmentAndSubmission({
+      Submission: SubmissionMocks.submitted
+    })
     const {queryByTestId, queryByText} = render(
       <MockedProvider>
-        <ContentTabs
-          assignment={mockAssignment()}
-          submission={mockSubmission({state: 'unsubmitted'})}
-        />
+        <ContentTabs {...props} />
+      </MockedProvider>
+    )
+
+    expect(queryByText('Submitted')).toBeInTheDocument()
+    expect(queryByTestId('friendly-date-time')).toBeInTheDocument()
+    expect(queryByTestId('grade-display')).toBeInTheDocument()
+    expect(queryByText('–/10 Points')).toBeInTheDocument()
+  })
+
+  it('does not display the submitted time or grade of the current submission if it is unsubmitted', async () => {
+    const props = await mockAssignmentAndSubmission()
+    const {queryByTestId, queryByText} = render(
+      <MockedProvider>
+        <ContentTabs {...props} />
       </MockedProvider>
     )
 
     expect(queryByText('Submitted')).toBeNull()
     expect(queryByTestId('friendly-date-time')).toBeNull()
     expect(queryByTestId('grade-display')).toBeNull()
+  })
+
+  it('displays the correct message if the submission grade is hidden', async () => {
+    const props = await mockAssignmentAndSubmission({
+      Submission: {gradeHidden: true}
+    })
+
+    const {getAllByText, getByText} = render(
+      <MockedProvider>
+        <ContentTabs {...props} />
+      </MockedProvider>
+    )
+    fireEvent.click(getAllByText('Comments')[0])
+    expect(
+      getByText(
+        'You may not see all comments right now because the assignment is currently being graded.'
+      )
+    ).toBeInTheDocument()
+  })
+
+  it('does not let you create comments if a dummy submission is being displayed', async () => {
+    const props = await mockAssignmentAndSubmission({
+      Submission: {attempt: 2, state: 'unsubmitted'}
+    })
+
+    const {getAllByText, queryByTestId, getByText} = render(
+      <MockedProvider>
+        <ContentTabs {...props} />
+      </MockedProvider>
+    )
+    fireEvent.click(getAllByText('Comments')[0])
+
+    expect(queryByTestId('assignments_2_comment_attachment')).not.toBeInTheDocument()
+    expect(
+      getByText('You cannot leave leave comments until you submit the assignment')
+    ).toBeInTheDocument()
   })
 })

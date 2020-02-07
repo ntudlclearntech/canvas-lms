@@ -18,6 +18,9 @@
 
 class SubmissionsBaseController < ApplicationController
   include GradebookSettingsHelpers
+  include AssignmentsHelper
+  include AssessmentRequestHelper
+
   include Api::V1::Rubric
   include Api::V1::SubmissionComment
 
@@ -43,7 +46,16 @@ class SubmissionsBaseController < ApplicationController
           outcome_proficiency: outcome_proficiency
         })
 
-        render 'submissions/show'
+        js_bundle :submissions
+        css_bundle :submission
+
+        add_crumb(t('crumbs.assignments', "Assignments"), context_url(@context, :context_assignments_url))
+        add_crumb(@assignment.title, context_url(@context, :context_assignment_url, @assignment.id))
+        add_crumb(user_crumb_name)
+
+        set_active_tab "assignments"
+
+        render 'submissions/show', stream: can_stream_template?
       end
       format.json do
         @submission.limit_comments(@current_user, session)
@@ -64,6 +76,10 @@ class SubmissionsBaseController < ApplicationController
     permissions = { user: @current_user, session: session, include_permissions: false }
     provisional = @assignment.moderated_grading? && params[:submission][:provisional]
     submission_json_exclusions = []
+
+    if @assignment.anonymous_peer_reviews && @submission.peer_reviewer?(@current_user)
+      submission_json_exclusions << :user_id
+    end
 
     if @submission.submission_type == "online_quiz" && @assignment.muted? && !@assignment.grants_right?(@current_user, :grade)
       submission_json_exclusions << :body
@@ -94,6 +110,7 @@ class SubmissionsBaseController < ApplicationController
       unless @submission.grants_right?(@current_user, session, :submit)
         @request = @submission.assessment_requests.where(assessor_id: @current_user).first if @current_user
         params[:submission] = {
+          :attempt => params[:submission][:attempt],
           :comment => params[:submission][:comment],
           :comment_attachments => params[:submission][:comment_attachments],
           :media_comment_id => params[:submission][:media_comment_id],
@@ -101,11 +118,12 @@ class SubmissionsBaseController < ApplicationController
           :commenter => @current_user,
           :assessment_request => @request,
           :group_comment => params[:submission][:group_comment],
-          :hidden => @assignment.muted? && admin_in_context,
+          :hidden => @submission.hide_grade_from_student? && admin_in_context,
           :provisional => provisional,
           :final => params[:submission][:final],
           :draft_comment => Canvas::Plugin.value_to_boolean(params[:submission][:draft_comment])
         }
+        params[:submission].delete(:attempt) unless @context.feature_enabled?(:assignments_2_student)
       end
       begin
         @submissions = @assignment.update_submission(@user, params[:submission].to_unsafe_h)

@@ -88,6 +88,29 @@ shared_examples_for "lti services" do
       expect(response).to have_http_status http_success_status
     end
 
+    context 'with site admin developer key' do
+      context 'when LTI 1.3 feature is allowed' do
+        let(:before_send_request) do
+          -> do
+            developer_key.update!(account: nil)
+          end
+        end
+
+        it 'returns 200 success' do
+          expect(response).to have_http_status http_success_status
+        end
+      end
+    end
+
+    context 'with "canvas.instructure.com" aud' do
+      let(:universal_grant_host) { 'http://canvas.instructure.com/login/oauth2/token' }
+      let(:access_token_jwt_hash) { super().merge('aud': universal_grant_host) }
+
+      it 'returns 200 success' do
+        expect(response).to have_http_status http_success_status
+      end
+    end
+
     context 'with system failure during access token validation' do
       let(:jwt_validator) { instance_double(Canvas::Security::JwtValidator) }
       let(:before_send_request) do
@@ -186,12 +209,21 @@ shared_examples_for "lti services" do
       end
     end
 
-    context 'with invalid access token issuance timestamp (\'iat\')' do
+    context 'with access token issuance timestamp in the future (\'iat\')' do
       let(:access_token_jwt_hash) { super().merge(iat: (Time.zone.now.to_i + 1.hour.to_i)) }
 
       it 'returns 401 unauthorized and complains about an invalid iat field' do
         expect(response).to have_http_status :unauthorized
         expect(json).to be_lti_advantage_error_response_body('unauthorized', 'Invalid access token field/s: the \'iat\' must not be in the future')
+      end
+    end
+
+    context 'whith access token issuance timestamp more than an hour old' do
+      let(:access_token_jwt_hash) { super().merge(iat: (Time.zone.now.to_i - 2.hours.to_i)) }
+
+      it 'returns 401 unauthorized and complains about an invalid iat field' do
+        expect(response).to have_http_status :unauthorized
+        expect(json).to be_lti_advantage_error_response_body('unauthorized', "Invalid access token field/s: the 'iat' must be less than 3600 seconds old")
       end
     end
 
@@ -219,20 +251,6 @@ shared_examples_for "lti services" do
       it 'returns 401 unauthorized and complains about missing developer key' do
         expect(response).to have_http_status :unauthorized
         expect(json).to be_lti_advantage_error_response_body('unauthorized', 'Unknown or inactive Developer Key')
-      end
-    end
-
-    context 'with disabled LTI 1.3/Advantage account-level features' do
-      # Would also work to just override :root_account, but let's have all the setup run w/ 1.3 enabled in case
-      # that has any side-effects, _then_ suddenly disable features before a LTI Advantage call arrives... as if a
-      # customer had a change of heart after initially turning on LTI/Advantage 1.3 features.
-      let(:before_send_request) { -> { disable_1_3(root_account) } }
-
-      it_behaves_like 'mime_type check'
-
-      it 'returns 401 unauthorized and complains about disabled LTI 1.3/Advantage features' do
-        expect(response).to have_http_status :unauthorized
-        expect(json).to be_lti_advantage_error_response_body('unauthorized', 'LTI 1.3/Advantage features not enabled')
       end
     end
 

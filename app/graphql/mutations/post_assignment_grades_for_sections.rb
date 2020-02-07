@@ -48,16 +48,17 @@ class Mutations::PostAssignmentGradesForSections < Mutations::BaseMutation
       raise GraphQL::ExecutionError, "Invalid section ids"
     end
 
-    student_ids = course.student_enrollments.where(course_section: sections).pluck(:user_id)
+    visible_enrollments = course.apply_enrollment_visibility(course.student_enrollments, current_user, sections)
 
-    submissions_scope = if input[:graded_only]
-      assignment.submissions.where(user_id: student_ids).graded
-    else
-      assignment.submissions.where(user_id: student_ids)
-    end
+    submissions_scope = input[:graded_only] ? assignment.submissions.graded : assignment.submissions
+    submissions_scope = submissions_scope.joins(user: :enrollments).merge(visible_enrollments)
 
-    submission_ids = submissions_scope.pluck(:id)
     progress = course.progresses.new(tag: "post_assignment_grades_for_sections")
+
+    posting_params = {
+      graded_only: !!input[:graded_only],
+      section_names: sections&.pluck(:name)
+    }
 
     if progress.save
       progress.process_job(
@@ -65,7 +66,8 @@ class Mutations::PostAssignmentGradesForSections < Mutations::BaseMutation
         :post_submissions,
         {preserve_method_args: true},
         progress: progress,
-        submission_ids: submission_ids
+        submission_ids: submissions_scope.pluck(:id),
+        posting_params: posting_params
       )
       return {assignment: assignment, progress: progress, sections: sections}
     else

@@ -34,11 +34,11 @@ class DeveloperKey < ActiveRecord::Base
   has_one :tool_configuration, class_name: 'Lti::ToolConfiguration', dependent: :destroy, inverse_of: :developer_key
   serialize :scopes, Array
 
+  before_validation :normalize_public_jwk_url
   before_validation :validate_scopes!
   before_create :generate_api_key
   before_create :set_auto_expire_tokens
   before_create :set_visible
-  before_create :infer_key_type
   before_save :nullify_empty_icon_url
   before_save :protect_default_key
   before_save :set_require_scopes
@@ -50,6 +50,7 @@ class DeveloperKey < ActiveRecord::Base
   validates_as_url :redirect_uri, :oidc_initiation_url, :public_jwk_url, allowed_schemes: nil
   validate :validate_redirect_uris
   validate :validate_public_jwk
+  validate :validate_lti_fields
 
   attr_reader :private_jwk
 
@@ -297,8 +298,14 @@ class DeveloperKey < ActiveRecord::Base
 
   private
 
-  def infer_key_type
-    self.is_lti_key = self.public_jwk.present? || self.public_jwk_url.present?
+  def validate_lti_fields
+    return unless self.is_lti_key?
+    return if self.public_jwk.present? || self.public_jwk_url.present?
+    errors.add(:lti_key, "developer key must have public jwk or public jwk url")
+  end
+
+  def normalize_public_jwk_url
+    self.public_jwk_url = nil if self.public_jwk_url.blank?
   end
 
   def manage_external_tools(enqueue_args, method, affected_account)
@@ -306,14 +313,24 @@ class DeveloperKey < ActiveRecord::Base
 
     if affected_account.blank? || affected_account.site_admin?
       # Cleanup tools across all shards
-      Shard.with_each_shard do
-        send_later_enqueue_args(
-          method,
-          enqueue_args,
-          affected_account
-        )
-      end
+      send_later_enqueue_args(
+        :manage_external_tools_multi_shard,
+        enqueue_args,
+        enqueue_args,
+        method,
+        affected_account
+      )
     else
+      send_later_enqueue_args(
+        method,
+        enqueue_args,
+        affected_account
+      )
+    end
+  end
+
+  def manage_external_tools_multi_shard(enqueue_args, method, affected_account)
+    Shard.with_each_shard do
       send_later_enqueue_args(
         method,
         enqueue_args,
@@ -442,7 +459,7 @@ class DeveloperKey < ActiveRecord::Base
 
   def set_require_scopes
     # Prevent RSA keys from having API access
-    self.require_scopes = true if public_jwk.present?
+    self.require_scopes = true if public_jwk.present? || public_jwk_url.present?
   end
 
   def validate_scopes!

@@ -16,28 +16,20 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import I18n from 'i18n!permissions_v2_add_tray'
-
+import actions from '../actions'
 import {connect} from 'react-redux'
+import {COURSE} from '../propTypes'
+import I18n from 'i18n!permissions_v2_add_tray'
 import PropTypes from 'prop-types'
 import React, {Component} from 'react'
-
-import {COURSE} from '../propTypes'
-
-import Button from '@instructure/ui-buttons/lib/components/Button'
-import {View} from '@instructure/ui-layout'
-import Flex, {FlexItem} from '@instructure/ui-layout/lib/components/Flex'
-import Heading from '@instructure/ui-elements/lib/components/Heading'
-import IconX from '@instructure/ui-icons/lib/Solid/IconX'
-import Text from '@instructure/ui-elements/lib/components/Text'
-import Select from '@instructure/ui-core/lib/components/Select'
-import TextInput from '@instructure/ui-forms/lib/components/TextInput'
-import Tray from '@instructure/ui-overlays/lib/components/Tray'
-import Spinner from '@instructure/ui-elements/lib/components/Spinner'
-
-import actions from '../actions'
-
 import {roleIsCourseBaseRole} from '../helper/utils'
+import {Button} from '@instructure/ui-buttons'
+import {Flex, View} from '@instructure/ui-layout'
+import {FormField} from '@instructure/ui-form-field'
+import {Heading, Spinner, Text} from '@instructure/ui-elements'
+import {IconXSolid} from '@instructure/ui-icons'
+import {TextInput} from '@instructure/ui-forms'
+import {Tray} from '@instructure/ui-overlays'
 
 export default class AddTray extends Component {
   static propTypes = {
@@ -111,23 +103,24 @@ export default class AddTray extends Component {
 
   renderTrayHeader = () => (
     <Flex alignItems="center" margin="small">
-      <FlexItem>
+      <Flex.Item>
         <Button
+          id="close-add-role-tray-button"
           variant="icon"
           size="small"
           onClick={this.hideTray}
           buttonRef={c => (this.closeButton = c)}
         >
-          <IconX title={I18n.t('Close')} />
+          <IconXSolid title={I18n.t('Close')} />
         </Button>
-      </FlexItem>
-      <FlexItem>
+      </Flex.Item>
+      <Flex.Item>
         <View as="div" margin="0 0 0 small">
           <Heading level="h3" as="h2">
             {this.props.tab === COURSE ? I18n.t('New Course Role') : I18n.t('New Account Role')}
           </Heading>
         </View>
-      </FlexItem>
+      </Flex.Item>
     </Flex>
   )
 
@@ -145,17 +138,22 @@ export default class AddTray extends Component {
 
   renderSelectBaseRole = () => (
     <View display="block" margin="medium 0">
-      <Select
-        onChange={this.onChangeBaseType}
-        value={this.state.selectedBaseType.label}
-        label={<Text weight="light">{`${I18n.t('Base Type')}:`}</Text>}
-      >
-        {this.props.allBaseRoles.map(item => (
-          <option key={item.label} value={item.label}>
-            {item.label}
-          </option>
-        ))}
-      </Select>
+      <FormField id="add-tray" label={<Text weight="light">{`${I18n.t('Base Type')}:`}</Text>}>
+        <select
+          onChange={this.onChangeBaseType}
+          style={{
+            margin: '0',
+            width: '100%'
+          }}
+          value={this.state.selectedBaseType.label}
+        >
+          {this.props.allBaseRoles.map(item => (
+            <option key={item.label} value={item.label}>
+              {item.label}
+            </option>
+          ))}
+        </select>
+      </FormField>
     </View>
   )
 
@@ -189,7 +187,7 @@ export default class AddTray extends Component {
   renderLoadingIndicator() {
     return (
       <View display="block" margin="auto">
-        <Spinner size="large" title={I18n.t('Saving New Role')} />
+        <Spinner size="large" renderTitle={I18n.t('Saving New Role')} />
       </View>
     )
   }

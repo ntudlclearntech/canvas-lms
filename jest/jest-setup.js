@@ -18,18 +18,11 @@
 
 import Enzyme from 'enzyme'
 import Adapter from 'enzyme-adapter-react-16'
+import {filterUselessConsoleMessages} from '@instructure/js-utils'
 
-const errorsToIgnore = ["Warning: [Focusable] Exactly one tabbable child is required (0 found)."];
+filterUselessConsoleMessages(console)
 
-window.fetch = require('unfetch')
-
-/* eslint-disable-next-line */
-const _consoleDotError = console.error
-/* eslint-disable-next-line */
-console.error = function (message) {
-      if(errorsToIgnore.includes(message)) return
-      _consoleDotError.apply(this, arguments)
-    }
+global.fetch = require('jest-fetch-mock')
 
 window.scroll = () => {}
 window.ENV = {}
@@ -44,7 +37,11 @@ require('@instructure/ui-themes')
 if (process.env.DEPRECATION_SENTRY_DSN) {
   const Raven = require('raven-js')
   Raven.config(process.env.DEPRECATION_SENTRY_DSN, {
-    release: process.env.GIT_COMMIT
+    ignoreErrors: ['renderIntoDiv', 'renderSidebarIntoDiv'], // silence the `Cannot read property 'renderIntoDiv' of null` errors we get from the pre- rce_enhancements old rce code
+    release: process.env.GIT_COMMIT,
+    autoBreadcrumbs: {
+      xhr: false
+    }
   }).install();
 
   const setupRavenConsoleLoggingPlugin = require('../app/jsx/shared/helpers/setupRavenConsoleLoggingPlugin').default;

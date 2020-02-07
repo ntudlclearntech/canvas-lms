@@ -183,6 +183,7 @@ module Api::V1::Assignment
     hash['original_course_id'] = assignment.duplicate_of&.course&.id
     hash['original_assignment_id'] = assignment.duplicate_of&.id
     hash['original_assignment_name'] = assignment.duplicate_of&.name
+    hash['original_quiz_id'] = assignment.migrate_from_id
     hash['workflow_state'] = assignment.workflow_state
 
     if assignment.quiz_lti?
@@ -244,6 +245,7 @@ module Api::V1::Assignment
     end
 
     if assignment.context.grants_any_right?(user, :read_sis, :manage_sis)
+      hash['sis_assignment_id'] = assignment.sis_source_id
       hash['integration_id'] = assignment.integration_id
       hash['integration_data'] = assignment.integration_data
     end
@@ -429,6 +431,7 @@ module Api::V1::Assignment
     grading_standard_id
     freeze_on_copy
     notify_of_update
+    sis_assignment_id
     integration_id
     omit_from_final_grade
     anonymous_instructor_annotations
@@ -543,7 +546,7 @@ module Api::V1::Assignment
     if assignment_params['submission_types'].present? &&
       !assignment_params['submission_types'].all? do |s|
         return false if s == 'wiki_page' && !self.context.try(:feature_enabled?, :conditional_release)
-        API_ALLOWED_SUBMISSION_TYPES.include?(s)
+        API_ALLOWED_SUBMISSION_TYPES.include?(s) || (s == 'default_external_tool' && assignment.unpublished?)
       end
         assignment.errors.add('assignment[submission_types]',
           I18n.t('assignments_api.invalid_submission_types',
@@ -667,6 +670,7 @@ module Api::V1::Assignment
       data = update_params['integration_data']
       update_params['integration_data'] = JSON.parse(data) if data.is_a?(String)
     else
+      update_params.delete('sis_assignment_id')
       update_params.delete('integration_id')
       update_params.delete('integration_data')
     end
@@ -737,6 +741,14 @@ module Api::V1::Assignment
         assignment.finish_duplicating
       else
         assignment.fail_to_duplicate
+      end
+    end
+
+    if assignment_params.key?('migrated_successfully')
+      if value_to_boolean(assignment_params[:migrated_successfully])
+        assignment.finish_migrating
+      else
+        assignment.fail_to_migrate
       end
     end
 

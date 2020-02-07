@@ -47,22 +47,28 @@ describe('saveLtiToolConfiguration', () => {
 
   it('sets the developer key with provided fields', () => {
     save()
-    expect(dispatch).toBeCalledWith(developerKeysActions.setEditingDeveloperKey({name: 'test'}))
+    expect(dispatch).toHaveBeenCalledWith(
+      developerKeysActions.setEditingDeveloperKey({name: 'test'})
+    )
   })
 
   it('sets the tool configuration url if provided', () => {
     save(true)
-    expect(dispatch).toBeCalledWith(actions.setLtiToolConfigurationUrl('test.url'))
+    expect(dispatch).toHaveBeenCalledWith(actions.setLtiToolConfigurationUrl('test.url'))
   })
 
   describe('on successful response', () => {
     it('sets the tool configuration', () => {
-      expect(dispatch).toBeCalledWith(actions.setLtiToolConfiguration({test: 'config'}))
+      expect(dispatch).toHaveBeenCalledWith(actions.setLtiToolConfiguration({test: 'config'}))
     })
 
     it('prepends the developer key to the list', () => {
-      expect(dispatch).toBeCalledWith(
-        developerKeysActions.listDeveloperKeysPrepend({id: 100000000087, name: 'test key'})
+      expect(dispatch).toHaveBeenCalledWith(
+        developerKeysActions.listDeveloperKeysPrepend({
+          id: 100000000087,
+          name: 'test key',
+          tool_configuration: {test: 'config'}
+        })
       )
     })
   })
@@ -78,14 +84,18 @@ describe('ltiKeysUpdateCustomizations', () => {
   })
 
   const scopes = ['https://www.test.com/scope']
-  const redirectUris = "https://www.test.com"
+  const redirectUris = 'https://www.test.com'
   const disabledPlacements = ['account_navigation', 'course_navigaiton']
   const developerKeyId = 123
   const toolConfiguration = {}
   const customFields = 'foo=bar\r\nkey=value'
   const developerKey = {
     scopes,
-    redirect_uris: redirectUris
+    redirect_uris: redirectUris,
+    name: 'Test',
+    notes: 'This is a test',
+    email: 'test@example.com',
+    access_token_count: 1
   }
 
   const update = dispatch => {
@@ -106,7 +116,10 @@ describe('ltiKeysUpdateCustomizations', () => {
       {
         developer_key: {
           scopes,
-          redirect_uris: redirectUris
+          redirect_uris: redirectUris,
+          name: developerKey.name,
+          notes: developerKey.notes,
+          email: developerKey.email
         },
         tool_configuration: {
           disabled_placements: disabledPlacements,

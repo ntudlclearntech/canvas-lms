@@ -20,9 +20,8 @@ import React, {useState} from 'react'
 import {func, string} from 'prop-types'
 import {DraggableCore} from 'react-draggable'
 import keycode from 'keycode'
-import {Focusable} from '@instructure/ui-focusable'
 import {View} from '@instructure/ui-layout'
-import IconDragHandle from '@instructure/ui-icons/lib/Line/IconDragHandle'
+import {IconDragHandleLine} from '@instructure/ui-icons'
 import DraggingBlocker from './DraggingBlocker'
 import formatMessage from '../format-message'
 
@@ -34,43 +33,53 @@ export default function ResizeHandle(props) {
       event.preventDefault()
       event.stopPropagation()
       props.onDrag(event, {deltaY: -RESIZE_STEP})
-    } else if(event.keyCode === keycode.codes.down) {
+    } else if (event.keyCode === keycode.codes.down) {
       event.preventDefault()
       event.stopPropagation()
       props.onDrag(event, {deltaY: RESIZE_STEP})
     }
   }
+
+  function handleFocus() {
+    setIsFocused(true)
+  }
+
+  function handleBlur() {
+    setIsFocused(false)
+  }
+
   const [dragging, setDragging] = useState(false)
+  // tracking isFocused rather than leveraging instui Focusable
+  // because Focusable doesn't detect whan ResizeHandle gets focus
+  const [isFocused, setIsFocused] = useState(false)
 
   return (
-    <Focusable>
-      {({focused}) => (
-        <View
-          aria-label={formatMessage("Drag handle. Use up and down arrows to resize")}
-          as="span"
-          borderRadius="medium"
-          display="inline-block"
-          focused={focused}
-          padding="0 0 0 xx-small"
-          position="relative"
-          role="button"
-          tabIndex={props.tabIndex}
-          onKeyDown={handleKey}
-        >
-          <DraggableCore
-            offsetParent={document.body}
-            onDrag={props.onDrag}
-            onStart={() => setDragging(true)}
-            onStop={() => setDragging(false)}
-          >
-            <View cursor="ns-resize">
-              <IconDragHandle />
-            </View>
-          </DraggableCore>
-          <DraggingBlocker dragging={dragging} />
+    <View
+      aria-label={formatMessage('Drag handle. Use up and down arrows to resize')}
+      as="span"
+      borderRadius="medium"
+      display="inline-block"
+      focused={isFocused}
+      padding="0 0 0 xx-small"
+      position="relative"
+      role="button"
+      tabIndex={props.tabIndex}
+      onKeyDown={handleKey}
+      onFocus={handleFocus}
+      onBlur={handleBlur}
+    >
+      <DraggableCore
+        offsetParent={document.body}
+        onDrag={props.onDrag}
+        onStart={() => setDragging(true)}
+        onStop={() => setDragging(false)}
+      >
+        <View cursor="ns-resize">
+          <IconDragHandleLine />
         </View>
-      )}
-    </Focusable>
+      </DraggableCore>
+      <DraggingBlocker dragging={dragging} />
+    </View>
   )
 }
 

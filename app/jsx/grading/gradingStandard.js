@@ -135,16 +135,12 @@ class GradingStandard extends React.Component {
       .uniq()
       .value()
     const inputsAreUniqueAndNonEmpty = sanitizedRowValues.length === rowValues.length
-    const valuesDoNotOverlap = !_.any(
-      this.state.editingStandard.data,
-      function(element, index, list) {
-        if (index < 1) return false
-        const thisMinScore = this.props.round(element[1])
-        const aboveMinScore = this.props.round(list[index - 1][1])
-        return thisMinScore >= aboveMinScore
-      },
-      this
-    )
+    const valuesDoNotOverlap = !_.some(this.state.editingStandard.data, (element, index, list) => {
+      if (index < 1) return false
+      const thisMinScore = this.props.round(element[1])
+      const aboveMinScore = this.props.round(list[index - 1][1])
+      return thisMinScore >= aboveMinScore
+    })
 
     return inputsAreUniqueAndNonEmpty && valuesDoNotOverlap
   }
@@ -232,12 +228,7 @@ class GradingStandard extends React.Component {
   renderSaveButton = () => {
     if (this.state.saving) {
       return (
-        <button
-          type="button"
-          ref="saveButton"
-          className="btn btn-primary save_button"
-          disabled
-        >
+        <button type="button" ref="saveButton" className="btn btn-primary save_button" disabled>
           {I18n.t('Saving...')}
         </button>
       )

@@ -17,7 +17,7 @@
  */
 
 import React, {useRef} from 'react'
-import {render} from 'react-testing-library'
+import {render} from '@testing-library/react'
 
 import {LoadMoreButton, LoadingIndicator, LoadingStatus, useIncrementalLoading} from '..'
 
@@ -50,7 +50,7 @@ describe('RCE > Common > Incremental Loading', () => {
 
   function SpecComponent() {
     const {records} = loaderOptions
-    let lastItemRef = useRef(null)
+    const lastItemRef = useRef(null)
 
     const loader = useIncrementalLoading({...loaderOptions, lastItemRef})
 

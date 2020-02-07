@@ -22,7 +22,9 @@ import 'jquery.instructure_misc_helpers' // $.toSentence
 
 function getSecondaryDisplayInfo(student, secondaryInfo, options) {
   if (options.shouldShowSections() && secondaryInfo === 'section') {
-    const sectionNames = student.sections.map(sectionId => options.getSection(sectionId).name)
+    const sectionNames = student.sections
+      .filter(options.isVisibleSection)
+      .map(sectionId => options.getSection(sectionId).name)
     return $.toSentence(sectionNames.sort())
   }
 
@@ -57,9 +59,7 @@ function render(options) {
   if (options.enrollmentLabel) {
     const title = I18n.t('This user is currently not able to access the course')
     // xsslint safeString.identifier title
-    enrollmentStatus = `&nbsp;<span title="${title}" class="label">${
-      options.enrollmentLabel
-    }</span>`
+    enrollmentStatus = `&nbsp;<span title="${title}" class="label">${options.enrollmentLabel}</span>`
   }
 
   if (options.secondaryInfo) {
@@ -96,6 +96,9 @@ export default class StudentCellFormatter {
       },
       getSelectedSecondaryInfo() {
         return gradebook.getSelectedSecondaryInfo()
+      },
+      isVisibleSection(sectionId) {
+        return gradebook.sections[sectionId] != null
       },
       shouldShowSections() {
         return gradebook.showSections()

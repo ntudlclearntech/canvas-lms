@@ -20,11 +20,11 @@ import _ from 'underscore'
 import React from 'react'
 import ReactDOM from 'react-dom'
 import PropTypes from 'prop-types'
-import DueDateRow from '../due_dates/DueDateRow'
-import DueDateAddRowButton from '../due_dates/DueDateAddRowButton'
-import OverrideStudentStore from '../due_dates/OverrideStudentStore'
-import StudentGroupStore from '../due_dates/StudentGroupStore'
-import TokenActions from '../due_dates/TokenActions'
+import DueDateRow from './DueDateRow'
+import DueDateAddRowButton from './DueDateAddRowButton'
+import OverrideStudentStore from './OverrideStudentStore'
+import StudentGroupStore from './StudentGroupStore'
+import TokenActions from './TokenActions'
 import Override from 'compiled/models/AssignmentOverride'
 import AssignmentOverrideHelper from '../gradebook/AssignmentOverrideHelper'
 import I18n from 'i18n!due_datesDueDates'
@@ -139,14 +139,14 @@ export default class DueDates extends React.Component {
 
   formattedSectionHash = unformattedSections => {
     const formattedSections = _.map(unformattedSections, this.formatSection)
-    return _.indexBy(formattedSections, 'id')
+    return _.keyBy(formattedSections, 'id')
   }
 
   formatSection = section => _.extend(section.attributes, {course_section_id: section.id})
 
   formattedGroupHash = unformattedGroups => {
     const formattedGroups = _.map(unformattedGroups, this.formatGroup)
-    return _.indexBy(formattedGroups, 'id')
+    return _.keyBy(formattedGroups, 'id')
   }
 
   formatGroup = group => _.extend(group, {group_id: group.id})
@@ -186,7 +186,7 @@ export default class DueDates extends React.Component {
     const setId = this.state.selectedGroupSetId
     return _.chain(allGroups)
       .filter((value, key) => value.group_category_id === setId)
-      .indexBy('id')
+      .keyBy('id')
       .value()
   }
 
@@ -379,7 +379,7 @@ export default class DueDates extends React.Component {
       object: this.state.noops,
       keysToOmit: this.chosenNoops()
     })
-    if (this.props.hasGradingPeriods && !_.contains(ENV.current_user_roles, 'admin')) {
+    if (this.props.hasGradingPeriods && !_.includes(ENV.current_user_roles, 'admin')) {
       ;({
         validStudents,
         validGroups,
@@ -456,7 +456,7 @@ export default class DueDates extends React.Component {
       .value()
 
   disableInputs = row => {
-    const rowIsNewOrUserIsAdmin = !row.persisted || _.contains(ENV.current_user_roles, 'admin')
+    const rowIsNewOrUserIsAdmin = !row.persisted || _.includes(ENV.current_user_roles, 'admin')
     if (!this.props.hasGradingPeriods || rowIsNewOrUserIsAdmin) {
       return false
     }

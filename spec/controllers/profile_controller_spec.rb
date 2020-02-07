@@ -73,6 +73,9 @@ describe ProfileController do
   end
 
   describe "update" do
+    before :each do
+      AccountPronoun.create_defaults
+    end
     it "should allow changing the default e-mail address and nothing else" do
       user_session(@user, @pseudonym)
       expect(@cc.position).to eq 1
@@ -82,6 +85,26 @@ describe ProfileController do
       expect(response).to be_successful
       expect(@cc2.reload.position).to eq 1
       expect(@cc.reload.position).to eq 2
+    end
+
+    it "should allow changing pronoun" do
+      user_session(@user, @pseudonym)
+      expect(@user.account_pronoun).to eq nil
+      put 'update', params: {:user => {:account_pronoun_id => AccountPronoun.first.id}}, format: 'json'
+      expect(response).to be_successful
+      @user.reload
+      expect(@user.account_pronoun).to eq AccountPronoun.first
+    end
+
+    it "should allow unsetting pronoun" do
+      user_session(@user, @pseudonym)
+      @user.account_pronoun = AccountPronoun.first
+      @user.save!
+      expect(@user.account_pronoun).to eq AccountPronoun.first
+      put 'update', params: {:user => {:account_pronoun_id => ''}}, format: 'json'
+      expect(response).to be_successful
+      @user.reload
+      expect(@user.account_pronoun).to eq nil
     end
 
     it "should clear email cache" do
@@ -214,6 +237,46 @@ describe ProfileController do
         %w(http://example.com Example.com),
         %w(http://foo.com Foo)
       ]
+    end
+  end
+
+  describe "content_shares" do
+    before :once do
+      teacher_in_course(:active_all => true)
+      student_in_course(:active_all => true)
+    end
+
+    describe "direct_share flag is enabled" do
+      before :once do
+        @teacher.account.enable_feature!(:direct_share)
+      end
+
+      it "should show if user has any non-student enrollments" do
+        allow(Canvas::DynamicSettings).to receive(:find).and_return({'base_url' => 'the_ccv_url'})
+        user_session(@teacher)
+        get 'content_shares', params: {user_id: @teacher.id}
+        expect(response).to render_template('content_shares')
+        expect(assigns.dig(:js_env, :COMMON_CARTRIDGE_VIEWER_URL)).to eq('the_ccv_url')
+      end
+
+      it "should 404 if user has only student enrollments" do
+        user_session(@student)
+        get 'content_shares', params: {user_id: @student.id}
+        expect(response).to be_not_found
+      end
+    end
+
+    describe "direct_share flag is disabled" do
+      before :once do
+        @user.account.disable_feature!(:direct_share)
+      end
+
+      it "should 404 even if user has non-student enrollments" do
+        teacher_in_course(:active_all => true)
+        user_session(@teacher)
+        get 'content_shares', params: {user_id: @teacher.id}
+        expect(response).to be_not_found
+      end
     end
   end
 end

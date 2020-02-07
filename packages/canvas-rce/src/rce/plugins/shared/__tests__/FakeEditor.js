@@ -22,6 +22,8 @@ export default class FakeEditor {
 
     this._selectedNode = null
 
+    this._collapsed = false
+
     this.selection = {
       getNode: () => this._selectedNode,
 
@@ -34,6 +36,20 @@ export default class FakeEditor {
         const $temp = document.createElement('div')
         $temp.innerHTML = contentString
         this._selectedNode = this.$container.appendChild($temp.firstChild)
+      },
+
+      collapse: () => (this._collapsed = true),
+      isCollapsed: () => this._collapsed
+    }
+
+    this.dom = {
+      getParent: (el, selector) => {
+        const parent = el && el.parentElement
+        const grandparent = parent && parent.parentElement
+        if (grandparent && grandparent.querySelector(selector) === parent) {
+          return parent
+        }
+        return null
       }
     }
   }
@@ -66,4 +82,6 @@ export default class FakeEditor {
   focus() {
     this._$container.focus()
   }
+
+  fire(_eventName, _args) {}
 }

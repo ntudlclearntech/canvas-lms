@@ -19,6 +19,10 @@
 import INST from 'INST'
 import I18n from 'i18n!assignment'
 import $ from 'jquery'
+import React from 'react'
+import ReactDOM from 'react-dom'
+import axios from 'axios'
+import qs from 'qs'
 import Assignment from 'compiled/models/Assignment'
 import PublishButtonView from 'compiled/views/PublishButtonView'
 import SpeedgraderLinkView from 'compiled/views/assignments/SpeedgraderLinkView'
@@ -29,15 +33,63 @@ import 'compiled/jquery/ModuleSequenceFooter'
 import 'jquery.instructure_forms'
 import LockManager from '../blueprint_courses/apps/LockManager'
 import AssignmentExternalTools from 'jsx/assignments/AssignmentExternalTools'
+import StudentGroupFilter from '../shared/StudentGroupFilter'
+import SpeedGraderLink from '../shared/SpeedGraderLink'
 
 const lockManager = new LockManager()
-lockManager.init({ itemType: 'assignment', page: 'show' })
+lockManager.init({itemType: 'assignment', page: 'show'})
 
-$(() =>
-  $('#content').on('click', '#mark-as-done-checkbox', function () {
-    return MarkAsDone.toggle(this)
-  })
-)
+function onStudentGroupSelected(selectedStudentGroupId) {
+  if (selectedStudentGroupId !== '0') {
+    axios.put(
+      `/api/v1/courses/${ENV.COURSE_ID}/gradebook_settings`,
+      qs.stringify({
+        gradebook_settings: {
+          filter_rows_by: {
+            student_group_id: selectedStudentGroupId
+          }
+        }
+      })
+    )
+
+    ENV.selected_student_group_id = selectedStudentGroupId
+    renderStudentGroupFilter()
+    renderSpeedGraderLink()
+  }
+}
+
+function renderSpeedGraderLink() {
+  const disabled =
+    ENV.SETTINGS.filter_speed_grader_by_student_group && !ENV.selected_student_group_id
+  const $mountPoint = document.getElementById('speed_grader_link_mount_point')
+
+  if ($mountPoint) {
+    ReactDOM.render(
+      <SpeedGraderLink
+        disabled={disabled}
+        href={ENV.speed_grader_url}
+        disabledTip={I18n.t('Must select a student group first')}
+      />,
+      $mountPoint
+    )
+  }
+}
+
+function renderStudentGroupFilter() {
+  const $mountPoint = document.getElementById('student_group_filter_mount_point')
+
+  if ($mountPoint) {
+    ReactDOM.render(
+      <StudentGroupFilter
+        categories={ENV.group_categories}
+        label={I18n.t('Select Group to Grade')}
+        onChange={onStudentGroupSelected}
+        value={ENV.selected_student_group_id}
+      />,
+      $mountPoint
+    )
+  }
+}
 
 $(() => {
   const $el = $('#assignment_publish_button')
@@ -49,8 +101,7 @@ $(() => {
     })
     model.doNotParse()
 
-    new SpeedgraderLinkView({model, el: '#assignment-speedgrader-link'})
-        .render()
+    new SpeedgraderLinkView({model, el: '#assignment-speedgrader-link'}).render()
     const pbv = new PublishButtonView({model, el: $el})
     pbv.render()
 
@@ -59,7 +110,7 @@ $(() => {
     pbv.on('unpublish', () => $('#moderated_grading_button').hide())
   }
 
-    // Add module sequence footer
+  // Add module sequence footer
   $('#sequence_footer').moduleSequenceFooter({
     courseID: ENV.COURSE_ID,
     assetType: 'Assignment',
@@ -70,20 +121,36 @@ $(() => {
   return vddTooltip()
 })
 
-  // -- This is all for the _grade_assignment sidebar partial
+$(() =>
+  $('#content').on('click', '#mark-as-done-checkbox', function() {
+    return MarkAsDone.toggle(this)
+  })
+)
+
+// -- This is all for the _grade_assignment sidebar partial
 $(() => {
-  $('.upload_submissions_link').click((event) => {
+  if (ENV.speed_grader_url) {
+    if (ENV.SETTINGS.filter_speed_grader_by_student_group) {
+      renderStudentGroupFilter()
+    }
+
+    renderSpeedGraderLink()
+  }
+})
+
+$(() => {
+  $('.upload_submissions_link').click(event => {
     event.preventDefault()
     $('#re_upload_submissions_form').slideToggle()
   })
 
-  $('.download_submissions_link').click(function (event) {
+  $('.download_submissions_link').click(function(event) {
     event.preventDefault()
     INST.downloadSubmissions($(this).attr('href'))
     $('.upload_submissions_link').slideDown()
   })
 
-  $('#re_upload_submissions_form').submit(function (event) {
+  $('#re_upload_submissions_form').submit(function(event) {
     const data = $(this).getFormData()
     if (!data.submissions_zip) {
       event.preventDefault()
@@ -92,7 +159,8 @@ $(() => {
       event.preventDefault()
       event.stopPropagation()
       $(this).formErrors({
-        submissions_zip: I18n.t('Please upload files as a .zip')})
+        submissions_zip: I18n.t('Please upload files as a .zip')
+      })
     }
   })
 
@@ -112,8 +180,9 @@ $(() => {
   if (document.getElementById('assignment_external_tools')) {
     AssignmentExternalTools.attach(
       document.getElementById('assignment_external_tools'),
-      "assignment_view",
+      'assignment_view',
       parseInt(ENV.COURSE_ID, 10),
-      parseInt(ENV.ASSIGNMENT_ID, 10));
+      parseInt(ENV.ASSIGNMENT_ID, 10)
+    )
   }
 })

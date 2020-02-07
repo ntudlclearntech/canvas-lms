@@ -16,19 +16,18 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import _ from 'underscore'
 import $ from 'jquery'
 import I18n from 'i18n!new_nav'
 import React from 'react'
-import ReactDOM from 'react-dom'
-import {ScreenReaderContent, PresentationContent} from '@instructure/ui-a11y'
-import Tray from '@instructure/ui-overlays/lib/components/Tray'
-import CloseButton from '@instructure/ui-buttons/lib/components/CloseButton'
+import {func} from 'prop-types'
+import {Tray} from '@instructure/ui-overlays'
+import {CloseButton} from '@instructure/ui-buttons'
 import CoursesTray from './trays/CoursesTray'
 import GroupsTray from './trays/GroupsTray'
 import AccountsTray from './trays/AccountsTray'
 import ProfileTray from './trays/ProfileTray'
 import HelpTray from './trays/HelpTray'
+import UnreadCounts from './UnreadCounts'
 import preventDefault from 'compiled/fn/preventDefault'
 import parseLinkHeader from 'compiled/fn/parseLinkHeader'
 
@@ -36,12 +35,11 @@ const EXTERNAL_TOOLS_REGEX = /^\/accounts\/[^\/]*\/(external_tools)/
 const ACTIVE_ROUTE_REGEX = /^\/(courses|groups|accounts|grades|calendar|conversations|profile)/
 const ACTIVE_CLASS = 'ic-app-header__menu-list-item--active'
 
-const UNREAD_COUNT_POLL_INTERVAL = 60000 // 60 seconds
-
 const TYPE_URL_MAP = {
   courses: '/api/v1/users/self/favorites/courses?include[]=term&exclude[]=enrollments',
   groups: '/api/v1/users/self/groups?include[]=can_access',
   accounts: '/api/v1/accounts',
+  profile: '/api/v1/users/self/tabs',
   help: '/help_links'
 }
 
@@ -52,26 +50,43 @@ const TYPE_FILTER_MAP = {
 const RESOURCE_COUNT = 10
 
 export default class Navigation extends React.Component {
-  state = {
-    groups: [],
-    accounts: [],
-    courses: [],
-    help: [],
-    unread_count: 0,
-    unread_count_attempts: 0,
-    isTrayOpen: false,
-    type: null,
-    coursesLoading: false,
-    coursesAreLoaded: false,
-    accountsLoading: false,
-    accountsAreLoaded: false,
-    groupsLoading: false,
-    groupsAreLoaded: false,
-    helpLoading: false,
-    helpAreLoaded: false
+  static propTypes = {
+    unreadComponent: func, // for testing only
+    onDataReceived: func
   }
 
-  componentWillMount() {
+  static defaultProps = {
+    unreadComponent: UnreadCounts
+  }
+
+  constructor(props) {
+    super(props)
+    this.closeTray = this.closeTray.bind(this)
+    this.onInboxUnreadUpdate = this.onInboxUnreadUpdate.bind(this)
+    this.state = {
+      groups: [],
+      accounts: [],
+      courses: [],
+      help: [],
+      profile: [],
+      unread_count: 0,
+      isTrayOpen: false,
+      type: null,
+      coursesLoading: false,
+      coursesAreLoaded: false,
+      accountsLoading: false,
+      accountsAreLoaded: false,
+      groupsLoading: false,
+      groupsAreLoaded: false,
+      helpLoading: false,
+      helpAreLoaded: false,
+      profileAreLoading: false,
+      profileAreLoaded: false
+    }
+    this.unreadInboxCountElement = null
+  }
+
+  UNSAFE_componentWillMount() {
     /**
      * Mount up stuff to our existing DOM elements, yes, it's not very
      * React-y, but it is workable and maintainable, plus it doesn't require
@@ -82,16 +97,16 @@ export default class Navigation extends React.Component {
     // / Hover Events
     // ////////////////////////////////
 
-    _.forEach(TYPE_URL_MAP, (url, type) => {
+    Object.keys(TYPE_URL_MAP).forEach(type => {
       $(`#global_nav_${type}_link`).one('mouseover', () => {
-        this.getResource(url, type)
+        this.getResource(TYPE_URL_MAP[type], type)
       })
     })
 
     // ////////////////////////////////
     // / Click Events
     // ////////////////////////////////
-    ;['courses', 'groups', 'accounts', 'profile', 'help'].forEach(type => {
+    Object.keys(TYPE_URL_MAP).forEach(type => {
       $(`#global_nav_${type}_link`).on(
         'click',
         preventDefault(this.handleMenuClick.bind(this, type))
@@ -111,24 +126,15 @@ export default class Navigation extends React.Component {
     }
   }
 
-  componentDidMount() {
-    if (
-      !this.state.unread_count_attempts &&
-      window.ENV.current_user_id &&
-      !window.ENV.current_user_disabled_inbox &&
-      this.unreadCountElement().length &&
-      !(window.ENV.current_user && window.ENV.current_user.fake_student)
-    ) {
-      this.pollUnreadCount()
-    }
-  }
-
-  componentWillUpdate(newProps, newState) {
+  UNSAFE_componentWillUpdate(_newProps, newState) {
     if (newState.activeItem !== this.state.activeItem) {
-      $(`.${ACTIVE_CLASS}`).removeClass(ACTIVE_CLASS)
+      $(`.${ACTIVE_CLASS}`)
+        .removeClass(ACTIVE_CLASS)
+        .removeAttr('aria-current')
       $(`#global_nav_${newState.activeItem}_link`)
         .closest('li')
         .addClass(ACTIVE_CLASS)
+        .attr('aria-current', 'page')
     }
   }
 
@@ -138,6 +144,12 @@ export default class Navigation extends React.Component {
   getResource(url, type) {
     this.setState({[`${type}Loading`]: true})
     this.loadResourcePage(url, type)
+  }
+
+  ensureLoaded(type) {
+    if (TYPE_URL_MAP[type] && !this.state[`${type}AreLoaded`] && !this.state[`${type}Loading`]) {
+      this.getResource(TYPE_URL_MAP[type], type)
+    }
   }
 
   loadResourcePage(url, type, previousData = []) {
@@ -154,11 +166,14 @@ export default class Navigation extends React.Component {
       }
 
       // finished
-      this.setState({
-        [type]: newData,
-        [`${type}Loading`]: false,
-        [`${type}AreLoaded`]: true
-      })
+      this.setState(
+        {
+          [type]: newData,
+          [`${type}Loading`]: false,
+          [`${type}AreLoaded`]: true
+        },
+        this.props.onDataReceived
+      )
     })
   }
 
@@ -168,49 +183,6 @@ export default class Navigation extends React.Component {
       return data.filter(filterFunc)
     }
     return data
-  }
-
-  pollUnreadCount() {
-    this.setState({unread_count_attempts: this.state.unread_count_attempts + 1}, function() {
-      if (this.state.unread_count_attempts <= 5) {
-        $.ajax('/api/v1/conversations/unread_count')
-          .then(data => this.updateUnreadCount(data.unread_count))
-          .then(null, console.log.bind(console, 'something went wrong updating unread count'))
-          .always(() =>
-            setTimeout(
-              () => this.pollUnreadCount(),
-              this.state.unread_count_attempts * UNREAD_COUNT_POLL_INTERVAL
-            )
-          )
-      }
-    })
-  }
-
-  unreadCountElement() {
-    return (
-      this.$unreadCount ||
-      (this.$unreadCount = $('#global_nav_conversations_link').find('.menu-item__badge'))
-    )
-  }
-
-  updateUnreadCount(count) {
-    count = parseInt(count, 10)
-    ReactDOM.render(
-      <React.Fragment>
-        <ScreenReaderContent>
-          {I18n.t(
-            {
-              one: '1 unread message',
-              other: '%{count} unread messages'
-            },
-            {count}
-          )}
-        </ScreenReaderContent>
-        <PresentationContent>{count}</PresentationContent>
-      </React.Fragment>,
-      this.unreadCountElement()[0]
-    )
-    this.unreadCountElement().toggle(count > 0)
   }
 
   determineActiveLink() {
@@ -226,9 +198,7 @@ export default class Navigation extends React.Component {
 
   handleMenuClick(type) {
     // Make sure data is loaded up
-    if (TYPE_URL_MAP[type] && !this.state[`${type}AreLoaded`] && !this.state[`${type}Loading`]) {
-      this.getResource(TYPE_URL_MAP[type], type)
-    }
+    this.ensureLoaded(type)
 
     if (this.state.isTrayOpen && this.state.activeItem === type) {
       this.closeTray()
@@ -243,7 +213,7 @@ export default class Navigation extends React.Component {
     this.setState({type, isTrayOpen: true, activeItem: type})
   }
 
-  closeTray = () => {
+  closeTray() {
     this.determineActiveLink()
     this.setState({isTrayOpen: false}, () => {
       setTimeout(() => {
@@ -282,14 +252,14 @@ export default class Navigation extends React.Component {
         return (
           <ProfileTray
             userDisplayName={window.ENV.current_user.display_name}
+            userPronoun={window.ENV.current_user.pronoun}
             userAvatarURL={
               window.ENV.current_user.avatar_is_fallback
                 ? null
                 : window.ENV.current_user.avatar_image_url
             }
-            profileEnabled={window.ENV.SETTINGS.enable_profiles}
-            eportfoliosEnabled={window.ENV.SETTINGS.eportfolios_enabled}
-            closeTray={this.closeTray}
+            loaded={this.state.profileAreLoaded}
+            tabs={this.state.profile}
           />
         )
       case 'help':
@@ -323,22 +293,45 @@ export default class Navigation extends React.Component {
     }
   }
 
+  // Also have to attend to the unread dot on the mobile view inbox
+  onInboxUnreadUpdate(unreadCount) {
+    const el = document.getElementById('mobileHeaderInboxUnreadBadge')
+    if (el) el.style.display = unreadCount > 0 ? '' : 'none'
+    if (typeof this.props.onDataReceived === 'function') this.props.onDataReceived()
+  }
+
   render() {
+    const UnreadComponent = this.props.unreadComponent
+
+    if (this.unreadInboxCountElement === null)
+      this.unreadInboxCountElement = document.querySelector(
+        '#global_nav_conversations_link .menu-item__badge'
+      )
+
     return (
-      <Tray
-        label={this.getTrayLabel()}
-        size="small"
-        open={this.state.isTrayOpen}
-        onDismiss={this.closeTray}
-        shouldCloseOnDocumentClick
-        mountNode={document.getElementById('nav-tray-portal')}
-        theme={{smallWidth: '28em'}}
-      >
-        <CloseButton placement="end" onClick={this.closeTray}>
-          {I18n.t('Close')}
-        </CloseButton>
-        <div className="tray-with-space-for-global-nav">{this.renderTrayContent()}</div>
-      </Tray>
+      <>
+        <Tray
+          label={this.getTrayLabel()}
+          size="small"
+          open={this.state.isTrayOpen}
+          onDismiss={this.closeTray}
+          shouldCloseOnDocumentClick
+          mountNode={document.getElementById('nav-tray-portal')}
+          theme={{smallWidth: '28em'}}
+        >
+          <CloseButton placement="end" onClick={this.closeTray}>
+            {I18n.t('Close')}
+          </CloseButton>
+          <div className="tray-with-space-for-global-nav">{this.renderTrayContent()}</div>
+        </Tray>
+        {!ENV.current_user_disabled_inbox && (
+          <UnreadComponent
+            targetEl={this.unreadInboxCountElement}
+            dataUrl="/api/v1/conversations/unread_count"
+            onUpdate={this.onInboxUnreadUpdate}
+          />
+        )}
+      </>
     )
   }
 }

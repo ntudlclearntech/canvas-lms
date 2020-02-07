@@ -19,24 +19,22 @@
 import React from 'react'
 import {arrayOf, bool, func, number, oneOf, shape, string} from 'prop-types'
 import I18n from 'i18n!gradezilla'
-import Avatar from '@instructure/ui-elements/lib/components/Avatar'
-import Button from '@instructure/ui-buttons/lib/components/Button'
-import CloseButton from '@instructure/ui-buttons/lib/components/CloseButton'
-import View from '@instructure/ui-layout/lib/components/View'
-import Heading from '@instructure/ui-elements/lib/components/Heading'
-import Link from '@instructure/ui-elements/lib/components/Link'
-import Spinner from '@instructure/ui-elements/lib/components/Spinner'
-import Tray from '@instructure/ui-overlays/lib/components/Tray'
-import Text from '@instructure/ui-elements/lib/components/Text'
-import IconSpeedGraderLine from '@instructure/ui-icons/lib/Line/IconSpeedGrader'
+import {Alert} from '@instructure/ui-alerts'
+import {Avatar, Heading, Spinner, Text} from '@instructure/ui-elements'
+import {Button, CloseButton} from '@instructure/ui-buttons'
+import {View} from '@instructure/ui-layout'
+import {Tray} from '@instructure/ui-overlays'
+import {IconSpeedGraderLine} from '@instructure/ui-icons'
 import Carousel from './Carousel'
 import GradeInput from './GradeInput'
 import LatePolicyGrade from './LatePolicyGrade'
 import CommentPropTypes from '../propTypes/CommentPropTypes'
+import SimilarityScore from './SimilarityScore'
 import SubmissionCommentListItem from './SubmissionCommentListItem'
 import SubmissionCommentCreateForm from './SubmissionCommentCreateForm'
 import SubmissionStatus from './SubmissionStatus'
 import SubmissionTrayRadioInputGroup from './SubmissionTrayRadioInputGroup'
+import {extractSimilarityInfo} from '../../../grading/helpers/SubmissionHelper'
 
 function renderAvatar(name, avatarUrl) {
   return (
@@ -95,6 +93,7 @@ export default class SubmissionTray extends React.Component {
       valid: bool.isRequired
     }),
     postPoliciesEnabled: bool.isRequired,
+    requireStudentGroupForSpeedGrader: bool.isRequired,
     student: shape({
       id: string.isRequired,
       avatarUrl: string,
@@ -141,7 +140,8 @@ export default class SubmissionTray extends React.Component {
     isInClosedGradingPeriod: bool.isRequired,
     isInNoGradingPeriod: bool.isRequired,
     isNotCountedForScore: bool.isRequired,
-    onAnonymousSpeedGraderClick: func.isRequired
+    onAnonymousSpeedGraderClick: func.isRequired,
+    showSimilarityScore: bool.isRequired
   }
 
   cancelCommenting = () => {
@@ -201,26 +201,72 @@ export default class SubmissionTray extends React.Component {
 
     return (
       <div style={{textAlign: 'center'}}>
-        <Spinner title={I18n.t('Loading comments')} size="large" />
+        <Spinner renderTitle={I18n.t('Loading comments')} size="large" />
       </div>
     )
   }
 
   renderSpeedGraderLink(speedGraderProps) {
-    const buttonProps = {variant: 'link', href: speedGraderProps.speedGraderUrl}
+    const buttonProps = {
+      disabled: speedGraderProps.requireStudentGroup,
+      href: speedGraderProps.speedGraderUrl,
+      variant: 'link'
+    }
     if (speedGraderProps.anonymizeStudents) {
       buttonProps.onClick = e => {
         e.preventDefault()
         this.props.onAnonymousSpeedGraderClick(speedGraderProps.speedGraderUrl)
       }
     }
+
     return (
-      <View as="div" textAlign="center">
-        <Button {...buttonProps}>
-          <IconSpeedGraderLine />
-          {I18n.t('SpeedGrader')}
-        </Button>
+      <View as="div">
+        {speedGraderProps.requireStudentGroup && (
+          <Alert variant="info">
+            <Text as="p" weight="bold">
+              {I18n.t('Select Student Group')}
+            </Text>
+
+            <Text as="p">
+              {I18n.t(`
+                Due to the size of your course you must select a student group before launching
+                SpeedGrader.
+              `)}
+            </Text>
+          </Alert>
+        )}
+        <View as="div" textAlign="center">
+          <Button {...buttonProps}>
+            <IconSpeedGraderLine />
+            {I18n.t('SpeedGrader')}
+          </Button>
+        </View>
       </View>
+    )
+  }
+
+  renderSimilarityScore() {
+    const {assignment, submission} = this.props
+    const similarityInfo = extractSimilarityInfo(submission)
+    if (assignment.anonymizeStudents || similarityInfo == null) {
+      return
+    }
+
+    const {
+      id: entryId,
+      data: {similarity_score, status}
+    } = similarityInfo.entries[0]
+    const reportType = similarityInfo.type
+    const assignmentPath = `/courses/${assignment.courseId}/assignments/${assignment.id}`
+    const reportUrl = `${assignmentPath}/submissions/${submission.userId}/${reportType}/${entryId}`
+
+    return (
+      <SimilarityScore
+        hasAdditionalData={similarityInfo.entries.length > 1}
+        reportUrl={reportUrl}
+        similarityScore={similarity_score}
+        status={status}
+      />
     )
   }
 
@@ -258,6 +304,7 @@ export default class SubmissionTray extends React.Component {
     if (this.props.speedGraderEnabled) {
       speedGraderProps = {
         anonymizeStudents: this.props.assignment.anonymizeStudents,
+        requireStudentGroup: this.props.requireStudentGroupForSpeedGrader,
         speedGraderUrl
       }
     }
@@ -290,7 +337,13 @@ export default class SubmissionTray extends React.Component {
                 onRightArrowClick={this.props.selectNextStudent}
                 rightArrowDescription={I18n.t('Next student')}
               >
-                <Link href={this.props.student.gradesUrl}>{name}</Link>
+                <Button
+                  href={this.props.student.gradesUrl}
+                  variant="link"
+                  theme={{mediumPadding: '0', mediumHeight: 'normal'}}
+                >
+                  {name}
+                </Button>
               </Carousel>
 
               <View as="div" margin="small 0" className="hr" />
@@ -305,7 +358,13 @@ export default class SubmissionTray extends React.Component {
                 onRightArrowClick={this.props.selectNextAssignment}
                 rightArrowDescription={I18n.t('Next assignment')}
               >
-                <Link href={this.props.assignment.htmlUrl}>{this.props.assignment.name}</Link>
+                <Button
+                  href={this.props.assignment.htmlUrl}
+                  variant="link"
+                  theme={{mediumPadding: '0', mediumHeight: 'normal'}}
+                >
+                  {this.props.assignment.name}
+                </Button>
               </Carousel>
 
               {this.props.speedGraderEnabled && this.renderSpeedGraderLink(speedGraderProps)}
@@ -314,6 +373,8 @@ export default class SubmissionTray extends React.Component {
             </View>
 
             <View as="div" style={{overflowY: 'auto', flex: '1 1 auto'}}>
+              {this.props.showSimilarityScore && this.renderSimilarityScore()}
+
               <SubmissionStatus
                 assignment={this.props.assignment}
                 isConcluded={this.props.student.isConcluded}

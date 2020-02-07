@@ -16,6 +16,8 @@
 // with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import $ from 'jquery'
+import React from 'react'
+import ReactDOM from 'react-dom'
 import I18n from 'i18n!pages'
 import WikiPage from '../../models/WikiPage'
 import PaginatedCollectionView from '../PaginatedCollectionView'
@@ -24,6 +26,7 @@ import itemView from './WikiPageIndexItemView'
 import template from 'jst/wiki/WikiPageIndex'
 import StickyHeaderMixin from '../StickyHeaderMixin'
 import splitAssetString from '../../str/splitAssetString'
+import ContentTypeExternalToolTray from './ContentTypeExternalToolTray'
 import 'jquery.disableWhileLoading'
 
 export default class WikiPageIndexView extends PaginatedCollectionView {
@@ -33,7 +36,8 @@ export default class WikiPageIndexView extends PaginatedCollectionView {
       events: {
         'click .new_page': 'createNewPage',
         'keyclick .new_page': 'createNewPage',
-        'click .header-row a[data-sort-field]': 'sort'
+        'click .header-row a[data-sort-field]': 'sort',
+        'click .menu_tool_link': 'openExternalTool'
       },
 
       els: {
@@ -67,6 +71,10 @@ export default class WikiPageIndexView extends PaginatedCollectionView {
     if (this.contextAssetString) {
       ;[this.contextName, this.contextId] = Array.from(splitAssetString(this.contextAssetString))
     }
+
+    this.wikiIndexPlacements = options != null ? options.wikiIndexPlacements : []
+    if (!this.wikiIndexPlacements) this.wikiIndexPlacements = []
+
     this.itemViewOptions.contextName = this.contextName
 
     this.collection.on('fetch', () => {
@@ -115,7 +123,7 @@ export default class WikiPageIndexView extends PaginatedCollectionView {
     if (!this.$sortHeaders) return
 
     const {sortOrders} = this.collection
-    for (let sortHeader of Array.from(this.$sortHeaders)) {
+    for (const sortHeader of Array.from(this.$sortHeaders)) {
       const $sortHeader = $(sortHeader)
       const $i = $sortHeader.find('i')
 
@@ -182,6 +190,24 @@ export default class WikiPageIndexView extends PaginatedCollectionView {
     })
   }
 
+  closeExternalTool() {
+    const mountPoint = $('#externalToolMountPoint')[0]
+    ReactDOM.unmountComponentAtNode(mountPoint)
+  }
+
+  openExternalTool(ev) {
+    if (ev != null) {
+      ev.preventDefault()
+    }
+
+    const tool = this.wikiIndexPlacements.find(t => t.id === ev.target.dataset.toolId)
+    const mountPoint = $('#externalToolMountPoint')[0]
+    ReactDOM.render(
+      <ContentTypeExternalToolTray tool={tool} onDismiss={this.closeExternalTool} />,
+      mountPoint
+    )
+  }
+
   collectionHasTodoDate() {
     if (!ENV.STUDENT_PLANNER_ENABLED) {
       return false
@@ -200,6 +226,8 @@ export default class WikiPageIndexView extends PaginatedCollectionView {
     json.fetched = !!this.fetched
     json.fetchedLast = !!this.fetchedLast
     json.collectionHasTodoDate = this.collectionHasTodoDate()
+    json.hasWikiIndexPlacements = this.wikiIndexPlacements.length > 0
+    json.wikiIndexPlacements = this.wikiIndexPlacements
     return json
   }
 }

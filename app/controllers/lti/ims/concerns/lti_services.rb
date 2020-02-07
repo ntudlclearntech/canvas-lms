@@ -19,6 +19,9 @@ module Lti::Ims::Concerns
   module LtiServices
     extend ActiveSupport::Concern
 
+    UNIVERSAL_GRANT_HOST = Canvas::Security.config['lti_grant_host'] ||
+      'canvas.instructure.com'.freeze
+
     class AccessToken
       def initialize(raw_jwt_str)
         @raw_jwt_str = raw_jwt_str
@@ -53,7 +56,8 @@ module Lti::Ims::Concerns
           jwt: decoded_jwt,
           expected_aud: expected_audience,
           require_iss: true,
-          skip_jti_check: true
+          skip_jti_check: true,
+          max_iat_age: Setting.get('oauth2_jwt_iat_ago_in_seconds', 60.minutes.to_s).to_i.seconds
         )
 
         # In this case we know the error message can just be safely shunted into the API response (in other cases
@@ -101,14 +105,8 @@ module Lti::Ims::Concerns
       before_action(
         :verify_access_token,
         :verify_developer_key,
-        :verify_1_3_enabled,
         :verify_access_scope
       )
-
-      def verify_1_3_enabled
-        return if developer_key.owner_account.feature_enabled?(:lti_1_3)
-        render_error("LTI 1.3/Advantage features not enabled", :unauthorized)
-      end
 
       def verify_access_token
         if access_token.blank?
@@ -141,7 +139,9 @@ module Lti::Ims::Concerns
       end
 
       def expected_access_token_audience
-        Rails.application.routes.url_helpers.oauth2_token_url(host: host, protocol: protocol)
+        [host, UNIVERSAL_GRANT_HOST].map do |h|
+          Rails.application.routes.url_helpers.oauth2_token_url(host: h, protocol: protocol)
+        end
       end
 
       delegate :host, to: :request

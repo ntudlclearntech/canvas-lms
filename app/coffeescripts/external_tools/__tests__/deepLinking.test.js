@@ -22,9 +22,9 @@ import $ from 'jquery'
 describe('handleContentItem', () => {
   const result = {
     type: 'file',
-    text: "text",
-    title: "title",
-    icon: "https://www.test.com/image.png"
+    text: 'text',
+    title: 'title',
+    icon: 'https://www.test.com/image.png'
   }
   const contentView = {
     trigger: jest.fn()
@@ -39,14 +39,16 @@ describe('handleContentItem', () => {
 
   it('processes the content item', () => {
     expect(contentView.trigger).toHaveBeenCalledWith('ready', {
-      contentItems: [{
-        "@type": "FileItem",
-        text: result.text,
-        title: result.title,
-        thumbnail: {
-          "@id": result.icon
+      contentItems: [
+        {
+          '@type': 'FileItem',
+          text: result.text,
+          title: result.title,
+          thumbnail: {
+            '@id': result.icon
+          }
         }
-      }]
+      ]
     })
   })
 
@@ -63,24 +65,21 @@ describe('handleDeepLinkingError', () => {
     }
   }
   const reloadTool = jest.fn()
-  const flashError = $.flashError
 
   beforeEach(() => {
     reloadTool.mockReset()
-    $.flashError = jest.fn()
-
+    jest.spyOn($, 'flashError').mockImplementation()
+    jest.spyOn(console, 'error').mockImplementation()
     handleDeepLinkingError(error, contentView, reloadTool)
   })
 
-  afterEach(() => {
-    $.flashError = flashError
-  })
-
   it('displays an error to the user', () => {
+    expect(console.error).toHaveBeenCalled()
     expect($.flashError).toHaveBeenCalledWith('Error retrieving content')
   })
 
   it('reloads the tool', () => {
+    expect(console.error).toHaveBeenCalled()
     expect(reloadTool).toHaveBeenCalledWith(contentView.model.id)
   })
 })

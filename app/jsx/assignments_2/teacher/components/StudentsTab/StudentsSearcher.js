@@ -36,7 +36,7 @@ import {TeacherAssignmentShape} from '../../assignmentData'
 import StudentSearchQuery from './StudentSearchQuery'
 import StudentsTable from './StudentsTable'
 import Filters from './Filters'
-import Flex, {FlexItem} from '@instructure/ui-layout/lib/components/Flex'
+import {Flex} from '@instructure/ui-layout'
 
 const STUDENT_SEARCH_DELAY = 750
 const MIN_SEARCH_CHARS = 3
@@ -140,8 +140,9 @@ export default class StudentsSearcher extends React.Component {
   renderMessageStudentsWhoButton() {
     return (
       <Button
-        key="messageStudentsWho"
+        disabled={this.props.assignment.anonymizeStudents}
         icon={IconEmailLine}
+        key="messageStudentsWho"
         onClick={this.props.onMessageStudentsClick}
       >
         {I18n.t('Message Students')}
@@ -194,14 +195,16 @@ export default class StudentsSearcher extends React.Component {
     }
 
     return (
-      <React.Fragment>
+      <>
         <Flex as="div" margin="0 0 medium 0" wrapItems>
-          <FlexItem grow size="60%" margin="small 0 0 0">
+          <Flex.Item grow size="60%" margin="small 0 0 0">
             <TextInput
-              label={<ScreenReaderContent>{I18n.t('Search by student name')}</ScreenReaderContent>}
+              renderLabel={
+                <ScreenReaderContent>{I18n.t('Search by student name')}</ScreenReaderContent>
+              }
               placeholder={I18n.t('Search')}
               type="search"
-              inline
+              display="inline-block"
               width="70%"
               messages={searchMessages}
               onChange={this.handleNameFilterChange}
@@ -223,10 +226,10 @@ export default class StudentsSearcher extends React.Component {
                 numAttempts={this.state.numAttempts}
               />
             )}
-          </FlexItem>
-          <FlexItem margin="small 0 0 0" align="start">
+          </Flex.Item>
+          <Flex.Item margin="small 0 0 0" align="start">
             {this.renderActions()}
-          </FlexItem>
+          </Flex.Item>
         </Flex>
 
         <StudentSearchQuery variables={searchVariables}>
@@ -246,7 +249,7 @@ export default class StudentsSearcher extends React.Component {
             )
           }}
         </StudentSearchQuery>
-      </React.Fragment>
+      </>
     )
   }
 }

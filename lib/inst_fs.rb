@@ -66,11 +66,23 @@ module InstFS
       setting("app-host")
     end
 
-    def jwt_secret
+    def jwt_secrets
       secret = setting("secret")
-      if secret
-        Base64.decode64(secret)
-      end
+      return [] unless secret
+      secret.split(/\s+/).map{ |key| Base64.decode64(key) }
+    end
+
+    def jwt_secret
+      # if there are multiple keys (to allow for validating during key
+      # rotation), the foremost is used for signing
+      jwt_secrets.first
+    end
+
+    def validate_capture_jwt(token)
+      Canvas::Security.decode_jwt(token, jwt_secrets)
+      true
+    rescue
+      false
     end
 
     def upload_preflight_json(context:, root_account:, user:, acting_as:, access_token:, folder:, filename:,
@@ -131,10 +143,35 @@ module InstFS
         json_response = JSON.parse(response.body)
         return json_response["instfs_uuid"] if json_response.key?("instfs_uuid")
 
-        raise InstFS::DirectUploadError, "upload succeeded, but response did not containe an \"instfs_uuid\" key"
+        raise InstFS::DirectUploadError, "upload succeeded, but response did not contain an \"instfs_uuid\" key"
       end
 
       raise InstFS::DirectUploadError, "received code \"#{response.code}\" from service, with message \"#{response.body}\""
+    end
+
+    def duplicate_file(instfs_uuid)
+      token = duplicate_file_jwt(instfs_uuid)
+      url = "#{app_host}/files/#{instfs_uuid}/duplicate?token=#{token}"
+
+      response = CanvasHttp.post(url)
+      if response.class == Net::HTTPCreated
+        json_response = JSON.parse(response.body)
+        return json_response["id"] if json_response.key?("id")
+
+        raise InstFS::DuplicationError, "duplication succeeded, but response did not contain an \"id\" key"
+      end
+      raise InstFS::DuplicationError, "received code \"#{response.code}\" from service, with message \"#{response.body}\""
+    end
+
+    def delete_file(instfs_uuid)
+      token = delete_file_jwt(instfs_uuid)
+      url = "#{app_host}/files/#{instfs_uuid}?token=#{token}"
+
+      response = CanvasHttp.delete(url)
+      unless response.class == Net::HTTPOK
+        raise InstFS::DeletionError, "received code \"#{response.code}\" from service, with message \"#{response.body}\""
+      end
+      true
     end
 
     private
@@ -297,6 +334,22 @@ module InstFS
       }, expires_in)
     end
 
+    def duplicate_file_jwt(instfs_uuid)
+      expires_in = Setting.get('instfs.duplicate_file_jwt.expiration_minutes', '5').to_i.minutes
+      service_jwt({
+        iat: Time.now.utc.to_i,
+        resource: "/files/#{instfs_uuid}/duplicate"
+      }, expires_in)
+    end
+
+    def delete_file_jwt(instfs_uuid)
+      expires_in = Setting.get('instfs.delete_file_jwt.expiration_minutes', '5').to_i.minutes
+      service_jwt({
+        iat: Time.now.utc.to_i,
+        resource: "/files/#{instfs_uuid}"
+      }, expires_in)
+    end
+
     def amend_claims_for_access_token(claims, access_token, root_account)
       return unless access_token
       if whitelisted_access_token?(access_token)
@@ -322,4 +375,6 @@ module InstFS
   end
 
   class DirectUploadError < StandardError; end
+  class DuplicationError < StandardError; end
+  class DeletionError < StandardError; end
 end

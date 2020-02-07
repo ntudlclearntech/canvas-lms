@@ -19,16 +19,18 @@
 module Types
   class TermType < ApplicationObjectType
     implements GraphQL::Types::Relay::Node
+    implements Interfaces::LegacyIDInterface
     graphql_name "Term"
 
     alias term object
 
     global_id_field :id
-    field :_id, ID, "legacy canvas id", method: :id, null: false
 
     field :name, String, null: true
     field :start_at, DateTimeType, null: true
     field :end_at, DateTimeType, null: true
+
+    field :sis_term_id, ID, method: :sis_source_id, null: true
 
     field :courses_connection, CourseType.connection_type, null: true do
       description "courses for this term"

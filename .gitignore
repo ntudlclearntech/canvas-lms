@@ -20,14 +20,15 @@
 /config/saml/*.pem
 /config/environments/*-local.rb
 /config/locales/generated/
-/config/RAILS5_2
+/config/RAILS6_0
 /coverage/
 /coverage-js/
 /db/schema.rb
 /db/*.sqlite*
 /db/*sql
 /exports/
-Gemfile.lock.52
+Gemfile.lock.next
+knapsack_rspec_report.json
 /log/
 mkmf.log
 /node_modules
@@ -61,8 +62,8 @@ docker-compose.local.*
 
 # sub-packages
 /packages/*/node_modules
-/packages/*/lib
 /packages/*/es
+/packages/*/lib
 /packages/*/coverage/
 /packages/canvas-planner/.babel-cache
 
