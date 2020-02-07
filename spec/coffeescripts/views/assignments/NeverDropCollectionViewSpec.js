@@ -23,21 +23,10 @@ import NeverDropCollectionView from 'compiled/views/assignments/NeverDropCollect
 import {useNormalDebounce, useOldDebounce} from 'helpers/util'
 
 class AssignmentStub extends Backbone.Model {
-  constructor(...args) {
-    {
-      // Hack: trick Babel/TypeScript into allowing this before super.
-      if (false) { super(); }
-      let thisFn = (() => { return this; }).toString();
-      let thisName = thisFn.match(/_this\d*/)[0];
-      eval(`${thisName} = this;`);
-    }
-    this.toView = this.toView.bind(this)
-    super(...args)
-  }
-
   name() {
     return this.get('name')
   }
+
   toView() {
     return {
       name: this.get('name'),
@@ -199,7 +188,7 @@ test('when there are no availableValues, the add assignment link is not rendered
   equal($('#fixtures').find('.add_never_drop').length, 0)
 })
 
-test("when there are no takenValues, the add assignment says 'add an assignment'", function() {
+test("when there are no takenValues, the add assignment says 'add an assignment'", () => {
   const text = $('#fixtures')
     .find('.add_never_drop')
     .text()

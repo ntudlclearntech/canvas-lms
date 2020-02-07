@@ -33,11 +33,10 @@ export default class FinalGraderSelectMenu extends React.Component {
 
   constructor(props) {
     super(props)
-    this.handleSelectFinalGrader = this.handleSelectFinalGrader.bind(this)
     this.state = {selectedValue: this.props.finalGraderID || ''}
   }
 
-  handleSelectFinalGrader({target: {value: selectedValue}}) {
+  handleSelectFinalGrader = ({target: {value: selectedValue}}) => {
     this.setState({selectedValue})
   }
 

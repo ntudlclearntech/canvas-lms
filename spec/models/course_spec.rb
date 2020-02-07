@@ -16,8 +16,8 @@
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-require File.expand_path(File.dirname(__FILE__) + '/../sharding_spec_helper.rb')
-require File.expand_path(File.dirname(__FILE__) + '/../lti2_course_spec_helper.rb')
+require 'sharding_spec_helper'
+require 'lti2_course_spec_helper'
 
 require 'csv'
 require 'socket'
@@ -252,6 +252,35 @@ describe Course do
     end
   end
 
+  describe "#filter_speed_grader_by_student_group?" do
+    before :once do
+      @course = Account.default.courses.create!
+      @course.root_account.enable_feature!(:new_gradebook)
+      @course.enable_feature!(:new_gradebook)
+      @course.root_account.enable_feature!(:filter_speed_grader_by_student_group)
+      @course.filter_speed_grader_by_student_group = true
+    end
+
+    it "returns true when new gradebook is enabled and the setting is on" do
+      expect(@course).to be_filter_speed_grader_by_student_group
+    end
+
+    it "returns false when setting is off" do
+      @course.filter_speed_grader_by_student_group = false
+      expect(@course).not_to be_filter_speed_grader_by_student_group
+    end
+
+    it "returns false when new gradebook is disabled" do
+      @course.disable_feature!(:new_gradebook)
+      expect(@course).not_to be_filter_speed_grader_by_student_group
+    end
+
+    it "returns false when the 'Filter SpeedGrader by Student Group' root account setting is off" do
+      @course.root_account.disable_feature!(:filter_speed_grader_by_student_group)
+      expect(@course).not_to be_filter_speed_grader_by_student_group
+    end
+  end
+
   describe "#recompute_student_scores" do
     it "should use all student ids except concluded and deleted if none are passed" do
       @course.save!
@@ -431,6 +460,18 @@ describe Course do
       expect(@course).not_to be_concluded
       expect(@course).to be_soft_concluded('StudentEnrollment')
       expect(@course).to be_concluded('StudentEnrollment')
+    end
+  end
+
+  describe 'allow_student_forum_attachments' do
+    it 'should default to true' do
+      expect(@course.allow_student_forum_attachments).to eq true
+    end
+
+    it 'should allow setting and getting' do
+      @course.allow_student_forum_attachments = false
+      @course.save!
+      expect(@course.allow_student_forum_attachments).to eq false
     end
   end
 
@@ -1079,6 +1120,8 @@ describe Course do
       @course.sis_source_id = 'sis_id'
       @course.lti_context_id = 'lti_context_id'
       @course.stuck_sis_fields = [].to_set
+      gs = @course.grading_standards.create!(:title => "Standard eh", :data => [["Eh", 0.93], ["Eff", 0]])
+      @course.grading_standard = gs
       profile = @course.profile
       profile.description = "description"
       profile.save!
@@ -1104,6 +1147,7 @@ describe Course do
       expect(@course.lti_context_id).not_to be_nil
 
       @new_course.reload
+      expect(@new_course.grading_standard).to be_nil
       expect(@new_course).to be_created
       expect(@new_course.course_sections).not_to be_empty
       expect(@new_course.students).to eq [@student]
@@ -3953,7 +3997,7 @@ describe Course, 'tabs_available' do
     expect(tool.course_navigation(:url)).to eq "http://www.example.com"
     expect(tool.has_placement?(:course_navigation)).to eq true
 
-    settings = @course.external_tool_tabs({}).first
+    settings = @course.external_tool_tabs({}, User.new).first
     expect(settings).to include(:visibility=>"members")
     expect(settings).to include(:hidden=>true)
   end
@@ -3968,9 +4012,20 @@ describe Course, 'tabs_available' do
     expect(tool.course_navigation(:url)).to eq "http://www.example.com"
     expect(tool.has_placement?(:course_navigation)).to eq true
 
-    settings = @course.external_tool_tabs({}).first
+    settings = @course.external_tool_tabs({}, User.new).first
     expect(settings).to include(:visibility=>"admins")
     expect(settings).to include(:hidden=>false)
+  end
+
+  it 'hides tabs for feature flagged external tools' do
+    tool = analytics_2_tool_factory
+
+    tabs = @course.external_tool_tabs({}, User.new)
+    expect(tabs.map{|t| t[:id]}).not_to include(tool.asset_string)
+
+    @course.enable_feature!(:analytics_2)
+    tabs = @course.external_tool_tabs({}, User.new)
+    expect(tabs.map{|t| t[:id]}).to include(tool.asset_string)
   end
 
 end
@@ -5289,36 +5344,66 @@ describe Course, 'touch_root_folder_if_necessary' do
   end
 
   context "inheritable settings" do
-    before :each do
-      account_model
-      course_factory(:account => @account)
+    shared_examples 'inherited setting should inherit' do
+      before :each do
+        account_model
+        course_factory(:account => @account)
+      end
+
+      def set_value(value)
+        @course.send(:"#{setting}=", value)
+      end
+
+      def calculated_value
+        @course.send(:"#{setting}?")
+      end
+
+      it "should inherit account values by default" do
+        expect(calculated_value).to be_falsey
+
+        @account.settings[setting] = {:locked => false, :value => true}
+        @account.save!
+
+        expect(calculated_value).to be_truthy
+
+        set_value(false)
+        @course.save!
+
+        expect(calculated_value).to be_falsey
+      end
+
+      it "should be overridden by locked values from the account" do
+        @account.settings[setting] = {:locked => true, :value => true}
+        @account.save!
+
+        expect(calculated_value).to be_truthy
+
+        # explicitly setting shouldn't change anything
+        set_value(false)
+        @course.save!
+
+        expect(calculated_value).to be_truthy
+      end
     end
 
-    it "should inherit account values by default" do
-      expect(@course.restrict_student_future_view?).to be_falsey
-
-      @account.settings[:restrict_student_future_view] = {:locked => false, :value => true}
-      @account.save!
-
-      expect(@course.restrict_student_future_view?).to be_truthy
-
-      @course.restrict_student_future_view = false
-      @course.save!
-
-      expect(@course.restrict_student_future_view?).to be_falsey
+    describe "restrict_student_future_view" do
+      let(:setting) { :restrict_student_future_view }
+      include_examples 'inherited setting should inherit'
     end
 
-    it "should be overridden by locked values from the account" do
-      @account.settings[:restrict_student_future_view] = {:locked => true, :value => true}
-      @account.save!
+    describe "restrict_student_past_view" do
+      let(:setting) { :restrict_student_past_view }
+      include_examples 'inherited setting should inherit'
+    end
 
-      expect(@course.restrict_student_future_view?).to be_truthy
+    describe "lock_all_announcements" do
+      let(:setting) { :lock_all_announcements }
+      include_examples 'inherited setting should inherit'
+    end
 
-      # explicitly setting shouldn't change anything
-      @course.restrict_student_future_view = false
-      @course.save!
-
-      expect(@course.restrict_student_future_view?).to be_truthy
+    describe "usage_rights_required" do
+      let(:setting) { :usage_rights_required }
+      include_examples 'inherited setting should inherit'
     end
   end
 end
@@ -5659,7 +5744,7 @@ describe Course, "#show_total_grade_as_points?" do
   end
 
   context "cached_account_users_for" do
-    specs_require_cache(:redis_store)
+    specs_require_cache(:redis_cache_store)
 
     before :once do
       @course = Course.create!

@@ -29,9 +29,10 @@ import GradingPeriodsHelper from 'jsx/grading/helpers/GradingPeriodsHelper'
 import tz from 'timezone'
 import numberHelper from 'jsx/shared/helpers/numberHelper'
 import PandaPubPoller from '../util/PandaPubPoller'
+import { matchingToolUrls } from './LtiAssignmentHelpers'
 
 isAdmin = () ->
-  _.contains(ENV.current_user_roles, 'admin')
+  _.includes(ENV.current_user_roles, 'admin')
 
 export default class Assignment extends Model
   @mixin DefaultUrlMixin
@@ -63,9 +64,12 @@ export default class Assignment extends Model
   isDiscussionTopic: => @_hasOnlyType 'discussion_topic'
   isPage: => @_hasOnlyType 'wiki_page'
   isExternalTool: => @_hasOnlyType 'external_tool'
+
+  defaultToolName: => ENV.DEFAULT_ASSIGNMENT_TOOL_NAME && escape(ENV.DEFAULT_ASSIGNMENT_TOOL_NAME).replace(/%20/g, ' ')
+  defaultToolUrl: => ENV.DEFAULT_ASSIGNMENT_TOOL_URL
   isNotGraded: => @_hasOnlyType 'not_graded'
   isAssignment: =>
-    ! _.include @_submissionTypes(), 'online_quiz', 'discussion_topic',
+    ! _.includes @_submissionTypes(), 'online_quiz', 'discussion_topic',
       'not_graded', 'external_tool'
 
   assignmentType: (type) =>
@@ -122,7 +126,7 @@ export default class Assignment extends Model
     not @inClosedGradingPeriod() and not @frozen()
 
   canMove: =>
-    not @inClosedGradingPeriod() and not _.include(@frozenAttributes(), 'assignment_group_id')
+    not @inClosedGradingPeriod() and not _.includes(@frozenAttributes(), 'assignment_group_id')
 
   freezeOnCopy: =>
     @get('freeze_on_copy')
@@ -151,20 +155,56 @@ export default class Assignment extends Model
     return @_submissionTypes() unless arguments.length > 0
     @set 'submission_types', submissionTypes
 
+  isNewAssignment: =>
+    !@name()
+
+  shouldShowDefaultTool: =>
+    return false if !@defaultToolUrl()
+    @defaultToolSelected() ||
+      @isQuickCreateDefaultTool() ||
+      @isNewAssignment()
+
+  isDefaultTool: =>
+    @submissionType() == 'external_tool' && @shouldShowDefaultTool()
+
+  defaultToNone: =>
+    @submissionType() == 'none' && !@shouldShowDefaultTool()
+
+  defaultToOnline: =>
+    @submissionType() == 'online' && !@shouldShowDefaultTool()
+
+  defaultToOnPaper: =>
+    @submissionType() == 'on_paper' && !@shouldShowDefaultTool()
+
+  isQuickCreateDefaultTool: =>
+    @submissionTypes().includes('default_external_tool')
+
+  defaultToolSelected: =>
+    matchingToolUrls(
+      @defaultToolUrl(),
+      @externalToolUrl()
+    )
+
+  isNonDefaultExternalTool: =>
+    # The assignment is type 'external_tool' and the default tool is not selected
+    # or chosen from the "quick create" assignment index modal.
+    @submissionType() == 'external_tool' && !@isDefaultTool()
+
   submissionType: =>
     submissionTypes = @_submissionTypes()
-    if _.include(submissionTypes, 'none') || submissionTypes.length == 0 then 'none'
-    else if _.include submissionTypes, 'on_paper' then 'on_paper'
-    else if _.include submissionTypes, 'external_tool' then 'external_tool'
+    if _.includes(submissionTypes, 'none') || submissionTypes.length == 0 then 'none'
+    else if _.includes submissionTypes, 'on_paper' then 'on_paper'
+    else if _.includes submissionTypes, 'external_tool' then 'external_tool'
+    else if _.includes submissionTypes, 'default_external_tool' then 'external_tool'
     else 'online'
 
   expectsSubmission: =>
     submissionTypes = @_submissionTypes()
-    submissionTypes.length > 0 && !_.include(submissionTypes, "") && !_.include(submissionTypes, 'none') && !_.include(submissionTypes, 'not_graded') && !_.include(submissionTypes, 'on_paper') && !_.include(submissionTypes, 'external_tool')
+    submissionTypes.length > 0 && !_.includes(submissionTypes, "") && !_.includes(submissionTypes, 'none') && !_.includes(submissionTypes, 'not_graded') && !_.includes(submissionTypes, 'on_paper') && !_.includes(submissionTypes, 'external_tool')
 
   allowedToSubmit: =>
     submissionTypes = @_submissionTypes()
-    @expectsSubmission() && !@get('locked_for_user') && !_.include(submissionTypes, 'online_quiz') && !_.include(submissionTypes, 'attendance')
+    @expectsSubmission() && !@get('locked_for_user') && !_.includes(submissionTypes, 'online_quiz') && !_.includes(submissionTypes, 'attendance')
 
   hasSubmittedSubmissions: =>
     @get('has_submitted_submissions')
@@ -174,19 +214,19 @@ export default class Assignment extends Model
     !sub? || sub.withoutGradedSubmission()
 
   acceptsOnlineUpload: =>
-    !! _.include @_submissionTypes(), 'online_upload'
+    !! _.includes @_submissionTypes(), 'online_upload'
 
   acceptsOnlineURL: =>
-    !! _.include @_submissionTypes(), 'online_url'
+    !! _.includes @_submissionTypes(), 'online_url'
 
   acceptsMediaRecording: =>
-    !! _.include @_submissionTypes(), 'media_recording'
+    !! _.includes @_submissionTypes(), 'media_recording'
 
   acceptsOnlineTextEntries: =>
-    !! _.include @_submissionTypes(), 'online_text_entry'
+    !! _.includes @_submissionTypes(), 'online_text_entry'
 
   isOnlineSubmission: =>
-    _.any @_submissionTypes(), (thing) ->
+    _.some @_submissionTypes(), (thing) ->
       thing in ['online', 'online_text_entry',
         'media_recording', 'online_url', 'online_upload']
 
@@ -316,11 +356,15 @@ export default class Assignment extends Model
     return @get 'published' unless arguments.length > 0
     @set 'published', newPublished
 
+  useNewQuizIcon: () =>
+    ENV.FLAGS && ENV.FLAGS.newquizzes_on_quiz_page && @isQuizLTIAssignment()
+
   position: (newPosition) ->
     return @get('position') || 0 unless arguments.length > 0
     @set 'position', newPosition
 
   iconType: =>
+    return 'quiz icon-Solid' if @useNewQuizIcon()
     return 'quiz' if @isQuiz()
     return 'discussion' if @isDiscussionTopic()
     return 'document' if @isPage()
@@ -331,6 +375,12 @@ export default class Assignment extends Model
     return 'Discussion' if @isDiscussionTopic()
     return 'WikiPage' if @isPage()
     return 'Assignment'
+
+  objectTypeDisplayName: ->
+    return I18n.t('Quiz') if @isQuiz()
+    return I18n.t('Discussion Topic') if @isDiscussionTopic()
+    return I18n.t('Page') if @isPage()
+    return I18n.t('Assignment')
 
   htmlUrl: =>
     @get 'html_url'
@@ -407,11 +457,20 @@ export default class Assignment extends Model
   isDuplicating: =>
     @get('workflow_state') == 'duplicating'
 
+  isMigrating: =>
+    @get('workflow_state') == 'migrating'
+
   failedToDuplicate: =>
     @get('workflow_state') == 'failed_to_duplicate'
 
+  failedToMigrate: =>
+    @get('workflow_state') == 'failed_to_migrate'
+
   originalCourseID: =>
     @get('original_course_id')
+
+  originalQuizID: =>
+    @get('original_quiz_id')
 
   originalAssignmentID: =>
     @get('original_assignment_id')
@@ -432,7 +491,7 @@ export default class Assignment extends Model
     @get('workflow_state') == 'failed_to_import'
 
   submissionTypesFrozen: =>
-    _.include(@frozenAttributes(), 'submission_types')
+    _.includes(@frozenAttributes(), 'submission_types')
 
   toView: =>
     fields = [
@@ -451,12 +510,14 @@ export default class Assignment extends Model
       'labelId', 'position', 'postToSIS', 'multipleDueDates', 'nonBaseDates',
       'allDates', 'hasDueDate', 'hasPointsPossible', 'singleSectionDueDate',
       'moderatedGrading', 'postToSISEnabled', 'isOnlyVisibleToOverrides',
-      'omitFromFinalGrade', 'isDuplicating', 'failedToDuplicate',
+      'omitFromFinalGrade', 'isDuplicating', 'isMigrating', 'failedToDuplicate',
       'originalAssignmentName', 'is_quiz_assignment', 'isQuizLTIAssignment',
-      'isImporting', 'failedToImport',
+      'isImporting', 'failedToImport', 'failedToMigrate',
       'secureParams', 'inClosedGradingPeriod', 'dueDateRequired',
       'submissionTypesFrozen', 'anonymousInstructorAnnotations',
-      'anonymousGrading', 'gradersAnonymousToGraders', 'showGradersAnonymousToGradersCheckbox'
+      'anonymousGrading', 'gradersAnonymousToGraders', 'showGradersAnonymousToGradersCheckbox',
+      'defaultToolName', 'isDefaultTool', 'isNonDefaultExternalTool', 'defaultToNone',
+      'defaultToOnline', 'defaultToOnPaper', 'objectTypeDisplayName'
     ]
 
     hash =
@@ -478,7 +539,7 @@ export default class Assignment extends Model
     dateGroups = @get("all_dates")
     gradingPeriodsHelper = new GradingPeriodsHelper(gradingPeriod)
     if dateGroups
-      _.any dateGroups.models, (dateGroup) =>
+      _.some dateGroups.models, (dateGroup) =>
         gradingPeriodsHelper.isDateInGradingPeriod(dateGroup.dueAt(), gradingPeriod.id)
     else
       gradingPeriodsHelper.isDateInGradingPeriod(tz.parse(@dueAt()), gradingPeriod.id)
@@ -534,13 +595,13 @@ export default class Assignment extends Model
 
   _filterFrozenAttributes: (data) =>
     for own key, value of @attributes
-      if _.contains(@frozenAttributes(), key)
+      if _.includes(@frozenAttributes(), key)
         delete data[key]
-    if _.contains(@frozenAttributes(), "title")
+    if _.includes(@frozenAttributes(), "title")
       delete data.name
-    if _.contains(@frozenAttributes(), "group_category_id")
+    if _.includes(@frozenAttributes(), "group_category_id")
       delete data.grade_group_students_individually
-    if _.contains(@frozenAttributes(), "peer_reviews")
+    if _.includes(@frozenAttributes(), "peer_reviews")
       delete data.automatic_peer_reviews
       delete data.peer_review_count
       delete data.peer_reviews_assign_at
@@ -579,17 +640,30 @@ export default class Assignment extends Model
     $.ajaxJSON "/api/v1/courses/#{original_course_id}/assignments/#{original_assignment_id}/duplicate#{query_string}",
       'POST', {}, callback
 
+  # caller is failed migrated assignment
+  retry_migration: (callback) =>
+    course_id = @courseID()
+    original_quiz_id = @originalQuizID()
+    failed_assignment_id = @get('id')
+    $.ajaxJSON "/api/v1/courses/#{course_id}/content_exports?export_type=quizzes2&quiz_id=#{original_quiz_id}&failed_assignment_id=#{failed_assignment_id}&include[]=migrated_assignment",
+      'POST', {}, callback
+
   pollUntilFinishedDuplicating: (interval = 3000) =>
     @pollUntilFinished(interval, @isDuplicating)
 
   pollUntilFinishedImporting: (interval = 3000) =>
     @pollUntilFinished(interval, @isImporting)
 
+  pollUntilFinishedMigrating: (interval = 3000) =>
+    @pollUntilFinished(interval, @isMigrating)
+
   pollUntilFinishedLoading: (interval = 3000) =>
     if @isDuplicating()
       @pollUntilFinishedDuplicating(interval)
     else if @isImporting()
       @pollUntilFinishedImporting(interval)
+    else if @isMigrating()
+      @pollUntilFinishedMigrating(interval)
 
   pollUntilFinished: (interval, isFinished) =>
     # TODO: implement pandapub streaming updates

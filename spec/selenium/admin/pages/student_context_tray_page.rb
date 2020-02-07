@@ -30,7 +30,7 @@ module StudentContextTray
     end
 
     def student_name_link
-      f(".StudentContextTray-Header__NameLink a")
+      f(".StudentContextTray-Header__Name a")
     end
 
     def todo_tray_course_selector
@@ -45,6 +45,10 @@ module StudentContextTray
       fj("li[role=option]:contains('#{course_name}')")
     end
 
+    def student_tray_quick_links
+      f('.StudentContextTray-QuickLinks')
+    end
+
     #------------------------ Actions & Methods ---------------------------
     def wait_for_student_tray
       wait_for(method: nil, timeout: 1) { student_name_link.displayed? }
@@ -54,4 +58,6 @@ module StudentContextTray
       todo_tray_course_selector.click
       todo_tray_dropdown_select_course(course_name).click
     end
+
+    
 end

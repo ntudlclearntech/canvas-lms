@@ -163,7 +163,7 @@ test('saves manual form with trimmed props', () => {
   }
   component.handleSubmit(e)
   const formData = handleSubmitSpy.getCall(0).args[1]
-  handleSubmitSpy.reset()
+  handleSubmitSpy.resetHistory()
   strictEqual(formData.name, 'My App')
   strictEqual(formData.consumerKey, 'key')
   strictEqual(formData.sharedSecret, 'secret')
@@ -192,7 +192,7 @@ test('saves url form with trimmed props', () => {
   }
   component.handleSubmit(e)
   const formData = handleSubmitSpy.getCall(0).args[1]
-  handleSubmitSpy.reset()
+  handleSubmitSpy.resetHistory()
   strictEqual(formData.name, 'My App')
   strictEqual(formData.consumerKey, 'key')
   strictEqual(formData.sharedSecret, 'secret')
@@ -219,7 +219,7 @@ test('saves xml form with trimmed props', () => {
   }
   component.handleSubmit(e)
   const formData = handleSubmitSpy.getCall(0).args[1]
-  handleSubmitSpy.reset()
+  handleSubmitSpy.resetHistory()
   strictEqual(formData.name, 'My App')
   strictEqual(formData.consumerKey, 'key')
   strictEqual(formData.sharedSecret, 'secret')
@@ -241,7 +241,7 @@ test('saves lti2 form with trimmed props', () => {
   }
   component.handleSubmit(e)
   const formData = handleSubmitSpy.getCall(0).args[1]
-  handleSubmitSpy.reset()
+  handleSubmitSpy.resetHistory()
   strictEqual(formData.registrationUrl, 'https://lti-tool-provider-example..com/register')
 })
 
@@ -289,31 +289,28 @@ test('sets the form method to post', () => {
   equal(document.querySelector('form').getAttribute('method'), 'post')
 })
 
-
-QUnit.module('ConfigurationForm#defaultState');
+QUnit.module('ConfigurationForm#defaultState')
 
 test('returns object where allow_membership_service_access is false', () => {
-  const component = TestUtils.renderIntoDocument (
-    <ConfigurationForm
-      handleSubmit={() => {}}
-      tool={{}}
-      configurationType='manual' />
-  );
-  const app = TestUtils.findRenderedComponentWithType(component, ConfigurationForm);
-  equal(app.defaultState().allow_membership_service_access, false);
-});
+  const component = TestUtils.renderIntoDocument(
+    <ConfigurationForm handleSubmit={() => {}} tool={{}} configurationType="manual" />
+  )
+  const app = TestUtils.findRenderedComponentWithType(component, ConfigurationForm)
+  equal(app.defaultState().allow_membership_service_access, false)
+})
 
-QUnit.module('ConfigurationForm#reset');
+QUnit.module('ConfigurationForm#reset')
 
 test('resets internal state of component', () => {
-  const component = TestUtils.renderIntoDocument (
+  const component = TestUtils.renderIntoDocument(
     <ConfigurationForm
       handleSubmit={() => {}}
       tool={{}}
-      configurationType='goofy'
-      showConfigurationSelector={true} />
-  );
-  const app = TestUtils.findRenderedComponentWithType(component, ConfigurationForm);
+      configurationType="goofy"
+      showConfigurationSelector
+    />
+  )
+  const app = TestUtils.findRenderedComponentWithType(component, ConfigurationForm)
   app.reset()
   deepEqual(app.state, {
     configurationType: 'goofy',
@@ -330,21 +327,21 @@ test('resets internal state of component', () => {
     registrationUrl: '',
     xml: '',
     allow_membership_service_access: false
-  });
-});
+  })
+})
 
-
-QUnit.module('ConfigurationForm#defaultState');
+QUnit.module('ConfigurationForm#defaultState')
 
 test('returns a default state', () => {
-  const component = TestUtils.renderIntoDocument (
+  const component = TestUtils.renderIntoDocument(
     <ConfigurationForm
       handleSubmit={() => {}}
       tool={{}}
-      configurationType='goofy'
-      showConfigurationSelector={true} />
-  );
-  const app = TestUtils.findRenderedComponentWithType(component, ConfigurationForm);
+      configurationType="goofy"
+      showConfigurationSelector
+    />
+  )
+  const app = TestUtils.findRenderedComponentWithType(component, ConfigurationForm)
   app.reset()
   deepEqual(app.defaultState(), {
     configurationType: 'goofy',
@@ -361,5 +358,5 @@ test('returns a default state', () => {
     registrationUrl: '',
     xml: '',
     allow_membership_service_access: false
-  });
-});
+  })
+})

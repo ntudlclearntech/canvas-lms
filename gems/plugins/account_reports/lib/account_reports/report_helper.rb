@@ -257,17 +257,22 @@ module AccountReports::ReportHelper
         'account_reports.default.message',
         "%{type} report successfully generated with the following settings. Account: %{account}; %{options}",
         :type => type, :account => account.name, :options => options),
-      file)
+      file
+    )
   end
 
-  def write_report(headers, &block)
-    file = generate_and_run_report(headers, &block)
+  def write_report(headers, enable_i18n_features = false, &block)
+    file = generate_and_run_report(headers, 'csv', enable_i18n_features, &block)
     Shackles.activate(:master) { send_report(file) }
   end
 
-  def generate_and_run_report(headers = nil, extension = 'csv')
+  def generate_and_run_report(headers = nil, extension = 'csv', enable_i18n_features = false)
     file = AccountReports.generate_file(@account_report, extension)
-    ExtendedCSV.open(file, "w") do |csv|
+    options = {}
+    if enable_i18n_features
+      options = CsvWithI18n.csv_i18n_settings(@account_report.user)
+    end
+    ExtendedCSV.open(file, "w", options) do |csv|
       csv.instance_variable_set(:@account_report, @account_report)
       csv << headers unless headers.nil?
       Shackles.activate(:slave) { yield csv } if block_given?
@@ -290,7 +295,11 @@ module AccountReports::ReportHelper
   #    the term.
   # 4. the parallel_#{report_type} will also need to add rows individually with
   #    add_report_row.
-  def write_report_in_batches(headers)
+  # files param is used if you need to have multiple files in a zip file report.
+  # files is a hash of filenames and headers for the file.
+  # { 'file_name' => ['header', 'row', 'goes', 'here'], 'file_two' => ['other', 'header'] }
+  # for files to work, the rows need to populate the file the row belongs to.
+  def write_report_in_batches(headers, files: nil)
     # we use total_lines to track progress in the normal progress.
     # just use it here to do the same thing here even though it is not really
     # the number of lines.
@@ -307,21 +316,22 @@ module AccountReports::ReportHelper
 
     args = {priority: Delayed::LOW_PRIORITY, max_attempts: 1, n_strand: ["account_report_runner", root_account.global_id]}
     @account_report.account_report_runners.find_each do |runner|
-      self.send_later_enqueue_args(:run_account_report_runner, args, runner, headers)
+      self.send_later_enqueue_args(:run_account_report_runner, args, runner, headers, files: files)
     end
   end
 
-  def add_report_row(row:, row_number: nil, report_runner:)
-    report_runner.rows << build_report_row(row: row, row_number: row_number, report_runner: report_runner)
+  def add_report_row(row:, row_number: nil, report_runner:, file: nil)
+    report_runner.rows << build_report_row(row: row, row_number: row_number, report_runner: report_runner, file: file)
     if report_runner.rows.length == 1_000
       report_runner.write_rows
     end
   end
 
-  def build_report_row(row:, row_number: nil, report_runner:)
+  def build_report_row(row:, row_number: nil, report_runner:, file: nil)
     # force all fields to strings
     report_runner.account_report_rows.new(row: row.map { |field| field&.to_s&.encode(Encoding::UTF_8) },
                                           row_number: row_number,
+                                          file: file,
                                           account_report_id: report_runner.account_report_id,
                                           account_report_runner: report_runner,
                                           created_at: Time.zone.now)
@@ -346,21 +356,7 @@ module AccountReports::ReportHelper
     @account_report.write_report_runners
   end
 
-  def create_report_runners(ids, total, min: 25, max: 1000)
-    return if ids.empty?
-    ids_so_far = 0
-    ids.each_slice(number_of_items_per_runner(total, min: min, max: max)) do |batch|
-      @account_report.add_report_runner(batch)
-      ids_so_far += batch.length
-      if ids_so_far >= Setting.get("ids_per_report_runner_batch", 10_000).to_i
-        @account_report.write_report_runners
-        ids_so_far = 0
-      end
-    end
-    @account_report.write_report_runners
-  end
-
-  def run_account_report_runner(report_runner, headers)
+  def run_account_report_runner(report_runner, headers, files: nil)
     return if report_runner.reload.workflow_state == 'aborted'
     @account_report = report_runner.account_report
     begin
@@ -368,23 +364,44 @@ module AccountReports::ReportHelper
         report_runner.abort
         return
       end
-      report_runner.start
-      Shackles.activate(:slave) {AccountReports::REPORTS[@account_report.report_type].parallel_proc.call(@account_report, report_runner)}
+      # runners can be completed before they get here, and we should not try to process them.
+      unless report_runner.workflow_state == 'completed'
+        report_runner.start
+        Shackles.activate(:slave) { AccountReports::REPORTS[@account_report.report_type].parallel_proc.call(@account_report, report_runner) }
+      end
     rescue => e
       report_runner.fail
       self.fail_with_error(e)
     ensure
       update_parallel_progress(account_report: @account_report,report_runner: report_runner)
-      compile_parallel_report(headers) if last_account_report_runner?(@account_report)
+      compile_parallel_report(headers, files: files) if last_account_report_runner?(@account_report)
     end
   end
 
-  def compile_parallel_report(headers)
+  def compile_parallel_report(headers, files: nil)
     @account_report.update_attributes(total_lines: @account_report.account_report_rows.count + 1)
+    files ? compile_parallel_zip_report(files) : write_report_from_rows(headers)
+    @account_report.delete_account_report_rows
+  end
+
+  def write_report_from_rows(headers)
     write_report headers do |csv|
       @account_report.account_report_rows.order(:account_report_runner_id, :row_number).find_each { |record| csv << record.row }
     end
-    @account_report.delete_account_report_rows
+  end
+
+  def compile_parallel_zip_report(files)
+    csvs = {}
+    files.each do |file, headers_for_file|
+      if @account_report.account_report_rows.where(file: file).exists?
+        csvs[file] = generate_and_run_report(headers_for_file) do |csv|
+          @account_report.account_report_rows.where(file: file).order(:account_report_runner_id, :row_number).find_each { |record| csv << record.row }
+        end
+      else
+        csvs[file] = generate_and_run_report(headers_for_file)
+      end
+    end
+    send_report(csvs)
   end
 
   def fail_with_error(error)
@@ -440,14 +457,14 @@ module AccountReports::ReportHelper
     end
   end
 
-  class ExtendedCSV < CSV
+  class ExtendedCSV < CsvWithI18n
     def <<(row)
       if lineno % 1_000 == 0
         Shackles.activate(:master) do
           report = self.instance_variable_get(:@account_report).reload
           updates = {}
           updates[:current_line] = lineno
-          updates[:progress] = (lineno.to_f / report.total_lines * 100).to_i if report.total_lines
+          updates[:progress] = (lineno.to_f / (report.total_lines + 1) * 100).to_i if report.total_lines
           report.update_attributes(updates)
           if report.workflow_state == 'deleted'
             report.workflow_state = 'aborted'

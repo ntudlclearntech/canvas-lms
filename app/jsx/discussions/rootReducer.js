@@ -17,8 +17,10 @@
  */
 
 import {combineReducers} from 'redux'
+import {handleAction} from 'redux-actions'
 import {reduceNotifications} from '../shared/reduxNotifications'
 import {createPaginatedReducer} from '../shared/reduxPagination'
+import {actionTypes} from './actions'
 import allDiscussionsReducer from './reducers/allDiscussionsReducer'
 import pinnedDiscussionReducer from './reducers/pinnedDiscussionReducer'
 import unpinnedDiscussionReducer from './reducers/unpinnedDiscussionReducer'
@@ -28,6 +30,8 @@ import userSettingsReducer from './reducers/userSettingsReducer'
 import courseSettingsReducer from './reducers/courseSettingsReducer'
 import isSavingSettingsReducer from './reducers/isSavingSettingsReducer'
 import isSettingsModalOpenReducer from './reducers/isSettingsModalOpenReducer'
+import copyToReducer from './reducers/copyToReducer'
+import sendToReducer from './reducers/sendToReducer'
 
 const identity = (defaultState = null) => state => (state === undefined ? defaultState : state)
 
@@ -50,5 +54,9 @@ export default combineReducers({
   pinnedDiscussionIds: pinnedDiscussionReducer,
   roles: identity({}),
   unpinnedDiscussionIds: unpinnedDiscussionReducer,
-  userSettings: userSettingsReducer
+  userSettings: userSettingsReducer,
+  copyTo: copyToReducer,
+  sendTo: sendToReducer,
+  DIRECT_SHARE_ENABLED: identity(false),
+  COURSE_ID: identity(null)
 })

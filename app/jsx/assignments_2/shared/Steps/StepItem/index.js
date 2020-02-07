@@ -22,21 +22,22 @@ import React, {Component} from 'react'
 import ButtonContext from '../../../student/components/Context'
 import classNames from 'classnames'
 import I18n from 'i18n!assignments_2_shared_Steps_StepItem'
-
-import ApplyTheme from '@instructure/ui-themeable/lib/components/ApplyTheme'
-import Button from '@instructure/ui-buttons/lib/components/Button'
-import IconArrowOpenEnd from '@instructure/ui-icons/lib/Solid/IconArrowOpenEnd'
-import IconArrowOpenStart from '@instructure/ui-icons/lib/Solid/IconArrowOpenStart'
-import IconCheckMark from '@instructure/ui-icons/lib/Solid/IconCheckMark'
-import IconLock from '@instructure/ui-icons/lib/Solid/IconLock'
-import IconPlus from '@instructure/ui-icons/lib/Solid/IconPlus'
-import {omitProps} from '@instructure/ui-utils/lib/react/passthroughProps'
-import px from '@instructure/ui-utils/lib/px'
-import ScreenReaderContent from '@instructure/ui-a11y/lib/components/ScreenReaderContent'
+import {ApplyTheme} from '@instructure/ui-themeable'
+import {Button} from '@instructure/ui-buttons'
+import {
+  IconArrowOpenEndSolid,
+  IconArrowOpenStartSolid,
+  IconCheckMarkSolid,
+  IconLockSolid,
+  IconPlusSolid
+} from '@instructure/ui-icons'
+import {omitProps} from '@instructure/ui-react-utils'
+import {px} from '@instructure/ui-utils'
+import {ScreenReaderContent} from '@instructure/ui-a11y'
 
 class StepItem extends Component {
   static propTypes = {
-    status: oneOf(['button', 'complete', 'in-progress', 'unavailable']),
+    status: oneOf(['button', 'complete', 'incomplete', 'in-progress', 'unavailable']),
     label: oneOfType([func, string, element]).isRequired,
     icon: element,
     pinSize: string,
@@ -88,20 +89,20 @@ class StepItem extends Component {
       switch (this.props.label) {
         case 'Previous':
           return this.renderButton(
-            IconArrowOpenStart,
+            IconArrowOpenStartSolid,
             context.prevButtonAction,
             I18n.t('View Previous Submission')
           )
         case 'Next':
           return this.renderButton(
-            IconArrowOpenEnd,
+            IconArrowOpenEndSolid,
             context.nextButtonAction,
             I18n.t('View Next Submission')
           )
         case 'New Attempt':
           return this.renderButton(
-            IconPlus,
-            () => console.log('New Attempt'),
+            IconPlusSolid,
+            context.startNewAttemptAction,
             I18n.t('Create New Attempt')
           )
         default:
@@ -114,9 +115,9 @@ class StepItem extends Component {
 
   selectIcon(Icon, status) {
     if (!Icon && status === 'complete') {
-      return <IconCheckMark color="primary-inverse" />
+      return <IconCheckMarkSolid color="primary-inverse" />
     } else if (!Icon && status === 'unavailable') {
-      return <IconLock color="error" />
+      return <IconLockSolid color="error" />
     } else if (typeof Icon === 'function') {
       return <Icon />
     } else if (Icon) {
@@ -181,7 +182,10 @@ class StepItem extends Component {
             <ButtonContext.Consumer>{context => this.renderIcon(context)}</ButtonContext.Consumer>
           </span>
         </span>
-        <span className="step-item-label">{this.renderLabel()}</span>
+        <span className="step-item-label" aria-hidden={this.props.status === 'button'}>
+          {this.renderLabel()}
+          <ScreenReaderContent>{status}</ScreenReaderContent>
+        </span>
       </span>
     )
   }

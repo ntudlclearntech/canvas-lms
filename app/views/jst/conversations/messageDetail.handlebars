@@ -19,7 +19,11 @@
            class="icon-reply-2 reply-btn Button Button--icon-action"
            title="{{#t "reply"}}Reply{{/t}}"
            data-tooltip>
-          <span class="screenreader-only">{{#t "reply"}}Reply{{/t}}</span>
+          {{#if subject}}
+            <span class="screenreader-only">{{#t}}Reply to conversation {{subject}}{{/t}}</span>
+          {{else}}
+            <span class="screenreader-only">{{#t}}Reply to conversation{{/t}}</span>
+          {{/if}}
         </a>
       </li>
       {{/unless}}

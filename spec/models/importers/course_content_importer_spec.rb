@@ -307,6 +307,35 @@ describe Course do
         expect(migration.workflow_state).not_to eq('imported')
       end
     end
+
+    describe "default_post_policy" do
+      let(:migration) do
+        build_migration(@course, {}, all_course_settings: true)
+      end
+
+      it "sets the course to manually-posted when default_post_policy['post_manually'] is true" do
+        import_data = {"course": {"default_post_policy": {"post_manually": true}}}.with_indifferent_access
+        Importers::CourseContentImporter.import_content(@course, import_data, nil, migration)
+
+        expect(@course.default_post_policy).to be_post_manually
+      end
+
+      it "sets the course to auto-posted when default_post_policy['post_manually'] is false" do
+        @course.default_post_policy.update!(post_manually: true)
+        import_data = {"course": {"default_post_policy": {"post_manually": false}}}.with_indifferent_access
+        Importers::CourseContentImporter.import_content(@course, import_data, nil, migration)
+
+        expect(@course.default_post_policy).not_to be_post_manually
+      end
+
+      it "does not update the course's post policy when default_post_policy['post_manually'] is missing" do
+        @course.default_post_policy.update!(post_manually: true)
+        import_data = {"course": {}}.with_indifferent_access
+        Importers::CourseContentImporter.import_content(@course, import_data, nil, migration)
+
+        expect(@course.default_post_policy).to be_post_manually
+      end
+    end
   end
 
   describe "shift_date_options" do
@@ -455,6 +484,68 @@ describe Course do
 
       Importers::CourseContentImporter.import_content(@course, data, params, migration)
     end
+  end
+
+  describe "insert into module" do
+    before :once do
+      course_factory
+      @module = @course.context_modules.create! name: 'test'
+      @module.add_item(type: 'context_module_sub_header', title: 'blah')
+      @params = {"copy" => {"quizzes" => {"i7ed12d5eade40d9ee8ecb5300b8e02b2" => true}}}
+      json = File.open(File.join(IMPORT_JSON_DIR, 'assessments.json')).read
+      @data = JSON.parse(json).with_indifferent_access
+    end
+
+    it "appends imported items to a module" do
+      migration = @course.content_migrations.build
+      migration.migration_settings[:migration_ids_to_import] = @params
+      migration.migration_settings[:insert_into_module_id] = @module.id
+      migration.save!
+
+      Importers::CourseContentImporter.import_content(@course, @data, @params, migration)
+      expect(@module.content_tags.order('position').pluck(:content_type)).to eq(%w(ContextModuleSubHeader Quizzes::Quiz))
+    end
+
+    it "inserts imported items into a module" do
+      migration = @course.content_migrations.build
+      migration.migration_settings[:migration_ids_to_import] = @params
+      migration.migration_settings[:insert_into_module_id] = @module.id
+      migration.migration_settings[:insert_into_module_position] = 1
+      migration.save!
+
+      Importers::CourseContentImporter.import_content(@course, @data, @params, migration)
+      expect(@module.content_tags.order('position').pluck(:content_type)).to eq(%w(Quizzes::Quiz ContextModuleSubHeader))
+    end
+  end
+
+  describe "move to assignment group" do
+    before :once do
+      course_factory
+      @course.require_assignment_group
+      @new_group = @course.assignment_groups.create!(name: 'new group')
+      @params = {"copy" => {"assignments" => {"1865116014002" => true}}}
+      json = File.open(File.join(IMPORT_JSON_DIR, 'assignment.json')).read
+      @data = {"assignments" => JSON.parse(json)}.with_indifferent_access
+      @migration = @course.content_migrations.build
+      @migration.migration_settings[:migration_ids_to_import] = @params
+      @migration.migration_settings[:move_to_assignment_group_id] = @new_group.id
+      @migration.save!
+    end
+
+    it "puts a new assignment into assignment group" do
+      other_assign = @course.assignments.create! title: 'other', assignment_group: @new_group
+      Importers::CourseContentImporter.import_content(@course, @data, @params, @migration)
+      new_assign = @course.assignments.where(migration_id: '1865116014002').take
+      expect(new_assign.assignment_group_id).to eq @new_group.id
+    end
+
+    it "moves existing assignment into assignment group" do
+      existing_assign = @course.assignments.create! title: 'blah', migration_id: '1865116014002'
+      expect(existing_assign.assignment_group_id).not_to eq @new_group.id
+      Importers::CourseContentImporter.import_content(@course, @data, @params, @migration)
+      expect(existing_assign.reload.assignment_group_id).to eq @new_group.id
+    end
+
   end
 
   it 'should be able to i18n without keys' do

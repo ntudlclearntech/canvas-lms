@@ -212,6 +212,11 @@ class UsersController < ApplicationController
       js_env :grades_for_student_url => grades_for_student_url
 
       ActiveRecord::Associations::Preloader.new.preload(@observed_enrollments, :course)
+
+      @page_title = t(:page_title, "Grades")
+      js_bundle :user_grades
+      css_bundle :user_grades
+      render stream: can_stream_template?
     end
   end
 
@@ -390,6 +395,53 @@ class UsersController < ApplicationController
     end
   end
 
+  def index
+    get_context
+    if @context.feature_enabled?(:course_user_search) && !params.key?(:term)
+      @account ||= @context
+      return course_user_search
+    end
+
+    return unless authorized_action(@context, @current_user, :read_roster)
+    @root_account = @context.root_account
+    @query = (params[:user] && params[:user][:name]) || params[:term]
+    js_env :ACCOUNT => account_json(@domain_root_account, nil, session, ['registration_settings'])
+    Shackles.activate(:slave) do
+      if @context && @context.is_a?(Account) && @query
+        @users = @context.users_name_like(@query)
+      elsif params[:enrollment_term_id].present? && @root_account == @context
+        @users = @context.fast_all_users.
+            where("EXISTS (?)", Enrollment.where("enrollments.user_id=users.id").
+              joins(:course).
+              where(Enrollment::QueryBuilder.new(:active).conditions).
+              where(courses: { enrollment_term_id: params[:enrollment_term_id]}))
+      else
+        @users = @context.fast_all_users
+      end
+
+      @users = @users.paginate(:page => params[:page])
+
+      respond_to do |format|
+        if @users.length == 1 && params[:term]
+          format.html {
+            redirect_to(named_context_url(@context, :context_user_url, @users.first))
+          }
+        else
+          @enrollment_terms = []
+          if @root_account == @context
+            @enrollment_terms = @context.enrollment_terms.active
+          end
+          format.html
+        end
+        format.json {
+          cancel_cache_buster
+          expires_in 30.minutes
+          render(:json => @users.map { |u| { :label => u.name, :id => u.id } })
+        }
+      end
+    end
+  end
+
   # @API List users in account
   # A paginated list of of users associated with this account.
   #
@@ -401,12 +453,12 @@ class UsersController < ApplicationController
   #   a numeric form. It will only search against other fields if non-numeric
   #   in form, or if the numeric value doesn't yield any matches. Queries by
   #   administrative users will search on SIS ID, login ID, name, or email
-  #   address; non-administrative queries will only be compared against name.
+  #   address
   #
   # @argument enrollment_type [String]
   #   When set, only return users enrolled with the specified course-level base role.
-  #   This can be a base role type of 'StudentEnrollment', 'TeacherEnrollment',
-  #   'TaEnrollment', 'ObserverEnrollment', or 'DesignerEnrollment'.
+  #   This can be a base role type of 'student', 'teacher',
+  #   'ta', 'observer', or 'designer'.
   #
   # @argument sort [String, "username"|"email"|"sis_id"|"last_login"]
   #   The column to sort results by.
@@ -420,77 +472,30 @@ class UsersController < ApplicationController
   #       -H 'Authorization: Bearer <token>'
   #
   # @returns [User]
-  def index
+  def api_index
     get_context
-    if !api_request? && @context.feature_enabled?(:course_user_search) && !params.key?(:term)
-      @account ||= @context
-      return course_user_search
+    return unless authorized_action(@context, @current_user, :read_roster)
+    search_term = params[:search_term].presence
+    page_opts = {}
+    if search_term
+      users = UserSearch.for_user_in_context(search_term, @context, @current_user, session,
+        {
+          order: params[:order], sort: params[:sort], enrollment_role_id: params[:role_filter_id],
+          enrollment_type: params[:enrollment_type]
+        })
+      page_opts[:total_entries] = nil # doesn't calculate a total count
+    else
+      users = UserSearch.scope_for(@context, @current_user,
+        {order: params[:order], sort: params[:sort], enrollment_role_id: params[:role_filter_id],
+          enrollment_type: params[:enrollment_type]})
     end
 
-    if authorized_action(@context, @current_user, :read_roster)
-      @root_account = @context.root_account
-      @query = (params[:user] && params[:user][:name]) || params[:term]
-      js_env :ACCOUNT => account_json(@domain_root_account, nil, session, ['registration_settings'])
-      Shackles.activate(:slave) do
-        if @context && @context.is_a?(Account) && @query
-          @users = @context.users_name_like(@query)
-        elsif params[:enrollment_term_id].present? && @root_account == @context
-          @users = @context.fast_all_users.
-              where("EXISTS (?)", Enrollment.where("enrollments.user_id=users.id").
-                joins(:course).
-                where(Enrollment::QueryBuilder.new(:active).conditions).
-                where(courses: { enrollment_term_id: params[:enrollment_term_id]}))
-        elsif !api_request?
-          @users = @context.fast_all_users
-        end
-
-        if api_request?
-          search_term = params[:search_term].presence
-          page_opts = {}
-          if search_term
-            users = UserSearch.for_user_in_context(search_term, @context, @current_user, session,
-              {
-                order: params[:order], sort: params[:sort], enrollment_role_id: params[:role_filter_id],
-                enrollment_type: params[:enrollment_type]
-              })
-            page_opts[:total_entries] = nil # doesn't calculate a total count
-          else
-            users = UserSearch.scope_for(@context, @current_user,
-              {order: params[:order], sort: params[:sort], enrollment_role_id: params[:role_filter_id],
-                enrollment_type: params[:enrollment_type]})
-          end
-
-          includes = (params[:include] || []) & %w{avatar_url email last_login time_zone uuid}
-          includes << 'last_login' if params[:sort] == 'last_login' && !includes.include?('last_login')
-          users = users.with_last_login if includes.include?('last_login')
-          users = Api.paginate(users, self, api_v1_account_users_url, page_opts)
-          user_json_preloads(users, includes.include?('email'))
-          return render :json => users.map { |u| user_json(u, @current_user, session, includes)}
-        else
-          @users ||= []
-          @users = @users.paginate(:page => params[:page])
-        end
-
-        respond_to do |format|
-          if @users.length == 1 && params[:term]
-            format.html {
-              redirect_to(named_context_url(@context, :context_user_url, @users.first))
-            }
-          else
-            @enrollment_terms = []
-            if @root_account == @context
-              @enrollment_terms = @context.enrollment_terms.active
-            end
-            format.html
-          end
-          format.json {
-            cancel_cache_buster
-            expires_in 30.minutes
-            render(:json => @users.map { |u| { :label => u.name, :id => u.id } })
-          }
-        end
-      end
-    end
+    includes = (params[:include] || []) & %w{avatar_url email last_login time_zone uuid}
+    includes << 'last_login' if params[:sort] == 'last_login' && !includes.include?('last_login')
+    users = users.with_last_login if includes.include?('last_login') && !search_term
+    users = Api.paginate(users, self, api_v1_account_users_url, page_opts)
+    user_json_preloads(users, includes.include?('email'))
+    render :json => users.map { |u| user_json(u, @current_user, session, includes)}
   end
 
 
@@ -518,6 +523,7 @@ class UsersController < ApplicationController
       css_bundle :act_as_modal
 
       @page_title = t('Act as %{user_name}', user_name: @user.short_name)
+      @google_analytics_page_title = t('Act as user')
       js_env act_as_user_data: {
         user: {
           name: @user.name,
@@ -571,6 +577,14 @@ class UsersController < ApplicationController
 
     @announcements = AccountNotification.for_user_and_account(@current_user, @domain_root_account)
     @pending_invitations = @current_user.cached_invitations(:include_enrollment_uuid => session[:enrollment_uuid], :preload_course => true)
+
+    if @current_user
+      content_for_head helpers.auto_discovery_link_tag(:atom, feeds_user_format_path(@current_user.feed_code, :atom), {:title => t('user_atom_feed', "User Atom Feed (All Courses)")})
+    end
+
+    css_bundle :dashboard
+    js_bundle :dashboard
+    add_body_class "dashboard-is-planner" if show_planner?
   end
 
   def dashboard_stream_items
@@ -1230,7 +1244,7 @@ class UsersController < ApplicationController
       if authorized_action(@user, @current_user, :read_full_profile)
         add_crumb(t('crumbs.profile', "%{user}'s profile", :user => @user.short_name), @user == @current_user ? user_profile_path(@current_user) : user_path(@user) )
 
-        @group_memberships = @user.current_group_memberships
+        @group_memberships = @user.cached_current_group_memberships_by_date
 
         # course_section and enrollment term will only be used if the enrollment dates haven't been cached yet;
         # maybe should just look at the first enrollment and check if it's cached to decide if we should include
@@ -1252,6 +1266,7 @@ class UsersController < ApplicationController
 
         respond_to do |format|
           format.html do
+            @google_analytics_page_title = "User"
             js_env(CONTEXT_USER_DISPLAY_NAME: @user.short_name,
                    USER_ID: @user.id)
           end
@@ -1319,7 +1334,9 @@ class UsersController < ApplicationController
     variable_expander = Lti::VariableExpander.new(@domain_root_account, @context, self,{
                                                                         current_user: @current_user,
                                                                         current_pseudonym: @current_pseudonym,
-                                                                        tool: @tool})
+                                                                        tool: @tool}
+                                                  )
+    Canvas::LiveEvents.asset_access(@tool, "external_tools", @current_user.class.name, nil)
     adapter = if @tool.use_1_3?
       Lti::LtiAdvantageAdapter.new(
         tool: @tool,
@@ -1338,7 +1355,7 @@ class UsersController < ApplicationController
     @lti_launch.link_text = @tool.label_for(:user_navigation, I18n.locale)
     @lti_launch.analytics_id = @tool.tool_id
 
-    @active_tab = @tool.asset_string
+    set_active_tab @tool.asset_string
     add_crumb(@current_user.short_name, user_profile_path(@current_user))
     render Lti::AppUtil.display_template
   end
@@ -1709,16 +1726,19 @@ class UsersController < ApplicationController
       return render(json: { :message => "Invalid Hexcode Provided" }, status: :bad_request)
     end
 
-    unless params[:hexcode].nil?
-      user.custom_colors[params[:asset_string]] = normalize_hexcode(params[:hexcode])
-    end
+    user.shard.activate do
+      # translate asset string to be relative to user's shard
+      unless params[:hexcode].nil?
+        user.custom_colors[context.asset_string] = normalize_hexcode(params[:hexcode])
+      end
 
-    respond_to do |format|
-      format.json do
-        if user.save
-          render(json: { hexcode: user.custom_colors[params[:asset_string]]})
-        else
-          render(json: user.errors, status: :bad_request)
+      respond_to do |format|
+        format.json do
+          if user.save
+            render(json: { hexcode: user.custom_colors[context.asset_string]})
+          else
+            render(json: user.errors, status: :bad_request)
+          end
         end
       end
     end
@@ -2481,6 +2501,8 @@ class UsersController < ApplicationController
   #
   # @argument include[] [String, "assignment"]
   #   Associations to include with the group.
+  # @argument only_current_enrollments [boolean]
+  #   Returns submissions for only currently active enrollments
   #
   # @returns [Submission]
   #
@@ -2488,10 +2510,17 @@ class UsersController < ApplicationController
     @user = api_find(User, params[:id])
     if authorized_action(@user, @current_user, :read_grades)
       collections = []
+      only_current_enrollments = value_to_boolean(params[:only_current_enrollments])
+
       # Plannable Bookmarker enables descending order
       bookmarker = Plannable::Bookmarker.new(Submission, true, :graded_at, :id)
       Shard.with_each_shard(@user.associated_shards) do
-        collections << [Shard.current.id, BookmarkedCollection.wrap(bookmarker, Submission.for_user(@user).graded)]
+        submissions = if only_current_enrollments
+          Submission.joins(assignment: { course: :student_enrollments }).merge(Enrollment.current.for_user(@user))
+        else
+          Submission.all
+        end
+        collections << [Shard.current.id, BookmarkedCollection.wrap(bookmarker, submissions.for_user(@user).graded)]
       end
 
       scope = BookmarkedCollection.merge(*collections)

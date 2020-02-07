@@ -806,6 +806,12 @@ class AccountsController < ApplicationController
   # @argument account[settings][lock_all_announcements][locked] [Boolean]
   #   Lock this setting for sub-accounts and courses
   #
+  # @argument account[settings][usage_rights_required][value] [Boolean]
+  #   Copyright and license information must be provided for files before they are published.
+  #
+  # @argument account[settings][usage_rights_required][locked] [Boolean]
+  #   Lock this setting for sub-accounts and courses
+  #
   # @argument account[settings][restrict_student_future_listing][value] [Boolean]
   #   Restrict students from viewing future enrollments in course list
   #
@@ -828,10 +834,17 @@ class AccountsController < ApplicationController
     return update_api if api_request?
     if authorized_action(@account, @current_user, :manage_account_settings)
       respond_to do |format|
-
         if @account.root_account?
           terms_attrs = params[:account][:terms_of_service]
           @account.update_terms_of_service(terms_attrs) if terms_attrs.present?
+          if @account.feature_enabled?(:slack_notifications)
+            slack_api_key = params[:account].dig(:slack, :slack_api_key)
+            if slack_api_key.present?
+              encrypted_slack_key, salt = Canvas::Security.encrypt_password(slack_api_key.to_s, 'instructure_slack_encrypted_key')
+              @account.settings[:encrypted_slack_key] = encrypted_slack_key
+              @account.settings[:encrypted_slack_key_salt] = salt
+            end
+          end
         end
 
         custom_help_links = params[:account].delete :custom_help_links
@@ -951,8 +964,8 @@ class AccountsController < ApplicationController
   end
 
   def reports_tab
-    @available_reports = AccountReport.available_reports if @account.grants_right?(@current_user, @session, :read_reports)
-    if @available_reports
+    if authorized_action(@account, @current_user, :read_reports)
+      @available_reports = AccountReport.available_reports
       @root_account = @account.root_account
       @account.shard.activate do
         scope = @account.account_reports.active.where("report_type=name").most_recent
@@ -966,8 +979,13 @@ class AccountsController < ApplicationController
           order("report_types.name").
           index_by(&:report_type)
       end
+      render :layout => false
     end
-    render :layout => false
+  end
+
+  def terms_of_service_custom_content
+    TermsOfService.ensure_terms_for_account(@domain_root_account)
+    render plain: @domain_root_account.terms_of_service.terms_of_service_content&.content
   end
 
   def settings
@@ -993,12 +1011,12 @@ class AccountsController < ApplicationController
         EXTERNAL_TOOLS_CREATE_URL: url_for(controller: :external_tools, action: :create, account_id: @context.id),
         TOOL_CONFIGURATION_SHOW_URL: account_show_tool_configuration_url(account_id: @context.id, developer_key_id: ':developer_key_id'),
         MEMBERSHIP_SERVICE_FEATURE_FLAG_ENABLED: @account.root_account.feature_enabled?(:membership_service_for_lti_tools),
-        LTI_13_TOOLS_FEATURE_FLAG_ENABLED: @account.root_account.feature_enabled?(:lti_1_3),
         CONTEXT_BASE_URL: "/accounts/#{@context.id}",
         MASKED_APP_CENTER_ACCESS_TOKEN: @account.settings[:app_center_access_token].try(:[], 0...5),
         NEW_FEATURES_UI: @account.root_account.feature_enabled?(:new_features_ui),
         PERMISSIONS: {
           :create_tool_manually => @account.grants_right?(@current_user, session, :create_tool_manually),
+          :manage_feature_flags => @account.grants_right?(@current_user, session, :manage_feature_flags)
         },
         CSP: {
           :enabled => @account.csp_enabled?,
@@ -1022,11 +1040,14 @@ class AccountsController < ApplicationController
     authentication_logging = @account.grants_any_right?(@current_user, :view_statistics, :manage_user_logins)
     grade_change_logging = @account.grants_right?(@current_user, :view_grade_changes)
     course_logging = @account.grants_right?(@current_user, :view_course_changes)
-    if authentication_logging || grade_change_logging || course_logging
+    mutation_logging = @account.feature_enabled?(:mutation_audit_log) &&
+      @account.grants_right?(@current_user, :manage_account_settings)
+    if authentication_logging || grade_change_logging || course_logging || mutation_logging
       logging = {
         authentication: authentication_logging,
         grade_change: grade_change_logging,
-        course: course_logging
+        course: course_logging,
+        mutation: mutation_logging,
       }
     end
     logging ||= false
@@ -1392,13 +1413,13 @@ class AccountsController < ApplicationController
   PERMITTED_SETTINGS_FOR_UPDATE = [:admins_can_change_passwords, :admins_can_view_notifications,
                                    :allow_invitation_previews, :allow_sending_scores_in_emails,
                                    :author_email_in_notifications, :canvadocs_prefer_office_online,
-                                   :consortium_parent_account, :consortium_can_create_own_accounts,
+                                   :consortium_parent_account, :consortium_can_create_own_accounts, :can_add_pronouns,
                                    :shard_per_account, :consortium_autocreate_web_of_trust,
                                    :consortium_autocreate_reverse_trust,
                                    :default_storage_quota, :default_storage_quota_mb,
                                    :default_group_storage_quota, :default_group_storage_quota_mb,
                                    :default_user_storage_quota, :default_user_storage_quota_mb, :default_time_zone,
-                                   :edit_institution_email, :enable_alerts, :enable_eportfolios,
+                                   :edit_institution_email, :enable_alerts, :enable_eportfolios, :enable_course_catalog,
                                    {:enable_offline_web_export => [:value]}.freeze,
                                    :enable_profiles, :enable_gravatar, :enable_turnitin, :equella_endpoint,
                                    :equella_teaser, :external_notification_warning, :global_includes,
@@ -1422,6 +1443,7 @@ class AccountsController < ApplicationController
                                    :strict_sis_check, :storage_quota, :students_can_create_courses,
                                    :sub_account_includes, :teachers_can_create_courses, :trusted_referers,
                                    :turnitin_host, :turnitin_account_id, :users_can_edit_name,
+                                   {:usage_rights_required => [:value, :locked] }.freeze,
                                    :app_center_access_token, :default_dashboard_view, :force_default_dashboard_view].freeze
 
   def permitted_account_attributes

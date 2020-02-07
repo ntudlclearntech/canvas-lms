@@ -18,7 +18,7 @@
 
 import React from 'react'
 import ReactDOM from 'react-dom'
-import {waitForElement, wait} from 'react-testing-library'
+import {waitForElement, wait} from '@testing-library/react'
 
 import HideAssignmentGradesTray from 'jsx/grading/HideAssignmentGradesTray'
 import * as Api from 'jsx/grading/HideAssignmentGradesTray/Api'
@@ -107,12 +107,12 @@ QUnit.module('HideAssignmentGradesTray', suiteHooks => {
     )
   }
 
-  async function show() {
+  function show() {
     tray.show(context)
-    await waitForElement(getTrayElement)
+    return waitForElement(getTrayElement)
   }
 
-  async function waitForTrayClosed() {
+  function waitForTrayClosed() {
     return wait(() => {
       if (context.onExited.callCount > 0) {
         return
@@ -122,9 +122,7 @@ QUnit.module('HideAssignmentGradesTray', suiteHooks => {
   }
 
   QUnit.module('#show()', hooks => {
-    hooks.beforeEach(async () => {
-      await show()
-    })
+    hooks.beforeEach(show)
 
     test('opens the tray', () => {
       ok(getTrayElement())
@@ -142,7 +140,10 @@ QUnit.module('HideAssignmentGradesTray', suiteHooks => {
     })
 
     test('resets the selected sections', async () => {
-      const hideAssignmentGradesForSectionsStub = sinon.stub(Api, 'hideAssignmentGradesForSections')
+      const hideAssignmentGradesForSectionsStub = sandbox.stub(
+        Api,
+        'hideAssignmentGradesForSections'
+      )
       getSectionToggleInput().click()
       getSectionInput('Sophomores').click()
       await show()
@@ -150,14 +151,11 @@ QUnit.module('HideAssignmentGradesTray', suiteHooks => {
       getSectionInput('Freshmen').click()
       getHideButton().click()
       deepEqual(hideAssignmentGradesForSectionsStub.firstCall.args[1], ['2001'])
-      hideAssignmentGradesForSectionsStub.restore()
     })
   })
 
   QUnit.module('"Close" Icon Button', hooks => {
-    hooks.beforeEach(async () => {
-      await show()
-    })
+    hooks.beforeEach(show)
 
     test('closes the tray', async () => {
       getCloseIconButton().click()
@@ -176,9 +174,7 @@ QUnit.module('HideAssignmentGradesTray', suiteHooks => {
   })
 
   QUnit.module('"Specific Sections" toggle', hooks => {
-    hooks.beforeEach(async () => {
-      await show()
-    })
+    hooks.beforeEach(show)
 
     test('is present', () => ok(getSectionToggleInput()))
 
@@ -198,9 +194,7 @@ QUnit.module('HideAssignmentGradesTray', suiteHooks => {
   })
 
   QUnit.module('"Close" Button', hooks => {
-    hooks.beforeEach(async () => {
-      await show()
-    })
+    hooks.beforeEach(show)
 
     test('is present', () => ok(getCloseButton()))
 
@@ -234,30 +228,27 @@ QUnit.module('HideAssignmentGradesTray', suiteHooks => {
       resolveHideAssignmentGradesStatusPromise.reject = reject
     })
 
-    async function waitForHiding() {
-      await wait(() => resolveHideAssignmentGradesStatusStub.callCount > 0)
+    function waitForHiding() {
+      return wait(() => resolveHideAssignmentGradesStatusStub.callCount > 0)
     }
 
-    async function clickHide() {
+    function clickHide() {
       getHideButton().click()
-      await waitForHiding()
+      return waitForHiding()
     }
 
-    hooks.beforeEach(async () => {
-      resolveHideAssignmentGradesStatusStub = sinon.stub(Api, 'resolveHideAssignmentGradesStatus')
-      hideAssignmentGradesStub = sinon
+    hooks.beforeEach(() => {
+      resolveHideAssignmentGradesStatusStub = sandbox.stub(Api, 'resolveHideAssignmentGradesStatus')
+      hideAssignmentGradesStub = sandbox
         .stub(Api, 'hideAssignmentGrades')
         .returns(Promise.resolve({id: PROGRESS_ID, workflowState: 'queued'}))
-      showFlashAlertStub = sinon.stub(FlashAlert, 'showFlashAlert')
+      showFlashAlertStub = sandbox.stub(FlashAlert, 'showFlashAlert')
 
-      await show()
+      return show()
     })
 
     hooks.afterEach(() => {
       FlashAlert.destroyContainer()
-      showFlashAlertStub.restore()
-      hideAssignmentGradesStub.restore()
-      resolveHideAssignmentGradesStatusStub.restore()
     })
 
     test('is present', () => ok(getHideButton()))
@@ -338,12 +329,9 @@ QUnit.module('HideAssignmentGradesTray', suiteHooks => {
     })
 
     QUnit.module('on failure', contextHooks => {
-      contextHooks.beforeEach(async () => {
-        hideAssignmentGradesStub.restore()
-        hideAssignmentGradesStub = sinon
-          .stub(Api, 'hideAssignmentGrades')
-          .returns(Promise.reject(new Error('An Error Message')))
-        await clickHide()
+      contextHooks.beforeEach(() => {
+        hideAssignmentGradesStub.returns(Promise.reject(new Error('An Error Message')))
+        return clickHide()
       })
 
       test('renders an error alert', () => {
@@ -367,14 +355,10 @@ QUnit.module('HideAssignmentGradesTray', suiteHooks => {
     QUnit.module('when hiding assignment grades for sections', contextHooks => {
       let hideAssignmentGradesForSectionsStub
 
-      contextHooks.beforeEach(async () => {
-        hideAssignmentGradesForSectionsStub = sinon
+      contextHooks.beforeEach(() => {
+        hideAssignmentGradesForSectionsStub = sandbox
           .stub(Api, 'hideAssignmentGradesForSections')
           .returns(Promise.resolve({id: PROGRESS_ID, workflowState: 'queued'}))
-      })
-
-      contextHooks.afterEach(() => {
-        hideAssignmentGradesForSectionsStub.restore()
       })
 
       test('is not disabled', async () => {
@@ -391,9 +375,10 @@ QUnit.module('HideAssignmentGradesTray', suiteHooks => {
       QUnit.module(
         'given the tray is open and section toggle has been clicked',
         sectionToggleClickedHooks => {
-          sectionToggleClickedHooks.beforeEach(async () => {
-            await show()
-            getSectionToggleInput().click()
+          sectionToggleClickedHooks.beforeEach(() => {
+            return show().then(() => {
+              getSectionToggleInput().click()
+            })
           })
 
           test('renders an error when no sections are selected', async () => {

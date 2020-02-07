@@ -28,7 +28,7 @@ class Account < ActiveRecord::Base
   include BrandConfigHelpers
   belongs_to :parent_account, :class_name => 'Account'
   belongs_to :root_account, :class_name => 'Account'
-  authenticates_many :pseudonym_sessions
+
   has_many :courses
   has_many :all_courses, :class_name => 'Course', :foreign_key => 'root_account_id'
   has_one :terms_of_service, :dependent => :destroy
@@ -200,6 +200,7 @@ class Account < ActiveRecord::Base
   add_setting :restrict_quiz_questions, :boolean => true, :root_only => true, :default => false
   add_setting :no_enrollments_can_create_courses, :boolean => true, :root_only => true, :default => false
   add_setting :allow_sending_scores_in_emails, :boolean => true, :root_only => true
+  add_setting :can_add_pronouns, :boolean => true, :root_only => true, :default => false
 
   add_setting :self_enrollment
   add_setting :equella_endpoint
@@ -248,6 +249,10 @@ class Account < ActiveRecord::Base
 
   add_setting :require_confirmed_email, :boolean => true, :root_only => true, :default => false
 
+  add_setting :enable_course_catalog, :boolean => true, :root_only => true, :default => false
+  add_setting :usage_rights_required, :boolean => true, :default => false, :inheritable => true
+
+
   def settings=(hash)
     if hash.is_a?(Hash) || hash.is_a?(ActionController::Parameters)
       hash.each do |key, val|
@@ -287,11 +292,21 @@ class Account < ActiveRecord::Base
     settings[:product_name] || t("#product_name", "Canvas")
   end
 
+  def usage_rights_required?
+    usage_rights_required[:value]
+  end
+
   def allow_global_includes?
     if root_account?
       global_includes?
     else
       root_account.try(:sub_account_includes?) && root_account.try(:allow_global_includes?)
+    end
+  end
+
+  def pronouns
+    self.shard.activate do
+      AccountPronoun.where(account: [self, nil]).to_a
     end
   end
 
@@ -1090,6 +1105,10 @@ class Account < ActiveRecord::Base
     }
     can :create_courses
 
+    # allow teachers to view term dates
+    given { |user| self.root_account? && !self.site_admin? && self.enrollments.active.of_instructor_type.where(:user_id => user).exists? }
+    can :read_terms
+
     # any logged in user can read global outcomes, but must be checked against the site admin
     given{ |user| self.site_admin? && user }
     can :read_global_outcomes
@@ -1446,8 +1465,9 @@ class Account < ActiveRecord::Base
   TAB_JOBS = 15
   TAB_DEVELOPER_KEYS = 16
 
-  def external_tool_tabs(opts)
+  def external_tool_tabs(opts, user)
     tools = ContextExternalTool.active.find_all_for(self, :account_navigation)
+      .select { |t| t.permission_given?(:account_navigation, user, self) }
     Lti::ExternalToolTab.new(self, :account_navigation, tools, opts[:language]).tabs
   end
 
@@ -1489,7 +1509,7 @@ class Account < ActiveRecord::Base
       tabs << { :id => TAB_DEVELOPER_KEYS, :label => t("#account.tab_developer_keys", "Developer Keys"), :css_class => "developer_keys", :href => :account_developer_keys_path, account_id: root_account.id }
     end
 
-    tabs += external_tool_tabs(opts)
+    tabs += external_tool_tabs(opts, user)
     tabs += Lti::MessageHandler.lti_apps_tabs(self, [Lti::ResourcePlacement::ACCOUNT_NAVIGATION], opts)
     tabs << { :id => TAB_ADMIN_TOOLS, :label => t('#account.tab_admin_tools', "Admin Tools"), :css_class => 'admin_tools', :href => :account_admin_tools_path } if can_see_admin_tools_tab?(user)
     tabs << { :id => TAB_SETTINGS, :label => t('#account.tab_settings', "Settings"), :css_class => 'settings', :href => :account_settings_path }

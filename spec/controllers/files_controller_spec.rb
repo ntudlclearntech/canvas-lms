@@ -187,7 +187,6 @@ describe FilesController do
           :visibility => "admins"
         }
         @tool.save!
-        Account.default.enable_feature!(:lor_for_account)
       end
 
       before :each do
@@ -229,10 +228,6 @@ describe FilesController do
         expect(response).to be_successful
       end
 
-      it "authorizes users on a remote shard for JSON data" do
-        get 'index', params: {:user_id => @user.global_id}, :format => :json
-        expect(response).to be_successful
-      end
     end
   end
 
@@ -284,6 +279,12 @@ describe FilesController do
         verifier = Attachments::Verification.new(@file).verifier_for_user(@teacher)
         get 'show', params: {:course_id => @course.id, :id => @file.id, :verifier => verifier}, :format => 'json'
         expect(response).to be_successful
+      end
+
+      it "should emit an asset_accessed live event" do
+        allow_any_instance_of(Attachment).to receive(:canvadoc_url).and_return "stubby"
+        expect(Canvas::LiveEvents).to receive(:asset_access).with(@file, 'files', nil, nil)
+        get 'show', params: {:course_id => @course.id, :id => @file.id, :verifier => @file.uuid, download: 1}, :format => 'json'
       end
     end
 
@@ -806,7 +807,8 @@ describe FilesController do
 
     context "usage_rights_required" do
       before do
-        @course.enable_feature! :usage_rights_required
+        @course.usage_rights_required = true
+        @course.save!
         user_session(@teacher)
         @file.update_attribute(:locked, true)
       end
@@ -992,7 +994,8 @@ describe FilesController do
     end
 
     it "should create the file in unlocked state if :usage_rights_required is disabled" do
-      @course.disable_feature! :usage_rights_required
+      @course.usage_rights_required = false
+      @course.save!
       user_session(@teacher)
       post 'create_pending', params: {:attachment => {
           :context_code => @course.asset_string,
@@ -1003,7 +1006,8 @@ describe FilesController do
     end
 
     it "should create the file in locked state if :usage_rights_required is enabled" do
-      @course.enable_feature! :usage_rights_required
+      @course.usage_rights_required = true
+      @course.save!
       user_session(@teacher)
       post 'create_pending', params: {:attachment => {
           :context_code => @course.asset_string,
@@ -1056,7 +1060,8 @@ describe FilesController do
     end
 
     it "does not require usage rights for group submissions to be visible to students" do
-      @course.root_account.enable_feature! :usage_rights_required
+      @course.usage_rights_required = true
+      @course.save!
       user_session(@student)
       category = group_category
       assignment = @course.assignments.create(:group_category => category, :submission_types => 'online_upload')
@@ -1221,7 +1226,7 @@ describe FilesController do
   describe "POST api_capture" do
     before :each do
       allow(InstFS).to receive(:enabled?).and_return(true)
-      allow(InstFS).to receive(:jwt_secret).and_return("jwt signing key")
+      allow(InstFS).to receive(:jwt_secrets).and_return(["jwt signing key"])
       @token = Canvas::Security.create_jwt({}, nil, InstFS.jwt_secret)
     end
 
@@ -1376,6 +1381,7 @@ describe FilesController do
               tap(&:start).
               tap(&:save!)
           end
+
           let(:progress_params) do
             assignment_params.merge(
               progress_id: progress.id,
@@ -1389,9 +1395,19 @@ describe FilesController do
             allow(homework_service).to receive(:queue_email)
           end
 
-          it 'should submit the attachment' do
+          it 'should submit the attachment if the submit_assignment flag is not provided' do
             expect(homework_service).to receive(:submit).with(eula_agreement_timestamp)
             request
+          end
+
+          it 'should submit the attachment if the submit_assignment param is set to true' do
+            expect(homework_service).to receive(:submit).with(eula_agreement_timestamp)
+            post "api_capture", params: progress_params.merge(submit_assignment: true)
+          end
+
+          it 'should not submit the attachment if the submit_assignment param is set to false' do
+            expect(homework_service).not_to receive(:submit)
+            post "api_capture", params: progress_params.merge(submit_assignment: false)
           end
 
           it 'should save the eula_agreement_timestamp' do

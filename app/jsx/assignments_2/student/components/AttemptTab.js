@@ -16,190 +16,199 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import AssignmentAlert from './AssignmentAlert'
-import {
-  AssignmentShape,
-  CREATE_SUBMISSION,
-  CREATE_SUBMISSION_DRAFT,
-  STUDENT_VIEW_QUERY,
-  SUBMISSION_HISTORIES_QUERY,
-  SubmissionShape
-} from '../assignmentData'
-import FilePreview from './FilePreview'
-import FileUpload from './FileUpload'
-import I18n from 'i18n!assignments_2_content_upload_tab'
+import {Assignment} from '../graphqlData/Assignment'
+import {bool, func, string} from 'prop-types'
+import {FormField} from '@instructure/ui-form-field'
+import I18n from 'i18n!assignments_2_attempt_tab'
 import LoadingIndicator from '../../shared/LoadingIndicator'
-import {Mutation} from 'react-apollo'
-import React, {Component} from 'react'
+import React, {Component, lazy, Suspense} from 'react'
+import {Submission} from '../graphqlData/Submission'
+import SubmissionChoiceSVG from '../SVG/SubmissionChoice.svg'
+import SVGWithTextPlaceholder from '../../shared/SVGWithTextPlaceholder'
+import {Text} from '@instructure/ui-elements'
+
+const FilePreview = lazy(() => import('./AttemptType/FilePreview'))
+const FileUpload = lazy(() => import('./AttemptType/FileUpload'))
+const MediaAttempt = lazy(() => import('./AttemptType/MediaAttempt'))
+const TextEntry = lazy(() => import('./AttemptType/TextEntry'))
+const UrlEntry = lazy(() => import('./AttemptType/UrlEntry'))
 
 export default class AttemptTab extends Component {
   static propTypes = {
-    assignment: AssignmentShape,
-    submission: SubmissionShape
+    activeSubmissionType: string,
+    assignment: Assignment.shape,
+    createSubmissionDraft: func,
+    editingDraft: bool,
+    submission: Submission.shape,
+    updateActiveSubmissionType: func,
+    updateEditingDraft: func,
+    updateUploadingFiles: func,
+    uploadingFiles: bool
   }
 
-  state = {
-    submissionState: null,
-    uploadState: null
-  }
-
-  updateSubmissionDraftCache = (cache, mutationResult) => {
-    const {assignment} = cache.readQuery({
-      query: STUDENT_VIEW_QUERY,
-      variables: {assignmentLid: this.props.assignment._id, submissionID: this.props.submission.id}
-    })
-
-    // TODO: if we remove all of the attachments from a draft we should set it back to null
-    // we will need to update this to account for other submission types when we implement them.
-    const newDraft = mutationResult.data.createSubmissionDraft.submissionDraft.attachments.length
-      ? mutationResult.data.createSubmissionDraft.submissionDraft
-      : null
-    assignment.submissionsConnection.nodes[0].submissionDraft = newDraft
-
-    cache.writeQuery({
-      query: STUDENT_VIEW_QUERY,
-      variables: {assignmentLid: this.props.assignment._id},
-      data: {assignment}
-    })
-  }
-
-  clearSubmissionHistoriesCache = cache => {
-    // Clear the submission histories cache so that we don't lose the currently
-    // displayed submission when a new submission is created and the current
-    // submission gets transitioned over to a submission history.
-    //
-    // We can't set set the data back to null because apollo doesn't support that:
-    // https://github.com/apollographql/apollo-feature-requests/issues/4
-    // Instead, setting it to a `blank` state is as close as we can come.
-    const node = {
-      submissionHistoriesConnection: {
-        nodes: [],
-        pageInfo: {
-          startCursor: null,
-          hasPreviousPage: true,
-          __typename: 'PageInfo'
-        },
-        __typename: 'SubmissionHistoryConnection'
-      },
-      __typename: 'Submission'
-    }
-
-    cache.writeQuery({
-      query: SUBMISSION_HISTORIES_QUERY,
-      variables: {submissionID: this.props.submission.id},
-      data: {node}
-    })
-  }
-
-  updateUploadState = state => {
-    this.setState({uploadState: state})
-  }
-
-  updateSubmissionState = state => {
-    this.setState({submissionState: state})
-  }
-
-  renderUploadAlert() {
-    if (this.state.uploadState) {
-      let errorMessage, successMessage
-
-      if (this.state.uploadState === 'error') {
-        errorMessage = I18n.t('Error updating submission draft')
-      } else if (this.state.uploadState === 'success') {
-        successMessage = I18n.t('Submission draft updated')
-      }
-
-      return (
-        <AssignmentAlert
-          errorMessage={errorMessage}
-          successMessage={successMessage}
-          onDismiss={() => this.updateUploadState(null)}
-        />
-      )
+  friendlyTypeName = type => {
+    switch (type) {
+      case 'media_recording':
+        return I18n.t('Media')
+      case 'online_text_entry':
+        return I18n.t('Text Entry')
+      case 'online_upload':
+        return I18n.t('File')
+      case 'online_url':
+        return I18n.t('URL')
+      default:
+        throw new Error('submission type not yet supported in A2')
     }
   }
 
-  renderSubmissionAlert() {
-    if (this.state.submissionState) {
-      let errorMessage, successMessage
-
-      if (this.state.submissionState === 'error') {
-        errorMessage = I18n.t('Error sending submission')
-      } else if (this.state.uploadState === 'success') {
-        successMessage = I18n.t('Submission sent')
-      }
-
-      return (
-        <AssignmentAlert
-          errorMessage={errorMessage}
-          successMessage={successMessage}
-          onDismiss={() => this.updateSubmissionState(null)}
-        />
-      )
+  getCurrentSubmissionType = () => {
+    if (this.props.submission.url !== null) {
+      return 'online_url'
+    } else if (this.props.submission.body !== null && this.props.submission.body !== '') {
+      return 'online_text_entry'
+    } else if (this.props.submission.attachments.length !== 0) {
+      return 'online_upload'
     }
   }
 
-  renderFileUpload = createSubmission => {
+  renderFileUpload = () => {
     return (
-      <Mutation
-        mutation={CREATE_SUBMISSION_DRAFT}
-        onCompleted={() => this.updateUploadState('success')}
-        onError={() => this.updateUploadState('error')}
-        update={this.updateSubmissionDraftCache}
-      >
-        {createSubmissionDraft => (
-          <React.Fragment>
-            {this.renderUploadAlert()}
-            <FileUpload
-              assignment={this.props.assignment}
-              createSubmission={createSubmission}
-              createSubmissionDraft={createSubmissionDraft}
-              submission={this.props.submission}
-              updateSubmissionState={this.updateSubmissionState}
-              updateUploadState={this.updateUploadState}
-            />
-          </React.Fragment>
-        )}
-      </Mutation>
+      <Suspense fallback={<LoadingIndicator />}>
+        <FileUpload
+          assignment={this.props.assignment}
+          createSubmissionDraft={this.props.createSubmissionDraft}
+          submission={this.props.submission}
+          updateUploadingFiles={this.props.updateUploadingFiles}
+          uploadingFiles={this.props.uploadingFiles}
+        />
+      </Suspense>
     )
   }
 
-  renderFileAttempt = createSubmission => {
+  renderFileAttempt = () => {
     return this.props.submission.state === 'graded' ||
       this.props.submission.state === 'submitted' ? (
-      <FilePreview key={this.props.submission.attempt} files={this.props.submission.attachments} />
+      <Suspense fallback={<LoadingIndicator />}>
+        <FilePreview
+          key={this.props.submission.attempt}
+          files={this.props.submission.attachments}
+        />
+      </Suspense>
     ) : (
-      this.renderFileUpload(createSubmission)
+      this.renderFileUpload()
     )
   }
 
-  renderSubmission = createSubmission => {
-    switch (this.state.submissionState) {
-      case 'error':
-        return this.renderSubmissionAlert()
-      case 'in-progress':
-        return <LoadingIndicator />
-      case 'success':
+  renderTextAttempt = () => {
+    return (
+      <Suspense fallback={<LoadingIndicator />}>
+        <TextEntry
+          createSubmissionDraft={this.props.createSubmissionDraft}
+          editingDraft={this.props.editingDraft}
+          submission={this.props.submission}
+          updateEditingDraft={this.props.updateEditingDraft}
+        />
+      </Suspense>
+    )
+  }
+
+  renderUrlAttempt = () => {
+    return (
+      <Suspense fallback={<LoadingIndicator />}>
+        <UrlEntry
+          createSubmissionDraft={this.props.createSubmissionDraft}
+          submission={this.props.submission}
+          updateEditingDraft={this.props.updateEditingDraft}
+        />
+      </Suspense>
+    )
+  }
+
+  renderMediaAttempt = () => {
+    return (
+      <Suspense fallback={<LoadingIndicator />}>
+        <MediaAttempt assignment={this.props.assignment} />
+      </Suspense>
+    )
+  }
+
+  renderByType(submissionType) {
+    switch (submissionType) {
+      case 'media_recording':
+        return this.renderMediaAttempt()
+      case 'online_text_entry':
+        return this.renderTextAttempt()
+      case 'online_upload':
+        return this.renderFileAttempt()
+      case 'online_url':
+        return this.renderUrlAttempt()
       default:
-        return (
-          <React.Fragment>
-            {this.renderSubmissionAlert()}
-            {this.renderFileAttempt(createSubmission)}
-          </React.Fragment>
-        )
+        throw new Error('submission type not yet supported in A2')
     }
+  }
+
+  renderUnselectedType() {
+    return (
+      <SVGWithTextPlaceholder
+        text={I18n.t('Choose One Submission Type')}
+        url={SubmissionChoiceSVG}
+      />
+    )
+  }
+
+  renderSubmissionTypeSelector() {
+    // because we are currently allowing only a single submission type
+    // you should never need to change types after submitting
+    if (this.props.submission.state === 'graded' || this.props.submission.state === 'submitted') {
+      return null
+    }
+
+    return (
+      <FormField
+        id="select-submission-type"
+        label={<Text weight="bold">{I18n.t('Submission Type')}</Text>}
+      >
+        <select
+          onChange={event => this.props.updateActiveSubmissionType(event.target.value)}
+          style={{
+            margin: '0 0 10px 0',
+            width: '225px'
+          }}
+          value={this.props.activeSubmissionType || 'default'}
+        >
+          <option hidden key="default" value="default">
+            {I18n.t('Choose One')}
+          </option>
+          {this.props.assignment.submissionTypes.map(type => (
+            <option key={type} value={type}>
+              {this.friendlyTypeName(type)}
+            </option>
+          ))}
+        </select>
+      </FormField>
+    )
   }
 
   render() {
-    return (
-      <Mutation
-        mutation={CREATE_SUBMISSION}
-        onCompleted={() => this.updateSubmissionState('success')}
-        onError={() => this.updateSubmissionState('error')}
-        update={this.clearSubmissionHistoriesCache}
-      >
-        {this.renderSubmission}
-      </Mutation>
-    )
+    if (this.props.assignment.submissionTypes.length > 1) {
+      const submissionType = ['submitted', 'graded'].includes(this.props.submission.state)
+        ? this.getCurrentSubmissionType()
+        : this.props.activeSubmissionType
+      return (
+        <div data-testid="attempt-tab">
+          {this.renderSubmissionTypeSelector()}
+          {this.submissionType !== null &&
+          this.props.assignment.submissionTypes.includes(submissionType)
+            ? this.renderByType(submissionType)
+            : this.renderUnselectedType()}
+        </div>
+      )
+    } else {
+      return (
+        <div data-testid="attempt-tab">
+          {this.renderByType(this.props.assignment.submissionTypes[0])}
+        </div>
+      )
+    }
   }
 }

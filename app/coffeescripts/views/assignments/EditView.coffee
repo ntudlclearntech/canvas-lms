@@ -40,6 +40,7 @@ import deparam from '../../util/deparam'
 import SisValidationHelper from '../../util/SisValidationHelper'
 import SimilarityDetectionTools from 'jsx/assignments/AssignmentConfigurationTools'
 import ModeratedGradingFormFieldGroup from 'jsx/assignments/ModeratedGradingFormFieldGroup'
+import DefaultToolForm, { toolSubmissionType } from 'jsx/assignments/DefaultToolForm'
 import AssignmentExternalTools from 'jsx/assignments/AssignmentExternalTools'
 import * as returnToHelper from '../../../jsx/shared/helpers/returnToHelper'
 import 'jqueryui/dialog'
@@ -75,6 +76,7 @@ export default class EditView extends ValidatedFormView
   GRADING_TYPE_SELECTOR = '#grading_type_selector'
   GRADED_ASSIGNMENT_FIELDS = '#graded_assignment_fields'
   EXTERNAL_TOOL_SETTINGS = '#assignment_external_tool_settings'
+  DEFAULT_EXTERNAL_TOOL_CONTAINER = '#default_external_tool_container'
   GROUP_CATEGORY_SELECTOR = '#group_category_selector'
   PEER_REVIEWS_FIELDS = '#assignment_peer_reviews_fields'
   EXTERNAL_TOOLS_URL = '#assignment_external_tool_tag_attributes_url'
@@ -116,6 +118,7 @@ export default class EditView extends ValidatedFormView
     els["#{EXTERNAL_TOOLS_NEW_TAB}"] = '$externalToolsNewTab'
     els["#{EXTERNAL_TOOLS_CONTENT_TYPE}"] = '$externalToolsContentType'
     els["#{EXTERNAL_TOOLS_CONTENT_ID}"] = '$externalToolsContentId'
+    els["#{DEFAULT_EXTERNAL_TOOL_CONTAINER}"] = '$defaultExternalToolContainer'
     els["#{ASSIGNMENT_POINTS_POSSIBLE}"] = '$assignmentPointsPossible'
     els["#{ASSIGNMENT_POINTS_CHANGE_WARN}"] = '$pointsChangeWarning'
     els["#{CONDITIONAL_RELEASE_TARGET}"] = '$conditionalReleaseTarget'
@@ -297,6 +300,31 @@ export default class EditView extends ValidatedFormView
     ev.preventDefault()
     @$advancedTurnitinSettings.toggleAccessibly (@$turnitinEnabled.prop('checked') || @$vericiteEnabled.prop('checked'))
 
+  defaultExternalToolEnabled: =>
+    !!@defaultExternalToolUrl()
+
+  defaultExternalToolUrl: =>
+    ENV.DEFAULT_ASSIGNMENT_TOOL_URL
+
+  defaultExternalToolName: =>
+    ENV.DEFAULT_ASSIGNMENT_TOOL_NAME
+
+  renderDefaultExternalTool: =>
+    props = {
+      toolDialog: $("#resource_selection_dialog"),
+      courseId: ENV.COURSE_ID,
+      toolUrl: @defaultExternalToolUrl(),
+      toolName: @defaultExternalToolName(),
+      toolButtonText: ENV.DEFAULT_ASSIGNMENT_TOOL_BUTTON_TEXT,
+      toolInfoMessage: ENV.DEFAULT_ASSIGNMENT_TOOL_INFO_MESSAGE,
+      previouslySelected: @assignment.defaultToolSelected()
+    }
+
+    ReactDOM.render(
+      React.createElement(DefaultToolForm, props),
+      document.querySelector('[data-component="DefaultToolForm"]')
+    )
+
   handleRestrictFileUploadsChange: =>
     @$allowedExtensions.toggleAccessibly @$restrictFileUploads.prop('checked')
 
@@ -311,6 +339,7 @@ export default class EditView extends ValidatedFormView
     @$groupCategorySelector.toggleAccessibly subVal != 'external_tool'
     @$peerReviewsFields.toggleAccessibly subVal != 'external_tool'
     @$similarityDetectionTools.toggleAccessibly subVal == 'online' && ENV.PLAGIARISM_DETECTION_PLATFORM
+    @$defaultExternalToolContainer.toggleAccessibly subVal == 'default_external_tool'
     if subVal == 'online'
       @handleOnlineSubmissionTypeChange()
 
@@ -358,6 +387,8 @@ export default class EditView extends ValidatedFormView
         ENV.CONDITIONAL_RELEASE_ENV)
 
     @disableFields() if @assignment.inClosedGradingPeriod()
+
+    @renderDefaultExternalTool() if @defaultExternalToolEnabled()
 
     this
 
@@ -410,7 +441,6 @@ export default class EditView extends ValidatedFormView
     #
     # If the user has not changed the due date, don't touch the seconds value
     # (so that we don't clobber a due date set by the API).
-    # debugger
     return null unless newDate
 
     adjustedDate = new Date(newDate)
@@ -470,6 +500,9 @@ export default class EditView extends ValidatedFormView
     event.stopPropagation()
 
     @cacheAssignmentSettings()
+
+    # Get the submission type if an alias type is used (e.g. default_external_tool)
+    $(SUBMISSION_TYPE).val(toolSubmissionType($(SUBMISSION_TYPE).val()))
 
     if @dueDateOverrideView.containsSectionsWithoutOverrides()
       sections = @dueDateOverrideView.sectionsWithoutOverrides()
@@ -588,7 +621,7 @@ export default class EditView extends ValidatedFormView
     errors
 
   _validateTitle: (data, errors) =>
-    return errors if _.contains(@model.frozenAttributes(), "title")
+    return errors if _.includes(@model.frozenAttributes(), "title")
 
     post_to_sis = data.post_to_sis == '1'
     max_name_length = 256
@@ -629,14 +662,14 @@ export default class EditView extends ValidatedFormView
     errors
 
   _validateAllowedExtensions: (data, errors) =>
-    if (data.allowed_extensions and _.contains(data.submission_types, "online_upload")) and data.allowed_extensions.length == 0
+    if (data.allowed_extensions and _.includes(data.submission_types, "online_upload")) and data.allowed_extensions.length == 0
       errors["allowed_extensions"] = [
         message: I18n.t 'at_least_one_file_type', 'Please specify at least one allowed file type'
       ]
     errors
 
   _validatePointsPossible: (data, errors) =>
-    return errors if _.contains(@model.frozenAttributes(), "points_possible")
+    return errors if _.includes(@model.frozenAttributes(), "points_possible")
     return errors if this.lockedItems.points
 
     if typeof data.points_possible != 'number' or isNaN(data.points_possible)
@@ -648,7 +681,7 @@ export default class EditView extends ValidatedFormView
   # Require points possible > 0
   # if grading type === percent || letter_grade || gpa_scale
   _validatePointsRequired: (data, errors) =>
-    return errors unless _.include ['percent','letter_grade','gpa_scale'], data.grading_type
+    return errors unless ['percent','letter_grade','gpa_scale'].includes data.grading_type
 
     if typeof data.points_possible != 'number' or data.points_possible < 0 or isNaN(data.points_possible)
       errors["points_possible"] = [
@@ -658,8 +691,12 @@ export default class EditView extends ValidatedFormView
 
   _validateExternalTool: (data, errors) =>
     if data.submission_type == 'external_tool' && data.grading_type != 'not_graded' && $.trim(data.external_tool_tag_attributes?.url?.toString()).length == 0
+      message = I18n.t 'External Tool URL cannot be left blank'
       errors["external_tool_tag_attributes[url]"] = [
-        message: I18n.t 'External Tool URL cannot be left blank'
+        message: message
+      ]
+      errors["default-tool-launch-button"] = [
+        message: message
       ]
     errors
 
@@ -751,7 +788,7 @@ export default class EditView extends ValidatedFormView
       isPeerReviewAssignment: !!@$peerReviewsBox.prop('checked')
       locale: ENV.LOCALE
       moderatedGradingEnabled: @assignment.moderatedGrading()
-      maxGraderCount: ENV.MODERATED_GRADING_MAX_GRADER_COUNT
+      availableGradersCount: ENV.MODERATED_GRADING_MAX_GRADER_COUNT
       onGraderCommentsVisibleToGradersChange: @handleGraderCommentsVisibleToGradersChanged
       onModeratedGradingChange: @handleModeratedGradingChanged
 

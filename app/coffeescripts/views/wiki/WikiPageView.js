@@ -16,6 +16,7 @@
 // with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import $ from 'jquery'
+import 'jquery.scrollToVisible'
 import tz from 'timezone'
 import _ from 'underscore'
 import Backbone from 'Backbone'
@@ -58,6 +59,7 @@ export default class WikiPageView extends Backbone.View {
     this.optionProperty('course_home')
     this.optionProperty('course_title')
     this.optionProperty('display_show_all_pages')
+    this.optionProperty('show_immersive_reader')
   }
 
   initialize() {
@@ -123,7 +125,7 @@ export default class WikiPageView extends Backbone.View {
         $anchor = $(`#wiki_page_show .user_content a[name='${anchor_name}']`)
       }
       if ($anchor.length) {
-        $('html, body').scrollTo($anchor)
+        $('html, body').scrollToVisible($anchor)
       }
     }
   }
@@ -189,6 +191,7 @@ export default class WikiPageView extends Backbone.View {
     json.wiki_page_history_path = this.wiki_page_history_path
     json.course_home = this.course_home
     json.course_title = this.course_title
+    json.show_immersive_reader = this.show_immersive_reader
     json.CAN = {
       VIEW_ALL_PAGES: !!this.display_show_all_pages || !!this.WIKI_RIGHTS.manage,
       VIEW_PAGES: !!this.WIKI_RIGHTS.read,

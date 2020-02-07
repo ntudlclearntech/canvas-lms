@@ -22,6 +22,7 @@ class AssignmentsController < ApplicationController
   include Api::V1::Assignment
   include Api::V1::AssignmentOverride
   include Api::V1::AssignmentGroup
+  include Api::V1::GroupCategory
   include Api::V1::ModerationGrader
   include Api::V1::Outcome
   include Api::V1::ExternalTools
@@ -30,8 +31,12 @@ class AssignmentsController < ApplicationController
   include KalturaHelper
   include SyllabusHelper
   before_action :require_context
-  add_crumb(proc { t '#crumbs.assignments', "Assignments" }, :except => [:destroy, :syllabus, :index]) { |c| c.send :course_assignments_path, c.instance_variable_get("@context") }
-  before_action { |c| c.active_tab = "assignments" }
+  add_crumb(
+    proc { t '#crumbs.assignments', "Assignments" },
+    except: [:destroy, :syllabus, :index, :new, :edit]
+  ) { |c| c.send :course_assignments_path, c.instance_variable_get("@context") }
+  before_action(except: [:new, :edit]) { |c| c.active_tab = "assignments" }
+  before_action(only: [:new, :edit]) { |c| setup_active_tab(c) }
   before_action :normalize_title_param, :only => [:new, :edit]
 
   def index
@@ -66,7 +71,13 @@ class AssignmentsController < ApplicationController
           HAS_ASSIGNMENTS: @context.active_assignments.count > 0,
           QUIZ_LTI_ENABLED: quiz_lti_tool_enabled?,
           DUE_DATE_REQUIRED_FOR_ACCOUNT: due_date_required_for_account,
+          FLAGS: {
+            newquizzes_on_quiz_page: @context.root_account.feature_enabled?(:newquizzes_on_quiz_page)
+          }
         }
+
+        set_default_tool_env!(@context, hash)
+
         js_env(hash)
 
         respond_to do |format|
@@ -82,6 +93,38 @@ class AssignmentsController < ApplicationController
   def show
     Shackles.activate(:slave) do
       @assignment ||= @context.assignments.find(params[:id])
+
+      # TODO: Make sure we aren't stripping out any needed functionality that is
+      #       happening when this controller is hit without A2 enabled. Specifically
+      #       `ensure_assignment_group`, `context_module_action`, and `log_asset_access`.
+      if @assignment.a2_enabled? && (!params.key?(:assignments_2) || value_to_boolean(params[:assignments_2]))
+        unless can_do(@context, @current_user, :read_as_admin)
+          # TODO: Look at how the `@locked` stuff is used bellow, in A1 the pre-reqs are only being
+          #       calculated if needed, but we are doing it every time here.
+          assignment_prereqs = context_module_sequence_items_by_asset_id(@assignment.id, "Assignment")
+          submission = @assignment.submissions.find_by(user: @current_user)
+          graphql_submisison_id = nil
+          if submission
+            graphql_submisison_id = CanvasSchema.id_from_object(
+              submission,
+              CanvasSchema.resolve_type(submission, nil),
+              nil
+            )
+          end
+
+          js_env({
+            ASSIGNMENT_ID: params[:id],
+            COURSE_ID: @context.id,
+            PREREQS: assignment_prereqs,
+            SUBMISSION_ID: graphql_submisison_id
+          })
+          css_bundle :assignments_2_student
+          js_bundle :assignments_2_show_student
+          render html: '', layout: true
+          return
+        end
+      end
+
 
       if @assignment.deleted?
         flash[:notice] = t 'notices.assignment_delete', "This assignment has been deleted"
@@ -122,6 +165,28 @@ class AssignmentsController < ApplicationController
 
         log_asset_access(@assignment, "assignments", @assignment.assignment_group)
 
+        env = js_env({COURSE_ID: @context.id})
+        env[:SETTINGS][:filter_speed_grader_by_student_group] = filter_speed_grader_by_student_group?
+
+        if env[:SETTINGS][:filter_speed_grader_by_student_group]
+          eligible_categories = @context.group_categories.active
+          eligible_categories = eligible_categories.where(id: @assignment.group_category) if @assignment.group_category.present?
+          env[:group_categories] = group_categories_json(eligible_categories, @current_user, session, {include: ['groups']})
+
+          selected_group_id = @current_user.preferences.dig(:gradebook_settings, @context.id, 'filter_rows_by', 'student_group_id')
+          # If this is a group assignment and we had previously filtered by a
+          # group that isn't part of this assignment's group set, behave as if
+          # no group is selected.
+          if selected_group_id.present? && Group.active.exists?(group_category_id: eligible_categories.pluck(:id), id: selected_group_id)
+            env[:selected_student_group_id] = selected_group_id
+          end
+        end
+
+        @assignment_presenter = AssignmentPresenter.new(@assignment)
+        if @assignment_presenter.can_view_speed_grader_link?(@current_user) && !@assignment.unpublished?
+          env[:speed_grader_url] = context_url(@context, :speed_grader_context_gradebook_url, assignment_id: @assignment.id)
+        end
+
         if @assignment.quiz?
           return redirect_to named_context_url(@context, :context_quiz_url, @assignment.quiz.id)
         elsif @assignment.discussion_topic? &&
@@ -149,28 +214,22 @@ class AssignmentsController < ApplicationController
         end
         js_env({
           ASSIGNMENT_ID: @assignment.id,
-          COURSE_ID: @context.id,
           PREREQS: assignment_prereqs
         })
 
-        if @context.feature_enabled?(:assignments_2) && (!params.key?(:assignments_2) || value_to_boolean(params[:assignments_2]))
+        if @context.feature_enabled?(:assignments_2_teacher) && (!params.key?(:assignments_2) || value_to_boolean(params[:assignments_2]))
           if can_do(@context, @current_user, :read_as_admin)
             css_bundle :assignments_2_teacher
             js_bundle :assignments_2_show_teacher
-          else
-            css_bundle :assignments_2_student
-            js_bundle :assignments_2_show_student
+            render html: '', layout: true
+            return
           end
-
-          render html: '', layout: true
-          return
         end
 
         # everything else here is only for the old assignment page and can be
         # deleted once the :assignments_2 feature flag is deleted
-        @locked.delete(:lock_at) if @locked.is_a?(Hash) && @locked.has_key?(:unlock_at) # removed to allow proper translation on show page
+        @locked.delete(:lock_at) if @locked.is_a?(Hash) && @locked.key?(:unlock_at) # removed to allow proper translation on show page
 
-        @assignment_presenter = AssignmentPresenter.new(@assignment)
         if can_read_submissions
           @assigned_assessments = @current_user_submission&.assigned_assessments&.select { |request| request.submission.grants_right?(@current_user, session, :read) } || []
         end
@@ -189,12 +248,13 @@ class AssignmentsController < ApplicationController
         @similarity_pledge = pledge_text
 
         js_env({
-                :ROOT_OUTCOME_GROUP => outcome_group_json(@context.root_outcome_group, @current_user, session),
-                :EXTERNAL_TOOLS => external_tools_json(@external_tools, @context, @current_user, session),
-                :EULA_URL => tool_eula_url,
-                :SIMILARITY_PLEDGE => @similarity_pledge,
-                PERMISSIONS: permissions,
-              })
+          EULA_URL: tool_eula_url,
+          EXTERNAL_TOOLS: external_tools_json(@external_tools, @context, @current_user, session),
+          PERMISSIONS: permissions,
+          ROOT_OUTCOME_GROUP: outcome_group_json(@context.root_outcome_group, @current_user, session),
+          SIMILARITY_PLEDGE: @similarity_pledge
+        })
+
         set_master_course_js_env_data(@assignment, @context)
         conditional_release_js_env(@assignment, includes: :rule)
 
@@ -213,10 +273,18 @@ class AssignmentsController < ApplicationController
 
         @mark_done = MarkDonePresenter.new(self, @context, params["module_item_id"], @current_user, @assignment)
 
+        @show_locked_page = @locked && !@locked[:can_view]
+        if @show_locked_page
+          js_bundle :module_sequence_footer
+        else
+          css_bundle :assignments
+          js_bundle :assignment_show
+        end
+
         render locals: {
           eula_url: tool_eula_url,
           show_moderation_link: @assignment.moderated_grading? && @assignment.permits_moderation?(@current_user)
-        }
+        }, stream: can_stream_template?
       end
     end
   end
@@ -247,7 +315,7 @@ class AssignmentsController < ApplicationController
 
     student_ids =
       if assignment.grade_as_group?
-        assignment.representatives(current_user).map(&:id)
+        assignment.representatives(user: current_user).map(&:id)
       else
         context.apply_enrollment_visibility(context.student_enrollments, current_user).pluck(:user_id)
       end
@@ -457,7 +525,7 @@ class AssignmentsController < ApplicationController
   def new
     @assignment ||= @context.assignments.temp_record
     @assignment.workflow_state = 'unpublished'
-    add_crumb t "Create new"
+    add_crumb_on_new_quizzes(true)
 
     if params[:submission_types] == 'discussion_topic'
       redirect_to new_polymorphic_url([@context, :discussion_topic], index_edit_params)
@@ -472,6 +540,7 @@ class AssignmentsController < ApplicationController
   def edit
     rce_js_env
     @assignment ||= @context.assignments.active.find(params[:id])
+    add_crumb_on_new_quizzes(false)
     if authorized_action(@assignment, @current_user, @assignment.new_record? ? :create : :update)
       @assignment.title = params[:title] if params[:title]
       @assignment.due_at = params[:due_at] if params[:due_at]
@@ -549,7 +618,7 @@ class AssignmentsController < ApplicationController
       hash[:ASSIGNMENT] = assignment_json(@assignment, @current_user, session, override_dates: false)
       hash[:ASSIGNMENT][:has_submitted_submissions] = @assignment.has_submitted_submissions?
       hash[:URL_ROOT] = polymorphic_url([:api_v1, @context, :assignments])
-      hash[:CANCEL_TO] = @assignment.new_record? ? polymorphic_url([@context, :assignments]) : polymorphic_url([@context, @assignment])
+      hash[:CANCEL_TO] = set_cancel_to_url
       hash[:CONTEXT_ID] = @context.id
       hash[:CONTEXT_ACTION_SOURCE] = :assignments
       hash[:DUE_DATE_REQUIRED_FOR_ACCOUNT] = AssignmentUtil.due_date_required_for_account?(@context)
@@ -564,6 +633,8 @@ class AssignmentsController < ApplicationController
       if @context.grading_periods?
         hash[:active_grading_periods] = GradingPeriod.json_for(@context, @current_user)
       end
+
+      set_default_tool_env!(@context, hash)
 
       hash[:ANONYMOUS_GRADING_ENABLED] = @context.feature_enabled?(:anonymous_marking)
       hash[:MODERATED_GRADING_ENABLED] = @context.feature_enabled?(:moderated_grading)
@@ -581,6 +652,13 @@ class AssignmentsController < ApplicationController
     end
   end
 
+  def set_cancel_to_url
+    if @assignment.quiz_lti? && @context.root_account.feature_enabled?(:newquizzes_on_quiz_page)
+      return polymorphic_url([@context, :quizzes])
+    end
+    @assignment.new_record? ? polymorphic_url([@context, :assignments]) : polymorphic_url([@context, @assignment])
+  end
+
   # @API Delete an assignment
   #
   # Delete the given assignment.
@@ -591,7 +669,7 @@ class AssignmentsController < ApplicationController
   #          -H 'Authorization: Bearer <token>'
   # @returns Assignment
   def destroy
-    @assignment = @context.assignments.active.api_id(params[:id])
+    @assignment = api_find(@context.assignments.active, params[:id])
     if authorized_action(@assignment, @current_user, :delete)
       return render_unauthorized_action if editing_restricted?(@assignment)
 
@@ -606,7 +684,53 @@ class AssignmentsController < ApplicationController
     end
   end
 
+  # pulish a N.Q assignment from Quizzes Page
+  def publish_quizzes
+    if authorized_action(@context, @current_user, :manage_assignments)
+      @assignments = @context.assignments.active.where(id: params[:quizzes])
+      @assignments.each(&:publish!)
+
+      flash[:notice] = t('notices.quizzes_published',
+                         { :one => "1 quiz successfully published!",
+                           :other => "%{count} quizzes successfully published!" },
+                         :count => @assignments.length)
+
+      respond_to do |format|
+        format.html { redirect_to named_context_url(@context, :context_quizzes_url) }
+        format.json { render :json => {}, :status => :ok }
+      end
+    end
+  end
+
+  # unpulish a N.Q assignment from Quizzes Page
+  def unpublish_quizzes
+    if authorized_action(@context, @current_user, :manage_assignments)
+      @assignments = @context.assignments.active.where(id: params[:quizzes], workflow_state: 'published')
+      @assignments.each(&:unpublish!)
+
+      flash[:notice] = t('notices.quizzes_unpublished',
+                         { :one => "1 quiz successfully unpublished!",
+                           :other => "%{count} quizzes successfully unpublished!" },
+                         :count => @assignments.length)
+
+      respond_to do |format|
+        format.html { redirect_to named_context_url(@context, :context_quizzes_url) }
+        format.json { render :json => {}, :status => :ok }
+      end
+    end
+  end
+
   protected
+
+  def set_default_tool_env!(context, hash)
+    root_account_settings = context.root_account.settings
+    if root_account_settings[:default_assignment_tool_url] && root_account_settings[:default_assignment_tool_name]
+      hash[:DEFAULT_ASSIGNMENT_TOOL_URL] = root_account_settings[:default_assignment_tool_url]
+      hash[:DEFAULT_ASSIGNMENT_TOOL_NAME] = root_account_settings[:default_assignment_tool_name]
+      hash[:DEFAULT_ASSIGNMENT_TOOL_BUTTON_TEXT] = root_account_settings[:default_assignment_tool_button_text]
+      hash[:DEFAULT_ASSIGNMENT_TOOL_INFO_MESSAGE] = root_account_settings[:default_assignment_tool_info_message]
+    end
+  end
 
   def show_moderate_env
     can_view_grader_identities = @assignment.can_view_other_grader_identities?(@current_user)
@@ -659,7 +783,7 @@ class AssignmentsController < ApplicationController
         :peer_reviews, :automatic_peer_reviews, :grade_group_students_individually,
         :notify_of_update, :time_zone_edited, :turnitin_enabled, :vericite_enabled,
         :context, :position, :external_tool_tag_attributes, :freeze_on_copy,
-        :only_visible_to_overrides, :post_to_sis, :integration_id, :moderated_grading,
+        :only_visible_to_overrides, :post_to_sis, :sis_assignment_id, :integration_id, :moderated_grading,
         :omit_from_final_grade, :intra_group_peer_reviews,
         :allowed_extensions => strong_anything,
         :turnitin_settings => strong_anything,
@@ -697,8 +821,42 @@ class AssignmentsController < ApplicationController
     # the tool should be enabled, this URL was chosen because we sometimes
     # want the tool enabled in beta or test. NOTE: This is a stop-gap until
     # Quizzes.Next has a beta env.
-    @context.feature_enabled?(:quizzes_next) &&
+    !@context.root_account.feature_enabled?(:newquizzes_on_quiz_page) &&
+      @context.feature_enabled?(:quizzes_next) &&
       quiz_lti_tool.present? &&
       quiz_lti_tool.url != 'http://void.url.inseng.net'
+  end
+
+  def filter_speed_grader_by_student_group?
+    # Group assignments only need to filter if they show individual students
+    return false if @assignment.group_category? && !@assignment.grade_group_students_individually?
+
+    @context.filter_speed_grader_by_student_group?
+  end
+
+  def add_crumb_on_new_quizzes(new_quiz)
+    return if !new_quiz && @assignment.new_record?
+
+    if on_quizzes_page? && params.key?(:quiz_lti)
+      add_crumb(t('#crumbs.quizzes', "Quizzes"), course_quizzes_path(@context))
+    else
+      add_crumb(t('#crumbs.assignments', "Assignments"), course_assignments_path(@context))
+    end
+
+    add_crumb(t('Create new')) if new_quiz
+  end
+
+  def setup_active_tab(controller)
+    if on_quizzes_page? && params.key?(:quiz_lti)
+      controller.active_tab = "quizzes"
+      return
+    end
+
+    controller.active_tab = "assignments"
+  end
+
+  def on_quizzes_page?
+    @context.root_account.feature_enabled?(:newquizzes_on_quiz_page) && \
+      @context.feature_enabled?(:quizzes_next) && @context.quiz_lti_tool.present?
   end
 end

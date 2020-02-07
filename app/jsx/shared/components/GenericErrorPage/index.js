@@ -20,11 +20,11 @@ import I18n from 'i18n!generic_error_page'
 import React from 'react'
 
 import {Button} from '@instructure/ui-buttons'
-import View from '@instructure/ui-layout/lib/components/View'
-import Text from '@instructure/ui-elements/lib/components/Text'
+import {View} from '@instructure/ui-layout'
+import {Text, Spinner} from '@instructure/ui-elements'
 import axios from 'axios'
 import {string} from 'prop-types'
-import {Spinner} from '@instructure/ui-elements'
+
 import ErrorTextInputForm from './ErrorTextInputForm'
 import ErrorPageHeader from './ErrorPageHeader'
 
@@ -112,7 +112,7 @@ class GenericErrorPage extends React.Component {
         <ErrorPageHeader imageUrl={this.props.imageUrl} />
         <View margin="small" display="block">
           {!this.state.commentPosted && (
-            <React.Fragment>
+            <>
               <View margin="small" display="block">
                 <Text margin="0">{I18n.t('Help us improve by telling us what happened')}</Text>
               </View>
@@ -121,7 +121,7 @@ class GenericErrorPage extends React.Component {
                   {I18n.t('Report Issue')}
                 </Button>
               </View>
-            </React.Fragment>
+            </>
           )}
           {this.state.showingCommentBox && (
             <ErrorTextInputForm
@@ -132,7 +132,9 @@ class GenericErrorPage extends React.Component {
               handleSubmitErrorReport={this.handleSubmitErrorReport}
             />
           )}
-          {this.state.submitLoading && <Spinner title={I18n.t('Loading')} margin="0 0 0 medium" />}
+          {this.state.submitLoading && (
+            <Spinner renderTitle={I18n.t('Loading')} margin="0 0 0 medium" />
+          )}
           {this.state.commentPosted && this.state.commentPostError && (
             <View display="block" data-test-id="generic-error-comments-submitted">
               <Text color="error" margin="x-small">

@@ -70,10 +70,120 @@ RSpec.describe SubmissionDraft do
       }.to raise_error(ActiveRecord::RecordInvalid)
     end
 
-    it 'submission_attempt cannot be larger then the root submissions attempt' do
+    it 'submission_attempt can be one attempt ahead of the current submissions' do
       expect{
         SubmissionDraft.create!(submission: @submission, submission_attempt: @submission.attempt + 1)
+      }.not_to raise_error
+    end
+
+    it 'submission_attempt cannot be more then one attempt ahead of the current submissions' do
+      expect{
+        SubmissionDraft.create!(submission: @submission, submission_attempt: @submission.attempt + 2)
       }.to raise_error(ActiveRecord::RecordInvalid)
+    end
+  end
+
+  describe '#validates_url' do
+    context 'the assignment is an online_url type' do
+      before(:once) do
+        @submission.assignment.submission_types = 'online_url'
+      end
+
+      it 'prefixes the url with a scheme if missing' do
+        @submission_draft.update!(url: 'www.google.com')
+        expect(@submission_draft.url).to eq('http://www.google.com')
+      end
+    end
+  end
+
+  describe '#meets_assignment_criteria?' do
+    context 'the assignment is an online_text_entry type' do
+      before(:once) do
+        @submission.assignment.submission_types = 'online_text_entry'
+      end
+
+      it 'returns true if there is a text body' do
+        @submission_draft.body = 'some body'
+        expect(@submission_draft.meets_assignment_criteria?).to eq(true)
+      end
+
+      it 'returns false if the text body is empty' do
+        @submission_draft.body = ''
+        expect(@submission_draft.meets_assignment_criteria?).to eq(false)
+      end
+
+      it 'returns false if drafts exist for a different type' do
+        attachment = attachment_model
+        @submission_draft.attachments = [attachment]
+
+        expect(@submission_draft.meets_assignment_criteria?).to eq(false)
+      end
+    end
+
+    context 'the assignment is an online_upload type' do
+      before(:once) do
+        @submission.assignment.submission_types = 'online_upload'
+      end
+
+      it 'returns true if there are any attachments' do
+        attachment = attachment_model
+        @submission_draft.attachments = [attachment]
+
+        expect(@submission_draft.meets_assignment_criteria?).to eq(true)
+      end
+
+      it 'returns false if attachments is an empty array' do
+        @submission_draft.attachments = []
+        expect(@submission_draft.meets_assignment_criteria?).to eq(false)
+      end
+
+      it 'returns false if drafts exist for a different type' do
+        @submission_draft.body = 'some body'
+        expect(@submission_draft.meets_assignment_criteria?).to eq(false)
+      end
+    end
+
+    context 'the assignment is an online_url type' do
+      before(:once) do
+        @submission.assignment.submission_types = 'online_url'
+      end
+
+      it 'returns true if there is a url' do
+        @submission_draft.url = 'http://www.google.com'
+        expect(@submission_draft.meets_assignment_criteria?).to eq(true)
+      end
+
+      it 'returns false if the url is not valid' do
+        @submission_draft.url = 'oogy boogy'
+        expect(@submission_draft.meets_assignment_criteria?).to eq(false)
+      end
+
+      it 'returns false if the url is empty' do
+        @submission_draft.url = ''
+        expect(@submission_draft.meets_assignment_criteria?).to eq(false)
+      end
+
+      it 'returns false if drafts exist for a different type' do
+        attachment = attachment_model
+        @submission_draft.attachments = [attachment]
+
+        expect(@submission_draft.meets_assignment_criteria?).to eq(false)
+      end
+    end
+
+    context 'there are multiple submission types' do
+      before(:once) do
+        @submission.assignment.submission_types = 'online_text_entry,online_upload'
+      end
+
+      it 'returns true if a draft exists for any of the submission types' do
+        @submission_draft.body = 'some body'
+        expect(@submission_draft.meets_assignment_criteria?).to eq(true)
+      end
+    end
+
+    it 'returns false if there are no draft states' do
+      expect(@submission_draft.meets_assignment_criteria?).to eq(false)
     end
   end
 end

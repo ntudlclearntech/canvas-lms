@@ -16,17 +16,57 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import {func} from 'prop-types'
-import {
-  GetAssignmentEnvVariables,
-  InitialQueryShape,
-  SubmissionHistoriesQueryShape
-} from '../assignmentData'
+import {arrayOf, func, shape} from 'prop-types'
+import {Assignment, AssignmentSubmissionsConnection} from '../graphqlData/Assignment'
 import React from 'react'
 import StudentContent from './StudentContent'
 import StudentViewContext from './Context'
+import {Submission} from '../graphqlData/Submission'
 
-/* Some helper functions for parsing various graphql query results */
+// Helper functions used by this component
+
+function makeDummyNextSubmission(submission) {
+  return {
+    ...submission,
+    attachments: [],
+    attempt: submission.attempt + 1,
+    deductedPoints: null,
+    enteredGrade: null,
+    grade: null,
+    gradingStatus: null,
+    latePolicyStatus: null,
+    state: 'unsubmitted',
+    submissionDraft: submission.submissionDraft,
+    submissionStatus: 'unsubmitted',
+    submittedAt: null,
+    unreadCommentCount: 0
+  }
+}
+
+function getAssignmentEnvVariables() {
+  const baseUrl = `${window.location.origin}/${ENV.context_asset_string.split('_')[0]}s/${
+    ENV.context_asset_string.split('_')[1]
+  }`
+
+  const env = {
+    assignmentUrl: `${baseUrl}/assignments`,
+    courseId: ENV.context_asset_string.split('_')[1],
+    currentUser: ENV.current_user,
+    modulePrereq: null,
+    moduleUrl: `${baseUrl}/modules`
+  }
+
+  if (ENV.PREREQS?.items?.[0]?.prev) {
+    const prereq = ENV.PREREQS.items[0].prev
+    env.modulePrereq = {
+      title: prereq.title,
+      link: prereq.html_url,
+      __typename: 'modulePrereq'
+    }
+  }
+
+  return env
+}
 
 function getInitialSubmission(initialQueryData) {
   const submissionsConnection = initialQueryData.assignment.submissionsConnection
@@ -42,11 +82,7 @@ function getSubmissionHistories(submissionHistoriesQueryData) {
   }
 
   const historiesConnection = submissionHistoriesQueryData.node.submissionHistoriesConnection
-  if (historiesConnection && historiesConnection.nodes) {
-    return historiesConnection.nodes
-  } else {
-    return []
-  }
+  return historiesConnection?.nodes || []
 }
 
 function getAllSubmissions({initialQueryData, submissionHistoriesQueryData}) {
@@ -60,67 +96,87 @@ function getAllSubmissions({initialQueryData, submissionHistoriesQueryData}) {
   // comments without having to pipe both the initial submission and
   // currently displayed submission to all components.
   const submissionHistories = getSubmissionHistories(submissionHistoriesQueryData).map(history => {
-    return {...history, id: initialSubmission.id}
+    return {...history, _id: initialSubmission._id, id: initialSubmission.id}
   })
   submissionHistories.push(initialSubmission)
   return submissionHistories
 }
 
-/* End helper functions for parsing graphql query results */
-
 class ViewManager extends React.Component {
   static propTypes = {
-    initialQueryData: InitialQueryShape,
+    initialQueryData: shape({
+      ...Assignment.shape.propTypes,
+      ...AssignmentSubmissionsConnection.shape.propTypes
+    }),
     loadMoreSubmissionHistories: func,
     // eslint-disable-next-line react/no-unused-prop-types
-    submissionHistoriesQueryData: SubmissionHistoriesQueryShape
+    submissionHistoriesQueryData: shape({
+      submissionHistoriesConnection: shape({
+        nodes: arrayOf(Submission.shape)
+      })
+    })
   }
 
   state = {
-    submissions: [],
-    displayedAttempt: null, // eslint-disable-line react/no-unused-state
-    loadingMore: false
+    displayedAttempt: null,
+    dummyNextSubmission: null,
+    loadingMore: false,
+    submissions: []
   }
 
   static getDerivedStateFromProps(props, state) {
-    const oldAllSubmissions = state.submissions
-    const newAllSubmissions = getAllSubmissions(props)
+    const prevState = state
+    const nextState = {
+      ...prevState,
+      submissions: getAllSubmissions(props)
+    }
 
     // Case where there are no submissions (user not logged in on public course)
-    if (oldAllSubmissions.length === 0 && newAllSubmissions.length === 0) {
-      return null
+    if (prevState.submissions.length === 0 && nextState.submissions.length === 0) {
+      return nextState
     }
 
-    // Case where we have new submission histories coming in
-    if (newAllSubmissions.length > oldAllSubmissions.length) {
-      const newDisplayIndex = newAllSubmissions.length - oldAllSubmissions.length - 1
-      return {
-        submissions: newAllSubmissions,
-        displayedAttempt: newAllSubmissions[newDisplayIndex].attempt,
-        loadingMore: false
-      }
+    // A submission draft for attempt n+1 is tied to the lastest submitted submission
+    // with attempt n (thanks versionable). All of our children already know how to
+    // display a submission draft for an unsubmitted assignment, because that's how the
+    // attempt 0 works. Rather then making the components aware of how to toggle back
+    // and forth and display a submission draft for an already submitted submission,
+    // we are moving the submission draft for attempt n+1 into an unsubmitted
+    // "dummy submission" that all our components already know how to handle.
+    let currentSubmission = nextState.submissions[nextState.submissions.length - 1]
+    if (currentSubmission.submissionDraft) {
+      nextState.submissions.push(makeDummyNextSubmission(currentSubmission))
+      nextState.dummyNextSubmission = null
+    } else if (state.dummyNextSubmission) {
+      nextState.submissions.push(state.dummyNextSubmission)
+    }
+    currentSubmission = nextState.submissions[nextState.submissions.length - 1]
+
+    const prevStateCurrentSubmission = prevState.submissions[prevState.submissions.length - 1] || {}
+
+    if (prevStateCurrentSubmission.attempt !== currentSubmission.attempt) {
+      // Case where the "current" submission is new. This could be because an the
+      // page was initially loaded, an assignment was submitted, a submission draft
+      // was created, or the new attempt button was clicked which triggered a dummy
+      // submission to be created.
+      nextState.displayedAttempt = currentSubmission.attempt
+    } else if (nextState.submissions.length > prevState.submissions.length) {
+      // Case where we have new submission histories available to display. This will
+      // happen as a result of `this.props.onLoadMore()` call finishing after the
+      // previous submission button was clicked.
+      const nextIndex = nextState.submissions.length - prevState.submissions.length - 1
+      nextState.displayedAttempt = nextState.submissions[nextIndex].attempt
+      nextState.loadingMore = false
     }
 
-    // Case where the current submission is new
-    const oldSubmission = oldAllSubmissions[oldAllSubmissions.length - 1]
-    const newSubmission = newAllSubmissions[newAllSubmissions.length - 1]
-    if (oldSubmission.attempt !== newSubmission.attempt) {
-      return {
-        submissions: newAllSubmissions,
-        displayedAttempt: newSubmission.attempt
-      }
-    }
-
-    return {
-      submissions: newAllSubmissions
-    }
+    return nextState
   }
 
   getAssignmentWithEnv = () => {
     const assignment = this.props.initialQueryData.assignment
     const assignmentCopy = JSON.parse(JSON.stringify(assignment))
     delete assignmentCopy.submissionsConnection
-    assignmentCopy.env = GetAssignmentEnvVariables()
+    assignmentCopy.env = getAssignmentEnvVariables()
     return assignmentCopy
   }
 
@@ -130,19 +186,26 @@ class ViewManager extends React.Component {
       return null
     }
 
-    const historiesConnection =
-      props.submissionHistoriesQueryData.node.submissionHistoriesConnection
-    return historiesConnection && historiesConnection.pageInfo
+    return props.submissionHistoriesQueryData.node.submissionHistoriesConnection?.pageInfo
   }
 
   getDisplayedSubmissionIndex = (opts = {}) => {
     const state = opts.state || this.state
-    return state.submissions.findIndex(s => s.attempt === state.displayedAttempt)
+    const index = state.submissions.findIndex(s => s.attempt === state.displayedAttempt)
+    if (index === -1) {
+      throw new Error('Could not find displayed submission')
+    }
+    return index
   }
 
   getDisplayedSubmission = (opts = {}) => {
     const state = opts.state || this.state
     return state.submissions[this.getDisplayedSubmissionIndex(opts)]
+  }
+
+  getLatestSubmission = (opts = {}) => {
+    const state = opts.state || this.state
+    return state.submissions[state.submissions.length - 1]
   }
 
   hasNextSubmission = (opts = {}) => {
@@ -159,12 +222,13 @@ class ViewManager extends React.Component {
     const pageInfo = this.getPageInfo(opts)
     if (!pageInfo && state.displayedAttempt > 1) {
       return true
-    } else if (pageInfo && pageInfo.hasPreviousPage) {
+    } else if (pageInfo?.hasPreviousPage) {
       return true
     }
 
     const currentIndex = this.getDisplayedSubmissionIndex(opts)
-    return currentIndex !== 0
+    const submission = this.getDisplayedSubmission(opts)
+    return currentIndex !== 0 && submission.attempt > 1
   }
 
   onNextSubmission = () => {
@@ -200,6 +264,37 @@ class ViewManager extends React.Component {
     })
   }
 
+  onStartNewAttempt = () => {
+    this.setState((state, props) => {
+      const opts = {state, props}
+      const submission = this.getDisplayedSubmission(opts)
+
+      // Can only create a new dummy submission if we are on the newest submission
+      // and a dummy doesn't already exist, either because this was already called
+      // or because it was created for a submission draft.
+      if (
+        state.dummyNextSubmission ||
+        submission !== this.getLatestSubmission(opts) ||
+        submission.submissionDraft
+      ) {
+        return null
+      }
+
+      // This dummy submission isn't backed by a submission draft in the database
+      // at this point. Until the user does something like uploading a file which
+      // creates a real submission draft, this will exist only on the frontend,
+      // which is why we need to save it to the state so isn't forgotten about.
+      // Once the user does make a frd submission draft, the dummy submission in
+      // the state will be set back to null, and a new dummy submission will be
+      // created from that submission draft instead. See getDerviedStateFromProps.
+      const dummyNextSubmission = makeDummyNextSubmission(submission)
+      return {
+        dummyNextSubmission,
+        displayedAttempt: dummyNextSubmission.attempt
+      }
+    })
+  }
+
   render() {
     const assignment = this.getAssignmentWithEnv()
     const submission = this.getDisplayedSubmission()
@@ -207,11 +302,12 @@ class ViewManager extends React.Component {
     return (
       <StudentViewContext.Provider
         value={{
-          prevButtonEnabled: this.hasPrevSubmission(),
+          latestSubmission: getInitialSubmission(this.props.initialQueryData),
+          nextButtonAction: this.onNextSubmission,
           nextButtonEnabled: this.hasNextSubmission(),
           prevButtonAction: this.onPrevSubmission,
-          nextButtonAction: this.onNextSubmission,
-          latestSubmission: getInitialSubmission(this.props.initialQueryData)
+          prevButtonEnabled: this.hasPrevSubmission(),
+          startNewAttemptAction: this.onStartNewAttempt
         }}
       >
         <StudentContent assignment={assignment} submission={submission} />

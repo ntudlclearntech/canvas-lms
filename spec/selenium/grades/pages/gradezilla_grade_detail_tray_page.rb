@@ -66,6 +66,10 @@ module Gradezilla
       f("#final-grade-value").text
     end
 
+    def self.group_message
+      fj("div:contains('Select Student Group')")
+    end
+
     def self.speedgrader_link
       fj("a:contains('SpeedGrader')")
     end
@@ -131,7 +135,7 @@ module Gradezilla
     end
 
     def self.hidden_pill_locator
-       "//*[@data-cid='Pill'][//span[text() = 'Hidden']]"
+      "//*[@id='SubmissionTray__Content']//span[text() = 'Hidden']/../../.."
     end
 
     # methods

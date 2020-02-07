@@ -21,6 +21,7 @@ class GradebooksController < ApplicationController
   include GradebooksHelper
   include KalturaHelper
   include Api::V1::AssignmentGroup
+  include Api::V1::Group
   include Api::V1::GroupCategory
   include Api::V1::Submission
   include Api::V1::CustomGradebookColumn
@@ -62,6 +63,16 @@ class GradebooksController < ApplicationController
 
     add_crumb(@presenter.student_name, named_context_url(@context, :context_student_grades_url,
                                                          @presenter.student_id))
+
+    js_bundle :grade_summary, :rubric_assessment
+    css_bundle :grade_summary
+
+    @google_analytics_page_title = t("Grades for Student")
+    load_grade_summary_data
+    render stream: can_stream_template?
+  end
+
+  def load_grade_summary_data
     gp_id = nil
     if grading_periods?
       @grading_periods = active_grading_periods_json
@@ -72,13 +83,13 @@ class GradebooksController < ApplicationController
           where(user_id: @presenter.student_id, assignment_id: @context.assignments.active).
           select(:cached_due_date, :grading_period_id, :assignment_id, :user_id).
           each_with_object({}) do |submission, hsh|
-            hsh[submission.assignment_id] = {
-              submission.user_id => {
-                due_at: submission.cached_due_date,
-                grading_period_id: submission.grading_period_id,
-              }
+          hsh[submission.assignment_id] = {
+            submission.user_id => {
+              due_at: submission.cached_due_date,
+              grading_period_id: submission.grading_period_id,
             }
-          end
+          }
+        end
     end
 
     @exclude_total = exclude_total?(@context)
@@ -91,16 +102,21 @@ class GradebooksController < ApplicationController
       @presenter.assignment_stats
     end
 
-    submissions_json = @presenter.submissions.
-      select { |s| s.user_can_read_grade?(@current_user) }.
-      map do |s|
-        {
-          assignment_id: s.assignment_id,
-          score: s.score,
-          excused: s.excused?,
-          workflow_state: s.workflow_state,
-        }
+    submissions_json = @presenter.submissions.map do |submission|
+      json = {
+        assignment_id: submission.assignment_id
+      }
+
+      if submission.user_can_read_grade?(@current_user)
+        json.merge!({
+          excused: submission.excused?,
+          score: submission.score,
+          workflow_state: submission.workflow_state
+        })
       end
+
+      json
+    end
 
     grading_period = @grading_periods && @grading_periods.find { |period| period[:id] == gp_id }
 
@@ -134,10 +150,10 @@ class GradebooksController < ApplicationController
 
     if @context.feature_enabled?(:final_grades_override)
       total_score = if grading_periods? && !view_all_grading_periods?
-        student_enrollment.find_score(grading_period_id: @current_grading_period_id)
-      else
-        student_enrollment.find_score(course_score: true)
-      end
+                      @presenter.student_enrollment.find_score(grading_period_id: @current_grading_period_id)
+                    else
+                      @presenter.student_enrollment.find_score(course_score: true)
+                    end
 
       js_hash[:effective_final_score] = total_score.effective_final_score if total_score&.overridden?
     end
@@ -412,7 +428,7 @@ class GradebooksController < ApplicationController
         sections: sections_json(@context.active_course_sections, @current_user, session, [], allow_sis_ids: true),
         settings_update_url: api_v1_course_gradebook_settings_update_url(@context),
         settings: gradebook_settings.fetch(@context.id, {}),
-        student_groups: group_categories_json(@context.group_categories, @current_user, session, {include: ['groups']}),
+        student_groups: group_categories_json(@context.group_categories.active, @current_user, session, {include: ['groups']}),
         login_handle_name: @context.root_account.settings[:login_handle_name],
         sis_name: @context.root_account.settings[:sis_name],
         version: params.fetch(:version, nil),
@@ -642,21 +658,26 @@ class GradebooksController < ApplicationController
 
     @can_comment_on_submission = !@context.completed? && !@context_enrollment.try(:completed?)
     @disable_unmute_assignment = @assignment.muted && !@assignment.grades_published?
+
     respond_to do |format|
 
       format.html do
+        grading_role_for_user = grading_role(assignment: @assignment)
         rubric = @assignment&.rubric_association&.rubric
         @headers = false
         @outer_frame = true
         log_asset_access([ "speed_grader", @context ], "grades", "other")
         env = {
+          MANAGE_GRADES: @context.grants_right?(@current_user, session, :manage_grades),
+          READ_AS_ADMIN: @context.grants_right?(@current_user, session, :read_as_admin),
           CONTEXT_ACTION_SOURCE: :speed_grader,
           can_view_audit_trail: @assignment.can_view_audit_trail?(@current_user),
           settings_url: speed_grader_settings_course_gradebook_path,
           new_gradebook_enabled: new_gradebook_enabled?,
           force_anonymous_grading: force_anonymous_grading?(@assignment),
           anonymous_identities: @assignment.anonymous_grader_identities_by_anonymous_id,
-          grading_role: grading_role(assignment: @assignment),
+          final_grader_id: @assignment.final_grader_id,
+          grading_role: grading_role_for_user,
           grading_type: @assignment.grading_type,
           lti_retrieve_url: retrieve_course_external_tools_url(
             @context.id, assignment_id: @assignment.id, display: 'borderless'
@@ -667,12 +688,13 @@ class GradebooksController < ApplicationController
           rubric: rubric ? rubric_json(rubric, @current_user, session, style: 'full') : nil,
           nonScoringRubrics: @domain_root_account.feature_enabled?(:non_scoring_rubrics),
           outcome_extra_credit_enabled: @context.feature_enabled?(:outcome_extra_credit),
+          group_comments_per_attempt: @assignment.a2_enabled?,
           can_comment_on_submission: @can_comment_on_submission,
           show_help_menu_item: show_help_link?,
           help_url: help_link_url,
           outcome_proficiency: outcome_proficiency,
         }
-        if grading_role(assignment: @assignment) == :moderator
+        if grading_role_for_user == :moderator
           env[:provisional_select_url] = api_v1_select_provisional_grade_path(@context.id, @assignment.id, "{{provisional_grade_id}}")
         end
 
@@ -683,7 +705,6 @@ class GradebooksController < ApplicationController
         if new_gradebook_enabled?
           env[:selected_section_id] = gradebook_settings.dig(@context.id, 'filter_rows_by', 'section_id')
           env[:post_policies_enabled] = true if @context.post_policies_enabled?
-          env[:selected_student_group_id] = gradebook_settings.dig(@context.id, 'filter_rows_by', 'student_group_id')
         end
 
         if @assignment.quiz
@@ -691,6 +712,37 @@ class GradebooksController < ApplicationController
                                                             @assignment.quiz.id,
                                                             :user_id => "{{user_id}}"
         end
+
+        if @context.filter_speed_grader_by_student_group?
+          env[:filter_speed_grader_by_student_group] = true
+
+          requested_student_id = if @assignment.anonymize_students? && params[:anonymous_id].present?
+            @assignment.submissions.find_by(anonymous_id: params[:anonymous_id])&.user_id
+          elsif !@assignment.anonymize_students?
+            params[:student_id]
+          end
+
+          group_selection = SpeedGrader::StudentGroupSelection.new(current_user: @current_user, course: @context)
+          updated_group_info = group_selection.select_group(student_id: requested_student_id)
+
+          if updated_group_info.group != group_selection.initial_group
+            new_group_id = updated_group_info.group.present? ? updated_group_info.group.id.to_s : nil
+            gradebook_settings(create_if_missing: true).deep_merge!({
+              context.id => {
+                'filter_rows_by' => {
+                  'student_group_id' => new_group_id
+                }
+              }
+            })
+            @current_user.save!
+          end
+
+          if updated_group_info.group.present?
+            env[:selected_student_group] = group_json(updated_group_info.group, @current_user, session)
+          end
+          env[:student_group_reason_for_change] = updated_group_info.reason_for_change if updated_group_info.reason_for_change.present?
+        end
+
         append_sis_data(env)
         js_env(env)
 
@@ -748,7 +800,7 @@ class GradebooksController < ApplicationController
   end
 
   def change_gradebook_column_size
-    if authorized_action(@context, @current_user, :manage_grades)
+    if authorized_action(@context, @current_user, [:manage_grades, :view_all_grades])
       unless @current_user.preferences.key?(:gradebook_column_size)
         @current_user.preferences[:gradebook_column_size] = {}
       end
@@ -760,7 +812,7 @@ class GradebooksController < ApplicationController
   end
 
   def save_gradebook_column_order
-    if authorized_action(@context, @current_user, :manage_grades)
+    if authorized_action(@context, @current_user, [:manage_grades, :view_all_grades])
       unless @current_user.preferences.key?(:gradebook_column_order)
         @current_user.preferences[:gradebook_column_order] = {}
       end
@@ -841,11 +893,14 @@ class GradebooksController < ApplicationController
       value_to_boolean(user_preference)
     end
 
+    visible_sections = @context.sections_visible_to(@current_user)
+
     new_gradebook_options = {
       colors: gradebook_settings.fetch(:colors, {}),
 
       course_settings: {
-        allow_final_grade_override: allow_final_grade_override
+        allow_final_grade_override: allow_final_grade_override,
+        filter_speed_grader_by_student_group: @context.filter_speed_grader_by_student_group?
       },
 
       final_grade_override_enabled: @context.feature_enabled?(:final_grades_override),
@@ -854,9 +909,15 @@ class GradebooksController < ApplicationController
       grading_schemes: GradingStandard.for(@context).as_json(include_root: false),
       late_policy: @context.late_policy.as_json(include_root: false),
       new_gradebook_development_enabled: new_gradebook_development_enabled?,
-      post_policies_enabled: @context.post_policies_enabled?
+      post_policies_enabled: @context.post_policies_enabled?,
+      sections: sections_json(visible_sections, @current_user, session, [], allow_sis_ids: true),
+      show_similarity_score: @context.root_account.feature_enabled?(:new_gradebook_plagiarism_indicator)
     }
-    new_gradebook_options[:post_manually] = @context.post_manually? if @context.post_policies_enabled?
+
+    if @context.post_policies_enabled?
+      new_gradebook_options[:post_manually] = @context.post_manually?
+      new_gradebook_options[:new_post_policy_icons_enabled] = @context.root_account.feature_enabled?(:new_post_policy_icons)
+    end
 
     {GRADEBOOK_OPTIONS: new_gradebook_options}
   end

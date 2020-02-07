@@ -16,14 +16,15 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import {AssignmentShape, SubmissionShape} from '../assignmentData'
+import {Assignment} from '../graphqlData/Assignment'
 import {bool} from 'prop-types'
 import I18n from 'i18n!assignments_2_student_header_date_title'
 import React from 'react'
 import StepItem from '../../shared/Steps/StepItem'
 import Steps from '../../shared/Steps'
 import StudentViewContext from './Context'
-import Text from '@instructure/ui-elements/lib/components/Text'
+import {Submission} from '../graphqlData/Submission'
+import {Text} from '@instructure/ui-elements'
 
 function renderCollapsedContainer(step) {
   return (
@@ -47,8 +48,8 @@ function availableStepContainer(props, context) {
         ) : null}
         <StepItem label={I18n.t('Available')} status="complete" />
         <StepItem label={I18n.t('Upload')} status="in-progress" />
-        <StepItem label={I18n.t('Submit')} />
-        <StepItem label={I18n.t('Not Graded Yet')} />
+        <StepItem label={I18n.t('Submit')} status="incomplete" />
+        <StepItem label={I18n.t('Not Graded Yet')} status="incomplete" />
         {context.nextButtonEnabled && !props.isCollapsed ? (
           <StepItem label={I18n.t('Next')} status="button" />
         ) : null}
@@ -70,9 +71,9 @@ function unavailableStepContainer(props, context) {
           <StepItem label={I18n.t('Previous')} status="button" />
         ) : null}
         <StepItem label={I18n.t('Unavailable')} status="unavailable" />
-        <StepItem label={I18n.t('Upload')} />
-        <StepItem label={I18n.t('Submit')} />
-        <StepItem label={I18n.t('Not Graded Yet')} />
+        <StepItem label={I18n.t('Upload')} status="incomplete" />
+        <StepItem label={I18n.t('Submit')} status="incomplete" />
+        <StepItem label={I18n.t('Not Graded Yet')} status="incomplete" />
         {context.nextButtonEnabled && !props.isCollapsed ? (
           <StepItem label={I18n.t('Next')} status="button" />
         ) : null}
@@ -96,7 +97,7 @@ function uploadedStepContainer(props, context) {
         <StepItem label={I18n.t('Available')} status="complete" />
         <StepItem label={I18n.t('Uploaded')} status="complete" />
         <StepItem label={I18n.t('Submit')} status="in-progress" />
-        <StepItem label={I18n.t('Not Graded Yet')} />
+        <StepItem label={I18n.t('Not Graded Yet')} status="incomplete" />
       </Steps>
     </div>
   )
@@ -117,7 +118,7 @@ function submittedStepContainer(props, context) {
         <StepItem label={I18n.t('Available')} status="complete" />
         <StepItem label={I18n.t('Uploaded')} status="complete" />
         <StepItem label={I18n.t('Submitted')} status="complete" />
-        <StepItem label={I18n.t('Not Graded Yet')} />
+        <StepItem label={I18n.t('Not Graded Yet')} status="incomplete" />
         {allowNextAttempt(props.assignment, props.submission) &&
         !context.nextButtonEnabled &&
         !props.isCollapsed ? (
@@ -132,9 +133,9 @@ function submittedStepContainer(props, context) {
 }
 
 submittedStepContainer.propTypes = {
-  assignment: AssignmentShape,
+  assignment: Assignment.shape,
   isCollapsed: bool,
-  submission: SubmissionShape
+  submission: Submission.shape
 }
 
 function gradedStepContainer(props, context) {
@@ -170,12 +171,8 @@ function selectStepContainer(props, context) {
     return gradedStepContainer({isCollapsed, assignment, submission}, context)
   } else if (submission.state === 'submitted') {
     return submittedStepContainer({isCollapsed, assignment, submission}, context)
-  } else if (submission.submissionDraft) {
-    if (props.submission.submissionDraft.attachments) {
-      if (props.submission.submissionDraft.attachments.length) {
-        return uploadedStepContainer({isCollapsed}, context)
-      }
-    }
+  } else if (submission.submissionDraft && submission.submissionDraft.meetsAssignmentCriteria) {
+    return uploadedStepContainer({isCollapsed}, context)
   }
   return availableStepContainer({isCollapsed}, context)
 }
@@ -195,16 +192,16 @@ function StepContainer(props) {
 //       the propType validations properly that way. If not we need to remove
 //       these or actually using jsx to call them.
 gradedStepContainer.propTypes = {
-  assignment: AssignmentShape,
+  assignment: Assignment.shape,
   isCollapsed: bool,
-  submission: SubmissionShape
+  submission: Submission.shape
 }
 
 StepContainer.propTypes = {
-  assignment: AssignmentShape,
+  assignment: Assignment.shape,
   forceLockStatus: bool,
   isCollapsed: bool,
-  submission: SubmissionShape
+  submission: Submission.shape
 }
 
 export default React.memo(StepContainer)

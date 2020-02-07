@@ -138,6 +138,63 @@ describe Quizzes::QuizzesController do
       expect(assigns[:js_env][:SIS_NAME]).to eq('Foo Bar')
     end
 
+    it "js_env quiz_lti_enabled is true when quizzes_next/newquizzes_on_quiz_page is enabled" do
+      user_session(@teacher)
+      @course.context_external_tools.create!(
+        :name => 'Quizzes.Next',
+        :consumer_key => 'test_key',
+        :shared_secret => 'test_secret',
+        :tool_id => 'Quizzes 2',
+        :url => 'http://example.com/launch'
+      )
+      @course.root_account.settings[:provision] = {'lti' => 'lti url'}
+      @course.root_account.save!
+      @course.root_account.enable_feature! :quizzes_next
+      @course.root_account.enable_feature! :newquizzes_on_quiz_page
+      @course.enable_feature! :quizzes_next
+      get 'index', params: {course_id: @course.id}
+      expect(assigns[:js_env][:FLAGS][:quiz_lti_enabled]).to be true
+    end
+
+    it "js_env quiz_lti_enabled is false when newquizzes_on_quiz_page is disabled" do
+      user_session(@teacher)
+      @course.context_external_tools.create!(
+        :name => 'Quizzes.Next',
+        :consumer_key => 'test_key',
+        :shared_secret => 'test_secret',
+        :tool_id => 'Quizzes 2',
+        :url => 'http://example.com/launch'
+      )
+      @course.root_account.settings[:provision] = {'lti' => 'lti url'}
+      @course.root_account.save!
+      @course.root_account.enable_feature! :quizzes_next
+      @course.enable_feature! :quizzes_next
+      get 'index', params: {course_id: @course.id}
+      expect(assigns[:js_env][:FLAGS][:quiz_lti_enabled]).to be false
+    end
+
+    it "js_env quiz_lti_enabled is false when quizzes_next is disabled" do
+      user_session(@teacher)
+      @course.context_external_tools.create!(
+        :name => 'Quizzes.Next',
+        :consumer_key => 'test_key',
+        :shared_secret => 'test_secret',
+        :tool_id => 'Quizzes 2',
+        :url => 'http://example.com/launch'
+      )
+      @course.root_account.settings[:provision] = {'lti' => 'lti url'}
+      @course.root_account.save!
+      @course.root_account.enable_feature! :newquizzes_on_quiz_page
+      get 'index', params: {course_id: @course.id}
+      expect(assigns[:js_env][:FLAGS][:quiz_lti_enabled]).to be false
+    end
+
+    it "js_env quiz_lti_enabled is false when new quizzes is not available" do
+      user_session @teacher
+      get 'index', params: {course_id: @course.id}
+      expect(assigns[:js_env][:FLAGS][:quiz_lti_enabled]).to be false
+    end
+
     it "js_env migrate_quiz_enabled is false when only quizzes_next is enabled" do
       user_session(@teacher)
       @course.root_account.settings[:provision] = {'lti' => 'lti url'}
@@ -188,6 +245,105 @@ describe Quizzes::QuizzesController do
       allow(AssignmentUtil).to receive(:name_length_required_for_account?).and_return(false)
       get 'index', params: {:course_id => @course.id}
       expect(assigns[:js_env][:MAX_NAME_LENGTH_REQUIRED_FOR_ACCOUNT]).to eq(false)
+    end
+
+    context 'DIRECT_SHARE_ENABLED' do
+      before :once do
+        course_quiz()
+      end
+
+      it "js_env DIRECT_SHARE_ENABLED is true when feature flag is on" do
+        Account.default.enable_feature!(:direct_share)
+        user_session(@teacher)
+        get 'index', params: {course_id: @course.id}
+        expect(assigns[:js_env][:FLAGS][:DIRECT_SHARE_ENABLED]).to eq(true)
+      end
+
+      it "js_env DIRECT_SHARE_ENABLED is false when feature flag is off" do
+        user_session(@teacher)
+        get 'index', params: {:course_id => @course.id}
+        expect(assigns[:js_env][:FLAGS][:DIRECT_SHARE_ENABLED]).to eq(false)
+      end
+
+      it "js_env DIRECT_SHARE_ENABLED is false when user does not have manage" do
+        Account.default.enable_feature!(:direct_share)
+        user_session(@student)
+        get 'index', params: {:course_id => @course.id}
+        expect(assigns[:js_env][:FLAGS][:DIRECT_SHARE_ENABLED]).to eq(false)
+      end
+    end
+
+    context 'when newquizzes_on_quiz_page FF is enabled' do
+      let_once(:course_assignments) do
+        group = @course.assignment_groups.create(:name => "some group")
+        (0..3).map do |i|
+          @course.assignments.create(
+            title: "some assignment #{i}",
+            assignment_group: group,
+            due_at: Time.zone.now + 1.week,
+            external_tool_tag_attributes: { content: tool },
+            workflow_state: workflow_states[i]
+          )
+        end
+      end
+
+      let_once(:course_quizzes) do
+        [course_quiz, course_quiz(true)]
+      end
+
+      let_once(:workflow_states) do
+        [:unpublished, :published, :unpublished, :published]
+      end
+
+      let_once(:tool) do
+        @course.context_external_tools.create!(
+          name: 'Quizzes.Next',
+          consumer_key: 'test_key',
+          shared_secret: 'test_secret',
+          tool_id: 'Quizzes 2',
+          url: 'http://example.com/launch'
+        )
+      end
+
+      before :once do
+        @course.root_account.settings[:provision] = {'lti' => 'lti url'}
+        @course.root_account.save!
+        @course.root_account.enable_feature! :quizzes_next
+        @course.enable_feature! :quizzes_next
+        @course.root_account.enable_feature! :newquizzes_on_quiz_page
+        # make the last two of course_assignments to be quiz_lti assignment
+        (2..3).each { |i| course_assignments[i].quiz_lti! && course_assignments[i].save! }
+        course_quizzes
+      end
+
+      context "teacher interface" do
+        it "includes all old quizzes and new quizzes" do
+          user_session(@teacher)
+          get 'index', params: { course_id: @course.id }
+          expect(controller.js_env[:QUIZZES][:assignment]).not_to be_nil
+          expect(controller.js_env[:QUIZZES][:assignment].count).to eq(4)
+          expect(
+            controller.js_env[:QUIZZES][:assignment].map{ |x| x[:id] }
+          ).to contain_exactly(
+            course_quizzes[0].id,
+            course_quizzes[1].id,
+            course_assignments[2].id,
+            course_assignments[3].id
+          )
+        end
+      end
+
+      context "student interface" do
+        it "includes published quizzes" do
+          user_session(@student)
+          get 'index', params: { course_id: @course.id }
+          expect(controller.js_env[:QUIZZES][:assignment]).not_to be_nil
+          expect(controller.js_env[:QUIZZES][:assignment].count).to eq(2)
+          expect(
+            controller.js_env[:QUIZZES][:assignment].map{ |x| x[:id] }
+          ).to contain_exactly(course_quizzes[1].id, course_assignments[3].id)
+        end
+      end
     end
   end
 
@@ -392,15 +548,33 @@ describe Quizzes::QuizzesController do
       expect(attach[:display_name]).to eq attachment.display_name
     end
 
-    it "assigns js_env for versions if submission is present" do
-      require 'action_controller_test_process'
-      user_session(@student)
-      course_quiz !!:active
-      submission = @quiz.generate_submission @student
-      create_attachment_for_file_upload_submission!(submission)
-      get 'show', params: {:course_id => @course.id, :id => @quiz.id}
-      path = "courses/#{@course.id}/quizzes/#{@quiz.id}/submission_versions"
-      expect(assigns[:js_env][:SUBMISSION_VERSIONS_URL]).to include(path)
+    describe "js_env SUBMISSION_VERSIONS_URL" do
+      before(:each) do
+        require 'action_controller_test_process'
+        user_session(@student)
+        course_quiz(true)
+
+        @quiz.assignment.course.enable_feature!(:new_gradebook)
+        PostPolicy.enable_feature!
+      end
+
+      let(:submission) { @quiz.generate_submission(@student) }
+
+      it "is assigned if a quiz submission is present and posted to the student" do
+        Quizzes::SubmissionGrader.new(submission).grade_submission
+        create_attachment_for_file_upload_submission!(submission)
+        get 'show', params: {:course_id => @course.id, :id => @quiz.id}
+        path = "courses/#{@course.id}/quizzes/#{@quiz.id}/submission_versions"
+        expect(assigns[:js_env][:SUBMISSION_VERSIONS_URL]).to include(path)
+      end
+
+      it "is not assigned if a quiz submission is present but hidden for the student" do
+        @quiz.assignment.post_policy.update!(post_manually: true)
+        Quizzes::SubmissionGrader.new(submission).grade_submission
+        create_attachment_for_file_upload_submission!(submission)
+        get 'show', params: {:course_id => @course.id, :id => @quiz.id}
+        expect(assigns[:js_env]).not_to include(:SUBMISSION_VERSIONS_URL)
+      end
     end
 
     it "assigns js_env for quiz details url" do
@@ -1125,6 +1299,34 @@ describe Quizzes::QuizzesController do
         get 'history', params: {:course_id => @course.id, :quiz_id => @quiz.id, :user_id => @student.id}
 
         expect(response).to be_successful
+      end
+    end
+
+    context "when post policies is enabled" do
+      before(:each) do
+        @course.enable_feature!(:new_gradebook)
+        PostPolicy.enable_feature!
+
+        user_session(@student)
+      end
+
+      let(:quiz_submission) { @quiz.generate_submission(@student) }
+
+      it "allows a student to view their own history if the submission is posted" do
+        Quizzes::SubmissionGrader.new(quiz_submission).grade_submission
+        get 'history', params: {:course_id => @course.id, :quiz_id => @quiz.id, :user_id => @student.id}
+        expect(response).to be_successful
+      end
+
+      it "does not allow a student to view their own history if the submission is not posted" do
+        Quizzes::SubmissionGrader.new(quiz_submission).grade_submission
+        quiz_submission.submission.update!(posted_at: nil)
+        get 'history', params: {:course_id => @course.id, :quiz_id => @quiz.id, :user_id => @student.id}
+
+        aggregate_failures do
+          expect(response).to redirect_to("/courses/#{@course.id}/quizzes/#{@quiz.id}")
+          expect(flash[:notice]).to match(/You cannot view the quiz history while the quiz is muted/)
+        end
       end
     end
 
@@ -2360,6 +2562,32 @@ describe Quizzes::QuizzesController do
       get 'submission_versions', params: {:course_id => @course.id, :quiz_id => @quiz.id}
       expect(response).to be_successful
       expect(response.body).to match(/^\s?$/)
+    end
+
+    context "when post policies are enabled" do
+      let(:assignment) do
+        @course.assignments.create!(
+          title: "my humdrum quiz",
+          workflow_state: "available",
+          submission_types: "online_quiz"
+        )
+      end
+
+      before(:each) do
+        @course.enable_feature!(:new_gradebook)
+        PostPolicy.enable_feature!
+
+        @quiz.assignment = assignment
+        user_session(@teacher)
+      end
+
+      it "renders nothing when the submission is not posted" do
+        assignment.post_policy.update!(post_manually: true)
+        @quiz.generate_submission(@teacher)
+
+        get 'submission_versions', params: {:course_id => @course.id, :quiz_id => @quiz.id}
+        expect(response.body).to match(/^\s?$/)
+      end
     end
   end
 

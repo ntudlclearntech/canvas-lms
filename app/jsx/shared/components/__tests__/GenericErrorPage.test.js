@@ -16,10 +16,10 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import '@instructure/ui-themes/lib/canvas'
+import '@instructure/canvas-theme'
 import React from 'react'
 import GenericErrorPage from '../GenericErrorPage'
-import {render, fireEvent} from 'react-testing-library'
+import {render, fireEvent} from '@testing-library/react'
 import moxios from 'moxios'
 
 beforeEach(() => {
@@ -59,7 +59,7 @@ describe('GenericErrorPage component', () => {
     })
     fireEvent.click(getByText('Report Issue'))
     fireEvent.click(getByText('Submit'))
-    moxios.wait(async () => {
+    moxios.wait(() => {
       expect(getByText('Comment submitted!')).toBeInTheDocument()
       done()
     })

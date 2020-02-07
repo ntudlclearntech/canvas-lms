@@ -16,27 +16,28 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import {AssignmentShape, SubmissionShape} from '../assignmentData'
-import AttemptTab from './AttemptTab'
+import {Assignment} from '../graphqlData/Assignment'
+import {Badge, Text} from '@instructure/ui-elements'
 import ClosedDiscussionSVG from '../SVG/ClosedDiscussions.svg'
+import {Flex} from '@instructure/ui-layout'
 import FriendlyDatetime from '../../../shared/FriendlyDatetime'
 import {getCurrentAttempt} from './Attempt'
-import I18n from 'i18n!assignments_2'
-import LoadingIndicator from '../../shared/LoadingIndicator'
-import React, {lazy, Suspense} from 'react'
-import SVGWithTextPlaceholder from '../../shared/SVGWithTextPlaceholder'
-
-import Flex, {FlexItem} from '@instructure/ui-layout/lib/components/Flex'
 import GradeDisplay from './GradeDisplay'
-import {Img} from '@instructure/ui-elements'
-import TabList, {TabPanel} from '@instructure/ui-tabs/lib/components/TabList'
-import Text from '@instructure/ui-elements/lib/components/Text'
+import I18n from 'i18n!assignments_2'
+
+import LoadingIndicator from '../../shared/LoadingIndicator'
+import React, {lazy, Suspense, useState} from 'react'
+import SubmissionManager from './SubmissionManager'
+import {Submission} from '../graphqlData/Submission'
+import SVGWithTextPlaceholder from '../../shared/SVGWithTextPlaceholder'
+import {Tabs} from '@instructure/ui-tabs'
 
 const CommentsTab = lazy(() => import('./CommentsTab'))
+const RubricsQuery = lazy(() => import('./RubricsQuery'))
 
 ContentTabs.propTypes = {
-  assignment: AssignmentShape,
-  submission: SubmissionShape
+  assignment: Assignment.shape,
+  submission: Submission.shape
 }
 
 // We should revisit this after the InstructureCon demo to ensure this is
@@ -47,6 +48,8 @@ function currentSubmissionGrade(assignment, submission) {
     right: '50px'
   }
 
+  const currentGrade = submission.state === 'graded' ? submission.grade : null
+
   return (
     <div style={tabBarAlign}>
       <Text weight="bold">
@@ -54,19 +57,19 @@ function currentSubmissionGrade(assignment, submission) {
           displaySize="medium"
           gradingType={assignment.gradingType}
           pointsPossible={assignment.pointsPossible}
-          receivedGrade={submission.grade}
+          receivedGrade={currentGrade}
         />
       </Text>
       <Text size="small">
         {submission.submittedAt ? (
           <Flex justifyItems="end">
-            <FlexItem padding="0 xx-small 0 0">{I18n.t('Submitted')}</FlexItem>
-            <FlexItem>
+            <Flex.Item padding="0 xx-small 0 0">{I18n.t('Submitted')}</Flex.Item>
+            <Flex.Item>
               <FriendlyDatetime
                 dateTime={submission.submittedAt}
                 format={I18n.t('#date.formats.full')}
               />
-            </FlexItem>
+            </Flex.Item>
           </Flex>
         ) : (
           I18n.t('Not submitted')
@@ -76,36 +79,92 @@ function currentSubmissionGrade(assignment, submission) {
   )
 }
 
+function renderCommentsTab({assignment, submission}) {
+  // Case where this is backed by a submission draft, not a real submission, so
+  // we can't actually save comments.
+  if (submission.state === 'unsubmitted' && submission.attempt > 1) {
+    // TODO: Get design/product to get an updated SVG or something for this: COMMS-2255
+    return (
+      <SVGWithTextPlaceholder
+        text={I18n.t('You cannot leave leave comments until you submit the assignment')}
+        url={ClosedDiscussionSVG}
+      />
+    )
+  }
+
+  if (submission.gradeHidden) {
+    return (
+      <SVGWithTextPlaceholder
+        text={I18n.t(
+          'You may not see all comments right now because the assignment is currently being graded.'
+        )}
+        url={ClosedDiscussionSVG}
+      />
+    )
+  }
+
+  return (
+    <Suspense fallback={<LoadingIndicator />}>
+      <CommentsTab assignment={assignment} submission={submission} />
+    </Suspense>
+  )
+}
+
+renderCommentsTab.propTypes = {
+  assignment: Assignment.shape,
+  submission: Submission.shape
+}
+
 function ContentTabs(props) {
+  const [selectedTabIndex, setSelectedTabIndex] = useState(0)
+
+  function handleTabChange(event, {index}) {
+    setSelectedTabIndex(index)
+  }
+
   return (
     <div data-testid="assignment-2-student-content-tabs">
       {props.submission.state === 'graded' || props.submission.state === 'submitted'
         ? currentSubmissionGrade(props.assignment, props.submission)
         : null}
-      <TabList defaultSelectedIndex={0} variant="minimal">
-        <TabPanel
-          title={I18n.t('Attempt %{attempt}', {attempt: getCurrentAttempt(props.submission)})}
+      <Tabs onRequestTabChange={handleTabChange} variant="default">
+        <Tabs.Panel
+          key="attempt-tab"
+          renderTitle={I18n.t('Attempt %{attempt}', {attempt: getCurrentAttempt(props.submission)})}
+          selected={selectedTabIndex === 0}
         >
-          <AttemptTab assignment={props.assignment} submission={props.submission} />
-        </TabPanel>
-        <TabPanel title={I18n.t('Comments')}>
-          {!props.assignment.muted ? (
-            <Suspense fallback={<LoadingIndicator />}>
-              <CommentsTab assignment={props.assignment} submission={props.submission} />
-            </Suspense>
-          ) : (
-            <SVGWithTextPlaceholder
-              text={I18n.t(
-                'You may not see all comments right now because the assignment is currently being graded.'
+          <SubmissionManager assignment={props.assignment} submission={props.submission} />
+        </Tabs.Panel>
+        <Tabs.Panel
+          key="comments-tab"
+          selected={selectedTabIndex === 1}
+          renderTitle={
+            <span>
+              {I18n.t('Comments')}{' '}
+              {!!props.submission.unreadCommentCount && (
+                <Badge
+                  count={props.submission.unreadCommentCount}
+                  standalone
+                  margin="0 small 0 0"
+                />
               )}
-              url={ClosedDiscussionSVG}
-            />
-          )}
-        </TabPanel>
-        <TabPanel title={I18n.t('Rubric')}>
-          <Img src="/images/assignments2_rubric_student_static.png" />
-        </TabPanel>
-      </TabList>
+            </span>
+          }
+        >
+          {renderCommentsTab(props)}
+        </Tabs.Panel>
+        {props.assignment.rubric && (
+          <Tabs.Panel
+            key="rubrics-tab"
+            renderTitle={I18n.t('Rubric')}
+            selected={selectedTabIndex === 2}
+          >
+            <Suspense fallback={<LoadingIndicator />}>
+              <RubricsQuery assignment={props.assignment} submission={props.submission} />
+            </Suspense>
+          </Tabs.Panel>
+        )}
+      </Tabs>
     </div>
   )
 }

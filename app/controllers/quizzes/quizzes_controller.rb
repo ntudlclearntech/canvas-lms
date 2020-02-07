@@ -18,6 +18,7 @@
 
 class Quizzes::QuizzesController < ApplicationController
   include Api::V1::Quiz
+  include Api::V1::QuizzesNext::Quiz
   include Api::V1::AssignmentOverride
   include KalturaHelper
   include ::Filters::Quizzes
@@ -65,31 +66,17 @@ class Quizzes::QuizzesController < ApplicationController
 
       can_manage = @context.grants_right?(@current_user, session, :manage_assignments)
 
-      scope = @context.quizzes.active.preload(:assignment)
-
-      # students only get to see published quizzes, and they will fetch the
-      # overrides later using the API:
-      scope = scope.available unless @context.grants_right?(@current_user, session, :read_as_admin)
-
-      scope = DifferentiableAssignment.scope_filter(scope, @current_user, @context)
-
-      quizzes = scope.sort_by do |quiz|
-        due_date = quiz.assignment ? quiz.assignment.due_at : quiz.lock_at
+      quiz_options = Rails.cache.fetch(
         [
-          due_date || CanvasSort::Last,
-          Canvas::ICU.collation_key(quiz.title || CanvasSort::First)
-        ]
-      end
-
-      quiz_options = Rails.cache.fetch([
-                                         'quiz_user_permissions', @context.id, @current_user,
-                                         quizzes.map(&:id), # invalidate on add/delete of quizzes
-                                         quizzes.map(&:updated_at).sort.last # invalidate on modifications
-                                       ].cache_key) do
+          'quiz_user_permissions', @context.id, @current_user,
+          scoped_quizzes.map(&:id), # invalidate on add/delete of quizzes
+          scoped_quizzes.map(&:updated_at).sort.last # invalidate on modifications
+        ].cache_key
+      ) do
         if can_manage
-          Quizzes::Quiz.preload_can_unpublish(quizzes)
+          Quizzes::Quiz.preload_can_unpublish(scoped_quizzes)
         end
-        quizzes.each_with_object({}) do |quiz, quiz_user_permissions|
+        scoped_quizzes.each_with_object({}) do |quiz, quiz_user_permissions|
           quiz_user_permissions[quiz.id] = {
             can_update: can_manage,
             can_unpublish: can_manage && quiz.can_unpublish?
@@ -97,9 +84,8 @@ class Quizzes::QuizzesController < ApplicationController
         end
       end
 
-      assignment_quizzes = quizzes.select{ |q| q.quiz_type == QUIZ_TYPE_ASSIGNMENT }
-      open_quizzes       = quizzes.select{ |q| q.quiz_type == QUIZ_TYPE_PRACTICE }
-      surveys            = quizzes.select{ |q| QUIZ_TYPE_SURVEYS.include?(q.quiz_type) }
+      practice_quizzes   = scoped_quizzes.select{ |q| q.quiz_type == QUIZ_TYPE_PRACTICE }
+      surveys            = scoped_quizzes.select{ |q| QUIZ_TYPE_SURVEYS.include?(q.quiz_type) }
       serializer_options = [@context, @current_user, session, {
         permissions: quiz_options,
         skip_date_overrides: true,
@@ -113,12 +99,13 @@ class Quizzes::QuizzesController < ApplicationController
 
       hash = {
         :QUIZZES => {
-          assignment: quizzes_json(assignment_quizzes, *serializer_options),
-          open: quizzes_json(open_quizzes, *serializer_options),
+          assignment: assignment_quizzes_json(serializer_options),
+          open: quizzes_json(practice_quizzes, *serializer_options),
           surveys: quizzes_json(surveys, *serializer_options),
           options: quiz_options
         },
         :URLS => {
+          new_assignment_url: new_polymorphic_url([@context, :assignment]),
           new_quiz_url: context_url(@context, :context_quizzes_new_url, :fresh => 1),
           question_banks_url: context_url(@context, :context_question_banks_url),
           assignment_overrides: api_v1_course_quiz_assignment_overrides_url(@context)
@@ -131,9 +118,14 @@ class Quizzes::QuizzesController < ApplicationController
         :FLAGS => {
           question_banks: feature_enabled?(:question_banks),
           post_to_sis_enabled: Assignment.sis_grade_export_enabled?(@context),
+          quiz_lti_enabled: quiz_lti_enabled?,
           migrate_quiz_enabled:
             @context.feature_enabled?(:quizzes_next) &&
-              @context.quiz_lti_tool.present?
+              @context.quiz_lti_tool.present?,
+          # TODO: remove this since it's set in application controller
+          # Will need to update consumers of this in the UI to bring down
+          # this permissions check as well
+          DIRECT_SHARE_ENABLED: can_manage && @domain_root_account.try(:feature_enabled?, :direct_share),
         },
         :quiz_menu_tools => external_tools_display_hashes(:quiz_menu),
         :SIS_NAME => sis_name,
@@ -228,7 +220,7 @@ class Quizzes::QuizzesController < ApplicationController
       if @submission
         upload_url = api_v1_quiz_submission_files_path(:course_id => @context.id, :quiz_id => @quiz.id)
         js_env :UPLOAD_URL => upload_url
-        js_env :SUBMISSION_VERSIONS_URL => course_quiz_submission_versions_url(@context, @quiz) unless @quiz.muted?
+        js_env :SUBMISSION_VERSIONS_URL => course_quiz_submission_versions_url(@context, @quiz) unless hide_quiz?
         if !@submission.preview? && (!@js_env || !@js_env[:QUIZ_SUBMISSION_EVENTS_URL])
           events_url = api_v1_course_quiz_submission_events_url(@context, @quiz, @submission)
           js_env QUIZ_SUBMISSION_EVENTS_URL: events_url
@@ -270,6 +262,9 @@ class Quizzes::QuizzesController < ApplicationController
           @lock_results_if_needed = true
 
           log_asset_access(@quiz, "quizzes", "quizzes")
+          js_bundle :quiz_show
+          css_bundle :quizzes, :learning_outcomes
+          render stream: can_stream_template? unless @declined_reason
         end
       end
       @padless = true
@@ -356,7 +351,9 @@ class Quizzes::QuizzesController < ApplicationController
       conditional_release_js_env(@quiz.assignment)
       set_master_course_js_env_data(@quiz, @context)
 
-      render :new
+      js_bundle :quizzes_bundle
+      css_bundle :quizzes, :tinymce
+      render :new, stream: can_stream_template?
     end
   end
 
@@ -692,7 +689,7 @@ class Quizzes::QuizzesController < ApplicationController
         redirect_to named_context_url(@context, :context_quiz_url, @quiz)
         return
       end
-      if @quiz.muted? && !@quiz.grants_right?(@current_user, session, :review_grades)
+      if hide_quiz? && !@quiz.grants_right?(@current_user, session, :review_grades)
         flash[:notice] = t('notices.cant_view_submission_while_muted', "You cannot view the quiz history while the quiz is muted.")
         redirect_to named_context_url(@context, :context_quiz_url, @quiz)
         return
@@ -734,6 +731,9 @@ class Quizzes::QuizzesController < ApplicationController
         if @quiz.require_lockdown_browser? && @quiz.require_lockdown_browser_for_results? && params[:viewing]
           return unless check_lockdown_browser(:medium, named_context_url(@context, 'context_quiz_history_url', @quiz.to_param, :viewing => "1", :version => params[:version]))
         end
+        js_bundle :quiz_history
+        @google_analytics_page_title = @quiz.survey? ? "User's Survey History" : "User's Quiz History"
+        render stream: can_stream_template?
       end
     end
   end
@@ -764,7 +764,7 @@ class Quizzes::QuizzesController < ApplicationController
       @submission = get_submission
       @versions   = @submission ? get_versions : []
 
-      if @versions.size > 0 && !@quiz.muted?
+      if @versions.size > 0 && !hide_quiz?
         render :layout => false
       else
         head :ok
@@ -939,6 +939,10 @@ class Quizzes::QuizzesController < ApplicationController
     js_env IS_PREVIEW: true if @submission.preview?
 
     @quiz_presenter = Quizzes::TakeQuizPresenter.new(@quiz, @submission, params)
+    if params[:persist_headless]
+      add_meta_tag(:name => "viewport", :id => "vp", :content => "initial-scale=1.0,user-scalable=yes,width=device-width")
+      js_env :MOBILE_UI => true
+    end
     render :take_quiz
   end
 
@@ -958,8 +962,8 @@ class Quizzes::QuizzesController < ApplicationController
                                             access_code: params[:access_code])
 
     if params[:take]
-      reason = can_take.declined_reason_renders
-      render reason if reason
+      @declined_reason = can_take.declined_reason_renders
+      render @declined_reason if @declined_reason
       can_take.eligible?
     else
       can_take.potentially_eligible?
@@ -1018,6 +1022,26 @@ class Quizzes::QuizzesController < ApplicationController
     end
   end
 
+  def quiz_lti_enabled?
+    quiz_lti_tool = @context.quiz_lti_tool
+    @context.root_account.feature_enabled?(:newquizzes_on_quiz_page) &&
+      @context.feature_enabled?(:quizzes_next) &&
+      quiz_lti_tool.present? &&
+      quiz_lti_tool.url != 'http://void.url.inseng.net'
+  end
+
+  def assignment_quizzes_json(serializer_options)
+    old_quizzes = scoped_quizzes.select{ |q| q.quiz_type == QUIZ_TYPE_ASSIGNMENT }
+    unless @context.root_account.feature_enabled?(:newquizzes_on_quiz_page)
+      return quizzes_json(old_quizzes, *serializer_options)
+    end
+    new_quizzes = Assignments::ScopedToUser.new(@context, @current_user).scope.preload(:duplicate_of).select(&:quiz_lti?)
+    quizzes_next_json(
+      (old_quizzes + new_quizzes).sort_by(&:created_at),
+      *serializer_options
+    )
+  end
+
   protected
 
   def get_quiz_params
@@ -1029,5 +1053,28 @@ class Quizzes::QuizzesController < ApplicationController
                assignment_id: quiz.assignment_id, assignment_version: quiz.assignment&.version_number }
     prepared_batch[:overrides_to_create].each { |override| override.assign_attributes(params) }
     prepared_batch[:overrides_to_update].each { |override| override.assign_attributes(params) }
+  end
+
+  def hide_quiz?
+    !@submission.posted?
+  end
+
+  def scoped_quizzes
+    return @_quizzes if @_quizzes
+    scope = @context.quizzes.active.preload(:assignment)
+
+    # students only get to see published quizzes, and they will fetch the
+    # overrides later using the API:
+    scope = scope.available unless @context.grants_right?(@current_user, session, :read_as_admin)
+
+    scope = DifferentiableAssignment.scope_filter(scope, @current_user, @context)
+
+    @_quizzes = scope.sort_by do |quiz|
+      due_date = quiz.assignment ? quiz.assignment.due_at : quiz.lock_at
+      [
+        due_date || CanvasSort::Last,
+        Canvas::ICU.collation_key(quiz.title || CanvasSort::First)
+      ]
+    end
   end
 end

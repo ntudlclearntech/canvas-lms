@@ -85,7 +85,7 @@ class ContentZipper
       # This neglects the complexity of group assignments
       students = User.where(id: submissions.pluck(:user_id)).index_by(&:id)
     else
-      students    = assignment.representatives(user).index_by(&:id)
+      students    = assignment.representatives(user: user).index_by(&:id)
       submissions = assignment.submissions.where(user_id: students.keys,
                                                  submission_type: downloadable_submissions)
     end
@@ -190,8 +190,12 @@ class ContentZipper
     @portfolio = @portfolio
     @static_attachments = static_attachments
     @submissions_hash = submissions_hash
-    av = ActionView::Base.new()
-    av.view_paths = ActionController::Base.view_paths
+    if CANVAS_RAILS5_2
+      av = ActionView::Base.new()
+      av.view_paths = ActionController::Base.view_paths
+    else
+      av = ActionView::Base.with_view_paths(ActionController::Base.view_paths)
+    end
     av.extend TextHelper
     res = av.render(:partial => "eportfolios/static_page", :locals => {:page => page, :portfolio => portfolio, :static_attachments => static_attachments, :submissions_hash => submissions_hash})
     res
@@ -446,7 +450,7 @@ class ContentZipper
     # they do not include submissions for group assignments for anyone
     # but the original submitter of the group submission
     attachment_ids = submission.attachment_ids.try(:split, ",")
-    Attachment.where(id: Array.wrap(attachment_ids))
+    submission.shard.activate { Attachment.where(id: Array.wrap(attachment_ids)) }
   end
 
   def get_user_name(students, submission)

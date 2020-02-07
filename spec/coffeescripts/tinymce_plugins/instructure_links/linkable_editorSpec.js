@@ -45,14 +45,16 @@ test('can load the original element from the editor id', () => {
   equal(editor.getEditor().data('value'), '42')
 })
 
-test('createLink passes data attributes to create_link command', function() {
+test('createLink passes data attributes to create_link command', () => {
   sandbox.stub(RceCommandShim, 'send')
   const dataAttrs = {}
-  const le = new LinkableEditor({selection: {
-    getContent: () => ({}),
-    getNode: () => {},
-    getRng: () => {}
-  }})
+  const le = new LinkableEditor({
+    selection: {
+      getContent: () => ({}),
+      getNode: () => {},
+      getRng: () => {}
+    }
+  })
   le.createLink('text', 'classes', dataAttrs)
   equal(RceCommandShim.send.firstCall.args[2].dataAttributes, dataAttrs)
 })

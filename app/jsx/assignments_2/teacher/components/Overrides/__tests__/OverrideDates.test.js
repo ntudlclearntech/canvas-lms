@@ -17,13 +17,13 @@
  */
 
 import React from 'react'
-import {render, fireEvent, wait} from 'react-testing-library'
-import {toLocaleString, browserTimeZone} from '@instructure/ui-i18n/lib/DateTime'
+import {render, fireEvent, wait} from '@testing-library/react'
+import {DateTime} from '@instructure/ui-i18n'
 import {mockOverride, closest} from '../../../test-utils'
 import OverrideDates from '../OverrideDates'
 
 const locale = 'en'
-const timeZone = browserTimeZone()
+const timeZone = DateTime.browserTimeZone()
 
 describe('OverrideDates', () => {
   it('renders override dates', () => {
@@ -97,7 +97,7 @@ function failADate(whichDate) {
     function invalidMessage(which) {
       return errMessages[which]
     }
-    const {container, getByText, getByDisplayValue, queryByTestId} = render(
+    const {container, getByText, getAllByText, getByDisplayValue, queryByTestId} = render(
       <div>
         <OverrideDates
           dueAt={override.dueAt}
@@ -116,7 +116,7 @@ function failADate(whichDate) {
     // click the edit button
     const editDueBtn = closest(getByText(editButtonLabel[whichDate]), 'button')
     editDueBtn.click()
-    const dateDisplay = toLocaleString(override[whichDate], locale, timeZone, 'LL')
+    const dateDisplay = DateTime.toLocaleString(override[whichDate], locale, timeZone, 'LL')
     let dinput
     // wait for the popup
     await wait(() => {
@@ -138,6 +138,6 @@ function failADate(whichDate) {
     })
 
     // the error message should be in the OverrideDates
-    expect(getByText(`${whichDate} be bad`)).toBeInTheDocument()
+    expect(getAllByText(`${whichDate} be bad`)[0]).toBeInTheDocument()
   })
 }

@@ -16,8 +16,8 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import canvasBaseTheme from '@instructure/ui-themes/lib/canvas/base'
-import canvasHighContrastTheme from '@instructure/ui-themes/lib/canvas/high-contrast'
+import canvasBaseTheme from '@instructure/canvas-theme'
+import canvasHighContrastTheme from '@instructure/canvas-high-contrast-theme'
 import moment from 'moment'
 import tz from 'timezone_core'
 import './fakeRequireJSFallback'
@@ -39,12 +39,20 @@ if (typeof ENV !== 'undefined') {
 if (process.env.NODE_ENV !== 'production' && process.env.DEPRECATION_SENTRY_DSN) {
   const Raven = require('raven-js')
   Raven.config(process.env.DEPRECATION_SENTRY_DSN, {
+    ignoreErrors: ['renderIntoDiv', 'renderSidebarIntoDiv'], // silence the `Cannot read property 'renderIntoDiv' of null` errors we get from the pre- rce_enhancements old rce code
     release: process.env.GIT_COMMIT
   }).install()
 
   const setupRavenConsoleLoggingPlugin = require('../jsx/shared/helpers/setupRavenConsoleLoggingPlugin')
     .default
   setupRavenConsoleLoggingPlugin(Raven, {loggerName: 'console'})
+}
+
+if (process.env.NODE_ENV !== 'production') {
+  const {
+    filterUselessConsoleMessages
+  } = require('@instructure/js-utils/lib/filterUselessConsoleMessages')
+  filterUselessConsoleMessages(console)
 }
 
 // setup the inst-ui default theme

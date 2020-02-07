@@ -68,6 +68,23 @@ describe CommunicationChannelsController do
       post 'create', params: {:user_id => @user.id, :communication_channel => { :address => 'jt@instructure.com', :type => 'email' }}
       expect(response).not_to be_successful
     end
+
+    it 'should prevent CC from being created if at the maximum number of CCs allowed' do
+      domain_root_account = Account.default
+      domain_root_account.settings[:max_communication_channels] = 1
+      @user.communication_channels.create!(:path => 'cc@test.com')
+      user_session(@user)
+      post 'create', params: {
+        :user_id => @user.id,
+        :communication_channel => {
+          :address => 'cc2@test.com', :type => 'email'
+        }
+      }
+      expect(response).not_to be_successful
+      expect(
+        JSON.parse(response.body)['errors']['type']
+      ).to eq 'Maximum number of communication channels reached'
+    end
   end
 
   describe "GET 'confirm'" do
@@ -1221,6 +1238,19 @@ describe CommunicationChannelsController do
       expect(assigns[:user]).to eql(@user)
       expect(assigns[:enrollment]).to eql(@enrollment)
       expect(assigns[:enrollment].messages_sent).not_to be_nil
+    end
+
+    it "should not re-send registration to a registered user when trying to re-send invitation for an unavailable course" do
+      course_with_teacher_logged_in(active_all: true)
+      @course.update_attributes(:start_at => 1.week.from_now, :restrict_student_future_view => true,
+        :restrict_enrollments_to_course_dates => true)
+
+      user_with_pseudonym(:active_all => true) # new user
+      @enrollment = @course.enroll_user(@user)
+
+      expect_any_instantiation_of(@cc).to receive(:send_confirmation!).never
+      get 're_send_confirmation', params: {:user_id => @pseudonym.user_id, :id => @cc.id, :enrollment_id => @enrollment.id}
+      expect(response).to be_successful
     end
 
     it "should require an admin with rights in the course" do

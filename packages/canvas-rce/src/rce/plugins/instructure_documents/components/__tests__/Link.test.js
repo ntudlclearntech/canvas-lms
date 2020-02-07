@@ -17,8 +17,8 @@
  */
 
 import React from 'react'
-import {render, fireEvent} from 'react-testing-library'
-import formatMessage from '../../../../../format-message';
+import {render, fireEvent} from '@testing-library/react'
+import formatMessage from '../../../../../format-message'
 import Link from '../Link'
 
 function renderComponent(props) {
@@ -33,7 +33,7 @@ function renderComponent(props) {
       id={469}
       lock_at={null}
       locked_for_user={false}
-      published={true}
+      published
       unlock_at={null}
       onClick={() => {}}
       {...props}
@@ -101,19 +101,29 @@ describe('RCE "Documents" Plugin > Document', () => {
       expect(queryIconByName(container, 'IconPdf')).toBeInTheDocument()
     })
 
+    it('the video icon', () => {
+      const {container} = renderComponent({content_type: 'video/mp4'})
+      expect(queryIconByName(container, 'IconVideo')).toBeInTheDocument()
+    })
+
+    it('the audio icon', () => {
+      const {container} = renderComponent({content_type: 'audio/mp3'})
+      expect(queryIconByName(container, 'IconAudio')).toBeInTheDocument()
+    })
+
     it('the drag handle only on hover', () => {
       const {container, getByTestId} = renderComponent()
 
-      expect(queryIconByName(container, "IconDragHandle")).not.toBeInTheDocument()
+      expect(queryIconByName(container, 'IconDragHandle')).not.toBeInTheDocument()
       fireEvent.mouseEnter(getByTestId('instructure_links-Link'))
-      expect(queryIconByName(container, "IconDragHandle")).toBeInTheDocument()
+      expect(queryIconByName(container, 'IconDragHandle')).toBeInTheDocument()
     })
   })
 
   describe('handles input', () => {
     it('calls onClick when clicked', () => {
       const onClick = jest.fn()
-      const {getByText} = renderComponent({display_name: 'click me', onClick: onClick})
+      const {getByText} = renderComponent({display_name: 'click me', onClick})
 
       const btn = getByText('click me')
       btn.click()
@@ -122,7 +132,7 @@ describe('RCE "Documents" Plugin > Document', () => {
 
     it('calls onClick on <Enter>', () => {
       const onClick = jest.fn()
-      const {getByText} = renderComponent({display_name: 'click me', onClick: onClick})
+      const {getByText} = renderComponent({display_name: 'click me', onClick})
 
       const btn = getByText('click me')
       fireEvent.keyDown(btn, {keyCode: 13})
@@ -131,7 +141,7 @@ describe('RCE "Documents" Plugin > Document', () => {
 
     it('calls onClick on <Space>', () => {
       const onClick = jest.fn()
-      const {getByText} = renderComponent({display_name: 'click me', onClick: onClick})
+      const {getByText} = renderComponent({display_name: 'click me', onClick})
 
       const btn = getByText('click me')
       fireEvent.keyDown(btn, {keyCode: 32})
@@ -147,4 +157,3 @@ describe('RCE "Documents" Plugin > Document', () => {
     })
   })
 })
-

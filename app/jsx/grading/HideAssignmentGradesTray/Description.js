@@ -16,15 +16,14 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import React, {Fragment} from 'react'
-import List, {ListItem} from '@instructure/ui-elements/lib/components/List'
-import Text from '@instructure/ui-elements/lib/components/Text'
-import View from '@instructure/ui-layout/lib/components/View'
+import React from 'react'
+import {List, Text} from '@instructure/ui-elements'
+import {View} from '@instructure/ui-layout'
 import I18n from 'i18n!hide_assignment_grades_tray'
 
 export default function Description() {
   return (
-    <Fragment>
+    <>
       <View as="p" margin="0 0 small">
         <Text>
           {I18n.t(
@@ -35,11 +34,11 @@ export default function Description() {
 
       <View as="div" margin="0 0 small">
         <List>
-          <ListItem>{I18n.t('Their grade for the assignment')}</ListItem>
-          <ListItem>{I18n.t('Grade change notifications')}</ListItem>
-          <ListItem>{I18n.t('Submission comments')}</ListItem>
-          <ListItem>{I18n.t('Curving assignments')}</ListItem>
-          <ListItem>{I18n.t('Score change notifications')}</ListItem>
+          <List.Item>{I18n.t('Their grade for the assignment')}</List.Item>
+          <List.Item>{I18n.t('Grade change notifications')}</List.Item>
+          <List.Item>{I18n.t('Submission comments')}</List.Item>
+          <List.Item>{I18n.t('Curving assignments')}</List.Item>
+          <List.Item>{I18n.t('Score change notifications')}</List.Item>
         </List>
       </View>
 
@@ -54,6 +53,6 @@ export default function Description() {
           {I18n.t('You can begin sending notifications again by clicking the Post Grades link.')}
         </Text>
       </View>
-    </Fragment>
+    </>
   )
 }

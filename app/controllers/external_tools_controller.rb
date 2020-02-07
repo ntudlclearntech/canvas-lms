@@ -153,7 +153,8 @@ class ExternalToolsController < ApplicationController
       selection_type: placement,
       launch_url: params[:url],
       content_item_id: params[:content_item_id],
-      secure_params: params[:secure_params]
+      secure_params: params[:secure_params],
+      post_live_event: true
     )
     display_override = params['borderless'] ? 'borderless' : params[:display]
     render Lti::AppUtil.display_template(@tool.display_type(placement), display_override: display_override)
@@ -254,6 +255,9 @@ class ExternalToolsController < ApplicationController
     end
 
     launch_settings = JSON.parse(launch_settings)
+    if tool = ContextExternalTool.find_external_tool(launch_settings['launch_url'], @context)
+      log_asset_access(tool, "external_tools", "external_tools", overwrite: false)
+    end
 
     @lti_launch = Lti::Launch.new
     @lti_launch.params = launch_settings['tool_settings']
@@ -365,7 +369,6 @@ class ExternalToolsController < ApplicationController
       return unless find_tool(params[:id], placement)
 
       add_crumb(@context.name, named_context_url(@context, :context_url))
-      log_asset_access(@tool, "external_tools", "external_tools")
 
       @return_url = named_context_url(@context, :context_external_content_success_url, 'external_tool_redirect', {include_host: true})
       @redirect_return = true
@@ -376,10 +379,10 @@ class ExternalToolsController < ApplicationController
              :redirect_return_cancel_url => cancel_url)
       js_env(:course_id => @context.id) if @context.is_a?(Course)
 
-      @active_tab = @tool.asset_string
+      set_active_tab @tool.asset_string
       @show_embedded_chat = false if @tool.tool_id == 'chat'
 
-      @lti_launch = lti_launch(tool: @tool, selection_type: placement)
+      @lti_launch = lti_launch(tool: @tool, selection_type: placement, post_live_event: true)
       return unless @lti_launch
 
       render Lti::AppUtil.display_template(@tool.display_type(placement), display_override: params[:display])
@@ -429,7 +432,7 @@ class ExternalToolsController < ApplicationController
     @headers = false
 
     return unless find_tool(params[:external_tool_id], selection_type)
-    @lti_launch = lti_launch(tool: @tool, selection_type: selection_type, launch_token: params[:launch_token])
+    @lti_launch = lti_launch(tool: @tool, selection_type: selection_type, launch_token: params[:launch_token], post_live_event: true)
     return unless @lti_launch
     render Lti::AppUtil.display_template('borderless')
   end
@@ -450,7 +453,7 @@ class ExternalToolsController < ApplicationController
   end
   protected :find_tool
 
-  def lti_launch(tool:, selection_type: nil, launch_url: nil, content_item_id: nil, secure_params: nil, launch_token: nil)
+  def lti_launch(tool:, selection_type: nil, launch_url: nil, content_item_id: nil, secure_params: nil, launch_token: nil, post_live_event: false)
     link_params = {custom:{}, ext:{}}
     if secure_params.present?
       jwt_body = Canvas::Security.decode_jwt(secure_params)
@@ -459,6 +462,7 @@ class ExternalToolsController < ApplicationController
     opts = {launch_url: launch_url, link_params: link_params, launch_token: launch_token}
     @return_url ||= url_for(@context)
     message_type = tool.extension_setting(selection_type, 'message_type') if selection_type
+    log_asset_access(@tool, "external_tools", "external_tools") if post_live_event
     case message_type
       when 'ContentItemSelectionResponse', 'ContentItemSelection'
         #ContentItemSelectionResponse is deprecated, use ContentItemSelection instead
@@ -494,7 +498,7 @@ class ExternalToolsController < ApplicationController
     }
     opts = default_opts.merge(opts)
 
-    assignment = @context.assignments.active.find(params[:assignment_id]) if params[:assignment_id]
+    assignment = api_find(@context.assignments.active, params[:assignment_id]) if params[:assignment_id]
     expander = variable_expander(assignment: assignment, tool: tool, launch: lti_launch, post_message_token: opts[:launch_token])
 
     adapter = if tool.use_1_3?
@@ -526,6 +530,10 @@ class ExternalToolsController < ApplicationController
                             @context.user_has_been_student?(student)
                           raise Lti::Errors::UnauthorizedError unless can_launch
                           adapter.generate_post_payload(student_id: student.global_id)
+                        elsif tool.extension_setting(selection_type, 'required_permissions')
+                          can_launch = tool.visible_with_permission_check?(selection_type, @current_user, @context, session)
+                          raise Lti::Errors::UnauthorizedError unless can_launch
+                          adapter.generate_post_payload
                         else
                           adapter.generate_post_payload
                         end
@@ -587,7 +595,7 @@ class ExternalToolsController < ApplicationController
                                                              tool: tool,
                                                              secure_params: params[:secure_params])
 
-    assignment = @context.assignments.active.find(params[:assignment_id]) if params[:assignment_id].present?
+    assignment = api_find(@context.assignments.active, params[:assignment_id]) if params[:assignment_id].present?
 
     opts = {
       post_only: @tool.settings['post_only'].present?,
@@ -1042,7 +1050,7 @@ class ExternalToolsController < ApplicationController
       return render json: @context.errors, status: :bad_request
     end
 
-    assignment = @context.assignments.find(params[:assignment_id])
+    assignment = api_find(@context.assignments, params[:assignment_id])
 
     return unless authorized_action(assignment, @current_user, :read)
 

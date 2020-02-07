@@ -1336,6 +1336,19 @@ describe CalendarEventsApiController, type: :request do
       expect(json.map { |event| event['title'] }).to eq %w[1 2 3]
     end
 
+    it 'does not return the description if the assignment is locked' do
+      student = user_factory(active_all: true, active_state: 'active')
+      @course.enroll_student(student, enrollment_state: 'active')
+      @course.assignments.create(description: 'foo', unlock_at: 1.day.from_now)
+
+      json = api_call_as_user(student, :get, "/api/v1/calendar_events", {
+        :controller => 'calendar_events_api', :action => 'index', :format => 'json',
+        :type => 'assignment', :context_codes => ["course_#{@course.id}"], all_events: true
+      })
+      expect(json.first).to have_key('description')
+      expect(json.first['description']).to be_nil
+    end
+
     it 'should sort and paginate assignments' do
       undated = (1..7).map {|i| create_assignments(@course.id, 1, title: "#{@course.id}:#{i}", due_at: nil).first }
       dated = (1..18).map {|i| create_assignments(@course.id, 1, title: "#{@course.id}:#{i}", due_at: Time.parse('2012-01-20 12:00:00').advance(days: -i)).first }
@@ -2230,11 +2243,53 @@ describe CalendarEventsApiController, type: :request do
     it "should return submissions with assignments" do
       assg = @course.assignments.create(workflow_state: 'published', due_at: 3.days.from_now, submission_types: "online_text_entry")
       assg.submit_homework @student, submission_type: "online_text_entry"
-      json = api_call(:get,
-        "/api/v1/users/#{@student.id}/calendar_events?all_events=true&type=assignment&include[]=submission&context_codes[]=#{@ctx_str}", {
-        controller: 'calendar_events_api', action: 'user_index', format: 'json', type: 'assignment', include: ['submission'],
-        context_codes: @contexts, all_events: true, user_id: @student.id})
+      json = api_call(
+        :get,
+        "/api/v1/users/#{@student.id}/calendar_events?all_events=true&type=assignment&include[]=submission&context_codes[]=#{@ctx_str}",
+        {
+          controller: 'calendar_events_api', action: 'user_index', format: 'json', type: 'assignment', include: ['submission'],
+          context_codes: @contexts, all_events: true, user_id: @student.id
+        }
+      )
       expect(json.first['assignment']['submission']).not_to be_nil
+    end
+
+    it "allows specifying submission types" do
+      @course.assignments.create(
+        workflow_state: 'published', due_at: 3.days.from_now, submission_types: "online_text_entry"
+      )
+      wiki_assignment = @course.assignments.create(
+        workflow_state: 'published', due_at: 3.days.from_now, submission_types: "wiki_page"
+      )
+      @course.assignments.create(workflow_state: 'published', due_at: 3.days.from_now, submission_types: "not_graded")
+      json = api_call(
+        :get,
+        "/api/v1/users/#{@student.id}/calendar_events",
+        {
+          controller: 'calendar_events_api', action: 'user_index', format: 'json', type: 'assignment',
+          context_codes: @contexts, all_events: true, user_id: @student.id, submission_types: ['wiki_page']
+        }
+      )
+      expect(json.map { |a| a.dig('assignment', 'id') }).to match_array [wiki_assignment.id]
+    end
+
+    it "allows specifying submission types to exclude" do
+      text_assignment = @course.assignments.create(
+        workflow_state: 'published', due_at: 3.days.from_now, submission_types: "online_text_entry"
+      )
+      @course.assignments.create(workflow_state: 'published', due_at: 3.days.from_now, submission_types: "wiki_page")
+      ungraded_assignment = @course.assignments.create(
+        workflow_state: 'published', due_at: 3.days.from_now, submission_types: "not_graded"
+      )
+      json = api_call(
+        :get,
+        "/api/v1/users/#{@student.id}/calendar_events",
+        {
+          controller: 'calendar_events_api', action: 'user_index', format: 'json', type: 'assignment',
+          context_codes: @contexts, all_events: true, user_id: @student.id, exclude_submission_types: ['wiki_page']
+        }
+      )
+      expect(json.map { |a| a.dig('assignment', 'id') }).to match_array [text_assignment.id, ungraded_assignment.id]
     end
   end
 
@@ -2341,6 +2396,21 @@ describe CalendarEventsApiController, type: :request do
 
       expect(response.body.scan(/UID:\s*event-([^\n]*)/).flatten.map(&:strip)).to match_array [
                                                                                          "assignment-override-#{@override.id}", "calendar-event-#{@event.id}", "calendar-event-#{@appointment.id}"]
+
+      # make sure the assignment actually has the override date
+      expected_override_date_output = @override.due_at.utc.iso8601.gsub(/[-:]/, '').gsub(/\d\dZ$/, '00Z')
+      expect(response.body.match(/DTSTART:\s*#{expected_override_date_output}/)).not_to be_nil
+    end
+
+    it "should have events for a merged student" do
+      old_code = @student.feed_code
+      new_user = user_model
+      UserMerge.from(@student).into(new_user)
+      raw_api_call(:get, "/feeds/calendars/#{old_code}.ics", {
+        :controller => 'calendar_events_api', :action => 'public_feed', :format => 'ics', :feed_code => old_code})
+      expect(response).to be_successful
+
+      expect(response.body.scan(/UID:\s*event-([^\n]*)/).flatten.map(&:strip)).to match_array ["assignment-override-#{@override.id}", "calendar-event-#{@event.id}", "calendar-event-#{@appointment.id}"]
 
       # make sure the assignment actually has the override date
       expected_override_date_output = @override.due_at.utc.iso8601.gsub(/[-:]/, '').gsub(/\d\dZ$/, '00Z')

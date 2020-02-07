@@ -16,18 +16,18 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import React, {Fragment} from 'react'
+import React from 'react'
 import {arrayOf, bool, func, shape, string} from 'prop-types'
-import Checkbox from '@instructure/ui-forms/lib/components/Checkbox'
-import List, {ListItem} from '@instructure/ui-elements/lib/components/List'
-import View from '@instructure/ui-layout/lib/components/View'
+import {Checkbox} from '@instructure/ui-forms'
+import {List} from '@instructure/ui-elements'
+import {View} from '@instructure/ui-layout'
 import I18n from 'i18n!hide_assignment_grades_tray'
 
 export default function SpecificSections(props) {
   const {checked, disabled, onCheck, sections, sectionSelectionChanged, selectedSectionIds} = props
 
   return (
-    <Fragment>
+    <>
       <View as="div" margin="small 0 small" padding="0 medium">
         <Checkbox
           checked={checked}
@@ -46,11 +46,11 @@ export default function SpecificSections(props) {
           maxHeight="15rem"
           overflowX="hidden"
           overflowY="auto"
-          padding="0 0 0 large"
+          padding="xxx-small 0 xxx-small large"
         >
-          <List itemSpacing="small" variant="unstyled">
+          <List margin="xxx-small 0" itemSpacing="small" variant="unstyled">
             {sections.map(section => (
-              <ListItem key={section.id}>
+              <List.Item key={section.id}>
                 <Checkbox
                   checked={selectedSectionIds.includes(section.id)}
                   label={
@@ -69,12 +69,12 @@ export default function SpecificSections(props) {
                     sectionSelectionChanged(event.target.checked, section.id)
                   }}
                 />
-              </ListItem>
+              </List.Item>
             ))}
           </List>
         </View>
       )}
-    </Fragment>
+    </>
   )
 }
 

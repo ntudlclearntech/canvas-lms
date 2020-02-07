@@ -241,7 +241,7 @@ class Course < ActiveRecord::Base
   include StickySisFields
   are_sis_sticky :name, :course_code, :start_at, :conclude_at,
                  :restrict_enrollments_to_course_dates, :enrollment_term_id,
-                 :workflow_state, :account_id
+                 :workflow_state, :account_id, :grade_passback_setting
 
   include FeatureFlags
 
@@ -354,12 +354,7 @@ class Course < ActiveRecord::Base
       tags = self.context_module_tags.active.joins(:context_module).where(:context_modules => {:workflow_state => 'active'})
     end
 
-    scope = DifferentiableAssignment.scope_filter(tags, user, self, is_teacher: user_is_teacher)
-    unless user_is_teacher
-      scope = scope.where("content_tags.content_type <> ? OR content_tags.content_id IN (?)", "DiscussionTopic",
-        self.discussion_topics.published.visible_to_student_sections(user).select(:id))
-    end
-    scope
+    DifferentiableAssignment.scope_filter(tags, user, self, is_teacher: user_is_teacher)
   end
 
   def sequential_module_item_ids
@@ -450,7 +445,7 @@ class Course < ActiveRecord::Base
   def image
     @image ||= if self.image_id.present?
       self.shard.activate do
-        self.attachments.active.where(id: self.image_id).take&.public_download_url
+        self.attachments.active.where(id: self.image_id).take&.public_download_url(1.week)
       end
     elsif self.image_url
       self.image_url
@@ -776,12 +771,36 @@ class Course < ActiveRecord::Base
     scope
   end
 
-  def instructors_in_charge_of(user_id)
+  def instructors_in_charge_of(user_id, require_grade_permissions: true)
     scope = current_enrollments.
       where(:course_id => self, :user_id => user_id).
       where("course_section_id IS NOT NULL")
     section_ids = scope.distinct.pluck(:course_section_id)
-    participating_instructors.restrict_to_sections(section_ids)
+
+    instructor_enrollment_scope = self.instructor_enrollments.active_by_date
+    if section_ids.any?
+      instructor_enrollment_scope = instructor_enrollment_scope.where("enrollments.limit_privileges_to_course_section IS NULL OR
+        enrollments.limit_privileges_to_course_section<>? OR enrollments.course_section_id IN (?)", true, section_ids)
+    end
+
+    if require_grade_permissions
+      # filter to users with view_all_grades or manage_grades permission
+      role_user_ids = instructor_enrollment_scope.pluck(:role_id, :user_id)
+      return [] unless role_user_ids.any?
+      role_ids = role_user_ids.map(&:first).uniq
+
+      roles = Role.where(:id => role_ids).to_a
+      allowed_role_ids = roles.select{|role|
+        [:view_all_grades, :manage_grades].any?{|permission| RoleOverride.enabled_for?(self, permission, role, self).include?(:self) }
+      }.map(&:id)
+      return [] unless allowed_role_ids.any?
+
+      allowed_user_ids = Set.new
+      role_user_ids.each{|role_id, user_id| allowed_user_ids << user_id if allowed_role_ids.include?(role_id)}
+      User.where(:id => allowed_user_ids).to_a
+    else
+      User.where(:id => instructor_enrollment_scope.select(:id)).to_a
+    end
   end
 
   # Tread carefully — this method returns true for Teachers, TAs, and Designers
@@ -1003,7 +1022,7 @@ class Course < ActiveRecord::Base
             EnrollmentState.transaction do
               locked_ids = EnrollmentState.where(:enrollment_id => enrollment_info.map(&:id)).lock(:no_key_update).order(:enrollment_id).pluck(:enrollment_id)
               EnrollmentState.where(:enrollment_id => locked_ids).
-                update_all(["state = ?, state_is_current = ?, access_is_current = ?, lock_version = lock_version + 1", 'completed', true, false])
+                update_all(["state = ?, state_is_current = ?, access_is_current = ?, lock_version = lock_version + 1, updated_at = ?", 'completed', true, false, Time.now.utc])
             end
             EnrollmentState.send_later_if_production(:process_states_for_ids, enrollment_info.map(&:id)) # recalculate access
           end
@@ -1022,7 +1041,7 @@ class Course < ActiveRecord::Base
               EnrollmentState.transaction do
                 locked_ids = EnrollmentState.where(:enrollment_id => enrollment_info.map(&:id)).lock(:no_key_update).order(:enrollment_id).pluck(:enrollment_id)
                 EnrollmentState.where(:enrollment_id => locked_ids).
-                  update_all(["state = ?, state_is_current = ?, lock_version = lock_version + 1", 'deleted', true])
+                  update_all(["state = ?, state_is_current = ?, lock_version = lock_version + 1, updated_at = ?", 'deleted', true, Time.now.utc])
               end
             end
             User.send_later_if_production(:update_account_associations, user_ids)
@@ -1207,7 +1226,7 @@ class Course < ActiveRecord::Base
   end
 
   def allow_media_comments?
-    true || [].include?(self.id)
+    true
   end
 
   def short_name
@@ -1312,7 +1331,7 @@ class Course < ActiveRecord::Base
       SisBatchRollBackData.bulk_insert_roll_back_data(data) if data
       Enrollment.where(id: e_batch.map(&:id)).update_all(workflow_state: 'deleted', updated_at: Time.zone.now)
       EnrollmentState.where(:enrollment_id => e_batch.map(&:id)).
-        update_all(["state = ?, state_is_current = ?, lock_version = lock_version + 1", 'deleted', true])
+        update_all(["state = ?, state_is_current = ?, lock_version = lock_version + 1, updated_at = ?", 'deleted', true, Time.now.utc])
       User.touch_and_clear_cache_keys(user_ids, :enrollments)
       User.send_later_if_production(:update_account_associations, user_ids) if user_ids.any?
     end
@@ -1464,7 +1483,7 @@ class Course < ActiveRecord::Base
     # Active admins (Teacher/TA/Designer)
     given { |user| (self.available? || self.created? || self.claimed?) && user &&
       fetch_on_enrollments("has_active_admin_enrollment", user) { enrollments.for_user(user).of_admin_type.active_by_date.exists? } }
-    can :read_as_admin and can :read and can :manage and can :update and can :use_student_view and can :read_outcomes and can :view_unpublished_items and can :manage_feature_flags
+    can :read_as_admin and can :read and can :manage and can :update and can :use_student_view and can :read_outcomes and can :view_unpublished_items and can :manage_feature_flags and can :view_feature_flags
 
     # Teachers and Designers can delete/reset, but not TAs
     given { |user| !self.deleted? && !self.sis_source_id && user &&
@@ -1526,7 +1545,7 @@ class Course < ActiveRecord::Base
     can :read_as_admin and can :view_unpublished_items
 
     given { |user| self.account_membership_allows(user, :manage_courses) }
-    can :read_as_admin and can :manage and can :update and can :use_student_view and can :reset_content and can :view_unpublished_items and can :manage_feature_flags
+    can :read_as_admin and can :manage and can :update and can :use_student_view and can :reset_content and can :view_unpublished_items and can :manage_feature_flags and can :view_feature_flags
 
     given { |user| self.account_membership_allows(user, :manage_courses) && self.grants_right?(user, :change_course_state) }
     can :delete
@@ -2014,7 +2033,7 @@ class Course < ActiveRecord::Base
     limit_privileges_to_course_section = opts[:limit_privileges_to_course_section] || false
     associated_user_id = opts[:associated_user_id]
 
-    role = opts[:role] || Enrollment.get_built_in_role_for_type(type)
+    role = opts[:role] || self.shard.activate { Enrollment.get_built_in_role_for_type(type) }
 
     start_at = opts[:start_at]
     end_at = opts[:end_at]
@@ -2120,7 +2139,7 @@ class Course < ActiveRecord::Base
 
   def resubmission_for(asset)
     asset.ignores.where(:purpose => 'grading', :permanent => false).delete_all
-    instructors.touch_all
+    instructors.clear_cache_keys(:todo_list)
   end
 
   def grading_standard_enabled
@@ -2345,13 +2364,13 @@ class Course < ActiveRecord::Base
       :syllabus_body, :allow_student_forum_attachments, :lock_all_announcements,
       :default_wiki_editing_roles, :allow_student_organized_groups,
       :default_view, :show_total_grade_as_points, :allow_final_grade_override,
-      :open_enrollment,
+      :open_enrollment, :filter_speed_grader_by_student_group,
       :storage_quota, :tab_configuration, :allow_wiki_comments,
       :turnitin_comments, :self_enrollment, :license, :indexed, :locale,
       :hide_final_grade, :hide_distribution_graphs,
       :allow_student_discussion_topics, :allow_student_discussion_editing, :lock_all_announcements,
       :organize_epub_by_content_type, :show_announcements_on_home_page,
-      :home_page_announcement_limit, :enable_offline_web_export,
+      :home_page_announcement_limit, :enable_offline_web_export, :usage_rights_required,
       :restrict_student_future_view, :restrict_student_past_view, :restrict_enrollments_to_course_dates
     ]
   end
@@ -2392,7 +2411,9 @@ class Course < ActiveRecord::Base
     self.shard.activate do
       RequestCache.cache(key, user, self, opts) do
         Rails.cache.fetch_with_batched_keys([key, self.global_asset_string, opts].compact.cache_key, batch_object: user, batched_keys: :enrollments) do
-          yield
+          Shackles.activate(:master) do
+            yield
+          end
         end
       end
     end
@@ -2448,6 +2469,7 @@ class Course < ActiveRecord::Base
   end
 
   # can apply to user scopes as well if through enrollments (e.g. students, teachers)
+  # returns a scope for enrollments
   def apply_enrollment_visibility(scope, user, section_ids=nil, include: [])
     include = Array(include)
     if section_ids
@@ -2722,9 +2744,10 @@ class Course < ActiveRecord::Base
     return tab && tab[:hidden]
   end
 
-  def external_tool_tabs(opts)
+  def external_tool_tabs(opts, user)
     tools = self.context_external_tools.active.having_setting('course_navigation')
     tools += ContextExternalTool.active.having_setting('course_navigation').where(context_type: 'Account', context_id: account_chain_ids).to_a
+    tools = tools.select { |t| t.permission_given?(:course_navigation, user, self) && t.feature_flag_enabled?(self) }
     Lti::ExternalToolTab.new(self, :course_navigation, tools, opts[:language]).tabs
   end
 
@@ -2744,7 +2767,7 @@ class Course < ActiveRecord::Base
       tabs = self.tab_configuration.compact
       settings_tab = default_tabs[-1]
       external_tabs = if opts[:include_external]
-                        external_tool_tabs(opts) + Lti::MessageHandler.lti_apps_tabs(self, [Lti::ResourcePlacement::COURSE_NAVIGATION], opts)
+                        external_tool_tabs(opts, user) + Lti::MessageHandler.lti_apps_tabs(self, [Lti::ResourcePlacement::COURSE_NAVIGATION], opts)
                       else
                         []
                       end
@@ -2897,6 +2920,10 @@ class Course < ActiveRecord::Base
   def self.add_setting(setting, opts = {})
     setting = setting.to_sym
     settings_options[setting] = opts
+    valid_keys = [:boolean, :default, :inherited, :alias, :arbitrary]
+    invalid_keys = opts.except(*valid_keys).keys
+    raise "invalid options - #{invalid_keys.inspect} (must be in #{valid_keys.inspect})" if invalid_keys.any?
+
     cast_expression = "val.to_s"
     cast_expression = "val" if opts[:arbitrary]
     if opts[:boolean]
@@ -2948,7 +2975,9 @@ class Course < ActiveRecord::Base
   add_setting :allow_final_grade_override, boolean: false, default: false
   add_setting :allow_student_discussion_topics, :boolean => true, :default => true
   add_setting :allow_student_discussion_editing, :boolean => true, :default => true
+  add_setting :allow_student_forum_attachments, :boolean => true, :default => true
   add_setting :show_total_grade_as_points, :boolean => true, :default => false
+  add_setting :filter_speed_grader_by_student_group, boolean: true, default: false
   add_setting :lock_all_announcements, :boolean => true, :default => false, :inherited => true
   add_setting :large_roster, :boolean => true, :default => lambda { |c| c.root_account.large_course_rosters? }
   add_setting :public_syllabus, :boolean => true, :default => false
@@ -2967,6 +2996,8 @@ class Course < ActiveRecord::Base
   add_setting :timetable_data, :arbitrary => true
   add_setting :syllabus_master_template_id
   add_setting :syllabus_updated_at
+
+  add_setting :usage_rights_required, :boolean => true, :default => false, :inherited => true
 
   def user_can_manage_own_discussion_posts?(user)
     return true if allow_student_discussion_editing?
@@ -3004,8 +3035,13 @@ class Course < ActiveRecord::Base
     self.shard.activate do
     Course.transaction do
       new_course = Course.new
-      self.attributes.delete_if{|k,v| [:id, :created_at, :updated_at, :syllabus_body, :wiki_id, :default_view, :tab_configuration, :lti_context_id, :workflow_state, :latest_outcome_import_id].include?(k.to_sym) }.each do |key, val|
-        new_course.write_attribute(key, val)
+      keys_to_copy = Course.column_names - [
+        :id, :created_at, :updated_at, :syllabus_body, :wiki_id, :default_view,
+        :tab_configuration, :lti_context_id, :workflow_state, :latest_outcome_import_id,
+        :grading_standard_id
+      ].map(&:to_s)
+      self.attributes.each do |key, val|
+        new_course.write_attribute(key, val) if keys_to_copy.include?(key)
       end
       new_course.workflow_state = (self.admins.any? ? 'claimed' : 'created')
       # there's a unique constraint on this, so we need to clear it out
@@ -3324,10 +3360,9 @@ class Course < ActiveRecord::Base
   end
 
   def quiz_lti_tool
-    query = { tool_id: 'Quizzes 2' }
-    context_external_tools.active.find_by(query) ||
-      account.context_external_tools.active.find_by(query) ||
-        root_account.context_external_tools.active.find_by(query)
+    context_external_tools.active.quiz_lti.first ||
+      account.context_external_tools.active.quiz_lti.first ||
+        root_account.context_external_tools.active.quiz_lti.first
   end
 
   def find_or_create_progressions_for_user(user)
@@ -3365,6 +3400,11 @@ class Course < ActiveRecord::Base
 
   def allow_final_grade_override?
     feature_enabled?(:final_grades_override) && allow_final_grade_override == "true"
+  end
+
+  def filter_speed_grader_by_student_group?
+    return false unless root_account.feature_enabled?(:filter_speed_grader_by_student_group) && feature_enabled?(:new_gradebook)
+    filter_speed_grader_by_student_group
   end
 
   def moderators

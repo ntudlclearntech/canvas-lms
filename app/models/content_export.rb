@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU Affero General Public License along
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 #
+require 'English'
 
 class ContentExport < ActiveRecord::Base
   include Workflow
@@ -23,6 +24,8 @@ class ContentExport < ActiveRecord::Base
   belongs_to :attachment
   belongs_to :content_migration
   has_many :attachments, :as => :context, :inverse_of => :context, :dependent => :destroy
+  has_one :sent_content_share
+  has_many :received_content_shares
   has_one :epub_export
   has_a_broadcast_policy
   serialize :settings
@@ -92,6 +95,10 @@ class ContentExport < ActiveRecord::Base
     # non-admins can create zip or user-data exports, but not other types
     given { |user, session| [ZIP, USER_DATA].include?(self.export_type) && self.context.grants_right?(user, session, :read) }
     can :create
+
+    # users can read exports that are shared with them
+    given { |user| ContentShare.where(user: user, content_export: self).exists? }
+    can :read
   end
 
   def set_global_identifiers
@@ -105,6 +112,16 @@ class ContentExport < ActiveRecord::Base
     !self.context.content_exports.where(:export_type => CC_EXPORT_TYPES, :global_identifiers => false).exists?
   end
 
+  def quizzes_next?
+    return false unless context.feature_enabled?(:quizzes_next)
+
+    export_type == QUIZZES2 || self.settings[:quizzes2].present?
+  end
+
+  def new_quizzes_page_enabled?
+    quizzes_next? && root_account.feature_enabled?(:newquizzes_on_quiz_page)
+  end
+
   def export(opts={})
     self.shard.activate do
       opts = opts.with_indifferent_access
@@ -115,7 +132,7 @@ class ContentExport < ActiveRecord::Base
         export_user_data(opts)
       when QUIZZES2
         return unless context.feature_enabled?(:quizzes_next)
-        export_quizzes2
+        new_quizzes_page_enabled? ? quizzes2_export_complete : export_quizzes2
       else
         export_course(opts)
       end
@@ -161,7 +178,7 @@ class ContentExport < ActiveRecord::Base
         mark_failed
       end
     rescue
-      add_error("Error running course export.", $!)
+      add_error("Error running course export.", $ERROR_INFO)
       mark_failed
     ensure
       self.save
@@ -180,7 +197,7 @@ class ContentExport < ActiveRecord::Base
         mark_exported
       end
     rescue
-      add_error("Error running user_data export.", $!)
+      add_error("Error running user_data export.", $ERROR_INFO)
       mark_failed
     ensure
       self.save
@@ -197,7 +214,66 @@ class ContentExport < ActiveRecord::Base
         mark_exported
       end
     rescue
-      add_error("Error running zip export.", $!)
+      add_error("Error running zip export.", $ERROR_INFO)
+      mark_failed
+    ensure
+      self.save
+    end
+  end
+
+  def quizzes2_build_assignment(opts = {})
+    mark_exporting
+    reset_and_start_job_progress
+
+    @quiz_exporter = Exporters::Quizzes2Exporter.new(self)
+    if @quiz_exporter.export(opts)
+      self.update(
+        selected_content: {
+          quizzes: {
+            create_key(@quiz_exporter.quiz) => true
+          }
+        }
+      )
+      self.settings[:quizzes2] = @quiz_exporter.build_assignment_payload
+      self.save!
+      return true
+    else
+      add_error("Error running export to Quizzes 2.", $ERROR_INFO)
+      mark_failed
+    end
+
+    false
+  end
+
+  def quizzes2_export_complete
+    return unless quizzes_next?
+
+    assignment_id = self.settings.dig(:quizzes2, :assignment, :assignment_id)
+    assignment = Assignment.find_by(id: assignment_id)
+    if assignment.blank?
+      mark_failed
+      return
+    end
+
+    begin
+      self.update(export_type: QTI)
+      @cc_exporter = CC::CCExporter.new(self)
+
+      if @cc_exporter.export
+        self.update(
+          export_type: QUIZZES2
+        )
+        self.settings[:quizzes2][:qti_export] = {}
+        self.settings[:quizzes2][:qti_export][:url] = self.attachment.public_download_url
+        self.progress = 100
+        mark_exported
+      else
+        assignment.fail_to_migrate
+        mark_failed
+      end
+    rescue
+      add_error("Error running export to Quizzes 2.", $ERROR_INFO)
+      assignment.fail_to_migrate
       mark_failed
     ensure
       self.save
@@ -236,7 +312,7 @@ class ContentExport < ActiveRecord::Base
         mark_failed
       end
     rescue
-      add_error("Error running export to Quizzes 2.", $!)
+      add_error("Error running export to Quizzes 2.", $ERROR_INFO)
       mark_failed
     ensure
       self.save
@@ -254,6 +330,7 @@ class ContentExport < ActiveRecord::Base
     p.completion = 0
     p.user = self.user
     p.save!
+    quizzes2_build_assignment(opts) if new_quizzes_page_enabled?
     export(opts)
   end
 
@@ -459,6 +536,7 @@ class ContentExport < ActiveRecord::Base
 
   def expired?
     return false unless ContentExport.expire?
+    return false if ContentShare.where(content_export: self).exists?
     created_at < ContentExport.expire_days.days.ago
   end
 

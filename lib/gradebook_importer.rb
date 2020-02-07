@@ -202,7 +202,6 @@ class GradebookImporter
     end
 
     translate_pass_fail(@assignments, @students, @gradebook_importer_assignments)
-
     unless @missing_student
       # weed out assignments with no changes
       indexes_to_delete = []
@@ -285,13 +284,16 @@ class GradebookImporter
       next unless assignment.grading_type == "pass_fail"
       students.each do |student|
         submission = gradebook_importer_assignments.fetch(student.id)[idx]
-        if submission['grade'].present?
+        if submission['grade'].present? && (submission['grade'].to_s.casecmp('EX') != 0)
           gradebook_importer_assignments.fetch(student.id)[idx]['grade'] = assignment.score_to_grade(submission['grade'], \
             submission['grade'])
         end
-        if submission['original_grade'].present?
-          gradebook_importer_assignments.fetch(student.id)[idx]['original_grade'] = assignment.score_to_grade(submission['original_grade'],
+        if submission['original_grade'].present? && (submission['original_grade'] != 'EX')
+          gradebook_importer_assignments.fetch(student.id)[idx]['original_grade'] = assignment.score_to_grade(submission['original_grade'],\
             submission['original_grade'])
+        end
+        if submission['grade'].to_s.casecmp('EX') == 0
+          submission['grade'] = 'EX'
         end
       end
     end
@@ -299,6 +301,7 @@ class GradebookImporter
 
   def process_custom_column_headers(row)
     row.each_with_index do |header_column, index|
+      next if GRADEBOOK_IMPORTER_RESERVED_NAMES.include?(header_column) && Account.site_admin.feature_enabled?(:gradebook_reserved_importer_bugfix)
       gradebook_column = custom_gradebook_columns.detect { |column| column.title == header_column }
       next if gradebook_column.blank?
 
@@ -368,6 +371,16 @@ class GradebookImporter
     # For Custom Columns
     @student_columns += @parsed_custom_column_data.length
   end
+
+  GRADEBOOK_IMPORTER_RESERVED_NAMES = [
+    "Student",
+    "ID",
+    "SIS User ID",
+    "SIS Login ID",
+    "Section",
+    "Integration ID",
+    "Root Account"
+  ].freeze
 
   NON_ASSIGNMENT_COLUMN_HEADERS = [
     "Current Score",
@@ -520,7 +533,11 @@ class GradebookImporter
   protected
 
   def custom_gradebook_columns
-    @custom_gradebook_columns ||= @context.custom_gradebook_columns.to_a
+    @custom_gradebook_columns ||= if Account.site_admin.feature_enabled?(:gradebook_reserved_importer_bugfix)
+      @context.custom_gradebook_columns.active.to_a
+    else
+      @context.custom_gradebook_columns.to_a
+    end
   end
 
   def identify_delimiter(rows)
@@ -695,6 +712,10 @@ class GradebookImporter
     return true if submission['original_grade'].blank? && submission['grade'].blank?
 
     return false unless submission['original_grade'].present? && submission['grade'].present?
+
+    if (submission['grade'].to_s.casecmp('EX') == 0) || (submission['original_grade'].casecmp('EX') == 0)
+      return false
+    end
 
     # The exporter exports scores rounded to two decimal places (which is also
     # the maximum level of precision shown in the gradebook), so 123.456 will

@@ -16,11 +16,11 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import '@instructure/ui-themes/lib/canvas'
+import '@instructure/canvas-theme'
 import React from 'react'
 import ErrorBoundary from '../ErrorBoundary'
 import GenericErrorPage from '../GenericErrorPage'
-import {render} from 'react-testing-library'
+import {render} from '@testing-library/react'
 
 class ThrowsErrorComponent extends React.Component {
   componentDidMount() {

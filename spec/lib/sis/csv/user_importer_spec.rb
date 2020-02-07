@@ -182,6 +182,28 @@ describe SIS::CSV::UserImporter do
     expect(cc.path).to eql("user2@example.com")
   end
 
+  it "should preserve sortable name if provided when changing regular name" do
+    process_csv_data_cleanly(
+      "user_id,login_id,first_name,last_name,sortable_name,email,status",
+      "user_1,user1,User,One,\"One, User\",user@example.com,active"
+    )
+    user = CommunicationChannel.by_path('user@example.com').first.user
+    expect(user.name).to eq ("User One")
+    expect(user.sortable_name).to eql("One, User")
+    process_csv_data_cleanly(
+      "user_id,login_id,first_name,last_name,sortable_name,email,status",
+      "user_1,user1,User,Uno,\"One, User\",user@example.com,active"
+    )
+    expect(user.reload.name).to eq ("User Uno")
+    expect(user.sortable_name).to eql("One, User")
+    process_csv_data_cleanly(
+      "user_id,login_id,first_name,last_name,status",
+      "user_1,user1,Usero,Uno,active"
+    )
+    expect(user.reload.name).to eq ("Usero Uno")
+    expect(user.sortable_name).to eql("Uno, Usero")
+  end
+
   it "should preserve first name/last name split" do
     process_csv_data_cleanly(
       "user_id,login_id,password,first_name,last_name,email,status,ssha_password",
@@ -883,6 +905,15 @@ describe SIS::CSV::UserImporter do
     )
     expect(importer.errors.length).to eq 1
     expect(importer.errors[0][1]).to eq "The email address associated with user 'user_1' is invalid (email: 'None')"
+  end
+
+  it "should have the row on the error object" do
+    importer = process_csv_data(
+      "user_id,login_id,first_name,last_name,email,status",
+      "user_1,user1,User,Uno,None,active"
+    )
+    expect(importer.errors.length).to eq 1
+    expect(importer.batch.sis_batch_errors.first.row_info).to eq "user_1,user1,User,Uno,None,active,2\n"
   end
 
   it "should not present an error for the same login_id with different case for same user" do

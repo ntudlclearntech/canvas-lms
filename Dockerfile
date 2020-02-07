@@ -8,7 +8,7 @@ FROM instructure/ruby-passenger:2.4-xenial
 ENV APP_HOME /usr/src/app/
 ENV RAILS_ENV "production"
 ENV NGINX_MAX_UPLOAD_SIZE 10g
-ENV YARN_VERSION 1.16.0-1
+ENV YARN_VERSION 1.19.1-1
 
 # Work around github.com/zertosh/v8-compile-cache/issues/2
 # This can be removed once yarn pushes a release including the fixed version
@@ -33,6 +33,7 @@ RUN sed -i 's_//archive.ubuntu_//tw.archive.ubuntu_' /etc/apt/sources.list \
        libicu-dev \
        postgresql-client-9.5 \
        unzip \
+       pbzip2 \
        fontforge \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/* \

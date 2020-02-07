@@ -16,6 +16,7 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import formatMessage from "../format-message";
-import locale from "../../locales/sq.json";
-formatMessage.addLocale({ sq: locale });
+import formatMessage from '../format-message'
+import locale from '../../locales/sq.json'
+
+formatMessage.addLocale({sq: locale})

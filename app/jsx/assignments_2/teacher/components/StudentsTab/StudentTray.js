@@ -19,11 +19,11 @@
 import React from 'react'
 import I18n from 'i18n!assignments_2'
 
-import ScreenReaderContent from '@instructure/ui-a11y/lib/components/ScreenReaderContent'
+import {ScreenReaderContent} from '@instructure/ui-a11y'
 
 import {bool, func} from 'prop-types'
 import {TeacherAssignmentShape, UserShape} from '../../assignmentData'
-import {Flex, FlexItem, View} from '@instructure/ui-layout'
+import {Flex, View} from '@instructure/ui-layout'
 import {Button, CloseButton} from '@instructure/ui-buttons'
 import {Avatar, Heading, Link, Text} from '@instructure/ui-elements'
 import {Tray} from '@instructure/ui-overlays'
@@ -87,17 +87,17 @@ export default class StudentTray extends React.Component {
       `/courses/${courseLid}/gradebook/speed_grader?assignment_id=${assignmentLid}#{"student_id":"${studentLid}"}`
     )
     return (
-      <Link
+      <Button
         href={speedgraderLink}
         margin="xx-small auto xx-small auto"
-        icon={<IconSpeedGraderLine />}
-        iconPlacement="start"
+        icon={IconSpeedGraderLine}
         target="_blank"
+        variant="link"
       >
         <Text transform="uppercase" size="small" lineHeight="fit">
           {I18n.t('SpeedGrader')}
         </Text>
-      </Link>
+      </Button>
     )
   }
 
@@ -134,35 +134,37 @@ export default class StudentTray extends React.Component {
 
   renderActionLinks() {
     return (
-      <React.Fragment>
+      <>
         <Heading level="h4" as="h3" margin="medium auto auto auto">
           {I18n.t('Actions')}
         </Heading>
-        <Link
-          icon={<IconEmailLine />}
-          iconPlacement="start"
-          linkRef={b => (this.messageStudentsButton = b)}
-          onClick={this.handleMessageButtonClick}
-          margin="small auto auto auto"
-        >
-          <Text color="primary">{I18n.t('Message Student')}</Text>
-        </Link>
-        <Link
-          icon={<IconUploadLine />}
-          iconPlacement="start"
+        <View display="block" margin="x-small none">
+          <Button
+            variant="link"
+            icon={IconEmailLine}
+            buttonRef={b => (this.messageStudentsButton = b)}
+            onClick={this.handleMessageButtonClick}
+            theme={{mediumPadding: '0', mediumHeight: '1.5rem'}}
+          >
+            {I18n.t('Message Student')}
+          </Button>
+        </View>
+        <Button
+          variant="link"
+          icon={IconUploadLine}
           onClick={this.handleSubmitForStudent}
-          margin="small auto auto auto"
+          theme={{mediumPadding: '0', mediumHeight: '1.5rem'}}
         >
-          <Text color="primary">{I18n.t('Submit for Student')}</Text>
-        </Link>
-      </React.Fragment>
+          {I18n.t('Submit for Student')}
+        </Button>
+      </>
     )
   }
 
   renderOverrideActions() {
     const hasDueDate = this.props.assignment.dueAt !== null
     return (
-      <React.Fragment>
+      <>
         <View as="div" margin="medium auto auto auto">
           <DateTimeInput
             description={I18n.t('Extend Due Date')}
@@ -187,7 +189,7 @@ export default class StudentTray extends React.Component {
             onChange={this.onChangeAttempts}
           />
         </View>
-      </React.Fragment>
+      </>
     )
   }
 
@@ -201,7 +203,7 @@ export default class StudentTray extends React.Component {
 
     return (
       <Flex>
-        <FlexItem grow textAlign="center">
+        <Flex.Item grow textAlign="center">
           <Text as="p" weight="bold" lineHeight="fit">
             {this.props.assignment.name}
           </Text>
@@ -209,7 +211,7 @@ export default class StudentTray extends React.Component {
             {displayString}
           </Text>
           {this.renderSpeedgraderLink()}
-        </FlexItem>
+        </Flex.Item>
       </Flex>
     )
   }
@@ -225,7 +227,7 @@ export default class StudentTray extends React.Component {
 
           <div style={{margin: '0 auto auto -10%', width: '120%'}}>
             <Flex>
-              <FlexItem shrink textAlign="start">
+              <Flex.Item shrink textAlign="start">
                 <Button
                   size="small"
                   variant="icon"
@@ -234,19 +236,22 @@ export default class StudentTray extends React.Component {
                 >
                   <ScreenReaderContent>{I18n.t('Previous student')}</ScreenReaderContent>
                 </Button>
-              </FlexItem>
-              <FlexItem grow textAlign="center">
+              </Flex.Item>
+              <Flex.Item grow textAlign="center">
                 <Heading level="h3" as="h2">
-                  <Link
+                  <Button
+                    size="large"
                     href={studentProfileUrl}
                     aria-label={I18n.t("Go to %{name}'s profile", {name: student.shortName})}
                     target="_blank"
+                    variant="link"
+                    theme={{largePadding: '0.75rem', largeHeight: 'normal'}}
                   >
                     {student.shortName}
-                  </Link>
+                  </Button>
                 </Heading>
-              </FlexItem>
-              <FlexItem shrink textAlign="end">
+              </Flex.Item>
+              <Flex.Item shrink textAlign="end">
                 <Button
                   size="small"
                   variant="icon"
@@ -255,7 +260,7 @@ export default class StudentTray extends React.Component {
                 >
                   <ScreenReaderContent>{I18n.t('Next student')}</ScreenReaderContent>
                 </Button>
-              </FlexItem>
+              </Flex.Item>
             </Flex>
           </div>
 

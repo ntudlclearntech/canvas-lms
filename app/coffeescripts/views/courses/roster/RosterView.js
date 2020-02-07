@@ -25,20 +25,6 @@ import AddPeopleApp from 'jsx/add_people/add_people_app'
 import filterRoles from './filterRoles'
 
 export default class RosterView extends Backbone.View {
-  constructor(...args) {
-    {
-      // Hack: trick Babel/TypeScript into allowing this before super.
-      if (false) { super(); }
-      let thisFn = (() => { return this; }).toString();
-      let thisName = thisFn.match(/_this\d*/)[0];
-      eval(`${thisName} = this;`);
-    }
-    this.fetchOnCreateUsersClose = this.fetchOnCreateUsersClose.bind(this)
-    this.fetch = this.fetch.bind(this)
-    this.onFail = this.onFail.bind(this)
-    super(...args)
-  }
-
   static initClass() {
     this.mixin(ValidatedMixin)
 
@@ -76,14 +62,14 @@ export default class RosterView extends Backbone.View {
       defaultInstitutionName: ENV.ROOT_ACCOUNT_NAME || '',
       roles: (filterRoles(ENV.ALL_ROLES, ENV.current_user_roles) || []).filter(role => role.manageable_by_user),
       sections: ENV.SECTIONS || [],
-      onClose: this.fetchOnCreateUsersClose,
+      onClose: () => this.fetchOnCreateUsersClose(),
       inviteUsersURL: ENV.INVITE_USERS_URL,
       canReadSIS
     }))
   }
 
   attach() {
-    return this.collection.on('setParam deleteParam', this.fetch)
+    return this.collection.on('setParam deleteParam', this.fetch, this)
   }
 
   fetchOnCreateUsersClose() {
@@ -94,7 +80,7 @@ export default class RosterView extends Backbone.View {
     if (this.lastRequest != null) {
       this.lastRequest.abort()
     }
-    return (this.lastRequest = this.collection.fetch().fail(this.onFail))
+    return (this.lastRequest = this.collection.fetch().fail(this.onFail.bind(this)))
   }
 
   course_id() {

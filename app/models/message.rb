@@ -441,6 +441,7 @@ class Message < ActiveRecord::Base
     path = Canvas::MessageHelper.find_message_path(filename)
 
     if !(File.exist?(path) rescue false)
+      return false if filename.include?('slack')
       filename = self.notification.name.downcase.gsub(/\s/, '_') + ".email.erb"
       path = Canvas::MessageHelper.find_message_path(filename)
     end
@@ -499,8 +500,7 @@ class Message < ActiveRecord::Base
   # Returns message body
   def populate_body(message_body_template, path_type, binding, filename)
     # Build the body content based on the path type
-    self.body = eval(Erubi::Engine.new(message_body_template,
-      bufvar: '@output_buffer').src, binding, filename)
+    self.body = eval(Erubi::Engine.new(message_body_template, bufvar: '@output_buffer').src, binding, filename)
     self.html_body = apply_html_template(binding) if path_type == 'email'
 
     # Append a footer to the body if the path type is email
@@ -547,6 +547,10 @@ class Message < ActiveRecord::Base
     # Determine the message template file to be used in the message
     filename = template_filename(path_type)
     message_body_template = get_template(filename)
+    if !message_body_template && path_type == 'slack'
+      filename = template_filename('sms')
+      message_body_template = get_template(filename)
+    end
 
     context, asset, user, delayed_messages, data = [self.context,
       self.context, self.user, @delayed_messages, @data]
@@ -589,17 +593,20 @@ class Message < ActiveRecord::Base
       return nil
     end
 
-    delivery_method = "deliver_via_#{path_type}".to_sym
-
-    if not delivery_method or not respond_to?(delivery_method, true)
-      logger.warn("Could not set delivery_method from #{path_type}")
+    if path_type == 'slack' && !context_root_account.settings[:encrypted_slack_key]
+      logger.warn('Could not send slack message without configured key')
       return nil
     end
 
-    check_acct = (user && user.account) || Account.site_admin
+    check_acct = user&.account || Account.site_admin
     if check_acct.feature_enabled?(:notification_service)
       enqueue_to_sqs
     else
+      delivery_method = "deliver_via_#{path_type}".to_sym
+      if !delivery_method || !respond_to?(delivery_method, true)
+        logger.warn("Could not set delivery_method from #{path_type}")
+        return nil
+      end
       send(delivery_method)
     end
   end
@@ -651,7 +658,7 @@ class Message < ActiveRecord::Base
       truncated_body = HtmlTextHelper.strip_and_truncate(body, max_length: message_length)
       "#{truncated_body} #{url}"
     else
-      if to =~ /^\+[0-9]+$/
+      if to =~ /^\+[0-9]+$/ || path_type == 'slack'
         body
       else
         Mailer.create_message(self).to_s
@@ -672,6 +679,12 @@ class Message < ActiveRecord::Base
         "access_token"=> twitter_service.token,
         "access_token_secret"=> twitter_service.secret,
         "user_id"=> twitter_service.service_user_id
+      ]
+    when 'slack'
+      [
+        'recipient'=> to,
+        'access_token'=> Canvas::Security.decrypt_password(context_root_account.settings[:encrypted_slack_key],
+                                                           context_root_account.settings[:encrypted_slack_key_salt], 'instructure_slack_encrypted_key')
       ]
     else
       [to]

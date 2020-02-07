@@ -37,15 +37,6 @@ module WikiAndTinyCommon
     switch_editor_views(element)
   end
 
-  def wiki_page_tools_upload_file(form, type)
-    name, path, data = get_file({:text => 'testfile1.txt', :image => 'graded.png'}[type])
-
-    f("#{form} .file_name").send_keys(path)
-    wait_for_ajaximations
-    f("#{form}").submit
-    expect(f("body")).not_to contain_jqcss("#{form}:visible")
-  end
-
   def wiki_page_tools_file_tree_setup(skip_tree=false, skip_image_list=false)
     @root_folder = Folder.root_folders(@course).first
     @sub_folder = @root_folder.sub_folders.create!(:name => 'subfolder', :context => @course)
@@ -165,36 +156,71 @@ module WikiAndTinyCommon
   def add_image_to_rce
     get "/courses/#{@course.id}/pages/front-page/edit"
     wait_for_tiny(f("form.edit-form .edit-content"))
-    clear_wiki_rce
-    f('#editor_tabs .ui-tabs-nav li:nth-child(3) a').click
-    f('.upload_new_image_link').click
-    wait_for_animations
-    wiki_page_tools_upload_file('#sidebar_upload_image_form', :image)
+    fj('[role="presentation"]:contains("Images")').click
+    fj('button:contains(" Upload a new image")').click
+    alt_text = "image file"
+    _name, path, _data = get_file({:image => 'graded.png'}[:image])
+    f("input[type='file']").send_keys(path)
+    f("input[name='alt_text']").send_keys(alt_text)
+    f("button[type='submit']").click
+    expect(f("body")).not_to contain_jqcss("input[type='file']:visible")
     in_frame wiki_page_body_ifr_id do
       expect(f('#tinymce img')).to be_displayed
     end
 
-    f('form.edit-form button.submit').click
+    force_click('form.edit-form button.submit')
     wait_for_ajax_requests
   end
 
-  def add_file_to_rce
-    wiki_page_tools_file_tree_setup
-    wait_for_tiny(f("form.edit-form .edit-content"))
-    wiki_page_body = clear_wiki_rce
-    f('#editor_tabs .ui-tabs-nav li:nth-child(2) a').click
-    root_folders = @tree1.find_elements(:css, 'li.folder')
-    root_folders.first.find_element(:css, '.sign.plus').click
+  def upload_to_files_in_rce(image = false)
+    fj('button:contains("Upload a new file")').click
+    if image == true
+      _name, path, _data = get_file({:image => 'graded.png'}[:image])
+    else
+      _name, path, _data = get_file({:text => 'foo.txt'}[:text])
+    end
+    f("input[type='file']").send_keys(path)
+    button = f("button[type='submit']")
+    keep_trying_until { button.displayed? }
+    button.click
     wait_for_ajaximations
-    expect(root_folders.first.find_elements(:css, '.file.text').length).to eq 1
-    root_folders.first.find_elements(:css, '.file.text span').first.click
+  end
+
+  def add_file_to_rce
+    title = "text_file.txt"
+    @root_folder = Folder.root_folders(@course).first
+    @text_file = @root_folder.attachments.create!(:filename => title,
+                                                  :context => @course) { |a| a.content_type = 'text/plain' }
+    get "/courses/#{@course.id}/pages/front-page/edit"
+    wait_for_tiny(f("form.edit-form .edit-content"))
+    fj('[role="presentation"]:contains("Files")').click
+    fj("aside li:contains('#{title}')").click
 
     in_frame wiki_page_body_ifr_id do
-      expect(f('#tinymce')).to include_text('txt')
+      expect(f('#tinymce a').attribute('href')).to include course_file_id_path(@text_file)
     end
+
     switch_editor_views(wiki_page_body)
     expect(find_css_in_string(wiki_page_body[:value], '.instructure_file_link')).not_to be_empty
-    f('form.edit-form button.submit').click
+    force_click('form.edit-form button.submit')
+    wait_for_ajax_requests
+  end
+
+  def add_file_to_rce_next
+    title = "text_file.txt"
+    @root_folder = Folder.root_folders(@course).first
+    @text_file = @root_folder.attachments.create!(:filename => title,
+                                                  :context => @course) { |a| a.content_type = 'text/plain' }
+    get "/courses/#{@course.id}/pages/front-page/edit"
+    wait_for_tiny(f("form.edit-form .edit-content"))
+    selector = 'button[aria-label="Documents"]'
+    button = driver.execute_script("return document.querySelector('#{selector}')")
+    f('button[aria-label="More..."]').click unless button
+    f(selector).click
+    f('[role="menuitem"][title="Course Documents"]').click
+    fj("[aria-label='Course Documents'] [role='button']:contains('#{title}')").click
+
+    force_click('form.edit-form button.submit')
     wait_for_ajax_requests
   end
 
@@ -204,6 +230,10 @@ module WikiAndTinyCommon
 
   def wiki_page_body_ifr_id
     f('.mce-container iframe')['id']
+  end
+
+  def rce_page_body_ifr_id
+    f('iframe.tox-edit-area__iframe')['id']
   end
 
   def wiki_page_editor_id
@@ -300,5 +330,26 @@ module WikiAndTinyCommon
       end
       select_all_wiki
     end
+  end
+
+  def rce_wysiwyg_state_setup(course, text = "1\n2\n3", html: false)
+    visit_front_page_edit(course)
+    wait_for_tiny(edit_wiki_css)
+
+    if html
+      f('button[title="Switch to raw html editor"]').click
+      in_frame tiny_rce_ifr_id do
+        tinyrce_element = f("body")
+        tinyrce_element.send_keys(text)
+      end
+      f('button[title="Switch to rich text editor"]').click
+    else
+      in_frame tiny_rce_ifr_id do
+        tinyrce_element = f("body")
+        tinyrce_element.click
+        tinyrce_element.send_keys(text)
+      end
+    end
+    select_all_wiki
   end
 end

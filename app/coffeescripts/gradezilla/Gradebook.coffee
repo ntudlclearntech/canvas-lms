@@ -42,7 +42,7 @@ import * as EnterGradesAsSetting from 'jsx/gradezilla/shared/EnterGradesAsSettin
 import SetDefaultGradeDialogManager from 'jsx/gradezilla/shared/SetDefaultGradeDialogManager'
 import CurveGradesDialogManager from 'jsx/gradezilla/default_gradebook/CurveGradesDialogManager'
 import GradebookApi from 'jsx/gradezilla/default_gradebook/apis/GradebookApi'
-import * as SubmissionCommentApi from 'jsx/gradezilla/default_gradebook/apis/SubmissionCommentApi'
+import SubmissionCommentApi from 'jsx/gradezilla/default_gradebook/apis/SubmissionCommentApi'
 import CourseSettings from 'jsx/gradezilla/default_gradebook/CourseSettings'
 import FinalGradeOverrides from 'jsx/gradezilla/default_gradebook/FinalGradeOverrides'
 import GradebookGrid from 'jsx/gradezilla/default_gradebook/GradebookGrid'
@@ -53,10 +53,11 @@ import PostPolicies from 'jsx/gradezilla/default_gradebook/PostPolicies'
 import GradebookMenu from 'jsx/gradezilla/default_gradebook/components/GradebookMenu'
 import ViewOptionsMenu from 'jsx/gradezilla/default_gradebook/components/ViewOptionsMenu'
 import ActionMenu from 'jsx/gradezilla/default_gradebook/components/ActionMenu'
-import AssignmentGroupFilter from 'jsx/gradezilla/default_gradebook/components/AssignmentGroupFilter'
-import GradingPeriodFilter from 'jsx/gradezilla/default_gradebook/components/GradingPeriodFilter'
-import ModuleFilter from 'jsx/gradezilla/default_gradebook/components/ModuleFilter'
-import SectionFilter from 'jsx/gradezilla/default_gradebook/components/SectionFilter'
+import AssignmentGroupFilter from 'jsx/gradezilla/default_gradebook/components/content-filters/AssignmentGroupFilter'
+import GradingPeriodFilter from 'jsx/gradezilla/default_gradebook/components/content-filters/GradingPeriodFilter'
+import ModuleFilter from 'jsx/gradezilla/default_gradebook/components/content-filters/ModuleFilter'
+import SectionFilter from 'jsx/gradezilla/default_gradebook/components/content-filters/SectionFilter'
+import StudentGroupFilter from 'jsx/gradezilla/default_gradebook/components/content-filters/StudentGroupFilter'
 import GridColor from 'jsx/gradezilla/default_gradebook/components/GridColor'
 import StatusesModal from 'jsx/gradezilla/default_gradebook/components/StatusesModal'
 import SubmissionTray from 'jsx/gradezilla/default_gradebook/components/SubmissionTray'
@@ -74,10 +75,10 @@ import assignmentHelper from 'jsx/gradezilla/shared/helpers/assignmentHelper'
 import TextMeasure from 'jsx/gradezilla/shared/helpers/TextMeasure'
 import * as GradeInputHelper from 'jsx/grading/helpers/GradeInputHelper'
 import OutlierScoreHelper from 'jsx/grading/helpers/OutlierScoreHelper'
+import {isHidden} from 'jsx/grading/helpers/SubmissionHelper'
 import LatePolicyApplicator from 'jsx/grading/LatePolicyApplicator'
-import Button from '@instructure/ui-buttons/lib/components/Button'
-import IconSettingsSolid from '@instructure/ui-icons/lib/Solid/IconSettings'
-import StudentGroupFilter from 'jsx/gradezilla/default_gradebook/components/StudentGroupFilter'
+import {Button} from '@instructure/ui-buttons'
+import {IconSettingsSolid} from '@instructure/ui-icons'
 import * as FlashAlert from 'jsx/shared/FlashAlert'
 import 'jquery.ajaxJSON'
 import 'jquery.instructure_date_and_time'
@@ -100,7 +101,7 @@ export default do ->
       assignment.assignment_visibility.push(submission.user_id)
 
   isAdmin = =>
-    _.contains(ENV.current_user_roles, 'admin')
+    _.includes(ENV.current_user_roles, 'admin')
 
   IS_ADMIN = isAdmin()
 
@@ -473,6 +474,15 @@ export default do ->
 
       @postPolicies?.initialize()
 
+      # With post policies, the "total grade" column needs to be re-rendered
+      # after loading students and submissions so we can indicate there are
+      # hidden submissions
+      $.when(
+        dataLoader.gotStudents,
+        dataLoader.gotSubmissions
+      ).then () =>
+        @updateTotalGradeColumn() if @options.post_policies_enabled?
+
       @renderedGrid = $.when(
         dataLoader.gotStudentIds,
         dataLoader.gotContextModules,
@@ -546,6 +556,15 @@ export default do ->
         @setSubmissionsLoaded(true)
         @updateColumnHeaders()
         @renderFilters()
+
+      # With post policies, the "total grade" column needs to be re-rendered
+      # after loading students and submissions so we can indicate there are
+      # hidden submissions
+      $.when(
+        dataLoader.gotStudents,
+        dataLoader.gotSubmissions
+      ).then () =>
+        @updateTotalGradeColumn() if @options.post_policies_enabled?
 
     loadOverridesForSIS: ->
       return unless @options.post_grades_feature
@@ -688,22 +707,22 @@ export default do ->
 
     getSubmission: (studentId, assignmentId) =>
       student = @student(studentId)
-      student["assignment_#{assignmentId}"]
+      student?["assignment_#{assignmentId}"]
 
     updateEffectiveDueDatesFromSubmissions: (submissions) =>
       EffectiveDueDates.updateWithSubmissions(@effectiveDueDates, submissions, @gradingPeriodSet?.gradingPeriods)
 
     updateAssignmentEffectiveDueDates: (assignment) ->
       assignment.effectiveDueDates = @effectiveDueDates[assignment.id] || {}
-      assignment.inClosedGradingPeriod = _.any(assignment.effectiveDueDates, (date) => date.in_closed_grading_period)
+      assignment.inClosedGradingPeriod = _.some(assignment.effectiveDueDates, (date) => date.in_closed_grading_period)
 
     updateStudentAttributes: (student) =>
       student.computed_current_score ||= 0
       student.computed_final_score ||= 0
 
-      student.isConcluded = _.all student.enrollments, (e) ->
+      student.isConcluded = _.every student.enrollments, (e) ->
         e.enrollment_state == 'completed'
-      student.isInactive = _.all student.enrollments, (e) ->
+      student.isInactive = _.every student.enrollments, (e) ->
         e.enrollment_state == 'inactive'
 
       student.cssClass = "student_#{student.id}"
@@ -722,10 +741,11 @@ export default do ->
     studentsThatCanSeeAssignment: (assignmentId) ->
       @courseContent.assignmentStudentVisibility[assignmentId] ||= (
         assignment = @getAssignment(assignmentId)
+        allStudents = Object.assign({}, @students, @studentViewStudents)
         if assignment.only_visible_to_overrides
-          _.pick @students, assignment.assignment_visibility...
+          _.pick allStudents, assignment.assignment_visibility...
         else
-          @students
+          allStudents
       )
 
     isInvalidSort: =>
@@ -895,7 +915,7 @@ export default do ->
 
       propertiesToMatch = ['name', 'login_id', 'short_name', 'sortable_name', 'sis_user_id']
       pattern = new RegExp(@userFilterTerm, 'i')
-      _.any propertiesToMatch, (prop) ->
+      _.some propertiesToMatch, (prop) ->
         student[prop]?.match pattern
 
     filterAssignments: (assignments) =>
@@ -1131,19 +1151,16 @@ export default do ->
       mountPoint = document.getElementById('sections-filter-container')
 
       if @showSections() and 'sections' in @gridDisplaySettings.selectedViewOptionsFilters
-        sectionList = @sectionList()
         props =
-          items: sectionList
+          sections: @sectionList()
           onSelect: @updateCurrentSection
-          selectedItemId: @getFilterRowsBySetting('sectionId') || '0'
+          selectedSectionId: @getFilterRowsBySetting('sectionId') || '0'
           disabled: !@contentLoadStates.studentsLoaded
 
-        @sectionFilterMenu = renderComponent(SectionFilter, mountPoint, props)
-      else
+        renderComponent(SectionFilter, mountPoint, props)
+      else if mountPoint?
         @updateCurrentSection(null)
-        if @sectionFilterMenu
-          ReactDOM.unmountComponentAtNode(mountPoint)
-          @sectionFilterMenu = null
+        ReactDOM.unmountComponentAtNode(mountPoint)
 
     updateCurrentSection: (sectionId) =>
       sectionId = if sectionId == '0' then null else sectionId
@@ -1166,20 +1183,18 @@ export default do ->
       mountPoint = document.getElementById('student-group-filter-container')
 
       if @showStudentGroups() and 'studentGroups' in @gridDisplaySettings.selectedViewOptionsFilters
-        groupCategoryList = Object.values(@studentGroupCategories).sort((a, b) => (a.id - b.id))
+        studentGroupSets = Object.values(@studentGroupCategories).sort((a, b) => (a.id - b.id))
 
         props =
-          items: formatStudentGroupsForFilter(groupCategoryList)
+          studentGroupSets: studentGroupSets
           onSelect: @updateCurrentStudentGroup
-          selectedItemId: @getStudentGroupToShow()
+          selectedStudentGroupId: @getStudentGroupToShow()
           disabled: !@contentLoadStates.studentsLoaded
 
-        @studentGroupFilterMenu = renderComponent(StudentGroupFilter, mountPoint, props)
-      else
+        renderComponent(StudentGroupFilter, mountPoint, props)
+      else if mountPoint?
         @updateCurrentStudentGroup(null)
-        if @studentGroupFilterMenu
-          ReactDOM.unmountComponentAtNode(mountPoint)
-          @studentGroupFilterMenu = null
+        ReactDOM.unmountComponentAtNode(mountPoint)
 
     getStudentGroupToShow: () =>
       groupId = @getFilterRowsBySetting('studentGroupId') || '0'
@@ -1205,16 +1220,15 @@ export default do ->
 
       if groups.length > 1 and 'assignmentGroups' in @gridDisplaySettings.selectedViewOptionsFilters
         props =
-          items: groups
+          assignmentGroups: groups
+          disabled: false
           onSelect: @updateCurrentAssignmentGroup
-          selectedItemId: @getAssignmentGroupToShow()
+          selectedAssignmentGroupId: @getAssignmentGroupToShow()
 
-        @assignmentGroupFilterMenu = renderComponent(AssignmentGroupFilter, mountPoint, props)
-      else
+        renderComponent(AssignmentGroupFilter, mountPoint, props)
+      else if mountPoint?
         @updateCurrentAssignmentGroup(null)
-        if @assignmentGroupFilterMenu?
-          ReactDOM.unmountComponentAtNode(mountPoint)
-          @assignmentGroupFilterMenu = null
+        ReactDOM.unmountComponentAtNode(mountPoint)
 
     updateCurrentAssignmentGroup: (group) =>
       if @getFilterColumnsBySetting('assignmentGroupId') != group
@@ -1233,16 +1247,15 @@ export default do ->
 
       if @gradingPeriodSet? and 'gradingPeriods' in @gridDisplaySettings.selectedViewOptionsFilters
         props =
-          items: @gradingPeriodList().map((item) => { id: item.id, name: item.title })
+          disabled: false
+          gradingPeriods: @gradingPeriodList()
           onSelect: @updateCurrentGradingPeriod
-          selectedItemId: @getGradingPeriodToShow()
+          selectedGradingPeriodId: @getGradingPeriodToShow()
 
-        @gradingPeriodFilterMenu = renderComponent(GradingPeriodFilter, mountPoint, props)
-      else
+        renderComponent(GradingPeriodFilter, mountPoint, props)
+      else if mountPoint?
         @updateCurrentGradingPeriod(null)
-        if @gradingPeriodFilterMenu?
-          ReactDOM.unmountComponentAtNode(mountPoint)
-          @gradingPeriodFilterMenu = null
+        ReactDOM.unmountComponentAtNode(mountPoint)
 
     updateCurrentGradingPeriod: (period) =>
       if @getFilterColumnsBySetting('gradingPeriodId') != period
@@ -1271,16 +1284,15 @@ export default do ->
 
       if @listContextModules()?.length > 0 and 'modules' in @gridDisplaySettings.selectedViewOptionsFilters
         props =
-          items: @moduleList()
+          disabled: false
+          modules: @moduleList()
           onSelect: @updateCurrentModule
-          selectedItemId: @getFilterColumnsBySetting('contextModuleId') || '0'
+          selectedModuleId: @getFilterColumnsBySetting('contextModuleId') || '0'
 
-        @moduleFilterMenu = renderComponent(ModuleFilter, mountPoint, props)
-      else
+        renderComponent(ModuleFilter, mountPoint, props)
+      else if mountPoint?
         @updateCurrentModule(null)
-        if @moduleFilterMenu?
-          ReactDOM.unmountComponentAtNode(mountPoint)
-          @moduleFilterMenu = null
+        ReactDOM.unmountComponentAtNode(mountPoint)
 
     initSubmissionStateMap: =>
       @submissionStateMap = new SubmissionStateMap
@@ -1477,7 +1489,7 @@ export default do ->
     renderGradebookSettingsModal: =>
       gradebookSettingsModalMountPoint = document.querySelector("[data-component='GradebookSettingsModal']")
       gradebookSettingsModalProps =
-        anonymousAssignmentsPresent: _.any(@assignments, (assignment) => assignment.anonymous_grading)
+        anonymousAssignmentsPresent: _.some(@assignments, (assignment) => assignment.anonymous_grading)
         courseId: @options.context_id
         courseFeatures: @courseFeatures
         courseSettings: @courseSettings
@@ -2068,8 +2080,18 @@ export default do ->
     listInvalidAssignmentGroups: =>
       @filteredContentInfo.invalidAssignmentGroups
 
-    listMutedAssignments: =>
-      @filteredContentInfo.mutedAssignments
+    listHiddenAssignments: (studentId) =>
+      if @options.post_policies_enabled
+        return [] unless @contentLoadStates.submissionsLoaded && @contentLoadStates.assignmentsLoaded
+        Object.values(@assignments).filter((assignment) =>
+          submission = @getSubmission(studentId, assignment.id)
+          # Ignore anonymous assignments when deciding whether to show the
+          # "hidden" icon, as including them could reveal which students have
+          # and have not been graded
+          submission? && isHidden(submission) && !assignment.anonymize_students
+        )
+      else
+        @filteredContentInfo.mutedAssignments
 
     getTotalPointsPossible: =>
       @filteredContentInfo.totalPointsPossible
@@ -2159,6 +2181,15 @@ export default do ->
         @gradebookGrid.invalidateRow(rowIndex) if rowIndex?
 
       @gradebookGrid.render()
+
+      null # skip building an unused array return value
+
+    updateTotalGradeColumn: =>
+      return unless @gradebookGrid.grid?
+      columnIndex = @gradebookGrid.grid.getColumns().findIndex((column) => column.type == 'total_grade')
+      return if columnIndex == -1
+      for rowIndex in @listRowIndicesForStudentIds(@courseContent.students.listStudentIds())
+        @gradebookGrid.grid.updateCell(rowIndex, columnIndex) if rowIndex?
 
       null # skip building an unused array return value
 
@@ -2338,10 +2369,12 @@ export default do ->
       onRequestClose: @closeSubmissionTray
       pendingGradeInfo: @getPendingGradeInfo({ assignmentId, userId: studentId })
       postPoliciesEnabled: @options.post_policies_enabled
+      requireStudentGroupForSpeedGrader: @requireStudentGroupForSpeedGrader(assignment)
       selectNextAssignment: => @loadTrayAssignment('next')
       selectPreviousAssignment: => @loadTrayAssignment('previous')
       selectNextStudent: => @loadTrayStudent('next')
       selectPreviousStudent: => @loadTrayStudent('previous')
+      showSimilarityScore: @options.show_similarity_score
       speedGraderEnabled: @options.speed_grader_enabled
       student:
         id: student.id
@@ -2427,7 +2460,11 @@ export default do ->
 
     apiCreateSubmissionComment: (comment) =>
       { assignmentId, studentId } = @getSubmissionTrayState()
-      SubmissionCommentApi.createSubmissionComment(@options.context_id, assignmentId, studentId, comment)
+      assignment = @getAssignment(assignmentId)
+      groupComment = if assignmentHelper.gradeByGroup(assignment) then 1 else 0
+      commentData = {group_comment: groupComment, text_comment: comment}
+
+      SubmissionCommentApi.createSubmissionComment(@options.context_id, assignmentId, studentId, commentData)
         .then(@updateSubmissionComments)
         .then(FlashAlert.showFlashSuccess I18n.t 'Successfully posted the comment')
         .catch(=> @setCommentsUpdating(false))
@@ -3010,6 +3047,12 @@ export default do ->
     hideAnonymousSpeedGraderAlert: =>
       # React throws an error if we try to unmount while the event is being handled
       @delayedCall 0, => ReactDOM.unmountComponentAtNode(anonymousSpeedGraderAlertMountPoint())
+
+    requireStudentGroupForSpeedGrader: (assignment) =>
+      # Assignments that grade by group (not by student) don't require a group selection
+      return false if assignmentHelper.gradeByGroup(assignment)
+
+      @options.course_settings.filter_speed_grader_by_student_group && @getStudentGroupToShow() == '0'
 
     destroy: =>
       $(window).unbind('resize.fillWindowWithMe')

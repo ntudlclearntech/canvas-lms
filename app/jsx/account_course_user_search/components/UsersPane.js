@@ -20,7 +20,7 @@ import React from 'react'
 import {shape, func, string} from 'prop-types'
 import I18n from 'i18n!account_course_user_search'
 import _ from 'underscore'
-import ScreenReaderContent from '@instructure/ui-a11y/lib/components/ScreenReaderContent'
+import {ScreenReaderContent} from '@instructure/ui-a11y'
 import UsersList from './UsersList'
 import UsersToolbar from './UsersToolbar'
 import SearchMessage from './SearchMessage'
@@ -124,17 +124,16 @@ export default class UsersPane extends React.Component {
           />
         }
 
-        {!_.isEmpty(users) &&
-          !isLoading && (
-            <UsersList
-              searchFilter={this.state.userList.searchFilter}
-              onUpdateFilters={this.handleUpdateSearchFilter}
-              accountId={accountId.toString()}
-              users={users}
-              handleSubmitEditUserForm={this.handleSubmitEditUserForm}
-              permissions={this.state.userList.permissions}
-            />
-          )}
+        {!_.isEmpty(users) && !isLoading && (
+          <UsersList
+            searchFilter={this.state.userList.searchFilter}
+            onUpdateFilters={this.handleUpdateSearchFilter}
+            accountId={accountId.toString()}
+            users={users}
+            handleSubmitEditUserForm={this.handleSubmitEditUserForm}
+            permissions={this.state.userList.permissions}
+          />
+        )}
         <SearchMessage
           collection={{data: users, loading: isLoading, links}}
           setPage={this.handleSetPage}

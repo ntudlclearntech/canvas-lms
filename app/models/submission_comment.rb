@@ -1,3 +1,4 @@
+
 #
 # Copyright (C) 2011 - present Instructure, Inc.
 #
@@ -44,12 +45,16 @@ class SubmissionComment < ActiveRecord::Base
   belongs_to :context, polymorphic: [:course]
   belongs_to :provisional_grade, :class_name => 'ModeratedGrading::ProvisionalGrade'
   has_many :messages, :as => :context, :inverse_of => :context, :dependent => :destroy
+  has_many :viewed_submission_comments, dependent: :destroy
 
   validates_length_of :comment, :maximum => maximum_text_length, :allow_nil => true, :allow_blank => true
   validates_length_of :comment, :minimum => 1, :allow_nil => true, :allow_blank => true
   validates_each :attempt do |record, attr, value|
     next if value.nil?
-    if value > (record.submission.attempt || 0)
+
+    submission_attempt = (record.submission.attempt || 0)
+    submission_attempt = 1 if submission_attempt == 0
+    if value > submission_attempt
       record.errors.add(attr, 'attempt must not be larger than number of submission attempts')
     end
   end
@@ -115,6 +120,16 @@ class SubmissionComment < ActiveRecord::Base
     !!self.provisional_grade_id
   end
 
+  def read?(current_user)
+    self.submission.read?(current_user) || self.viewed_submission_comments.where(user: current_user).exists?
+  end
+
+  def mark_read!(current_user)
+    ViewedSubmissionComment.unique_constraint_retry do
+      self.viewed_submission_comments.where(user: current_user).first_or_create!
+    end
+  end
+
   def media_comment?
     self.media_comment_id && self.media_comment_type
   end
@@ -172,7 +187,7 @@ class SubmissionComment < ActiveRecord::Base
       record.provisional_grade_id.nil? &&
       record.submission.assignment &&
       record.submission.assignment.context.available? &&
-      !record.submission.assignment.muted? &&
+      record.submission.posted? &&
       record.submission.assignment.context.grants_right?(record.submission.user, :read) &&
       (!record.submission.assignment.context.instructors.include?(author) || record.submission.assignment.published?)
     }
@@ -356,7 +371,7 @@ class SubmissionComment < ActiveRecord::Base
     # id_changed? because new_record? is false in after_save callbacks
     if saved_change_to_id? || (saved_change_to_hidden? && !hidden?)
       return if submission.user_id == author_id
-      return if submission.assignment.deleted? || submission.assignment.muted?
+      return if submission.assignment.deleted? || !submission.posted?
       return if provisional_grade_id.present?
 
       self.class.connection.after_transaction_commit do

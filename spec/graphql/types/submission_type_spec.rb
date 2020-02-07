@@ -39,12 +39,68 @@ describe Types::SubmissionType do
     expect(submission_type.resolve("_id", current_user: other_student)).to be_nil
   end
 
+  describe "posted" do
+    it "returns the posted status of the submission" do
+      PostPolicy.enable_feature!
+      @submission.update!(posted_at: nil)
+      expect(submission_type.resolve("posted")).to eq false
+      @submission.update!(posted_at: Time.zone.now)
+      expect(submission_type.resolve("posted")).to eq true
+    end
+  end
+
   describe "posted_at" do
     it "returns the posted_at of the submission" do
       now = Time.zone.now.change(usec: 0)
       @submission.update!(posted_at: now)
       posted_at = Time.zone.parse(submission_type.resolve("postedAt"))
       expect(posted_at).to eq now
+    end
+  end
+
+  describe 'unread_comment_count' do
+    let(:valid_submission_comment_attributes) {{ comment: 'some comment' }}
+
+    it 'returns 0 if the submission is read' do
+      @submission.mark_read(@teacher)
+      submission_unread_count = submission_type.resolve('unreadCommentCount')
+      expect(submission_unread_count).to eq 0
+    end
+
+    it 'returns unread count if the submission is unread' do
+      @submission.mark_unread(@teacher)
+      @submission.submission_comments.create!(valid_submission_comment_attributes)
+      @submission.submission_comments.create!(valid_submission_comment_attributes)
+      @submission.submission_comments.create!(valid_submission_comment_attributes)
+      submission_unread_count = submission_type.resolve('unreadCommentCount')
+      expect(submission_unread_count).to eq 3
+    end
+
+    it 'returns 0 if the submission is unread and all comments are read' do
+      comment = @submission.submission_comments.create!(valid_submission_comment_attributes)
+      comment.mark_read!(@teacher)
+      @submission.mark_unread(@teacher)
+      submission_unread_count = submission_type.resolve('unreadCommentCount')
+      expect(submission_unread_count).to eq 0
+    end
+
+    it 'treats submission comments for attempt nil, 0, and 1 as the same' do
+      @submission.submission_comments.create!(comment: 'foo', attempt: nil)
+      @submission.submission_comments.create!(comment: 'foo', attempt: 0)
+      @submission.submission_comments.create!(comment: 'foo', attempt: 1)
+      submission_unread_count = submission_type.resolve('unreadCommentCount')
+      expect(submission_unread_count).to eq 3
+    end
+
+    it 'only displays unread count for the given submission attempt' do
+      @submission.attempt = 2
+      @submission.save!
+      @submission.submission_comments.create!(comment: 'foo', attempt: nil)
+      @submission.submission_comments.create!(comment: 'foo', attempt: 0)
+      @submission.submission_comments.create!(comment: 'foo', attempt: 1)
+      @submission.submission_comments.create!(comment: 'foo', attempt: 2)
+      submission_unread_count = submission_type.resolve('unreadCommentCount')
+      expect(submission_unread_count).to eq 1
     end
   end
 
@@ -89,7 +145,7 @@ describe Types::SubmissionType do
     end
   end
 
-  describe "submission and grading status" do
+  describe "submissionStatus" do
     before do
       quiz_with_submission
       @quiz_assignment = @quiz.assignment
@@ -98,14 +154,12 @@ describe Types::SubmissionType do
 
     let(:submission_type_quiz) { GraphQLTypeTester.new(@quiz_submission, current_user: @teacher) }
 
-    it "should contain submissionStatus and gradingStatus fields" do
+    it "should contain submissionStatus field" do
       expect(submission_type.resolve("submissionStatus")).to eq "unsubmitted"
-      expect(submission_type.resolve("gradingStatus")).to eq "graded"
     end
 
     it "should preload quiz type assignments" do
       expect(submission_type_quiz.resolve("submissionStatus")).to eq "submitted"
-      expect(submission_type_quiz.resolve("gradingStatus")).to eq "graded"
     end
   end
 
@@ -183,24 +237,24 @@ describe Types::SubmissionType do
   describe 'submission_drafts' do
     it 'returns the draft for attempt 0 when the submission attempt is nil' do
       @submission.update_columns(attempt: nil) # bypass #infer_details for test
-      SubmissionDraft.create!(submission: @submission, submission_attempt: 0)
+      SubmissionDraft.create!(submission: @submission, submission_attempt: 1)
       expect(
         submission_type.resolve('submissionDraft { submissionAttempt }')
-      ).to eq 0
+      ).to eq 1
     end
 
     it 'returns nil for a non current submission history that has a draft' do
       assignment = @course.assignments.create! name: "asdf", points_possible: 10
       @submission1 = assignment.submit_homework(@student, body: 'Attempt 1', submitted_at: 2.hours.ago)
       @submission2 = assignment.submit_homework(@student, body: 'Attempt 2', submitted_at: 1.hour.ago)
-      SubmissionDraft.create!(submission: @submission1, submission_attempt: @submission1.attempt)
-      SubmissionDraft.create!(submission: @submission2, submission_attempt: @submission2.attempt)
+      SubmissionDraft.create!(submission: @submission1, submission_attempt: @submission1.attempt + 1)
+      SubmissionDraft.create!(submission: @submission2, submission_attempt: @submission2.attempt + 1)
       resolver = GraphQLTypeTester.new(@submission2, current_user: @teacher)
       expect(
         resolver.resolve(
           'submissionHistoriesConnection { nodes { submissionDraft { submissionAttempt }}}'
         )
-      ).to eq [nil, @submission2.attempt]
+      ).to eq [nil, @submission2.attempt + 1]
     end
   end
 
@@ -302,6 +356,146 @@ describe Types::SubmissionType do
           ).to eq [1, 2]
         end
       end
+    end
+  end
+
+  describe 'late' do
+    before(:once) do
+      assignment = @course.assignments.create!(name: "late assignment", points_possible: 10, due_at: 2.hours.ago)
+      @submission1 = assignment.submit_homework(@student, body: 'late', submitted_at: 1.hour.ago)
+    end
+
+    let(:submission_type) { GraphQLTypeTester.new(@submission1, current_user: @teacher) }
+
+    it 'returns late' do
+      expect(submission_type.resolve("late")).to eq true
+    end
+  end
+
+  describe 'missing' do
+    before(:once) do
+      assignment = @course.assignments.create!(
+        name: "missing assignment",
+        points_possible: 10,
+        due_at: 1.hour.ago,
+        submission_types: ['online_text_entry']
+      )
+      @submission1 = Submission.where(assignment_id: assignment.id, user_id: @student.id).first
+    end
+
+    let(:submission_type) { GraphQLTypeTester.new(@submission1, current_user: @teacher) }
+
+    it 'returns missing' do
+      expect(submission_type.resolve("missing")).to eq true
+    end
+  end
+
+  describe 'gradeMatchesCurrentSubmission' do
+    before(:once) do
+      assignment = @course.assignments.create!(name: "assignment", points_possible: 10)
+      assignment.submit_homework(@student, body: 'asdf')
+      assignment.grade_student(@student, score: 8, grader: @teacher)
+      @submission1 = assignment.submit_homework(@student, body: 'asdf')
+    end
+
+    let(:submission_type) { GraphQLTypeTester.new(@submission1, current_user: @teacher) }
+
+    it 'returns gradeMatchesCurrentSubmission' do
+      expect(submission_type.resolve("gradeMatchesCurrentSubmission")).to eq false
+    end
+  end
+
+  describe 'rubric_Assessments_connection' do
+    before(:once) do
+      rubric_for_course
+      rubric_association_model(
+        context: @course,
+        rubric: @rubric,
+        association_object: @assignment,
+        purpose: 'grading'
+      )
+
+      @assignment.submit_homework(@student, body: 'foo', submitted_at: 2.hour.ago)
+
+      rubric_assessment_model(
+        user: @student,
+        assessor: @teacher,
+        rubric_association: @rubric_association,
+        assessment_type: 'grading'
+      )
+    end
+
+    it 'works' do
+      expect(
+        submission_type.resolve('rubricAssessmentsConnection { nodes { _id } }')
+      ).to eq [@rubric_assessment.id.to_s]
+    end
+
+    it 'requires permission' do
+      expect(
+        submission_type.resolve('rubricAssessmentsConnection { nodes { _id } }', current_user: @student)
+      ).to eq [@rubric_assessment.id.to_s]
+    end
+
+    it 'grabs the assessment for the current submission attempt by default' do
+      @submission2 = @assignment.submit_homework(@student, body: 'Attempt 2', submitted_at: 1.hour.ago)
+      expect(
+        submission_type.resolve('rubricAssessmentsConnection { nodes { _id } }')
+      ).to eq []
+    end
+
+    it 'grabs the assessment for the given submission attempt when using the for_attempt filter' do
+      @assignment.submit_homework(@student, body: 'bar', submitted_at: 1.hour.since)
+      expect(
+        submission_type.resolve('rubricAssessmentsConnection(filter: {forAttempt: 2}) { nodes { _id } }')
+      ).to eq [@rubric_assessment.id.to_s]
+    end
+
+    it 'works with submission histories' do
+      @assignment.submit_homework(@student, body: 'bar', submitted_at: 1.hour.since)
+      expect(
+        submission_type.resolve(
+          'submissionHistoriesConnection { nodes { rubricAssessmentsConnection { nodes { _id } } } }'
+        )
+      ).to eq [[], [@rubric_assessment.id.to_s], []]
+    end
+  end
+
+  describe 'turnitin_data' do
+    tii_data = {
+      similarity_score: 10,
+      state: 'acceptable',
+      report_url: 'http://example.com',
+      status: 'scored'
+    }
+
+    before(:once) do
+      @submission.turnitin_data[@submission.asset_string] = tii_data
+      @submission.save!
+    end
+
+    it 'returns turnitin_data' do
+      expect(
+        submission_type.resolve('turnitinData { target { ...on Submission { _id } } }')
+      ).to eq [@submission.id.to_s]
+      expect(
+        submission_type.resolve('turnitinData { status }')
+      ).to eq [tii_data[:status]]
+      expect(
+        submission_type.resolve('turnitinData { score }')
+      ).to eq [tii_data[:similarity_score]]
+    end
+  end
+
+  describe 'submissionType' do
+    before(:once) do
+      @assignment.submit_homework(@student, body: 'bar', submission_type: 'online_text_entry')
+    end
+
+    it 'returns the submissionType' do
+      expect(
+        submission_type.resolve('submissionType')
+      ).to eq 'online_text_entry'
     end
   end
 end

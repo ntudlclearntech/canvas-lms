@@ -69,9 +69,11 @@ module Lti
       message_hint = cache_payload(lti_params)
       LtiAdvantage::Messages::LoginRequest.new(
         iss: Canvas::Security.config['lti_iss'],
-        login_hint: Lti::Asset.opaque_identifier_for(@user),
+        login_hint: Lti::Asset.opaque_identifier_for(@user, context: @context),
+        client_id: @tool.global_developer_key_id,
         target_link_uri: target_link_uri,
-        lti_message_hint: message_hint
+        lti_message_hint: message_hint,
+        canvas_region: @context.shard.database_server.config[:region] || 'not_configured'
       ).as_json
     end
 

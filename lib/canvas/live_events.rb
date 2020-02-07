@@ -17,6 +17,7 @@
 
 module Canvas::LiveEvents
   def self.post_event_stringified(event_name, payload, context = nil)
+    payload.compact! if LiveEvents.get_context&.dig(:compact_live_events)&.present?
     StringifyIds.recursively_stringify_ids(payload)
     StringifyIds.recursively_stringify_ids(context)
     LiveEvents.post_event(
@@ -85,16 +86,14 @@ module Canvas::LiveEvents
 
   def self.get_discussion_entry_data(entry)
     payload = {
-      user_id:  entry.global_user_id,
+      user_id:  entry.user_id,
       created_at: entry.created_at,
-      discussion_entry_id: entry.global_id,
-      discussion_topic_id: entry.global_discussion_topic_id,
+      discussion_entry_id: entry.id,
+      discussion_topic_id: entry.discussion_topic_id,
       text: LiveEvents.truncate(entry.message)
     }
 
-    if entry.parent_id
-      payload[:parent_discussion_entry_id] = entry.global_parent_id
-    end
+    payload[:parent_discussion_entry_id] = entry.parent_id if entry.parent_id
     payload
   end
 
@@ -210,7 +209,8 @@ module Canvas::LiveEvents
       points_possible: assignment.points_possible,
       lti_assignment_id: assignment.lti_context_id,
       lti_resource_link_id: assignment.lti_resource_link_id,
-      lti_resource_link_id_duplicated_from: assignment.duplicate_of&.lti_resource_link_id
+      lti_resource_link_id_duplicated_from: assignment.duplicate_of&.lti_resource_link_id,
+      submission_types: assignment.submission_types
     }
   end
 
@@ -317,7 +317,9 @@ module Canvas::LiveEvents
       short_name: user.short_name,
       workflow_state: user.workflow_state,
       created_at: user.created_at,
-      updated_at: user.updated_at
+      updated_at: user.updated_at,
+      user_login: user.primary_pseudonym&.unique_id,
+      user_sis_id: user.primary_pseudonym&.sis_user_id
     }
   end
 
@@ -392,6 +394,7 @@ module Canvas::LiveEvents
     ctx[:user_login] = pseudonym.unique_id
     ctx[:user_account_id] = pseudonym.account.global_id
     ctx[:user_sis_id] = pseudonym.sis_user_id
+    ctx[:session_id] = session[:session_id] if session[:session_id]
     post_event_stringified('logged_in', {
       redirect_url: session[:return_to]
     }, ctx)
@@ -481,7 +484,7 @@ module Canvas::LiveEvents
       student_sis_id: sis_pseudonym&.sis_user_id,
       user_id: submission.global_user_id,
       grading_complete: submission.graded?,
-      muted: submission.muted_assignment?
+      muted: !submission.posted?
     }, amended_context(submission.assignment.context))
   end
 
@@ -495,6 +498,7 @@ module Canvas::LiveEvents
     end
 
     post_event_stringified('asset_accessed', {
+      asset_name: asset_obj.try(:name) || asset_obj.try(:title),
       asset_type: asset_obj.class.reflection_type_name,
       asset_id: asset_obj.global_id,
       asset_subtype: asset_subtype,
@@ -607,11 +611,105 @@ module Canvas::LiveEvents
     post_event_stringified('course_completed', get_course_completed_data(context_module_progression.context_module.course, context_module_progression.user))
   end
 
+  def self.course_progress(context_module_progression)
+    post_event_stringified('course_progress', get_course_completed_data(context_module_progression.context_module.course, context_module_progression.user))
+  end
+
   def self.get_course_completed_data(course, user)
     {
       progress: CourseProgress.new(course, user, read_only: true).to_json,
       user: { id: user.id, name: user.name, email: user.email },
       course: { id: course.id, name: course.name }
     }
+  end
+
+  def self.get_learning_outcome_result_data(result)
+    {
+      learning_outcome_id: result.learning_outcome_id,
+      mastery: result.learning_outcome_id,
+      score: result.score,
+      created_at: result.created_at,
+      attempt: result.attempt,
+      possible: result.possible,
+      original_score: result.original_score,
+      original_possible: result.original_possible,
+      original_mastery: result.original_mastery,
+      assessed_at: result.assessed_at,
+      title: result.title,
+      percent: result.percent
+    }
+  end
+
+  def self.learning_outcome_result_updated(result)
+    post_event_stringified('learning_outcome_result_updated', get_learning_outcome_result_data(result).merge(updated_at: result.updated_at))
+  end
+
+  def self.learning_outcome_result_created(result)
+    post_event_stringified('learning_outcome_result_created', get_learning_outcome_result_data(result))
+  end
+
+  def self.get_learning_outcome_data(outcome)
+    {
+      learning_outcome_id: outcome.id,
+      context_type: outcome.context_type,
+      context_id: outcome.context_id,
+      display_name: outcome.display_name,
+      short_description: outcome.short_description,
+      description: outcome.description,
+      vendor_guid: outcome.vendor_guid,
+      calculation_method: outcome.calculation_method,
+      calculation_int: outcome.calculation_int,
+      rubric_criterion: outcome.rubric_criterion,
+      title: outcome.title,
+      workflow_state: outcome.workflow_state
+    }
+  end
+
+  def self.learning_outcome_updated(outcome)
+    post_event_stringified('learning_outcome_updated', get_learning_outcome_data(outcome).merge(updated_at: outcome.updated_at))
+  end
+
+  def self.learning_outcome_created(outcome)
+    post_event_stringified('learning_outcome_created', get_learning_outcome_data(outcome))
+  end
+
+  def self.get_learning_outcome_group_data(group)
+    {
+      learning_outcome_group_id: group.id,
+      context_id: group.context_id,
+      context_type: group.context_type,
+      title: group.title,
+      description: group.description,
+      vendor_guid: group.vendor_guid,
+      parent_outcome_group_id: group.learning_outcome_group_id,
+      workflow_state: group.workflow_state
+    }
+  end
+
+  def self.learning_outcome_group_updated(group)
+    post_event_stringified('learning_outcome_group_updated', get_learning_outcome_group_data(group).merge(updated_at: group.updated_at))
+  end
+
+  def self.learning_outcome_group_created(group)
+    post_event_stringified('learning_outcome_group_created', get_learning_outcome_group_data(group))
+  end
+
+  def self.get_learning_outcome_link_data(link)
+    {
+      learning_outcome_link_id: link.id,
+      learning_outcome_id: link.content_id,
+      learning_outcome_group_id: link.associated_asset_id,
+      context_id: link.context_id,
+      context_type: link.context_type,
+      workflow_state: link.workflow_state
+    }
+  end
+
+  def self.learning_outcome_link_created(link)
+    post_event_stringified('learning_outcome_link_created', get_learning_outcome_link_data(link))
+  end
+
+  def self.learning_outcome_link_updated(link)
+    post_event_stringified('learning_outcome_link_updated', get_learning_outcome_link_data(link).merge(updated_at: link.updated_at))
   end
 end

@@ -22,53 +22,47 @@ const DATE_IN_CLOSED_PERIOD = '2015-07-23T03:59:59Z'
 const DATE_IN_OPEN_PERIOD = '2015-09-23T03:59:59Z'
 
 function generateData(opts = {}) {
-  return Object.assign(
-    {
-      id: '32',
-      assignment_id: '57',
-      title: '1 student',
-      due_at: '2015-09-23T03:59:59Z',
-      all_day: true,
-      all_day_date: '2015-09-22',
-      unlock_at: null,
-      lock_at: null,
-      student_ids: ['2'],
-      due_at_overridden: true,
-      unlock_at_overridden: true,
-      lock_at_overridden: true,
-      rowKey: '2015-09-23T03:59:59Z',
-      persisted: true
-    },
-    opts
-  )
+  return {
+    id: '32',
+    assignment_id: '57',
+    title: '1 student',
+    due_at: '2015-09-23T03:59:59Z',
+    all_day: true,
+    all_day_date: '2015-09-22',
+    unlock_at: null,
+    lock_at: null,
+    student_ids: ['2'],
+    due_at_overridden: true,
+    unlock_at_overridden: true,
+    lock_at_overridden: true,
+    rowKey: '2015-09-23T03:59:59Z',
+    persisted: true,
+    ...opts
+  }
 }
 
 function generateGradingPeriods(periodOneOpts = {}, periodTwoOpts = {}) {
-  const periodOne = Object.assign(
-    {
-      id: '1',
-      title: 'Closed Period',
-      startDate: new Date('2015-07-01T06:00:00.000Z'),
-      endDate: new Date('2015-08-31T06:00:00.000Z'),
-      closeDate: new Date('2015-08-31T06:00:00.000Z'),
-      isLast: false,
-      isClosed: true
-    },
-    periodOneOpts
-  )
+  const periodOne = {
+    id: '1',
+    title: 'Closed Period',
+    startDate: new Date('2015-07-01T06:00:00.000Z'),
+    endDate: new Date('2015-08-31T06:00:00.000Z'),
+    closeDate: new Date('2015-08-31T06:00:00.000Z'),
+    isLast: false,
+    isClosed: true,
+    ...periodOneOpts
+  }
 
-  const periodTwo = Object.assign(
-    {
-      id: '2',
-      title: 'Period',
-      startDate: new Date('2015-09-01T06:00:00.000Z'),
-      endDate: new Date('2015-10-31T06:00:00.000Z'),
-      closeDate: new Date('2015-12-31T06:00:00.000Z'),
-      isLast: true,
-      isClosed: false
-    },
-    periodTwoOpts
-  )
+  const periodTwo = {
+    id: '2',
+    title: 'Period',
+    startDate: new Date('2015-09-01T06:00:00.000Z'),
+    endDate: new Date('2015-10-31T06:00:00.000Z'),
+    closeDate: new Date('2015-12-31T06:00:00.000Z'),
+    isLast: true,
+    isClosed: false,
+    ...periodTwoOpts
+  }
 
   return [periodOne, periodTwo]
 }
@@ -113,84 +107,84 @@ function isValid(validator) {
 
 QUnit.module('#DateValidator with grading periods')
 
-test('it is invalid to add a new override with a date in a closed grading period', function() {
+test('it is invalid to add a new override with a date in a closed grading period', () => {
   const data = generateData({due_at: DATE_IN_CLOSED_PERIOD, persisted: false})
   const gradingPeriods = generateGradingPeriods()
   const validator = createValidator({data, gradingPeriods, userIsAdmin: false})
   notOk(isValid(validator))
 })
 
-test('it is invalid for lock_at (until date) to be before due_at on the same day', function() {
+test('it is invalid for lock_at (until date) to be before due_at on the same day', () => {
   const data = generateData({lock_at: '2015-09-23T03:00:00Z', persisted: false})
   const gradingPeriods = generateGradingPeriods()
   const validator = createValidator({data, gradingPeriods, userIsAdmin: false})
   notOk(isValid(validator))
 })
 
-test('it is valid for lock_at (until date) to be equal to due_at', function() {
+test('it is valid for lock_at (until date) to be equal to due_at', () => {
   const data = generateData({lock_at: '2015-09-23T03:59:59Z', persisted: false})
   const gradingPeriods = generateGradingPeriods()
   const validator = createValidator({data, gradingPeriods, userIsAdmin: false})
   ok(isValid(validator))
 })
 
-test('it is valid to add a new override with a date in a closed grading period if you are admin', function() {
+test('it is valid to add a new override with a date in a closed grading period if you are admin', () => {
   const data = generateData({due_at: DATE_IN_CLOSED_PERIOD, persisted: false})
   const gradingPeriods = generateGradingPeriods()
   const validator = createValidator({data, gradingPeriods, userIsAdmin: true})
   ok(isValid(validator))
 })
 
-test('it is invalid to add a new override with no date if the last grading period is closed', function() {
+test('it is invalid to add a new override with no date if the last grading period is closed', () => {
   const data = generateData({due_at: null, persisted: false})
   const gradingPeriods = generateGradingPeriods({}, {isClosed: true})
   const validator = createValidator({data, gradingPeriods, userIsAdmin: false})
   notOk(isValid(validator))
 })
 
-test('it is valid to add a new override with no date if the last grading period is closed if you are admin', function() {
+test('it is valid to add a new override with no date if the last grading period is closed if you are admin', () => {
   const data = generateData({due_at: null, persisted: false})
   const gradingPeriods = generateGradingPeriods({}, {isClosed: true})
   const validator = createValidator({data, gradingPeriods, userIsAdmin: true})
   ok(isValid(validator))
 })
 
-test('it is valid to have an already-existing (not new) override with a date in a closed grading period', function() {
+test('it is valid to have an already-existing (not new) override with a date in a closed grading period', () => {
   const data = generateData({due_at: DATE_IN_CLOSED_PERIOD, persisted: true})
   const gradingPeriods = generateGradingPeriods()
   const validator = createValidator({data, gradingPeriods, userIsAdmin: false})
   ok(isValid(validator))
 })
 
-test('it is valid to have an already-existing (not new) override with no date if the last grading period is closed', function() {
+test('it is valid to have an already-existing (not new) override with no date if the last grading period is closed', () => {
   const data = generateData({due_at: null, persisted: true})
   const gradingPeriods = generateGradingPeriods({}, {isClosed: true})
   const validator = createValidator({data, gradingPeriods, userIsAdmin: false})
   ok(isValid(validator))
 })
 
-test('it is valid to have a new override with a date that does not fall in a closed grading period', function() {
+test('it is valid to have a new override with a date that does not fall in a closed grading period', () => {
   const data = generateData({due_at: DATE_IN_OPEN_PERIOD, persisted: false})
   const gradingPeriods = generateGradingPeriods()
   const validator = createValidator({data, gradingPeriods, userIsAdmin: false})
   ok(isValid(validator))
 })
 
-test('it is valid to have an already-existing (not new) override with a date that does not fall in a closed grading period', function() {
+test('it is valid to have an already-existing (not new) override with a date that does not fall in a closed grading period', () => {
   const data = generateData({due_at: DATE_IN_OPEN_PERIOD, persisted: true})
   const gradingPeriods = generateGradingPeriods()
   const validator = createValidator({data, gradingPeriods, userIsAdmin: false})
   ok(isValid(validator))
 })
 
-test('it is valid to add a new override with no date if the last grading period is open', function() {
+test('it is valid to add a new override with no date if the last grading period is open', () => {
   const data = generateData({due_at: null, persisted: false})
   const gradingPeriods = generateGradingPeriods()
   const validator = createValidator({data, gradingPeriods, userIsAdmin: false})
   ok(isValid(validator))
 })
 
-test('it is valid to have no due date when postToSISEnabled is false when dueDateRequiredForAccount is true', function() {
+test('it is valid to have no due date when postToSISEnabled is false when dueDateRequiredForAccount is true', () => {
   const data = generateData({due_at: null})
   const validator = createValidator({
     data,
@@ -203,7 +197,7 @@ test('it is valid to have no due date when postToSISEnabled is false when dueDat
   ok(isValid(validator))
 })
 
-test('it is not valid to have a missing due date when postToSISEnabled is true when dueDateRequiredForAccount is true', function() {
+test('it is not valid to have a missing due date when postToSISEnabled is true when dueDateRequiredForAccount is true', () => {
   const data = generateData({due_at: null})
   const validator = createValidator({
     data,
@@ -216,7 +210,7 @@ test('it is not valid to have a missing due date when postToSISEnabled is true w
   notOk(isValid(validator))
 })
 
-test('it is valid to have a missing due date when postToSISEnabled is true and dueDateRequiredForAccount is false', function() {
+test('it is valid to have a missing due date when postToSISEnabled is true and dueDateRequiredForAccount is false', () => {
   const data = generateData({due_at: null})
   const validator = createValidator({
     data,
@@ -280,7 +274,7 @@ QUnit.module('when applied to one or more individual students', hooks => {
     ok(isValid(validator))
   })
 
-  test('does not allow a new override with a date in a closed grading period', function() {
+  test('does not allow a new override with a date in a closed grading period', () => {
     const data = generateData({
       due_at: DATE_IN_CLOSED_PERIOD,
       persisted: false

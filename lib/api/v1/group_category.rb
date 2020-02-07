@@ -23,7 +23,7 @@ module Api::V1::GroupCategory
   include Api::V1::Group
 
   API_GROUP_CATEGORY_JSON_OPTS = {
-    :only => %w(id name role self_signup group_limit auto_leader)
+    :only => %w(id name role self_signup group_limit auto_leader created_at)
   }
 
   def group_category_json(group_category, user, session, options = {})
@@ -68,7 +68,7 @@ module Api::V1::GroupCategory
         hash['unassigned_users_count'] = group_category.unassigned_users.count(:all)
       end
       if includes.include?('groups')
-        hash['groups'] = group_category.groups.map { |group| group_json(group, user, session) }
+        hash['groups'] = group_category.groups.active.map { |group| group_json(group, user, session) }
       end
     end
     hash

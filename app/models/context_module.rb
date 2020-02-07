@@ -367,30 +367,38 @@ class ContextModule < ActiveRecord::Base
 
   def self.module_names(context)
     Rails.cache.fetch(['module_names', context].cache_key) do
-      names = {}
-      context.context_modules.not_deleted.pluck(:id, :name).each do |id, name|
-        names[id] = name
-      end
-      names
+      gather_module_names(context.context_modules.not_deleted)
+    end
+  end
+
+  def self.active_module_names(context)
+    Rails.cache.fetch(['active_module_names', context].cache_key) do
+      gather_module_names(context.context_modules.active)
+    end
+  end
+
+  def self.gather_module_names(scope)
+    scope.pluck(:id, :name).each_with_object({}) do |(id, name), names|
+      names[id] = name
     end
   end
 
   def prerequisites
-    @prerequisites ||= gather_prerequisites(self.context.context_modules.not_deleted)
+    @prerequisites ||= gather_prerequisites(ContextModule.module_names(self.context))
   end
 
   def active_prerequisites
-    @active_prerequisites ||= gather_prerequisites(self.context.context_modules.active)
+    @active_prerequisites ||= gather_prerequisites(ContextModule.active_module_names(self.context))
   end
 
-  def gather_prerequisites(scope)
+  def gather_prerequisites(module_names)
     all_prereqs = read_attribute(:prerequisites)
     return [] unless all_prereqs&.any?
-    active_ids = scope.where(:id => all_prereqs.pluck(:id)).pluck(:id)
-    all_prereqs.select{|pre| active_ids.member?(pre[:id])}
+    all_prereqs.select{|pre| module_names.key?(pre[:id])}.map{|pre| pre.merge(:name => module_names[pre[:id]])}
   end
 
   def prerequisites=(prereqs)
+    Rails.cache.delete(['module_names', context].cache_key) # ensure the module list is up to date
     if prereqs.is_a?(Array)
       # validate format, skipping invalid ones
       prereqs = prereqs.select do |pre|
@@ -664,6 +672,29 @@ class ContextModule < ActiveRecord::Base
       added_item.workflow_state = workflow_state if added_item.new_record?
       added_item.save
       added_item
+    end
+  end
+
+  # specify a 1-based position to insert the items at; leave nil to append to the end of the module
+  def insert_items(items, start_pos = nil)
+    if start_pos
+      next_pos = start_pos
+      tag_ids_to_move = content_tags.where('position >= ?', start_pos).pluck(:id)
+    else
+      next_pos = (content_tags.maximum(:position) || 0) + 1
+      tag_ids_to_move = []
+    end
+
+    new_tags = []
+    items.each do |item|
+      next unless item.is_a?(ActiveRecord::Base)
+      next unless %w(Attachment Assignment WikiPage Quizzes::Quiz DiscussionTopic ContextExternalTool).include?(item.class_name)
+      new_tags << self.content_tags.create!(context: self.context, title: Context.asset_name(item), content: item, tag_type: 'context_module', position: next_pos)
+      next_pos += 1
+    end
+
+    if tag_ids_to_move.any?
+      content_tags.where(id: tag_ids_to_move).update_all(sanitize_sql(['position = position + ?', new_tags.size]))
     end
   end
 

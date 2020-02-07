@@ -20,18 +20,14 @@ import React, {Component} from 'react'
 import I18n from 'i18n!security_panel'
 import {connect} from 'react-redux'
 import {arrayOf, bool, func, objectOf, oneOf, shape, string} from 'prop-types'
-import Alert from '@instructure/ui-alerts/lib/components/Alert'
-import Heading from '@instructure/ui-elements/lib/components/Heading'
-import TextInput from '@instructure/ui-forms/lib/components/TextInput'
-import Flex, {FlexItem} from '@instructure/ui-layout/lib/components/Flex'
-import Button from '@instructure/ui-buttons/lib/components/Button'
-import IconPlus from '@instructure/ui-icons/lib/Solid/IconPlus'
-import List, {ListItem} from '@instructure/ui-elements/lib/components/List'
-import Table from '@instructure/ui-elements/lib/components/Table'
-import View from '@instructure/ui-layout/lib/components/View'
-import ScreenReaderContent from '@instructure/ui-a11y/lib/components/ScreenReaderContent'
-import Billboard from '@instructure/ui-billboard/lib/components/Billboard'
-import IconTrash from '@instructure/ui-icons/lib/Line/IconTrash'
+import {Alert} from '@instructure/ui-alerts'
+import {Heading, List, Table} from '@instructure/ui-elements'
+import {TextInput} from '@instructure/ui-forms'
+import {Flex, View} from '@instructure/ui-layout'
+import {Button} from '@instructure/ui-buttons'
+import {IconPlusSolid, IconTrashLine} from '@instructure/ui-icons'
+import {ScreenReaderContent} from '@instructure/ui-a11y'
+import {Billboard} from '@instructure/ui-billboard'
 import isValidDomain from 'is-valid-domain'
 
 import EmptyDesert from '../../shared/EmptyDesert'
@@ -166,7 +162,7 @@ export class Whitelist extends Component {
           )}
 
           <Flex>
-            <FlexItem grow shrink padding="0 medium 0 0">
+            <Flex.Item grow shrink padding="0 medium 0 0">
               <TextInput
                 label={I18n.t('Domain Name')}
                 placeholder="http://somedomain.com"
@@ -177,19 +173,19 @@ export class Whitelist extends Component {
                   this.setState({addDomainInputValue: e.currentTarget.value})
                 }}
               />
-            </FlexItem>
-            <FlexItem align={this.state.errors.length ? 'center' : 'end'}>
+            </Flex.Item>
+            <Flex.Item align={this.state.errors.length ? 'center' : 'end'}>
               <Button
                 aria-label={I18n.t('Add Domain')}
                 ref={c => (this.addDomainBtn = c)}
                 type="submit"
                 margin="0 x-small 0 0"
-                icon={IconPlus}
+                icon={IconPlusSolid}
                 disabled={(this.props.inherited && this.props.isSubAccount) || domainLimitReached}
               >
                 {I18n.t('Domain')}
               </Button>
-            </FlexItem>
+            </Flex.Item>
           </Flex>
         </form>
         {whitelistToShow.length <= 0 ? (
@@ -218,7 +214,7 @@ export class Whitelist extends Component {
                     <Button
                       ref={c => (this.deleteButtons[domain] = c)}
                       variant="icon"
-                      icon={IconTrash}
+                      icon={IconTrashLine}
                       onClick={() => this.handleRemoveDomain(domain)}
                       data-testid={`delete-button-${domain}`}
                       disabled={this.props.inherited && this.props.isSubAccount}
@@ -269,7 +265,7 @@ export class Whitelist extends Component {
                     <td>
                       <List variant="unstyled">
                         {this.props.whitelistedDomains.tools[domain].map(associatedTool => (
-                          <ListItem key={associatedTool.id}>{associatedTool.name}</ListItem>
+                          <List.Item key={associatedTool.id}>{associatedTool.name}</List.Item>
                         ))}
                       </List>
                     </td>

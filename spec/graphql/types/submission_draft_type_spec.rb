@@ -24,23 +24,27 @@ RSpec.describe Types::SubmissionDraftType do
     @submission = submission_model
     @submission_draft = SubmissionDraft.create!(
       submission: @submission,
-      submission_attempt: @submission.attempt
+      submission_attempt: @submission.attempt + 1
     )
   end
 
   def resolve_submission_draft
-    result = CanvasSchema.execute(<<~GQL, context: {current_user: @teacher})
+    result = CanvasSchema.execute(<<~GQL, context: {current_user: @teacher, request: ActionDispatch::TestRequest.create})
       query {
         assignment(id: "#{@assignment.id}") {
           submissionsConnection(filter: {states: [unsubmitted, graded, pending_review, submitted]}) {
             nodes {
               submissionDraft {
                 _id
+                activeSubmissionType
                 attachments {
                   _id
                   displayName
                 }
+                body
+                meetsAssignmentCriteria
                 submissionAttempt
+                url
               }
             }
           }
@@ -58,7 +62,7 @@ RSpec.describe Types::SubmissionDraftType do
 
   it 'returns the submission attempt' do
     submission_draft = resolve_submission_draft
-    expect(submission_draft['submissionAttempt']).to eq(@submission.attempt)
+    expect(submission_draft['submissionAttempt']).to eq(@submission.attempt + 1)
   end
 
   it 'returns the draft attachments' do
@@ -69,5 +73,34 @@ RSpec.describe Types::SubmissionDraftType do
 
     submission_draft = resolve_submission_draft
     expect(submission_draft['attachments'].first['displayName']).to eq(attachment.display_name)
+  end
+
+  it 'returns the draft body' do
+    @submission_draft.body = 'some text'
+    @submission_draft.save!
+
+    submission_draft = resolve_submission_draft
+    expect(submission_draft['body']).to eq('some text')
+  end
+
+  it 'returns the meetsAssignmentCriteria field' do
+    submission_draft = resolve_submission_draft
+    expect(submission_draft['meetsAssignmentCriteria']).to eq(false)
+  end
+
+  it 'returns the draft url' do
+    @submission_draft.url = 'http://www.google.com'
+    @submission_draft.save!
+
+    submission_draft = resolve_submission_draft
+    expect(submission_draft['url']).to eq('http://www.google.com')
+  end
+
+  it 'returns the active submission type' do
+    @submission_draft.active_submission_type = 'online_upload'
+    @submission_draft.save!
+
+    submission_draft = resolve_submission_draft
+    expect(submission_draft['activeSubmissionType']).to eq('online_upload')
   end
 end

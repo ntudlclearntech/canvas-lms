@@ -1,0 +1,18 @@
+---
+assignments_2_student:
+  state: hidden
+  display_name: Assignments 2 Student View
+  description: Use the new assignments student page
+  applies_to: Course
+  root_opt_in: true
+  beta: true
+  environments:
+    production:
+      state: disabled
+
+account_pronouns:
+  state: hidden
+  display_name: Pronouns for users
+  description: Pronouns users can show after their name
+  applies_to: SiteAdmin
+  root_opt_in: true

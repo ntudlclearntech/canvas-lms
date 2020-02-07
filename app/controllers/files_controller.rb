@@ -194,10 +194,13 @@ class FilesController < ApplicationController
   end
 
   def check_file_access_flags
+    access_verifier = {}
     begin
       access_verifier = validate_access_verifier
+    rescue Canvas::Security::TokenExpired
+      # maybe their browser is being stupid and came to the files domain directly with an old verifier - try to go back and get a new one
+      return redirect_to_fallback_url if files_domain?
     rescue Users::AccessVerifier::InvalidVerifier
-      access_verifier = {}
     end
 
     if access_verifier[:user]
@@ -227,6 +230,16 @@ class FilesController < ApplicationController
     true
   end
   protected :check_file_access_flags
+
+  def redirect_to_fallback_url
+    fallback_url = params[:sf_verifier] && Canvas::Security.decode_jwt(params[:sf_verifier], ignore_expiration: true)[:fallback_url]
+    if fallback_url
+      redirect_to fallback_url
+    else
+      render_unauthorized_action # oh well we tried
+    end
+  end
+  protected :redirect_to_fallback_url
 
   def index
     return react_files
@@ -319,6 +332,9 @@ class FilesController < ApplicationController
 
         url = @context ? context_files_url : api_v1_list_files_url(@folder)
         @files = Api.paginate(scope, self, url)
+
+        log_asset_access(['files', @context], 'files')
+
         render json: attachments_json(@files, @current_user, {}, {
           can_view_hidden_files: can_view_hidden_files?(@context || @folder, @current_user, session),
           context: @context || @folder.context,
@@ -367,7 +383,7 @@ class FilesController < ApplicationController
         {
           asset_string: context.asset_string,
           name: context == @current_user ? t('my_files', 'My Files') : context.name,
-          usage_rights_required: context.feature_enabled?(:usage_rights_required),
+          usage_rights_required: tool_context.respond_to?(:usage_rights_required?) && tool_context.usage_rights_required?,
           permissions: {
             manage_files: context.grants_right?(@current_user, session, :manage_files),
           },
@@ -483,6 +499,7 @@ class FilesController < ApplicationController
       # this implicit context magic happens in ApplicationController#get_context
       if @context.nil? || @current_user.nil? || @context == @current_user
         @attachment = Attachment.find(params[:id])
+        @context = nil unless @context == @current_user || @context == @attachment.context
         @skip_crumb = true unless @context
       else
         # note that Attachment#find has special logic to find overwriting files; see FindInContextAssociation
@@ -693,7 +710,12 @@ class FilesController < ApplicationController
     user = @current_user
     user ||= api_find(User, session['file_access_user_id']) if session['file_access_user_id'].present?
     attachment.context_module_action(user, :read) if user && !params[:preview]
-    log_asset_access(@attachment, "files", "files") unless params[:preview]
+
+    if params[:preview].blank?
+      log_asset_access(@attachment, "files", "files")
+      Canvas::LiveEvents.asset_access(@attachment, 'files', nil, nil) if @current_user.blank?
+    end
+
     render_or_redirect_to_stored_file(
       attachment: attachment,
       verifier: params[:verifier],
@@ -840,9 +862,7 @@ class FilesController < ApplicationController
     end
 
     # check service authorization
-    begin
-      Canvas::Security.decode_jwt(params[:token], [ InstFS.jwt_secret ])
-    rescue
+    unless InstFS.validate_capture_jwt(params[:token])
       head :forbidden
       return
     end
@@ -889,9 +909,10 @@ class FilesController < ApplicationController
 
     if params[:progress_id]
       progress = Progress.find(params[:progress_id])
+      submit_assignment = params.key?(:submit_assignment) ? value_to_boolean(params[:submit_assignment]) : true
 
-      # If the attachment is for an Assignment's upload_via_url, submit it
-      if progress.tag == 'upload_via_url' && progress.context.is_a?(Assignment)
+      # If the attachment is for an Assignment's upload_via_url and the submit_assignment flag is set, submit it
+      if progress.tag == 'upload_via_url' && progress.context.is_a?(Assignment) && submit_assignment
         homework_service = Services::SubmitHomeworkService.new(@attachment, progress)
 
         begin
@@ -913,7 +934,7 @@ class FilesController < ApplicationController
     if Array(params[:include]).include?('preview_url')
       includes << 'preview_url'
     # only use implicit enhanced_preview_url if there is no explicit preview_url
-    elsif @context.is_a?(User) || @context.is_a?(Course)
+    elsif @context.is_a?(User) || @context.is_a?(Course) || @context.is_a?(Group)
       includes << 'enhanced_preview_url'
     end
 
@@ -1092,7 +1113,7 @@ class FilesController < ApplicationController
       @attachment.hidden = value_to_boolean(params[:hidden]) if params.key?(:hidden)
 
       @attachment.set_publish_state_for_usage_rights if @attachment.context.is_a?(Group)
-      if !@attachment.locked? && @attachment.locked_changed? && @attachment.usage_rights_id.nil? && @context.respond_to?(:feature_enabled?)  && @context.feature_enabled?(:usage_rights_required)
+      if !@attachment.locked? && @attachment.locked_changed? && @attachment.usage_rights_id.nil? && @context.respond_to?(:usage_rights_required?) && @context.usage_rights_required?
         return render :json => { :message => I18n.t('This file must have usage_rights set before it can be published.') }, :status => :bad_request
       end
       if (@attachment.folder_id_changed? || @attachment.display_name_changed?) && @attachment.folder.active_file_attachments.where(display_name: @attachment.display_name).where("id<>?", @attachment.id).exists?
@@ -1191,7 +1212,8 @@ class FilesController < ApplicationController
       attachment = Attachment.active.where(id: params[:id], uuid: params[:uuid]).first if params[:id].present?
       thumb_opts = params.slice(:size)
       url = authenticated_thumbnail_url(attachment, thumb_opts)
-      Rails.cache.write(cache_key, url, :expires_in => attachment.url_ttl) if url
+      # only cache for half the time because of use_consistent_iat
+      Rails.cache.write(cache_key, url, :expires_in => (attachment.url_ttl / 2)) if url
     end
     url ||= '/images/no_pic.gif'
     redirect_to url
@@ -1233,7 +1255,7 @@ class FilesController < ApplicationController
     submissions = attachment.attachment_associations.where(context_type: "Submission").preload(:context).map(&:context).compact
     return true if submissions.any? { |submission| submission.grants_right?(user, session, :read) }
 
-    course = Assignment.find(params[:assignment_id]).course unless params[:assignment_id].nil?
+    course = api_find(Assignment, params[:assignment_id]).course unless params[:assignment_id].nil?
     return true if course&.grants_right?(user, session, :read)
 
     authorized_action(attachment, user, :read)

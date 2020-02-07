@@ -21,8 +21,8 @@ import {bool, func, string} from 'prop-types'
 import I18n from 'i18n!assignments_2'
 import EditableRichText from './Editables/EditableRichText'
 import {ToggleDetails} from '@instructure/ui-toggle-details'
-import View from '@instructure/ui-layout/lib/components/View'
-import Text from '@instructure/ui-elements/lib/components/Text'
+import {View} from '@instructure/ui-layout'
+import {Text} from '@instructure/ui-elements'
 
 const descriptionPlaceholder = I18n.t('Description')
 
@@ -59,9 +59,9 @@ export default class AssignmentDescription extends React.Component {
         <ToggleDetails
           defaultExpanded
           summary={
-            <React.Fragment>
+            <>
               <Text>{I18n.t('Description')}</Text>
-            </React.Fragment>
+            </>
           }
         >
           <EditableRichText

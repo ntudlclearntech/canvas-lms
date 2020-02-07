@@ -45,13 +45,13 @@ export default class FeatureFlag extends Backbone.Model
     @state() == 'on'
 
   isOff: ->
-    _.include(['off', 'hidden'], @state()) or (!@currentContextIsAccount() and @isAllowed())
+    ['off', 'hidden'].includes(@state()) or (!@currentContextIsAccount() and @isAllowed())
 
   isHidden: ->
     @flag().hidden
 
   isLocked: ->
-    @flag().locked
+    ENV.PERMISSIONS?.manage_feature_flags == false || @flag().locked
 
   isSiteAdmin: ->
     !!ENV.ACCOUNT?.site_admin
@@ -99,10 +99,10 @@ export default class FeatureFlag extends Backbone.Model
 
   toJSON: ->
     _.extend(super, isAllowed: @isAllowed(), isHidden: @isHidden(),
-      isOff: @isOff(), isOn: @isOn(), isSiteAdmin: @isSiteAdmin() && !@isOn() && !@isLocked(),
+      isOff: @isOff(), isOn: @isOn()
       currentContextIsAccount: @isContext('account'),
       threeState: @currentContextIsAccount() && !@transitionLocked('allowed'),
-      disableOn: @isLocked() || @isSiteAdmin() || @transitionLocked('on'),
+      disableOn: @isLocked() || @transitionLocked('on'),
       disableAllow: @isLocked() || @transitionLocked('allowed'),
       disableOff: @isLocked() || @transitionLocked('off'),
       disableToggle: @isLocked() || @transitionLocked('on') || @transitionLocked('off'))

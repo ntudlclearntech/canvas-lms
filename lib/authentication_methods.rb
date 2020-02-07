@@ -84,6 +84,15 @@ module AuthenticationMethods
     end
   end
 
+  ALLOWED_SCOPE_INCLUDES = %w{uuid}
+
+  def filter_includes(key)
+    # no funny business
+    params.delete(key) unless params[key].class == Array
+    return unless params.key?(key)
+    params[key] &= ALLOWED_SCOPE_INCLUDES
+  end
+
   def validate_scopes
     if @access_token
       developer_key = @access_token.developer_key
@@ -92,12 +101,21 @@ module AuthenticationMethods
       if developer_key.try(:require_scopes)
         scope_patterns = @access_token.url_scopes_for_method(request_method).concat(AccessToken.always_allowed_scopes)
         if scope_patterns.any? { |scope| scope =~ request.path }
-          params.delete :include
-          params.delete :includes
+          filter_includes(:include)
+          filter_includes(:includes)
         else
           raise AccessTokenScopeError
         end
       end
+    end
+  end
+
+  def self.graphql_type_authorized?(access_token, type)
+    if access_token&.developer_key&.require_scopes
+      # allowing the root query type for now, but any other type is forbidden
+      type == "Query"
+    else
+      true
     end
   end
 

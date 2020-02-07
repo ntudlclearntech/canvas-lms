@@ -85,7 +85,7 @@ describe "student planner" do
 
   context "responsive layout" do
     it "changes layout on browser resize" do
-      resize_screen_to_normal
+
       go_to_list_view
 
       expect(f('.large.ic-Dashboard-header__layout')).to be_present
@@ -99,7 +99,7 @@ describe "student planner" do
       driver.manage.window.resize_to(500, dimension.height)
       expect(f('.small.ic-Dashboard-header__layout')).to be_present
       expect(f('.small.PlannerApp')).to be_present
-      resize_screen_to_normal
+
     end
   end
 
@@ -175,8 +175,9 @@ describe "student planner" do
       go_to_list_view
 
       validate_object_displayed(@course.name,'Peer Review')
-      expect(list_view_planner_items.second).to contain_css(peer_review_icon_selector)
-      expect(list_view_planner_items.second).to contain_jqcss(peer_review_reminder_selector)
+      expect(list_view_planner_item("Planner Course Peer Review")).to contain_css(peer_review_icon_selector)
+      expect(list_view_planner_item("Planner Course Peer Review")).to contain_jqcss(peer_review_reminder_selector)
+      expect(list_view_planner_item("Planner Course Assignment")).not_to contain_css(peer_review_icon_selector)
     end
 
     it "navigates to peer review submission when clicked" do

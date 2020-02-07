@@ -16,13 +16,13 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import React, {Fragment} from 'react'
+import React from 'react'
 import {any, arrayOf, bool, shape, string} from 'prop-types'
 
-import Alert from '@instructure/ui-alerts/lib/components/Alert'
-import FormFieldGroup from '@instructure/ui-form-field/lib/components/FormFieldGroup'
-import Heading from '@instructure/ui-elements/lib/components/Heading'
-import View from '@instructure/ui-layout/lib/components/View'
+import {Alert} from '@instructure/ui-alerts'
+import {FormFieldGroup} from '@instructure/ui-form-field'
+import {Heading} from '@instructure/ui-elements'
+import {View} from '@instructure/ui-layout'
 
 import I18n from 'i18n!post_assignment_grades_tray'
 
@@ -43,9 +43,8 @@ export default function Layout({
   selectedSectionIds,
   unpostedCount
 }) {
-
   return (
-    <Fragment>
+    <>
       {!gradesPublished && (
         <Alert margin="x-small" variant="warning">
           {I18n.t(
@@ -63,7 +62,7 @@ export default function Layout({
       {gradesPublished && anonymousGrading && (
         <Alert margin="x-small" variant="info">
           {I18n.t(
-            'Grades can only be posted to everyone when the assignment is anonymous. Anonymity will be removed.'
+            'When posting grades for anonymous assignments, grades will be posted for everyone in the course. Anonymity will be removed.'
           )}
         </Alert>
       )}
@@ -94,7 +93,7 @@ export default function Layout({
           unpostedCount={unpostedCount}
         />
       </FormFieldGroup>
-    </Fragment>
+    </>
   )
 }
 

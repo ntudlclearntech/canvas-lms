@@ -15,17 +15,21 @@
  * You should have received a copy of the GNU Affero General Public License along
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
-import AssignmentAlert from './AssignmentAlert'
+import {AlertManagerContext} from '../../../shared/components/AlertManager'
+import {Assignment, AssignmentSubmissionsConnection} from '../graphqlData/Assignment'
 import I18n from 'i18n!assignments_2_submission_histories_query'
-import {InitialQueryShape, SUBMISSION_HISTORIES_QUERY} from '../assignmentData'
 import {Query} from 'react-apollo'
 import React from 'react'
+import {shape} from 'prop-types'
+import {SUBMISSION_HISTORIES_QUERY} from '../graphqlData/Queries'
 import ViewManager from './ViewManager'
 
 class SubmissionHistoriesQuery extends React.Component {
   static propTypes = {
-    initialQueryData: InitialQueryShape
+    initialQueryData: shape({
+      ...Assignment.shape.propTypes,
+      ...AssignmentSubmissionsConnection.shape.propTypes
+    })
   }
 
   state = {
@@ -87,30 +91,33 @@ class SubmissionHistoriesQuery extends React.Component {
 
   render() {
     const submission = this.getSubmission()
+
+    // We have to use the newtork-only fetch policy here, because all the submissions
+    // share the same id which can cause previous query results to be cached in
+    // apollo and cause false-negatives for pagination.
     return (
       <Query
+        onError={() => this.context.setOnFailure(I18n.t('Failed to load more submissions'))}
         query={SUBMISSION_HISTORIES_QUERY}
         variables={{submissionID: submission.id}}
         skip={!submission || this.state.skipLoadingHistories}
+        fetchPolicy="network-only"
       >
         {queryResults => {
-          const {data, error, loading} = queryResults
+          const {data, loading} = queryResults
           return (
-            <React.Fragment>
-              {error && (
-                <AssignmentAlert errorMessage={I18n.t('Failed to laod more submissions')} />
-              )}
-              <ViewManager
-                initialQueryData={this.props.initialQueryData}
-                submissionHistoriesQueryData={loading ? null : data}
-                loadMoreSubmissionHistories={this.generateOnLoadMore(queryResults)}
-              />
-            </React.Fragment>
+            <ViewManager
+              initialQueryData={this.props.initialQueryData}
+              submissionHistoriesQueryData={loading ? null : data}
+              loadMoreSubmissionHistories={this.generateOnLoadMore(queryResults)}
+            />
           )
         }}
       </Query>
     )
   }
 }
+
+SubmissionHistoriesQuery.contextType = AlertManagerContext
 
 export default SubmissionHistoriesQuery

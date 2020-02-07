@@ -158,7 +158,7 @@ class ProfileController < ApplicationController
     end
 
     @user ||= @current_user
-    @active_tab = "profile"
+    set_active_tab "profile"
     @context = @user.profile if @user == @current_user
 
     @user_data = profile_data(
@@ -203,7 +203,7 @@ class ProfileController < ApplicationController
     @pseudonyms = @user.pseudonyms.active
     @password_pseudonyms = @pseudonyms.select{|p| !p.managed_password? }
     @context = @user.profile
-    @active_tab = "profile_settings"
+    set_active_tab "profile_settings"
     js_env :enable_gravatar => @domain_root_account&.enable_gravatar?
     respond_to do |format|
       format.html do
@@ -223,7 +223,7 @@ class ProfileController < ApplicationController
     @user = @current_user
     @current_user.used_feature(:cc_prefs)
     @context = @user.profile
-    @active_tab = 'notifications'
+    set_active_tab 'notifications'
 
 
     # Get the list of Notification models (that are treated like categories) that make up the full list of Categories.
@@ -341,7 +341,7 @@ class ProfileController < ApplicationController
     respond_to do |format|
       user_params = params[:user] ? params[:user].
         permit(:name, :short_name, :sortable_name, :time_zone, :show_user_services, :gender,
-          :avatar_image, :subscribe_to_emails, :locale, :bio, :birthdate)
+          :avatar_image, :subscribe_to_emails, :locale, :bio, :birthdate, :account_pronoun_id)
         : {}
       if !@user.user_can_edit_name?
         user_params.delete(:name)
@@ -463,10 +463,30 @@ class ProfileController < ApplicationController
       js_env(AUTH_TYPE: @domain_root_account.parent_auth_type)
     end
     @user ||= @current_user
-    @active_tab = 'observees'
+    set_active_tab 'observees'
     @context = @user.profile if @user == @current_user
 
     add_crumb(@user.short_name, profile_path)
     add_crumb(t('crumbs.observees', "Observing"))
+
+    @google_analytics_page_title = "Students Being Observed"
+    join_title(t(:page_title, 'Students Being Observed'), @user.name)
+    js_bundle :user_observees
+
+    render html: '', layout: true
+  end
+
+  def content_shares
+    raise not_found if !@domain_root_account.feature_enabled?(:direct_share) || !@current_user.non_student_enrollment?
+
+    @user ||= @current_user
+    set_active_tab 'content_shares'
+    @context = @user.profile
+
+    ccv_settings = Canvas::DynamicSettings.find('common_cartridge_viewer') || {}
+    js_env({
+      COMMON_CARTRIDGE_VIEWER_URL: ccv_settings['base_url']
+    })
+    render :content_shares
   end
 end

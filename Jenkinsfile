@@ -18,65 +18,58 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-gems = [
-  'analytics',
-  'banner_grade_export_plugin',
-  'canvas_geoip',
-  'canvas_salesforce_plugin',
-  'canvas_webhooks',
-  'canvas_zendesk_plugin',
-  'canvasnet_registration',
-  'catalog_provisioner',
-  'custom_reports',
-  'demo_site',
-  'ims_es_importer_plugin',
-  'instructure_misc_plugin',
-  'migration_tool',
-  'multiple_root_accounts',
-  'phone_home_plugin',
-  'respondus_lockdown_browser',
-  'uuid_provisioner'
-]
-
 def withGerritCredentials = { Closure command ->
   withCredentials([
     sshUserPrivateKey(credentialsId: '44aa91d6-ab24-498a-b2b4-911bcb17cc35', keyFileVariable: 'SSH_KEY_PATH', usernameVariable: 'SSH_USERNAME')
   ]) { command() }
 }
 
-def fetchFromGerrit = { String repo, String path, String customRepoDestination = null, String sourcePath = null ->
+def fetchFromGerrit = { String repo, String path, String customRepoDestination = null, String sourcePath = null, String sourceRef = null ->
   withGerritCredentials({ ->
+    println "Fetching ${repo} plugin"
     sh """
       mkdir -p ${path}/${customRepoDestination ?: repo}
       GIT_SSH_COMMAND='ssh -i \"$SSH_KEY_PATH\" -l \"$SSH_USERNAME\"' \
-        git archive --remote=ssh://$GERRIT_URL/${repo} master ${sourcePath == null ? '' : sourcePath} | tar -x -v -C ${path}/${customRepoDestination ?: repo}
+        git archive --remote=ssh://$GERRIT_URL/${repo} ${sourceRef == null ? 'master' : sourceRef} ${sourcePath == null ? '' : sourcePath} | tar -x -C ${path}/${customRepoDestination ?: repo}
     """
   })
 }
 
+def build_parameters = [
+  string(name: 'GERRIT_REFSPEC', value: "${env.GERRIT_REFSPEC}"),
+  string(name: 'GERRIT_EVENT_TYPE', value: "${env.GERRIT_EVENT_TYPE}"),
+  string(name: 'GERRIT_BRANCH', value: "${env.GERRIT_BRANCH}"),
+  string(name: 'GERRIT_CHANGE_NUMBER', value: "${env.GERRIT_CHANGE_NUMBER}"),
+  string(name: 'GERRIT_PATCHSET_NUMBER', value: "${env.GERRIT_PATCHSET_NUMBER}"),
+  string(name: 'GERRIT_EVENT_ACCOUNT_NAME', value: "${env.GERRIT_EVENT_ACCOUNT_NAME}"),
+  string(name: 'GERRIT_EVENT_ACCOUNT_EMAIL', value: "${env.GERRIT_EVENT_ACCOUNT_EMAIL}")
+]
+
 pipeline {
-  agent { label 'docker' }
+  agent { label 'canvas-docker' }
 
   options {
     ansiColor('xterm')
-    parallelsAlwaysFailFast()
   }
 
   environment {
-    COMPOSE_FILE = 'docker-compose.new-jenkins.yml'
+    // include selenium while smoke is running locally
+    COMPOSE_FILE = 'docker-compose.new-jenkins.yml:docker-compose.new-jenkins-selenium.yml'
     GERRIT_PORT = '29418'
     GERRIT_URL = "$GERRIT_HOST:$GERRIT_PORT"
+
     // 'refs/changes/63/181863/8' -> '63.181863.8'
     NAME = "${env.GERRIT_REFSPEC}".minus('refs/changes/').replaceAll('/','.')
     PATCHSET_TAG = "$DOCKER_REGISTRY_FQDN/jenkins/canvas-lms:$NAME"
     MERGE_TAG = "$DOCKER_REGISTRY_FQDN/jenkins/canvas-lms:$GERRIT_BRANCH"
+    CACHE_TAG = "canvas-lms:previous-image"
   }
 
   stages {
-    stage('Debug') {
+    stage('Print Env Variables') {
       steps {
         timeout(time: 20, unit: 'SECONDS') {
-          sh 'printenv | sort'
+        sh 'printenv | sort'
         }
       }
     }
@@ -90,18 +83,34 @@ pipeline {
               sh '''
                 gerrit_message="\u2615 $JOB_BASE_NAME build started.\nTag: canvas-lms:$NAME\n$BUILD_URL"
                 ssh -i "$SSH_KEY_PATH" -l "$SSH_USERNAME" -p $GERRIT_PORT \
-                  hudson@$GERRIT_HOST gerrit review -m "'$gerrit_message'" $GERRIT_CHANGE_NUMBER,$GERRIT_PATCHSET_NUMBER
+                hudson@$GERRIT_HOST gerrit review -m "'$gerrit_message'" $GERRIT_CHANGE_NUMBER,$GERRIT_PATCHSET_NUMBER
               '''
             })
 
-            /* fetch plugins */
-            gems.each { gem -> fetchFromGerrit(gem, 'gems/plugins') }
-            fetchFromGerrit('qti_migration_tool', 'vendor', 'QTIMigrationTool')
             fetchFromGerrit('gerrit_builder', '.', '', 'canvas-lms/config')
+            gems = readFile('gerrit_builder/canvas-lms/config/plugins_list').split()
+            println "Plugin list: ${gems}"
+            /* fetch plugins */
+            gems.each { gem ->
+              if (env.GERRIT_PROJECT == gem) {
+                /* this is the commit we're testing */
+                fetchFromGerrit(gem, 'gems/plugins', null, null, env.GERRIT_REFSPEC)
+              } else {
+                fetchFromGerrit(gem, 'gems/plugins')
+              }
+            }
+            fetchFromGerrit('qti_migration_tool', 'vendor', 'QTIMigrationTool')
             sh '''
               mv gerrit_builder/canvas-lms/config/* config/
+              mv config/knapsack_rspec_report.json ./
+              rm config/cache_store.yml
               rmdir -p gerrit_builder/canvas-lms/config
               cp docker-compose/config/selenium.yml config/
+              cp -R docker-compose/config/new-jenkins config/new-jenkins
+              cp config/delayed_jobs.yml.example config/delayed_jobs.yml
+              cp config/domain.yml.example config/domain.yml
+              cp config/external_migration.yml.example config/external_migration.yml
+              cp config/outgoing_mail.yml.example config/outgoing_mail.yml
             '''
           }
         }
@@ -112,26 +121,34 @@ pipeline {
       when { expression { env.GERRIT_EVENT_TYPE == 'patchset-created' } }
       steps {
         timeout(time: 2) {
-          sh '''
-            git config user.name $GERRIT_EVENT_ACCOUNT_NAME
-            git config user.email $GERRIT_EVENT_ACCOUNT_EMAIL
+          script {
+            withGerritCredentials({ ->
+              sh '''
+                GIT_SSH_COMMAND='ssh -i \"$SSH_KEY_PATH\" -l \"$SSH_USERNAME\"' \
+                  git fetch origin $GERRIT_BRANCH
 
-            # this helps current build issues where cleanup is needed before proceeding.
-            # however the later git rebase --abort should be enough once this has
-            # been on jenkins for long enough to hit all nodes, maybe a couple days?
-            if [ -d .git/rebase-merge ]; then
-              echo "A previous build's rebase failed and the build exited without cleaning up. Aborting the previous rebase now..."
-              git rebase --abort
-            fi
+                git config user.name "$GERRIT_EVENT_ACCOUNT_NAME"
+                git config user.email "$GERRIT_EVENT_ACCOUNT_EMAIL"
 
-            # store exit_status inline to  ensures the script doesn't exit here on failures
-            git rebase --preserve-merges origin/$GERRIT_BRANCH; exit_status=$?
-            if [ $exit_status != 0 ]; then
-              echo "Warning: Rebase couldn't resolve changes automatically, please resolve these conflicts locally."
-              git rebase --abort
-              exit $exit_status
-            fi
-          '''
+                # this helps current build issues where cleanup is needed before proceeding.
+                # however the later git rebase --abort should be enough once this has
+                # been on jenkins for long enough to hit all nodes, maybe a couple days?
+                if [ -d .git/rebase-merge ]; then
+                  echo "A previous build's rebase failed and the build exited without cleaning up. Aborting the previous rebase now..."
+                  git rebase --abort
+                  git checkout $GERRIT_REFSPEC
+                fi
+
+                # store exit_status inline to  ensures the script doesn't exit here on failures
+                git rebase --preserve-merges origin/$GERRIT_BRANCH; exit_status=$?
+                if [ $exit_status != 0 ]; then
+                  echo "Warning: Rebase couldn't resolve changes automatically, please resolve these conflicts locally."
+                  git rebase --abort
+                  exit $exit_status
+                fi
+              '''
+            })
+          }
         }
       }
     }
@@ -139,32 +156,131 @@ pipeline {
     stage('Build Image') {
       steps {
         timeout(time: 36) { /* this timeout is `2 * average build time` which currently: 18m * 2 = 36m */
-          sh 'docker build -t $PATCHSET_TAG .'
+          dockerCacheLoad(image: "$CACHE_TAG")
+          sh '''
+            docker build -t $PATCHSET_TAG .
+            docker tag $PATCHSET_TAG $CACHE_TAG
+          '''
         }
       }
     }
 
-    stage('Smoke Test') {
+    stage('Publish Patchset Image') {
       steps {
-        timeout(time: 10) {
-          sh 'build/new-jenkins/smoke-test.sh'
+        timeout(time: 5) {
+          // always push the patchset tag otherwise when a later
+          // patchset is merged this patchset tag is overwritten
+          sh 'docker push $PATCHSET_TAG'
         }
       }
     }
 
-    stage('Publish Image') {
+    stage('Parallel Run Tests') {
+      parallel {
+        // TODO: this is temporary until we can get some actual builds passing
+        stage('Smoke Test') {
+          steps {
+            timeout(time: 10) {
+              sh 'build/new-jenkins/docker-compose-pull.sh'
+              sh 'build/new-jenkins/docker-compose-pull-selenium.sh'
+              sh 'build/new-jenkins/docker-compose-build-up.sh'
+              sh 'build/new-jenkins/docker-compose-create-migrate-database.sh'
+              sh 'build/new-jenkins/smoke-test.sh'
+            }
+          }
+        }
+/*
+ *  Don't run these on all patch sets until we have them ready to report results.
+ *  Uncomment stage to run when developing.
+ *       stage('Selenium Chrome') {
+ *         steps {
+ *           // propagate set to false until we can get tests passing
+ *           build(
+ *             job: 'selenium-chrome',
+ *             propagate: false,
+ *             parameters: build_parameters
+ *           )
+ *         }
+ *       }
+ *
+ *       stage('Vendored Gems') {
+ *         steps {
+ *           // propagate set to false until we can get tests passing
+ *           build(
+ *             job: 'vendored-gems',
+ *             parameters: build_parameters
+ *           )
+ *         }
+ *       }
+ *
+ *       stage('Rspec') {
+ *         steps {
+ *           // propagate set to false until we can get tests passing
+ *           build(
+ *             job: 'rspec',
+ *             propagate: false,
+ *             parameters: build_parameters
+ *           )
+ *         }
+ *       }
+ *
+ *       stage('Selenium Performance Chrome') {
+ *         steps {
+ *           // propagate set to false until we can get tests passing
+ *           build(
+ *             job: 'selenium-performance-chrome',
+ *             propagate: false,
+ *             parameters: build_parameters
+ *           )
+ *         }
+ *       }
+ *
+ *       stage('Contract Tests') {
+ *         steps {
+ *           // propagate set to false until we can get tests passing
+ *           build(
+ *             job: 'contract-tests',
+ *             propagate: false,
+ *             parameters: build_parameters
+ *           )
+ *         }
+ *       }
+ *
+ *       stage('Frontend') {
+ *         steps {
+ *           // propagate set to false until we can get tests passing
+ *           build(
+ *             job: 'frontend',
+ *             propagate: false,
+ *             parameters: build_parameters
+ *           )
+ *         }
+ *       }
+ *
+ *       stage('Xbrowser') {
+ *         steps {
+ *           // propagate set to false until we can get tests passing
+ *           build(
+ *             job: 'xbrowser',
+ *             propagate: false,
+ *             parameters: build_parameters
+ *           )
+ *         }
+ *        }
+ */
+      }
+    }
+
+    stage('Publish Merged Image') {
       steps {
         timeout(time: 5) {
           script {
-            // always push the patchset tag otherwise when a later
-            // patchset is merged this patchset tag is overwritten
-            sh 'docker push $PATCHSET_TAG'
-
             if (env.GERRIT_EVENT_TYPE == 'change-merged') {
               sh '''
                 docker tag $PATCHSET_TAG $MERGE_TAG
                 docker push $MERGE_TAG
               '''
+              dockerCacheStore(image: "$CACHE_TAG")
             }
           }
         }
@@ -198,9 +314,7 @@ pipeline {
     }
 
     cleanup {
-      script {
-        sh 'docker-compose down --volumes --rmi local'
-      }
+        sh 'build/new-jenkins/docker-cleanup.sh'
     }
   }
 }

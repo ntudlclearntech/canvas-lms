@@ -88,7 +88,7 @@ class Speedgrader
     end
 
     def post_or_hide_grades_button
-      fj('button:contains("Post or Hide Grades"):visible')
+      fj('button[title="Post or Hide Grades"]:visible')
     end
 
     def all_grades_hidden_link
@@ -348,6 +348,10 @@ class Speedgrader
 
     def click_students_dropdown
       students_dropdown_button.click
+    end
+
+    def fetch_student_names
+      ff('li', student_dropdown_menu).map(&:text)
     end
 
     def click_next_or_prev_student(direction_string)

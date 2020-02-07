@@ -45,8 +45,8 @@ QUnit.module('ScreenReader Gradebook', suiteHooks => {
     window.ENV = {}
     QUnit.config.testTimeout = 2000
     fixtures.create()
-    sinon.stub(userSettings, 'contextGet')
-    sinon.stub(userSettings, 'contextSet')
+    sandbox.stub(userSettings, 'contextGet')
+    sandbox.stub(userSettings, 'contextSet')
     userSettings.contextGet
       .withArgs('sort_grade_columns_by')
       .returns({sortType: 'assignment_group'})
@@ -57,8 +57,6 @@ QUnit.module('ScreenReader Gradebook', suiteHooks => {
 
   suiteHooks.afterEach(() => {
     asyncHelper.stop()
-    userSettings.contextGet.restore()
-    userSettings.contextSet.restore()
     Ember.run(App, 'destroy')
     QUnit.config.testTimeout = qunitTimeout
     window.ENV = originalENV
@@ -214,103 +212,142 @@ QUnit.module('ScreenReader Gradebook', suiteHooks => {
       }))
   })
 
-  QUnit.module('Loading Submissions', hooks => {
-    hooks.beforeEach(() => {
-      ajax.defineFixture(window.ENV.GRADEBOOK_OPTIONS.submissions_url, {
-        response: [
-          {
-            submissions: [
-              {
-                assignment_id: '1',
-                assignment_visible: true,
-                cached_due_date: '2015-03-01T12:00:00Z',
-                score: 10,
-                user_id: '1'
-              },
-              {
-                assignment_id: '2',
-                assignment_visible: true,
-                cached_due_date: '2015-05-02T12:00:00Z',
-                score: 9,
-                user_id: '1'
-              }
-            ],
-            user_id: '01'
+  QUnit.module('Loading Submissions', () => {
+    QUnit.module('when everything has loaded', contextHooks => {
+      contextHooks.beforeEach(() => {
+        ajax.defineFixture(window.ENV.GRADEBOOK_OPTIONS.submissions_url, {
+          response: [
+            {
+              submissions: [
+                {
+                  assignment_id: '1',
+                  assignment_visible: true,
+                  cached_due_date: '2015-03-01T12:00:00Z',
+                  score: 10,
+                  user_id: '1'
+                },
+                {
+                  assignment_id: '2',
+                  assignment_visible: true,
+                  cached_due_date: '2015-05-02T12:00:00Z',
+                  score: 9,
+                  user_id: '1'
+                }
+              ],
+              user_id: '01'
+            },
+            {
+              submissions: [
+                {
+                  assignment_id: '1',
+                  assignment_visible: true,
+                  cached_due_date: '2015-07-03T12:00:00Z',
+                  score: 8,
+                  user_id: '2'
+                }
+              ],
+              user_id: '2'
+            }
+          ],
+          jqXHR: {
+            getResponseHeader() {
+              return {}
+            }
           },
-          {
-            submissions: [
-              {
-                assignment_id: '1',
-                assignment_visible: true,
-                cached_due_date: '2015-07-03T12:00:00Z',
-                score: 8,
-                user_id: '2'
-              }
-            ],
-            user_id: '2'
-          }
-        ],
-        jqXHR: {
-          getResponseHeader() {
-            return {}
-          }
-        },
-        textStatus: 'success'
+          textStatus: 'success'
+        })
+
+        ENV.GRADEBOOK_OPTIONS.grading_period_set = {
+          id: '1501',
+          grading_periods: [
+            {
+              id: '1403',
+              close_date: '2015-07-08T12:00:00Z',
+              end_date: '2015-07-01T12:00:00Z',
+              is_closed: false,
+              start_date: '2015-05-01T12:00:00Z'
+            },
+            {
+              id: '1401',
+              close_date: '2015-03-08T12:00:00Z',
+              end_date: '2015-03-01T12:00:00Z',
+              is_closed: true,
+              start_date: '2015-01-01T12:00:00Z'
+            },
+            {
+              id: '1402',
+              close_date: '2015-05-08T12:00:00Z',
+              end_date: '2015-05-01T12:00:00Z',
+              is_closed: false,
+              start_date: '2015-03-01T12:00:00Z'
+            }
+          ],
+          weighted: true
+        }
+
+        return initializeApp()
       })
 
-      ENV.GRADEBOOK_OPTIONS.grading_period_set = {
-        id: '1501',
-        grading_periods: [
-          {
-            id: '1403',
-            close_date: '2015-07-08T12:00:00Z',
-            end_date: '2015-07-01T12:00:00Z',
-            is_closed: false,
-            start_date: '2015-05-01T12:00:00Z'
-          },
-          {
-            id: '1401',
-            close_date: '2015-03-08T12:00:00Z',
-            end_date: '2015-03-01T12:00:00Z',
-            is_closed: true,
-            start_date: '2015-01-01T12:00:00Z'
-          },
-          {
-            id: '1402',
-            close_date: '2015-05-08T12:00:00Z',
-            end_date: '2015-05-01T12:00:00Z',
-            is_closed: false,
-            start_date: '2015-03-01T12:00:00Z'
-          }
-        ],
-        weighted: true
-      }
+      test('updates effective due dates', () =>
+        asyncHelper.waitForRequests().then(() => {
+          const effectiveDueDates = srgb.get('effectiveDueDates.content')
+          deepEqual(Object.keys(effectiveDueDates), ['1', '2'])
+          deepEqual(Object.keys(effectiveDueDates[1]), ['1', '2'])
+          deepEqual(Object.keys(effectiveDueDates[2]), ['1'])
+        }))
 
-      return initializeApp()
+      test('updates effective due dates on related assignments', () =>
+        asyncHelper.waitForRequests().then(() => {
+          deepEqual(Object.keys(srgb.get('assignments').findBy('id', '1').effectiveDueDates), [
+            '1',
+            '2'
+          ])
+          deepEqual(Object.keys(srgb.get('assignments').findBy('id', '2').effectiveDueDates), ['1'])
+        }))
+
+      test('updates inClosedGradingPeriod on related assignments', () =>
+        asyncHelper.waitForRequests().then(() => {
+          strictEqual(srgb.get('assignments').findBy('id', '1').inClosedGradingPeriod, true)
+          strictEqual(srgb.get('assignments').findBy('id', '2').inClosedGradingPeriod, false)
+        }))
     })
 
-    test('updates effective due dates', () =>
-      asyncHelper.waitForRequests().then(() => {
-        const effectiveDueDates = srgb.get('effectiveDueDates.content')
-        deepEqual(Object.keys(effectiveDueDates), ['1', '2'])
-        deepEqual(Object.keys(effectiveDueDates[1]), ['1', '2'])
-        deepEqual(Object.keys(effectiveDueDates[2]), ['1'])
-      }))
+    QUnit.module('when assignment groups load after submissions', contextHooks => {
+      let student
 
-    test('updates effective due dates on related assignments', () =>
-      asyncHelper.waitForRequests().then(() => {
-        deepEqual(Object.keys(srgb.get('assignments').findBy('id', '1').effectiveDueDates), [
-          '1',
-          '2'
-        ])
-        deepEqual(Object.keys(srgb.get('assignments').findBy('id', '2').effectiveDueDates), ['1'])
-      }))
+      contextHooks.beforeEach(() => {
+        initializeApp()
+        return asyncHelper.waitForRequests().then(() => {
+          student = srgb.get('students.firstObject')
 
-    test('updates inClosedGradingPeriod on related assignments', () =>
-      asyncHelper.waitForRequests().then(() => {
-        strictEqual(srgb.get('assignments').findBy('id', '1').inClosedGradingPeriod, true)
-        strictEqual(srgb.get('assignments').findBy('id', '2').inClosedGradingPeriod, false)
-      }))
+          /*
+           * Set all submissions for the student as hidden.
+           * This would result in a zero grade for the student.
+           */
+          let submissions = srgb.submissionsForStudent(student)
+          submissions.forEach(submission => {
+            srgb.updateSubmission({...submission, hidden: true}, student)
+          })
+          submissions = srgb.submissionsForStudent(student)
+
+          // Clear the student's current grade.
+          Ember.set(student, 'total_grade', null)
+
+          // Simulate the assignments being determined again.
+          srgb.set('assignmentsFromGroups.isLoaded', false)
+          srgb.set('assignmentsFromGroups.isLoaded', true)
+        })
+      })
+
+      test('updates the hidden state of submissions', () => {
+        const [submission] = srgb.submissionsForStudent(student)
+        deepEqual(submission.hidden, false)
+      })
+
+      test('recalculates grades for students', () => {
+        deepEqual(student.total_grade, {score: 3, possible: 140})
+      })
+    })
   })
 
   QUnit.module('#gradesAreWeighted', hooks => {
@@ -787,12 +824,10 @@ QUnit.module('ScreenReader Gradebook', suiteHooks => {
       }
       initializeApp()
       return asyncHelper.waitForRequests().then(() => {
-        sinon.stub(CourseGradeCalculator, 'calculate').returns('expected')
+        sandbox.stub(CourseGradeCalculator, 'calculate').returns('expected')
         student = srgb.get('students.firstObject')
       })
     })
-
-    hooks.afterEach(() => CourseGradeCalculator.calculate.restore())
 
     test('calculates grades using properties from the gradebook', () => {
       const grades = srgb.calculate(student)
@@ -869,12 +904,10 @@ QUnit.module('ScreenReader Gradebook', suiteHooks => {
       exampleGrades = createCourseGradesWithGradingPeriods()
       initializeApp()
       return asyncHelper.waitForRequests().then(() => {
-        sinon.stub(CourseGradeCalculator, 'calculate').returns(exampleGrades)
+        sandbox.stub(CourseGradeCalculator, 'calculate').returns(exampleGrades)
         return (student = srgb.get('students.firstObject'))
       })
     })
-
-    hooks.afterEach(() => CourseGradeCalculator.calculate.restore())
 
     test('stores the current grade on the student when not including ungraded assignments', () => {
       const grades = srgb.calculateStudentGrade(student)
@@ -1089,7 +1122,6 @@ QUnit.module('ScreenReader Gradebook', suiteHooks => {
       )
       srgb.set('includeUngradedAssignments', false)
       strictEqual(updateIncludeUngradedAssignmentsSettingStub.callCount, 1)
-      updateIncludeUngradedAssignmentsSettingStub.restore()
     })
 
     test('updateIncludeUngradedAssignmentsSetting sets the userSetting for include_ungraded_assignments', () => {
@@ -1135,10 +1167,6 @@ QUnit.module('ScreenReader Gradebook', suiteHooks => {
       fetchCorrectEnrollmentsStub = sinon.stub(srgb, 'fetchCorrectEnrollments')
     })
 
-    hooks.afterEach(() => {
-      fetchCorrectEnrollmentsStub.restore()
-    })
-
     test('changing showConcludedEnrollments calls updateShowConcludedEnrollmentsSetting', () => {
       const updateShowConcludedEnrollmentsSettingStub = sinon.stub(
         srgb,
@@ -1146,23 +1174,20 @@ QUnit.module('ScreenReader Gradebook', suiteHooks => {
       )
       srgb.set('showConcludedEnrollments', false)
       strictEqual(updateShowConcludedEnrollmentsSettingStub.callCount, 1)
-      updateShowConcludedEnrollmentsSettingStub.restore()
     })
 
     test('updateShowConcludedEnrollmentsSetting uses the gradebook settings endpoint', () => {
-      const ajaxRequestSpy = sinon.stub(ajax, 'request')
+      const ajaxRequestSpy = sandbox.stub(ajax, 'request')
       srgb.set('showConcludedEnrollments', false)
       strictEqual(ajaxRequestSpy.firstCall.args[0].url, 'gradebook_settings')
-      ajaxRequestSpy.restore()
     })
 
     test('updateShowConcludedEnrollmentsSetting passes the updated setting state', () => {
-      const ajaxRequestSpy = sinon.stub(ajax, 'request')
+      const ajaxRequestSpy = sandbox.stub(ajax, 'request')
       srgb.set('showConcludedEnrollments', false)
       deepEqual(ajaxRequestSpy.firstCall.args[0].data.gradebook_settings, {
         show_concluded_enrollments: false
       })
-      ajaxRequestSpy.restore()
     })
   })
 
@@ -1214,24 +1239,21 @@ QUnit.module('ScreenReader Gradebook', suiteHooks => {
       const updateAllowFinalGradeOverrideStub = sinon.stub(srgb, 'updateAllowFinalGradeOverride')
       srgb.set('allowFinalGradeOverride', false)
       strictEqual(updateAllowFinalGradeOverrideStub.callCount, 1)
-      updateAllowFinalGradeOverrideStub.restore()
     })
 
     test('updateAllowFinalGradeOverride uses the course settings endpoint', () => {
-      const ajaxRequestSpy = sinon.stub(ajax, 'request')
+      const ajaxRequestSpy = sandbox.stub(ajax, 'request')
       const url = `/api/v1/courses/${ENV.GRADEBOOK_OPTIONS.context_id}/settings`
       srgb.set('allowFinalGradeOverride', false)
       strictEqual(ajaxRequestSpy.firstCall.args[0].url, url)
-      ajaxRequestSpy.restore()
     })
 
     test('updateAllowFinalGradeOverride passes the updated setting state', () => {
-      const ajaxRequestSpy = sinon.stub(ajax, 'request')
+      const ajaxRequestSpy = sandbox.stub(ajax, 'request')
       srgb.set('allowFinalGradeOverride', false)
       deepEqual(ajaxRequestSpy.firstCall.args[0].data, {
         allow_final_grade_override: false
       })
-      ajaxRequestSpy.restore()
     })
   })
 
@@ -1350,11 +1372,7 @@ QUnit.module('ScreenReader Gradebook', suiteHooks => {
         })
       )
 
-      updateFinalGradeOverrideStub = sinon.stub(FinalGradeOverrideApi, 'updateFinalGradeOverride')
-    })
-
-    hooks.afterEach(() => {
-      updateFinalGradeOverrideStub.restore()
+      updateFinalGradeOverrideStub = sandbox.stub(FinalGradeOverrideApi, 'updateFinalGradeOverride')
     })
 
     test('given an invalid grade, final_grade_overrides is unchanged', () => {
@@ -1503,7 +1521,7 @@ QUnit.module('ScreenReader Gradebook', suiteHooks => {
     })
   })
 
-  QUnit.module('hideComments', hooks => {
+  QUnit.module('anonymizeStudents', hooks => {
     hooks.beforeEach(() => {
       initializeApp()
       return asyncHelper.waitForRequests()
@@ -1515,7 +1533,7 @@ QUnit.module('ScreenReader Gradebook', suiteHooks => {
 
       return Ember.run(() => {
         srgb.set('selectedAssignment', assignment)
-        equal(srgb.get('hideComments'), false)
+        equal(srgb.get('anonymizeStudents'), false)
       })
     })
 
@@ -1525,7 +1543,7 @@ QUnit.module('ScreenReader Gradebook', suiteHooks => {
 
       return Ember.run(() => {
         srgb.set('selectedAssignment', assignment)
-        equal(srgb.get('hideComments'), true)
+        equal(srgb.get('anonymizeStudents'), true)
       })
     })
   })

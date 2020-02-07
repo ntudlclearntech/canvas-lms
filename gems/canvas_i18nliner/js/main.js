@@ -21,7 +21,7 @@ var Commands = I18nliner.Commands;
 var Check = Commands.Check;
 
 var CoffeeScript = require("coffee-script");
-var babylon = require("babylon");
+var babylon = require("@babel/parser");
 var fs = require('fs');
 
 var JsProcessor = require("i18nliner/dist/lib/processors/js_processor").default;
@@ -32,6 +32,7 @@ var glob = require("glob");
 
 // tell i18nliner's babylon how to handle `import('../foo').then`
 I18nliner.config.babylonPlugins.push('dynamicImport')
+I18nliner.config.babylonPlugins.push('optionalChaining')
 
 // explict subdirs, to work around perf issues
 // https://github.com/jenseng/i18nliner-js/issues/7

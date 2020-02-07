@@ -103,22 +103,15 @@ class RestrictedRadioButtons extends React.Component {
   ]
 
   componentDidMount() {
-    return $([
-      this.unlock_at,
-      this.lock_at
-    ]).datetime_field()
+    return $([this.unlock_at, this.lock_at]).datetime_field()
   }
 
   extractFormValues = () => ({
     hidden: this.state.selectedOption === 'link_only',
     unlock_at:
-      (this.state.selectedOption === 'date_range' &&
-        $(this.unlock_at).data('unfudged-date')) ||
-      '',
+      (this.state.selectedOption === 'date_range' && $(this.unlock_at).data('unfudged-date')) || '',
     lock_at:
-      (this.state.selectedOption === 'date_range' &&
-        $(this.lock_at).data('unfudged-date')) ||
-      '',
+      (this.state.selectedOption === 'date_range' && $(this.lock_at).data('unfudged-date')) || '',
     locked: this.state.selectedOption === 'unpublished'
   })
 
@@ -137,19 +130,19 @@ class RestrictedRadioButtons extends React.Component {
 
   isPermissionChecked = option =>
     this.state.selectedOption === option.selectedOptionKey ||
-    _.contains(option.selectedOptionKey, this.state.selectedOption)
+    _.includes(option.selectedOptionKey, this.state.selectedOption)
 
   renderPermissionOptions = () =>
     this.permissionOptions.map((option, index) => (
       <div className="radio" key={index}>
         <label>
           <input
-            ref={e => this[option.ref] = e}
+            ref={e => (this[option.ref] = e)}
             type="radio"
             name="permissions"
             checked={this.isPermissionChecked(option)}
             onChange={option.onChange.bind(this)}
-            />
+          />
           <i className={option.iconClasses} aria-hidden />
           {option.text}
         </label>
