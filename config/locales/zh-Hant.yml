@@ -7759,7 +7759,7 @@ zh-Hant:
   disabled_by_default_7d822dcb: 默認停用
   disabled_in_course_settings_d15ee35d: "* 已在課程設定內停用"
   disabled_links_b3bdea99: 已停用的連結
-  disabled_not_visible_to_students_48d4a90d: 已停用。看不到學生
+  disabled_not_visible_to_students_48d4a90d: 已停用。學生看不到
   disabling_f594bda: 正在停用…
   disabling_post_to_sis_is_not_available_for_non_pub_ee031373: "停用 Post 至 SIS 功能並不適用於尚未發佈的課程 "
   disabling_sync_to_name_failed_e7521ebb: "為 %{name} 停用同步功能失敗"
@@ -11735,8 +11735,8 @@ zh-Hant:
   kind_7f0a88c4: 類型
   korean_da812d9: 韓語
   label_3c9a991: "%{label}："
-  label_disabled_not_visible_to_students_da093eec: "%{label}。已停用。看不到學生"
-  label_no_content_not_visible_to_students_84345d2f: "%{label}。沒有內容。看不到學生"
+  label_disabled_not_visible_to_students_da093eec: "%{label}。已停用。學生看不到"
+  label_no_content_not_visible_to_students_84345d2f: "%{label}。沒有內容。學生看不到"
   label_values_76f4b5fa: 標籤值
   labels: 
     lock_module_until: 預定發佈日期
@@ -14860,7 +14860,7 @@ zh-Hant:
   no_content_5dbc9acf: 無內容
   no_content_has_been_added_f36bab43: "* 未添加任何內容"
   no_content_has_been_shared_with_you_667fde6c: 沒有與您共用的內容。
-  no_content_not_visible_to_students_b59f4867: 沒有內容。看不到學生
+  no_content_not_visible_to_students_b59f4867: 沒有內容。學生看不到
   no_courses_favorited_4e69fd63: 無收藏的課程
   no_courses_found_12d68a74: 找不到課程
   no_date_bfeb2df7: 無日期
