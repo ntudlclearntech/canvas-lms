@@ -20,18 +20,38 @@ import React from 'react'
 import I18n from 'i18n!new_user_tutorial'
 import {Text} from '@instructure/ui-elements'
 import TutorialTrayContent from './TutorialTrayContent'
+import UserGuideContent from './UserGuideContent'
 
 const SyllabusTray = () => (
   <TutorialTrayContent
     heading={I18n.t('Syllabus')}
-    subheading={I18n.t('An auto-generated chronological summary of your course')}
+    subheading={I18n.t('Announce course basic information, schedules, and the grading policy')}
     image="/images/tutorial-tray-images/syllabus.svg"
   >
     <Text as="p">
-      {I18n.t(`Communicate to your students exactly what will be required
-          of them throughout the course in chronological order. Generate a
-          built-in Syllabus based on Assignments and Events that you've created.`)}
+      {I18n.t(`You can use the editor to build or paste a table about the information such as
+          course objectives, schedules, and the grading policy. Also, the system will
+          automatically generate a list of all graded assignments on this page.
+          The list can't be edited.`)}
     </Text>
+    <UserGuideContent
+      items={[
+        {
+          title: I18n.t('How to create a course syllabus'),
+          url: I18n.t(
+            'how_to_create_a_course_syllabus_url',
+            'https://drive.google.com/file/d/16Tk4rAcgB47OxjErLIIxtKdJ9FnB_Jxg/view?usp=sharing'
+          )
+        },
+        {
+          title: I18n.t('Tutorial Video: Syllabus'),
+          url: I18n.t(
+            'tutorial_video_syllabus_url',
+            'https://www.youtube.com/watch?v=jWpTqlDMZqY&list=PLKjqFgaBNOo8fv5ZWEIUSlSqzXDVC2SV_&index=8'
+          )
+        }
+      ]}
+    />
   </TutorialTrayContent>
 )
 

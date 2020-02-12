@@ -1733,6 +1733,7 @@ zh-Hant:
   add_announcement_165c3b05: 新增公告
   add_another_assignment_fc5c908f: 新增另一項作業
   add_app_baf540f: 新增應用程式
+  add_auditors_tas_and_teachers_to_your_course_bd7d7696: 加入不同身份的成員至課程中
   add_assignment_to_name_caf173b0: "新增作業至 %{name}"
   add_attachment_93868828: 新增附件
   add_attribute_6d6d4a65: 新增屬性
@@ -2381,6 +2382,7 @@ zh-Hant:
     file_import_fail: "無法導入文檔『%{file_path}』"
   angel_display: ANGEL（天使）學習
   angel_file_description: "天使導出 .zip 格式"
+  announce_course_basic_information_schedules_and_th_92fd9f4: 公告課程基本資訊、進度與評分方式
   announcement: 
     no_title: 無標題
   announcement_creation_failed_f7d227f5: 公告建立失敗
@@ -2651,6 +2653,7 @@ zh-Hant:
   as_you_type_in_this_field_the_list_of_results_will_c1a1a3e4: 在您鍵入內容時，搜索結果清單會自動更新。
   ask_your_instructor_a_question_a61ca5e9: 向您的導師提問一個問題
   assess_and_survey_your_students_ce8172a9: 評估和調查您的學生
+  assess_students_learning_efficacy_71ff6d96: 了解學生的學習成效與狀況
   assessment_audit_d4a76709: 評估稽核
   assessment_audit_events_for_creatorname_56e84e8: "%{creatorName} 的評估稽核活動"
   assessment_audit_events_for_username_eb2144ad: "其評估稽核活動：%{userName}"
@@ -4625,6 +4628,7 @@ zh-Hant:
   cell_number_is_required_2edcee60: 行動電話號碼是必填項
   certificate_fingerprint_b376df90: 憑證指紋
   change_applied_89d1aa5a: 變更已應用
+  change_basic_settings_such_as_course_languages_and_dcd1ba0f: 更改基本設定，例如：語言設定、隱藏功能按鈕
   change_beginning_date_to_39dbd06e: 更改開始日期為
   change_dcaa253a: 更改
   change_description_34c49853: 變更描述
@@ -7063,6 +7067,7 @@ zh-Hant:
   create_account_263ec6: 建立帳戶
   create_an_ba36d171: 建立
   create_and_administer_online_quizzes_and_surveys_b_7d2fa85f: 建立及管理線上測驗和調查，包括已評分或未評分。
+  create_and_compile_educational_resources_46350a0e: 製作線上教材、統整學習資源
   create_announcements_above_1c36202b: 在上面建立公告
   create_as_many_discussion_topics_as_needed_as_assi_45ec1df: |-
       根據需要盡可能建立更多的討論話題，作為作業
@@ -7073,6 +7078,8 @@ zh-Hant:
   create_assessments_with_new_quizzes_and_migrate_ex_92b5f1ad: "使用 New Quizzes 建立評估，並遷移現有的 Canvas 測驗。"
   create_assessments_with_quizzes_next_and_migrate_e_eaaee5e6: "使用 Quizzes.Next 建立評估，並遷移現有的 Canvas 測驗。"
   create_assignment_68532ceb: 建立作業
+  create_assignments_on_the_assignments_page_organiz_78ffa840: |-
+      課程作業功能可以用來指派作業、管理所有的計分項目，例如:作業、小考、報告。您可在此區分不同計分項目，並給予相異的權重。
   create_assignments_on_the_assignments_page_organiz_8838b18a: |-
       在作業頁面建立作業。組織作業
       分類為功課、課堂作業、論文、討論
@@ -7114,6 +7121,7 @@ zh-Hant:
   create_theme_based_on_name_7b1bd318: "建立主題基於 %{name}"
   create_users_view: 
     required: 請輸入一些電郵地址
+  create_various_types_of_graded_assignments_f569b16e: 建立不同類別的計分項目
   created_58b8a75a: 已建立
   created_6ee36dff: 已建立：
   created_at_73839757: 建立日期
@@ -9179,6 +9187,7 @@ zh-Hant:
   extra_credit_not_permitted_on_outcomes_score_adjus_714dd746: "學習成果不允許額外分數，分數調整為最大可能值%{outcome}"
   extract_error_error_file_names_a4989ed0: "提取錯誤，%{error}：%{file_names}"
   extreme_critical_emergency_80b3dbda: 極其重要的緊急情況！
+  facilitate_course_interaction_c0bab195: 促進課程互動與交流
   faculty_journal_5634938e: 教職員日誌
   faculty_journal_manage_entries_efc09599: "教職員日誌 - 管理條目"
   fail_62dbb06a: 不合格
@@ -11159,9 +11168,21 @@ zh-Hant:
   hour_s_b6e8d238: 小時
   hours_late_989e9081: （已晚小時數）
   hover_over_me_496521b9: 掛在我上方
+  how_do_i_import_and_export_grades_83409b15: 如何匯入紙本考試、作業分數
+  how_do_i_set_my_home_page_92d4c79: 如何設定首頁
+  how_do_i_edit_pages_189c85cc: 如何編輯頁面
+  how_do_i_change_the_settings_in_a_course_ffb3a088: 如何使用課程設定
   how_is_the_grade_determined_bb75bf53: 怎樣決定評分？
   how_is_this_affecting_you_b3b6a639: 問題對您造成什麼影響？
   how_many_minutes_ecca5ee7: 多少分鐘？
+  how_to_assign_assignments_9e4a9e3a: 如何指派作業
+  how_to_correct_assignments_af0c2d3a: 如何批改作業
+  how_to_manage_scores_e90ae898: 如何管理與設定成績
+  how_to_post_an_announcement_5f626a12: 如何發佈公告
+  how_to_publish_handouts_e43fd460: 如何輕鬆發佈課程講義
+  how_to_send_emails_to_students_172479be: 如何寄信給修課學生
+  how_to_create_quizzes_21b494a: 如何出線上測驗
+  how_to_create_a_course_syllabus_6b396c13: 如何建立課程資訊
   html5_first_videos_description: "預設情況下，Canvas 會嘗試先使用 Flash 播放視頻。啟用該選項以嘗試先使用 HTML5，然後返回到 Flash。"
   html5_media_recorder_in_rce_bb59b78f: "在 RCE 中的 HTML5 媒體錄製"
   html_editor_fb2ab713: "HTML 編輯器"
@@ -11446,6 +11467,14 @@ zh-Hant:
   instructor_name_36bc0f39: 導師姓名
   instructor_sis_id_899dd697: "導師 Sis ID"
   instructors_4b491a07: 導師
+  instructors_can_arrange_the_course_resources_in_th_f25ee384: |-
+      課程內容的功能讓老師依照需求安排所有課程會使用到的素材，例如依據週次
+      放上每週學生需要閱讀的課程講義、觀看的影片，或是學生需要完成的作業、
+      討論，除了依據週次之外，老師也能以主題區分不同的單元。
+  instructors_can_upload_handouts_supplementary_mate_e3c2f285: |-
+      文件功能讓教師上傳課程講義、補充教材、圖片，建議教師用文件的「資料夾
+      」功能區分不同的文件類型或是每週所需瀏覽的檔案，學生可以更快速、便利
+      地下載課程文件。
   instructors_cdd595d0: 導師
   instructure: 
     alerts: 
@@ -14529,8 +14558,8 @@ zh-Hant:
       student_progress: 學生進度
     relock_modules: 重新鎖定單元
     requirements_changed: 要求已更改
-  modules_b8f6aa9: 單元
-  modules_c4325335: 單元
+  modules_b8f6aa9: 課程內容
+  modules_c4325335: 課程內容
   modules_home_page_568c6bb9: 主頁單元
   modules_item_controller: 
     max_score_complete: 得分不超過*score*
@@ -14824,6 +14853,33 @@ zh-Hant:
   new_typography_4eaeca26: 新印刷
   new_ui_487a624e: 新UI
   new_user_s_name_909b6267: 新使用者名稱
+  new_user_tutorial:
+    how_to_post_an_announcement_url: https://drive.google.com/file/d/14NrdRtApZngoF8iyRiPlDcUo11jytefw/view?usp=sharing
+    tutorial_video_announcements_url: https://www.youtube.com/watch?v=tupfmCiH558&list=PLKjqFgaBNOo8fv5ZWEIUSlSqzXDVC2SV_&index=6
+    how_to_assign_assignments_url: https://drive.google.com/file/d/1sH2-bah1GwvFSFUW-YR2fbNt5cKJ9ap3/view?usp=sharing
+    how_to_correct_assignments_url: https://drive.google.com/file/d/17g8cjUeOymel0wa6lDh7LoRkho29WCE8/view?usp=sharing
+    tutorial_video_assign_assignments_url: https://www.youtube.com/watch?v=IeVYgHhMKNU&list=PLKjqFgaBNOo8fv5ZWEIUSlSqzXDVC2SV_&index=10
+    tutorial_video_correct_assignments_url: https://www.youtube.com/watch?v=SuxMtw0TzVY&list=PLKjqFgaBNOo8fv5ZWEIUSlSqzXDVC2SV_&index=12
+    tutorial_video_discussion_url: https://www.youtube.com/watch?v=MjSi2tkkMxk&list=PLKjqFgaBNOo8fv5ZWEIUSlSqzXDVC2SV_&index=14
+    tutorial_video_files_url: https://www.youtube.com/watch?v=o7R6n_Yt17A&list=PLKjqFgaBNOo8fv5ZWEIUSlSqzXDVC2SV_&index=9
+    how_to_nanage_scores_url: https://drive.google.com/file/d/1AIStAGsLtiBgXXBa2X5jUC5lsvwa35Yz/view?usp=sharing
+    tutorial_video_manage_scores_url: https://www.youtube.com/watch?v=cg12SK8NISk&list=PLKjqFgaBNOo8fv5ZWEIUSlSqzXDVC2SV_&index=13
+    how_do_i_import_and_export_grades_url: https://docs.google.com/document/d/1Of-ygpxE1_AdoBEYtkhDUfU5bZ44sigWak_clXKVPXs/edit#heading=h.vm9aehvkngph
+    home_user_guide_url: https://docs.google.com/document/d/1Of-ygpxE1_AdoBEYtkhDUfU5bZ44sigWak_clXKVPXs/edit#heading=h.6hthomtfr5ew
+    how_to_publish_handouts_url: https://drive.google.com/file/d/1NTdmi8n92tUZ3sTCYA2T5OFw8J-DGJ9a/view?usp=sharing
+    tutorial_video_modules_url: https://www.youtube.com/watch?v=lPZo_Mc8mfQ&list=PLKjqFgaBNOo8fv5ZWEIUSlSqzXDVC2SV_&index=7
+    tutorial_vide_publish_videos_url: https://www.youtube.com/watch?v=m4kchtMBNxI&amp;list=PLKjqFgaBNOo8fv5ZWEIUSlSqzXDVC2SV_&amp;index=15
+    how_do_i_edit_pages_url: https://docs.google.com/document/d/1Of-ygpxE1_AdoBEYtkhDUfU5bZ44sigWak_clXKVPXs/edit#heading=h.s9wx4yasu2b
+    how_to_send_emails_to_students_url: https://drive.google.com/file/d/1WeHpOgAQUtwy3acKBHcaKF2VR61vQPdb/view?usp=sharing
+    tutorial_video_send_emails_url: https://www.youtube.com/watch?v=kN2roz8R_Do&list=PLKjqFgaBNOo8fv5ZWEIUSlSqzXDVC2SV_&index=19
+    tutorial_video_add_members: https://www.youtube.com/watch?v=nZDvz-rAiCo&list=PLKjqFgaBNOo8fv5ZWEIUSlSqzXDVC2SV_&index=4
+    tutorial_video_create_groups_url: https://www.youtube.com/watch?v=8uObPRzoTTc&list=PLKjqFgaBNOo8fv5ZWEIUSlSqzXDVC2SV_&index=5
+    how_to_create_quizzes_url: https://drive.google.com/file/d/1dyIJpOA0450J9vpKPNMRSqmLYOSd3FVV/view?usp=sharing
+    tutorial_video_create_quizzes_url: https://www.youtube.com/watch?v=HCviiSfcAUQ&list=PLKjqFgaBNOo8fv5ZWEIUSlSqzXDVC2SV_&index=17
+    tutorial_video_manage_quiz_results_url: https://www.youtube.com/watch?v=uORfe9tfM8A&list=PLKjqFgaBNOo8fv5ZWEIUSlSqzXDVC2SV_&index=18
+    how_do_i_change_the_settings_in_a_course_url: https://docs.google.com/document/d/1Of-ygpxE1_AdoBEYtkhDUfU5bZ44sigWak_clXKVPXs/edit#heading=h.g0su42kmhjw0
+    how_to_create_a_course_syllabus_url: https://drive.google.com/file/d/17TtxIOCk6lPp_839mroC_p03BKe9QaPR/view?usp=sharing
+    tutorial_video_syllabus_url: https://www.youtube.com/watch?v=jWpTqlDMZqY&list=PLKjqFgaBNOo8fv5ZWEIUSlSqzXDVC2SV_&index=8
   new_user_tutorial_cdd3a446: 新使用者教程
   new_zealand_64_f126cf2e: "紐西蘭  (+64)"
   new_zealand_ef5d7b74: 紐西蘭
@@ -15255,6 +15311,10 @@ zh-Hant:
   notify_users_this_quiz_has_changed_c5b05995: 通知使用者此測驗已更改
   now_click_the_agenda_button_607fb40e: "現在請點擊 *議程* 按鈕"
   now_that_your_course_is_set_up_and_available_you_p_c0c8635c: 現在您的課程已建置完成並可使用，您也許不再需要這個檢查清單。但我們將繼續保留它，以防萬一日後您想嘗試某些新功能或是變更課程內容時，或許會需要一點額外的支援。
+  ntu_cool_will_automatically_synchronize_the_studen_787408e9: |-
+      修課學生名單會於每天更新，臺大與三校聯盟的正式修課學生皆會自動匯入，
+      教師無需手動新增學生。教師可以在成員頁面新增其它身分的成員，例如:旁聽
+      生、助教、教師。此外，教師也可以在此將成員分組、檢視分組名單。
   num_messages_c1949bbc: 
     one: "%{num} 條訊息"
     other: "%{num} 條訊息"
@@ -15402,6 +15462,14 @@ zh-Hant:
   oman_968_46f8d901: "阿曼 (+968)"
   on_8f7190e5: 開啟
   on_paper_46d0ba36: 紙本
+  on_the_setting_page_you_can_change_the_course_lang_7128614: |-
+      在設定頁面，您可以更改課程語言、隱藏不會用到的功能鍵，或是調整課程開
+      始與結束時間。
+  on_this_page_you_can_track_the_assignment_submissi_31ca67a6: |-
+      成績頁面顯示所有計分項目的繳交情況與分數，您也可以在此頁面匯出成績，
+      並依據系統格式新增計分項目，例如:期中考，再將檔案匯入，系統便會自動產
+      生新的項目欄位。若要更改個別項目的總分、類別、權重，則需至「作業」區
+      編輯。
   on_time_17ca5ad9: 準時
   on_time_percent_eebffe38: "準時：%{percent}"
   on_whitelist_will_only_be_the_domains_which_have_b_c4c3a861: "開 - 白名單只包含明確添加至此帳戶的網域。"
@@ -15506,7 +15574,7 @@ zh-Hant:
       組織和劃分課程。透過定義標準和條件來排序
       所選單元。
   organize_epub_by_content_type_default_is_by_module_6f44ae06: "按照内容進行 epub 排序 (默認按單元排序)。"
-  organize_your_course_content_c3c7ed03: 組織您的課程內容
+  organize_your_course_content_c3c7ed03: 建立您的課程內容
   originality_report_5d461681: 原創報告
   originality_reports_1e36b935: 原創檢測報告
   other_1c6d9c79: 其他
@@ -19629,7 +19697,10 @@ zh-Hant:
   share_important_information_with_all_users_in_your_f58337e0: |-
       與課程中的所有使用者共享重要信息。
       選擇在通知中獲取您自己的公告的副本。
-  share_important_updates_with_users_97ec11ad: 與使用者共享重要更新。
+  share_important_updates_with_users_97ec11ad: 告知課程成員重要訊息
+  share_important_information_with_all_users_in_your_fd2933e: |-
+      使用公告與課程中的所有成員共享重要訊息。若您發佈公告，系統會自動寄送
+      通知信至課程成員與您的信箱。
   share_the_following_pairing_code_with_an_observer__44f50f99: |-
       與觀察者共享以下配對代碼以允許
       他們與 %{name} 聯繫。此代碼將在七天後過期，
@@ -21241,6 +21312,10 @@ zh-Hant:
   teacher_s_fdefb2c: 教師
   teacher_view_b2047bc6: 教師視圖
   teachers_52e2423f: 教師
+  teachers_and_tas_can_build_pages_containing_conten_43345efb: |-
+      教師和助教可以使用頁面功能製作線上教材、統整學習資源，頁面能插入文字
+      、 多媒體、文件以及外部資源的連結。您也可以開放編輯頁面的權限，讓學生
+      一同製作線上教材與統整學習資源。
   teachers_over_time_1905603b: 教師超時
   teal_f729a294: 深青色
   tell_us_how_and_when_you_would_like_to_be_notified_de3ed2bc: "告訴我們，您希望在何時以何種方式收到 NTU COOL 事件通知。"
@@ -21366,6 +21441,12 @@ zh-Hant:
   the_course_state_manage_permission_allows_users_to_67e16652: "「課程狀態 - 管理」權限允許使用者發佈不包含單元的課程。要發佈/取消發佈單元內容，必須啟用「課程內容 - 新增 / 編輯 / 刪除」。"
   the_course_status_buttons_unpublished_and_publishe_e2dca595: 「課程狀態」按鈕（未發佈及已發佈）只會在收到學生的提交項目前顯示。如果有學生提交項目，則不能取消發佈課程。
   the_date_is_not_valid_b6285fb5: 日期無效。
+  the_discussion_function_allows_instructors_teachin_5606800d: |-
+      討論區是讓老師、助教、學生進行課程互動與討論的功能，學生能自行在討論
+      區貼文發問、分享心得，老師、助教與學生也可互相回覆發文，除了學生自行
+      發文，老師與助教也可以建立不同主題，要求學生回覆並對回覆內容做評分，
+      老師與助教也可在討論區放上優秀學生的作品，讓所有學生觀看，做為作業觀
+      摩。
   the_download_process_has_started_this_can_take_awh_7e616db1: |-
       下載程序已經開始。大課
       程可能需要一段時間。 你可
@@ -21493,6 +21574,12 @@ zh-Hant:
   there_are_no_unsaved_changes_9276e87c: 沒有未儲存的更改
   there_are_no_unsynced_changes_4e8f0838: 沒有未同步的變更
   there_are_no_unsynched_changes_d208547c: 沒有未同步的變更
+  there_are_two_main_functions_in_ntu_cool_quizzes_c_a426e0ae: |-
+      此功能可以讓老師出線上測驗，類型包括評分與不評分的測驗和調查。您可以
+      對測驗本身做設定，包括：作答次數與時間、顯示答案的方式、指派對象、開
+      放時間等。您也可以出不同類型的題目，例如：單選、是非、簡答題等，並針
+      對每個題目編輯選項、解答、配分。同時，您可以即時的看到學生填答情形，
+      並下載詳細的作答紀錄。
   there_is_currently_1_available_grader_758e4a21: "目前有 1 位可用評分員"
   there_was_a_failure_logging_out_at_your_idp_30070527: "在您的 IdP 登出時出現問題"
   there_was_a_problem_creating_the_teacher_notes_col_dd73456f: 建立教師筆記欄時出現問題。
@@ -21646,8 +21733,8 @@ zh-Hant:
   this_is_the_currently_chosen_grade_for_this_studen_86118eb6: 當前為該學生所選取的評分。
   this_is_the_default_email_address_f3c421fb: 這是預設的電郵地址
   this_is_the_new_feature_preview_ui_it_is_currently_9cb4b80e: "這是新的功能預覽 UI。目前是唯讀的。若要回復成舊 UI，請按一下按鈕。這樣將會停用「新的功能新增標記」並重新整理頁面。"
-  this_is_your_course_landing_page_33d445ec: 這是您的課程登入頁面
-  this_is_your_course_landing_page_f87a920d: 這是您的課程登入頁面！
+  this_is_your_course_landing_page_33d445ec: 這是此課程的首頁
+  this_is_your_course_landing_page_f87a920d: 這是此課程的頁頁！
   this_is_your_current_theme_4331709b: 其合適您的當前主題
   this_item_will_reappear_when_a_new_submission_is_m_fcccfc76: 當有新提交項目時，本項目將再次出現。
   this_item_will_reappear_when_there_are_new_grades__8f9e5383: 當有新分數供調整時，本項目將再次出現。
@@ -22272,6 +22359,7 @@ zh-Hant:
     quiz_regrade: 
       got_it: 好的，知道了
   track_individual_student_and_class_progress_c13cf2d1: 跟蹤個別學生和班級進展
+  track_students_assignment_submission_status_and_gr_5982cbf7: 檢視整體學生作業繳交狀況與分數
   treat_ungraded_as_0_d38c2b41: "將未評分視為 0"
   tree_browser: 
     folder_tree_instructions: 使用向上和向下方向鍵來瀏覽整個文件夾樹。按向右鍵展開文件夾，按向左鍵收起文件夾，按回車選定要選擇的項目。
@@ -22303,6 +22391,20 @@ zh-Hant:
     originality_report_visible_after_grading: 作業評分之後
     originality_report_visible_immediately: 立即
   turnitin_similarity_score_more_information_e2571be8: "Turnitin 相似性分數 – 更多資訊"
+  tutorial_video_add_members_6f32084c: '操作教學影片：新增成員'
+  tutorial_video_announcements_49df123a: '操作教學影片：公告'
+  tutorial_video_assign_assignments_3d77c279: '操作教學影片：指派作業'
+  tutorial_video_correct_assignments_c2541074: '操作教學影片：批改作業'
+  tutorial_video_create_groups_96511fa3: '操作教學影片：設定小組'
+  tutorial_video_create_quizzes_af5c81f0: '操作教學影片：出線上測驗題目'
+  tutorial_video_discussion_ca03c207: '操作教學影片：討論區'
+  tutorial_video_files_93da34dd: '操作教學影片：課程文件'
+  tutorial_video_manage_quiz_results_5bb5fec5: '操作教學影片：管理測驗結果'
+  tutorial_video_manage_scores_5660dbc1: '操作教學影片：成績管理'
+  tutorial_video_modules_b656180f: '操作教學影片：課程內容'
+  tutorial_video_publish_videos_de676eaa: '操作教學影片：影片上傳與發佈'
+  tutorial_video_send_emails_a4a1251d: '操作教學影片：寄信'
+  tutorial_video_syllabus_1e276b09: '操作教學影片：課程資訊'
   twitter_fcef6b54: Twitter
   txt_cae4e953: TXT
   type_a_few_letters_to_start_searching_3334657b: 輸入字母開始搜尋
@@ -22459,6 +22561,9 @@ zh-Hant:
   until_date_must_be_after_the_available_date_8670dfcd: 結束日期必須晚於可用的日期
   until_date_must_be_after_the_due_date_d961566c: 結束日期必須晚於截止日期
   until_fccd159a: 直到：
+  until_the_course_is_published_only_instructors_and_597a56c1: |-
+      在課程發佈之前，只有教師與助教才能查看課程網頁。我們已將課程預設為發
+      佈，學生進入課程後，即可看見網頁。
   untitled_16aa4f2b: 無標題
   untitled_assignment_59354b34: 無標題的作業
   unused_courses_title: 未使用的課程
@@ -22513,6 +22618,7 @@ zh-Hant:
   upload_file_fd2361b8: 上傳文件
   upload_files_submitted_with_assignments_to_a_speci_5b4d2df8: 將作業所需的繳交文件上傳至一個特殊的唯讀提交文件夾
   upload_gradebook_386a46c8: 上傳成績冊
+  upload_images_and_documents_for_students_to_downlo_db130568: 上傳與分類圖片、檔案，供學生下載
   upload_media_ce31135a: 上傳媒體
   upload_not_available_for_this_folder_8f8623c6: 此資料夾無法使用上載功能。
   upload_successful_ca47465f: 已成功上傳
@@ -22603,6 +22709,7 @@ zh-Hant:
   user_details_e9aef9e5: 使用者詳細資料
   user_does_not_have_permission_to_select_final_grad_47560e75: 使用者沒有權限選擇最終評分
   user_groups_query_error_bba6a6b7: 使用者群組查詢錯誤
+  user_guide_b449906f: 使用指南
   user_id_8256faeb: user_id
   user_id_bcace870: "使用者 ID"
   user_id_or_sis_id_sis_id_should_be_prepended_with__980ff02b: "使用者 ID 或 SIS ID（SIS ID 前應添加 sis_user_id: ）"
@@ -23223,9 +23330,9 @@ zh-Hant:
   when_hiding_grades_for_anonymous_assignments_grade_1b0ef682: 隱藏匿名作業的成績時，成績將對課程中的每個人隱藏。將重新套用匿名。
   when_people_visit_the_course_this_is_the_page_they_de94acc2: 當人們訪問課程時，這就是他們將看到的頁面。您可以將其設置為顯示一個活動流、課程單元清單、一個課程課程資訊或一個您描寫您自己的自定義頁面。預設顯示為課程活動串流。
   when_people_visit_your_course_this_is_the_first_pa_5093ec45: |-
-      當使用者訪問您的課程時，這是他們會看到的第一頁。
-      我們已將您的首頁設定為單元，但您可以選擇更改。
-  when_people_visit_your_course_this_is_the_first_pa_af36eac3: 當使用者訪問您的課程時，這是他們會看到的第一頁。我們已將您的首頁設定為單元，但您可以選擇更改。
+      當課程成員進入此門課程時，這是他們看到的第一個畫面。
+      我們已將您的首頁設定為課程內容，您可以自行更改首頁。
+  when_people_visit_your_course_this_is_the_first_pa_af36eac3: 當課程成員進入網頁時，這是他們看到的第一個畫面。我們已將您的首頁設定為課程內容，您可以自行更改首頁。
   when_posting_grades_for_anonymous_assignments_grad_b13f3ae6: 公佈匿名作業的成績時，成績將對課程中的每個人公佈。匿名將會移除。
   when_scope_enforcement_is_disabled_tokens_have_acc_6939182f: 當禁用範圍執行時，許可證可以訪問授權使用者可用的所有端點。
   when_selected_the_course_is_in_a_read_only_state_o_5aaeb0d: 選取後，課程在這些日期以外的時間會變為唯讀狀態。
@@ -23503,6 +23610,10 @@ zh-Hant:
   you_can_try_to_log_in_again_2b23ef0f: "您可以嘗試 *稍後登入*。"
   you_can_update_some_of_this_user_s_information_but_8e99a045: 您可以更新此使用者的一些資訊，但如果他們選擇進行更改，他們可以將其改回去。
   you_can_use_a_single_16x16_32x32_48x48_ico_file_85da88b5: "您可以使用單一的16x16、32x32、48x48 圖標文檔。"
+  you_can_use_the_editor_to_build_or_paste_a_table_a_2d9ea1a2: |-
+      您可使用編輯器建立或貼上一個課程資訊表格，告知學生課程目標、進度、評
+      分方式等資訊。另外，課程中所有的計分項目會自動在此頁面產生一個列表，
+      您無法編輯該列表。
   you_can_view_your_grades_based_on_what_if_scores_s_a1aeae72: 你可以根據『成績試算』的分數查看成績，讓你了解分數會受即將發放的成績或重新提交的作業而影響。你可以測試已有分數的作業，或尚未評分的作業。
   you_cannot_assign_sections_to_a_group_discussion_t_fec73e05: 您不能將分班分配到群組討論主題
   you_cannot_assign_to_a_group_outside_of_the_assign_7869eb3b: 您無法為作業的小組類別之外的小組指派成員
