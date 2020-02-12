@@ -20,6 +20,7 @@ import React from 'react'
 import I18n from 'i18n!new_user_tutorial'
 import {Text} from '@instructure/ui-elements'
 import TutorialTrayContent from './TutorialTrayContent'
+import UserGuideContent from './UserGuideContent'
 
 const AnnouncementsTray = () => (
   <TutorialTrayContent
@@ -29,8 +30,26 @@ const AnnouncementsTray = () => (
   >
     <Text as="p">
       {I18n.t(`Share important information with all users in your course.
-          Choose to get a copy of your own announcements in Notifications.`)}
+          When the announcement was posted, NTU COOL will automatically send a notification to users' emails.`)}
     </Text>
+    <UserGuideContent
+      items={[
+        {
+          title: I18n.t('How to post an announcement'),
+          url: I18n.t(
+            'how_to_post_an_announcement_url',
+            'https://drive.google.com/file/d/147ARqRvY3xEzLAT490kiF2dCqsNFOh_y/view?usp=sharing'
+          )
+        },
+        {
+          title: I18n.t('Tutorial Video: Announcements'),
+          url: I18n.t(
+            'tutorial_video_announcements_url',
+            'https://www.youtube.com/watch?v=tupfmCiH558&list=PLKjqFgaBNOo8fv5ZWEIUSlSqzXDVC2SV_&index=6'
+          )
+        }
+      ]}
+    />
   </TutorialTrayContent>
 )
 

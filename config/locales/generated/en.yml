@@ -368,9 +368,6 @@ en:
 
                     Thank you,
                     Canvas Support
-    angel:
-      failed_import_link: Failed import link
-      failed_import_link_body: This link referenced an Angel feature that couldn't be linked to by Canvas or that was left out of the export.
     api:
       attachments:
         only_one_folder: Can't set folder path and folder id
@@ -1160,13 +1157,6 @@ en:
         default_user_storage_quota: User Quota
         default_group_storage_quota: Group Quota
         update_button: Update
-      account_quotas:
-        site_admin_quotas: Site Admin Quotas
-        student_quota: Student Quota
-        file_quota: File Quota
-        gigabytes: gigabytes
-        media_quota: Media Quota
-        update: Update
     show:
       courses_crumb: Courses
       title: Courses In This Account
@@ -1243,13 +1233,6 @@ en:
           end:
             parameters:
               header: 'End at:'
-      custom_reports:
-        start:
-          parameters:
-            header: 'Start at:'
-        end:
-          parameters:
-            header: 'End at:'
     grade_export_csv_description:
       account_reports:
         default:
@@ -1408,297 +1391,6 @@ en:
         default:
           zero_activity:
             text: This report shows all the students enrolled in any courses in a given term. Resulting csv file will have one row per user enrollment that have not visited the course since the date.
-    assignment_scheduling_csv_parameters:
-      account_reports:
-        newark:
-          assignment_count:
-            field: "# Assignments:"
-          assignment_groups:
-            label: 'Assignment Groups To Include:'
-          assignments:
-            check_box: Assignments
-          tests:
-            check_box: Tests
-          projects:
-            check_box: Projects
-          papers:
-            check_box: Papers
-          reports:
-            check_box: Reports
-          major:
-            check_box: Major
-    ccp_zero_activity_csv_parameters:
-      account_reports:
-        ccp:
-          filter_online:
-            check_box: Online classes only
-    course_selector_parameters:
-      account_reports:
-        linn_benton:
-          course_ids:
-            text: 'course_ids:'
-    custom_grade_export_csv_parameters:
-      account_reports:
-        ross:
-          parameters:
-            note: Courses with muted assignments may not accurately reflect scores in this report.
-    custom_outcomes_csv_parameters:
-      account_reports:
-        edison:
-          outcome:
-            text: 'outcome_id:'
-    embry_riddle_activity_report_csv_parameters:
-      account_reports:
-        embry_riddle:
-          outcome:
-            text: 'Course SIS Pattern(s) (Comma separated list):'
-    engagement_report_csv_parameters:
-      account_reports:
-        bryan_engagement:
-          enrollment_term_ids:
-            field: Enrollment Term Ids
-    excelsior_activity_report_csv_parameters:
-      account_reports:
-        excelsior:
-          outcome:
-            text: 'Section Pattern:'
-    learning_outcome_assignment_type_csv_parameters:
-      account_reports:
-        samuel_merrit_university:
-          course:
-            text: Course ID
-            sis:
-              text: Course SIS ID
-          parameters:
-            note1: Course ID can be left blank to run the report for all courses in the term.
-    mississippi_sis_csv_parameters:
-      account_reports:
-        default:
-          users:
-            check_box: Users CSV
-          sections:
-            check_box: Sections CSV
-          enrollments:
-            check_box: Enrollments CSV
-    new_excelsior_activity_report_csv_parameters:
-      account_reports:
-        excelsior:
-          outcome:
-            text: 'Section Pattern:'
-    ph_student_grades_csv_parameters:
-      account_reports:
-        penn_harris:
-          parameters:
-            note: Courses with muted assignments may not accurately reflect scores in this report.
-    proserve_all_versions_submissions_csv_parameters:
-      account_reports:
-        proserv:
-          use_serialized_submission:
-            check_box: Use serialized submission timestamp
-    safety_drill_csv_parameters:
-      account_reports:
-        newark:
-          assignment_groups:
-            label: 'Assignment Groups To Include:'
-          assignments:
-            check_box: Assignments
-          tests:
-            check_box: Tests
-          projects:
-            check_box: Projects
-          papers:
-            check_box: Papers
-          reports:
-            check_box: Reports
-          major:
-            check_box: Major
-    scantron_quiz_csv_parameters:
-      account_reports:
-        edison:
-          quiz_id:
-            field: Quiz id
-          section_id:
-            field: Section ID
-    single_course_ag_selector_parameters:
-      account_reports:
-        linn_benton:
-          course_id:
-            text: 'Course Id:'
-          assignment_group_id:
-            text: 'Assignment Group Id:'
-    student_assessment_scores_csv_parameters:
-      account_reports:
-        orbis:
-          parameters:
-            note: Courses with muted assignments may not accurately reflect scores in this report.
-    student_assignment_grades_csv_parameters:
-      account_reports:
-        auburn:
-          pseudonym_ids:
-            field: Login IDs
-    student_grades_csv_parameters:
-      account_reports:
-        auburn:
-          pseudonym_ids:
-            field: Pseudonym IDs
-    student_progress_custom_report_csv_parameters:
-      account_reports:
-        pearson:
-          outcome:
-            text: 'Course SIS ID:'
-    tempe_grade_export_csv_parameters:
-      account_reports:
-        tempe:
-          course:
-            text: Course ID
-          parameters:
-            note1: Course ID can be left blank to run the report for all courses in the term.
-            note2: Courses with muted assignments may not accurately reflect scores in this report.
-    user_access_csv_parameters:
-      account_reports:
-        usu:
-          enrollment_type:
-            header: Enrollment Type
-      all: All Enrollments
-      students: Student Enrollments
-      teachers: Teacher Enrollments
-      ta: Ta Enrollments
-      observer: Observer Enrollments
-      designer: Designer Enrollments
-    user_inactivity_csv_parameters:
-      account_reports:
-        webster:
-          login:
-            day_drop: 'Minimum course items visited:'
-    adtalem:
-      attendance_extract:
-        parameters:
-          custom_reports:
-            start:
-              parameters:
-                header: 'Activity Date:'
-      faculty_missing_grades:
-        parameters:
-          custom_reports:
-            start:
-              parameters:
-                header: 'Start at:'
-            end:
-              parameters:
-                header: 'End at:'
-      no_submissions:
-        parameters:
-          custom_reports:
-            start:
-              parameters:
-                header: 'Start at:'
-            end:
-              parameters:
-                header: 'End at:'
-      submissions_detail:
-        parameters:
-          custom_reports:
-            start:
-              parameters:
-                header: 'Start at:'
-            end:
-              parameters:
-                header: 'End at:'
-    devry_u:
-      attendance_extract:
-        parameters:
-          custom_reports:
-            start:
-              parameters:
-                header: 'Activity Date:'
-      faculty_missing_grades:
-        parameters:
-          custom_reports:
-            start:
-              parameters:
-                header: 'Start at:'
-            end:
-              parameters:
-                header: 'End at:'
-      no_submissions:
-        parameters:
-          custom_reports:
-            start:
-              parameters:
-                header: 'Start at:'
-            end:
-              parameters:
-                header: 'End at:'
-      submissions_detail:
-        parameters:
-          custom_reports:
-            start:
-              parameters:
-                header: 'Start at:'
-            end:
-              parameters:
-                header: 'End at:'
-    ilumno:
-      grade_export:
-        course_date_picker_parameter:
-          Optional: Optional
-          settings: 'settings:'
-    proservices:
-      provisioning:
-        parameters:
-          account_reports:
-            default:
-              users:
-                check_box: Users CSV
-              accounts:
-                check_box: Accounts CSV
-              terms:
-                check_box: Terms CSV
-              courses:
-                check_box: Courses CSV
-              sections:
-                check_box: Sections CSV
-              enrollments:
-                check_box: Enrollments CSV
-              groups:
-                check_box: Groups CSV
-              group_membership:
-                login:
-                  check_box: Group Membership CSV
-              group_categories:
-                login:
-                  check_box: Group Categories CSV
-              xlist:
-                check_box: X list CSV
-            sis_default:
-              parameters:
-                note: "*Term settings only impact Courses, Sections, Enrollments, and X list CSV files."
-    additional_settings:
-      account_status: Account Status
-      new_account_domain_title: New Account Domain
-      add_new_domain: Add New Domain
-      labels:
-        consortium_parent_account: Consortium parent account
-        consortium_can_create_own_accounts: Consortium admins can create root accounts
-        shard_per_account: Create a new shard for every new root account
-        consortium_autocreate_web_of_trust: Automatically create a web of trust when creating new accounts
-        consortium_autocreate_reverse_trust: Automatically have the parent account trust new root accounts (the reverse is always true)
-    additional_settings_right_side:
-      titles:
-        unsuspend: Unsuspend Account
-      links:
-        unsuspend: Unsuspend Account
-        suspend: Suspend Account
-      title:
-        suspend: Suspend Account
-    consortium_user_search:
-      find_user_by: Find a User by Login/Email
-      find_user_by_label: Login/Email
-    consortium_users:
-      user_search_label: User Search
-    root_accounts:
-      labels:
-        name: Account Name
     add_course_dialog_title: Add a New Course
     adding_course_message: Adding Course...
     add_course_button: Add Course
@@ -1726,8 +1418,6 @@ en:
     find_not_found: Could not find a %{type} with that ID
     default_account_quotas_updated: Default account quotas updated
     default_account_quotas_not_updated: Default account quotas were not updated
-    account_quotas_updated: Account quotas updated
-    account_quotas_not_updated: Account quotas were not updated
     users_list:
       name: Name
       login_name_or_sis_id: Login / SIS ID
@@ -1762,10 +1452,6 @@ en:
       first_teacher_with_email: This course is now claimed, and you've been registered as its first teacher. You should receive an email shortly to complete the registration process.
     warnings:
       please_log_in: For security purposes, please enter your password to continue
-      details:
-        suspended: This institution's Canvas account has been suspended. Only Account Administrators may log in to correct any problems.
-      titles:
-        suspended: Institution Suspended
     errors:
       unauthorized:
         unpublished: This course has not been published by the instructor yet.
@@ -2504,7 +2190,7 @@ en:
 
           Which is you?
         none_of_these: None of these, I'm a new user
-        account_needed: You've been invited to join **%{course}**. To accept this request you need a Canvas account. Click the link below to create a Canvas account.
+        account_needed: You've been invited to join **%{course}**. To accept this request you need a NTU COOL account. Click the link below to create a NTU COOL account.
         register_with_course: In order to finish signing you up for the course **%{course}**, we'll need a little more information.
         register: In order to set up your account, we'll need a little more information.
       buttons:
@@ -2517,7 +2203,7 @@ en:
         continue: Continue
         new_account: 'No'
         add_email_address: Yes, Add Email Address
-        have_account: I Have a Canvas Account
+        have_account: I'm from NTU or already have a NTU COOL account
         create_account: Create My Account
         register: Register
       labels:
@@ -2638,9 +2324,6 @@ en:
     no_content_selected: You have not selected any content to import.
     file_required: You must select a file to import content from
     file_too_large: Your migration cannot exceed %{file_size}
-    school_required: You must select a school.
-    course_list_error: Could not retrieve courses. Are you connected to the internet?
-    select_course: Select Course
     canvas_export:
       content: Content
       options: Options
@@ -2737,29 +2420,6 @@ en:
       select_content_checkbox:
         select_all_content: All content
         select_specific_content: Select specific content
-    angel_exporter:
-      content: Content
-      options: Options
-    blackboard_export:
-      content: Content
-      options: Options
-    d2_l_export:
-      content: Content
-      options: Options
-    web_ct:
-      select_school: Select School
-      username: Username
-      password: Password
-      cancel: Cancel
-      get_courses: Get Courses
-    web_ct_course_list:
-      course_list: Course(s)
-      options: Options
-      skip_all_files: Do not download files from course
-      no_files_help_label: More Information for 'Do not download files' option
-      no_files_help_title_icon: More Information for 'Do not download files' option
-      no_files_help_title: '"More Information for not ''Do not download files'' option"'
-      no_files_help_text: Downloading files from WebCT courses can take a long time, and may cause the migration process to fail. Instead, you can manually copy the files and then choose this option to migrate the rest of the content.
   file_upload_file_url_or_content_export_id_is_requi_23c1fe68: File upload, file_url, or content_export_id is required
   context:
     media_objects_not_configured: Media Objects not configured
@@ -3099,10 +2759,12 @@ en:
       no_subject: No subject
       reply: Reply
       more_options: More options
+      message_actions: Message actions
       reply_all: Reply all
       forward: Forward
       delete: Delete
     message_item:
+      reply: Reply
       more_options: More options
       reply_all: Reply all
       forward: Forward
@@ -4496,20 +4158,9 @@ en:
       settings_updated: Plugin settings successfully updated.
     academic_benchmark_importer:
       description: This enables importing Academic Benchmark standards into Canvas.
-    canvas_webhooks:
-      name: Canvas Webhooks
-      description: Webhooks plugin for Canvas
-    catalog_provisioner:
-      name: Catalog Provisioner
-      description: Catalog Account Provisioner for Canvas
-    pv4:
-      description: Page Views 4
     respondus_soap_endpoint:
       name: Respondus SOAP Endpoint
       description: SOAP Endpoint for Respondus QTI uploads
-    uuid_provisioner:
-      name: UUID provisioner
-      description: This enables exporting UUIDs into Quiz.Next services.
     clever:
       description: Clever Login
     facebook:
@@ -4831,71 +4482,9 @@ en:
       labels:
         disabled: Disable this Plugin
       back_to_list: Return to plugins list
-    banner_grade_exchange_settings:
-      labels:
-        sis_source_identifier: Name of your Banner instance
-        canvas_source_identifier: Name of your Canvas instance
-    med_cornell_export:
-      labels:
-        username: Username for authentication
-        password: Password for authentication
-    zendesk_settings:
-      labels:
-        api_url: API URL
-        username: Username
-        password: Password
-        become_user_id_uri: Become User URL
-        http_env: HTTP ENV
-        message_backtrace: Backtrace
-        message_type: Message Type
-        user_id: User ID
-        url: URL
-        request_context_id: Request Context ID
-        account_id: Account ID
-        user_severity: User Severity
-        user_roles: User Roles
-        account_domain_value: Account Domain Value
-    ims_es_importer_settings:
-      labels:
-        email_preference: Email preference
-        default_email_domain: Default email domain
-        section_name_selection: Section name selection
-        map_sections_to_courses: Map IMS sections to Canvas Courses
-        course_short_name_selection: Course short name selection
-        course_long_name_selection: Course long name selection
-        course_sourcedid_name_prefix: Course "sourcedid" ignored prefix
-        lms_delivery_name: LMS Delivery Name
-        term_start_days_adjustment: Term start days adjustment
-        term_end_days_adjustment: Term end days adjustment
-        section_start_days_adjustment: Section start days adjustment
-        section_end_days_adjustment: Section end days adjustment
-        default_enrollment_status: Status for deleted enrollments
-    webct_scraper_settings:
-      description: |-
-        If the institution does not use WebCT's "Learning Modules" (including schools who adopted WebCT
-          prior to version 4.0, when modules were made available), course migrations can be improved by importing the "Course Content"
-          as Canvas Modules instead of the "Learning Modules". This page allows one to set the default behavior of the WebCT migrator
-          with respect to content modules. It is important to remember that, while individual course migrations retain the ability
-          to choose, the bulk migrator always utilizes the value configured here and cannot be changed per migration.
-      labels:
-        allow_outline_selection: Display option to use Course Content as Modules in the migration wizard
-        folders_as_outline: Use WebCT "Course Content" for modules as the default
-    pv4_settings:
-      labels:
-        page_view_method: Page View Method
-    settings_header:
-      select_account_prompt: "(Select Account)"
-      prompt_change_for_all_line1: This changes the settings for ALL ACCOUNTS!
-      prompt_change_for_all_line2: Are you absolutely certain you want to do this?
-      prompt_delete_account_setting: Are you sure you want to delete the Account Config?
     qti_converter_settings:
       labels:
         enabled: Enabled
-    lockdown_browser:
-      labels:
-        plugin_enabled: Enabled
-        use_lti_tool: Use LTI Tool to Manage LockDown Browser Quiz Settings (Required for Monitor)
-        download_url: LockDown Browser Download URL
     buttons:
       saving: Saving...
   polling:
@@ -6734,10 +6323,6 @@ en:
     tab_settings: Settings
     manually_created_courses: Manually-Created Courses
     default_term_name: Default Term
-    feedback_coach: Ask the Community
-    feedback_coach_sub: Get help from a Canvas expert
-    feedback_feature_request_sub: Have an idea to improve Canvas?
-    tab_root_accounts: Root Accounts
   this_assignment_submission_is_my_own_original_work_e820ce4b: This assignment submission is my own, original work
   people_b4ebb13c: People
   terms_of_service_attributes_not_valid_f3f9fca9: Terms of Service attributes not valid
@@ -6748,12 +6333,6 @@ en:
     canvas_help_sub: Find answers to common questions
     report_problem: Report a Problem
     report_problem_sub: If Canvas misbehaves, tell us about it
-    training_services_portal: Training Services Portal
-    training_services_portal_sub: Access Canvas training videos and courses
-    stuff: Stuff
-    things: Things
-    hi: Hi
-    hello: Hello
     Help: Help
     Back: Back
     which_course_is_this_question_about: Which course is this question about?
@@ -7302,10 +6881,6 @@ en:
     quiz_type: Quiz
     rubric_type: Rubric
     wiki_page_type: Wiki Page
-    ecollege:
-      course_not_found: The ECollege course wasn't found.
-    webct:
-      course_not_found: The Blackboard course wasn't found.
   this_package_includes_the_question_type_pattern_ma_ce3dadc6: This package includes the question type, Pattern Match, which is not compatible with Canvas. We have converted the question type to Fill in the Blank
   the_imported_question_text_for_this_question_was_t_83b4e6fb: The imported question text for this question was too long.
   the_question_text_for_the_question_question_name_w_3a68a2c7: The question text for the question "%{question_name}" was too long.
@@ -7751,6 +7326,7 @@ en:
       designers: Designers
       observer: Observer
       observers: Observers
+      auditor: Auditor
     permissions:
       manage_account_memberships: Add/remove other admins for the account
       manage_account_settings: Manage account-level settings
@@ -7807,11 +7383,6 @@ en:
       view_group_pages: View the group pages of all student groups
       view_quiz_answer_audits: View the answer matrix in Quiz Submission Logs
       view_analytics: Analytics - view pages
-      manage_canvasnet_courses: Manage Canvas Network courses
-      manage_demos: Manage demos
-      create_accounts: Create new root accounts
-      manage_links: Manage role and trust links
-      suspend_accounts: Suspend accounts
     permission:
       read_sis: Read SIS data
     tooltips:
@@ -8084,7 +7655,6 @@ en:
         user_menu: User Menu
     canvas_footer:
       by_instructure: By Instructure
-      open_source_learning_management_system: Open Source LMS
     current_enrollment:
       nonfavorited_tooltip: Click to add to the courses menu.
       favorited_tooltip: Click to remove from the courses menu.
@@ -8454,10 +8024,6 @@ en:
       feedback: If you're pretty sure this url was supposed to work, please tell us how you got here by clicking the link below, and we'll look into it.
       links:
         feedback: Tell us what you were looking for
-    footer_links:
-      privacy_policy: Privacy Policy
-      facebook: Facebook
-      twitter: Twitter
     error_form:
       message_sent: Thank you for your help!  We'll get right on this.
       message_failed: Report didn't send.  Please try again.
@@ -8599,8 +8165,6 @@ en:
     report_header_token_last_used: last used
     report_header_token_dev_key_id: dev key id
     report_header_token_dev_key_name: dev key name
-    report_header_restrict_section_dates: restrict_enrollments_to_section_dates
-    report_header_restrict_course_dates: restrict_enrollments_to_course_dates
     report_header_student_name: student name
     report_header_student_id: student id
     report_header_student_sis: student sis
@@ -8759,211 +8323,18 @@ en:
       page_title: 'Analytics: %{course} -- %{student}'
   analytics_c94ba601: Analytics
   view_course_analytics_eefe6b2: View Course Analytics
-  service_cloud_ticketing_connector_889e1b7b: Service Cloud Ticketing Connector
-  get_your_users_error_reports_posted_to_salesforce__76f57839: Get your users error reports posted to Salesforce Service Cloud
-  salesforce_ticketing_webtocase_connector_80f75716: Salesforce Ticketing WebToCase Connector
-  get_your_users_error_reports_posted_to_salesforce_dfb1a6c2: Get your users error reports posted to Salesforce
-  you_have_reached_the_maximum_webhooks_per_user_lim_2af4b256: You have reached the maximum webhooks per user limit (%{max})
-  you_have_reached_the_maximum_webhooks_per_account__ae9a7f83: You have reached the maximum webhooks per account limit (%{max})
-  permissions:
-    manage_webhooks: Webhooks - manage
-    provision_catalog: Provision a Catalog
-  zendesk:
-    engine:
-      plugin_name: Zendesk
-  catalog_already_enabled_56478a3c: Catalog already enabled
-  catalog_users_already_exist_2894b8c4: Catalog users already exist
-  host_is_unreachable_or_not_pointing_to_catalog_fb3fc082: Host is unreachable or not pointing to Catalog
-  failed_to_create_webhook_b766cf5c: Failed to create webhook.
-  uh_oh_contact_your_friendly_catalog_developer_erro_861aaf3d: 'Uh oh! Contact your friendly Catalog Developer. Error message: %{message}'
-  user_id_user_id_69a9e865: 'User ID: %{user_id}'
-  student_id_a61d78c7: Student Id
-  student_sis_6721040e: Student Sis
-  account_name_bff54ed5: Account Name
-  account_id_f6e26867: Account Id
-  account_sis_id_5da8fd2d: Account Sis Id
-  course_8a63b4a3: Course
-  course_id_b0bc82d4: Course Id
-  course_sis_df8b379: Course Sis
-  section_c7f66a0d: Section
-  section_id_b5aad4a7: Section Id
-  section_sis_2a80d2fa: Section Sis
-  term_e1c1d390: Term
-  term_id_2e802ed1: Term Id
-  term_sis_bfe0ae01: Term Sis
-  instructor_name_36bc0f39: Instructor Name
-  instructor_id_ed9c0d8b: Instructor Id
-  instructor_sis_id_899dd697: Instructor Sis Id
-  current_score_6c81792: Current Score
-  current_letter_grade_50f4ebb1: Current Letter Grade
-  final_score_26bcfc20: Final Score
-  final_letter_grade_80dccec1: Final Letter Grade
-  enrollment_state_ac62019b: Enrollment State
-  enrollment_role_f5d985a7: Enrollment Role
-  student_submissions_910da1b3: Student Submissions
-  the_term_to_report_on_5f586e7c: The term to report on
-  the_beginning_date_for_submissions_9d890f3b: The beginning date for submissions
-  the_end_date_for_submissions_66168efa: The end date for submissions
-  include_unsubmitted_and_deleted_submissions_101225c7: Include unsubmitted and deleted submissions
-  include_unpublished_assignments_83ebbaec: Include Unpublished Assignments
-  teacher_engagement_report_ec03613d: Teacher Engagement Report
-  student_engagement_report_bf958028: Student Engagement Report
-  either_course_or_student_c42bb055: Either 'course' or 'student'
-  the_course_to_report_on_defaults_to_canvas_id_unle_9e1d8f79: The course to report on; defaults to Canvas id unless specified as SIS in course_id_type
-  set_value_to_sis_if_using_sis_id_default_search_is_ab3d05f2: set value to 'SIS' if using sis id, default search is Canvas id
-  the_student_to_report_on_defaults_to_canvas_id_unl_9d76ffdf: The student to report on; defaults to Canvas id unless specified as SIS in student_id_type
-  the_term_to_report_on_needed_for_report_type_stude_623bffbc: The term to report on (needed for report_type student only)
-  ilumno_grade_export_251bc4b5: Ilumno Grade Export
-  the_beginning_date_for_the_courses_to_report_on_9c224177: The beginning date for the courses to report on
-  the_beginning_date_range_for_the_courses_to_report_82353138: The beginning date range for the courses to report on
-  the_ending_date_for_the_courses_to_report_on_1c417d5e: The ending date for the courses to report on
-  the_ending_date_range_for_the_courses_to_report_on_99e0ea8f: The ending date range for the courses to report on
-  lbs_report_header_lbs_no: LBSNo
-  lbs_report_header_student_name: Student Name
-  lbs_report_header_program_code: Program Code
-  lbs_report_header_course_code: Course Code
-  lbs_report_header_final_score: Final Score
-  lbs_report_header_scores: Scores
-  lbs_report_notes: Notes
-  orbis_report_header_canvas_course_id: course id
-  orbis_report_header_course_sis_id: course sis id
-  orbis_report_header_course_name: course name
-  orbis_report_header_assignment_id: assignment id
-  orbis_report_header_assignment_title: assignment title
-  orbis_report_header_student_sis_id: user sis
-  orbis_report_header_student_canvas_id: canvas user id
-  orbis_report_header_student_name: student name
-  orbis_report_header_submission_score: submission score
-  orbis_report_header_points_possible: points possible
-  orbis_report_header_date_submitted: date submitted
-  created_by_sis_b590894c: Created by SIS;
-  always_include_dates_74b3721d: Always Include Dates;
-  canvas_demo_7a005cf3: Canvas Demo
-  time_left_in_your_instant_trial_extend_now_afb9bd2f: "%{time} left in your Instant Trial *(extend now)*"
-  time_left_in_your_instant_trial_5dd0392b: "%{time} left in your Instant Trial"
-  teacher_view_b2047bc6: Teacher View
-  student_view_ac9b672f: Student View
-  admin_view_a2f4cd5c: Admin View
-  rce_contents_replace_display_name: RCE Contents Replace
-  rce_contents_replace_description: Enable RCE full text replace from LTI's
-  submit_a_feature_idea_2d4baa3d: Submit a Feature Idea
-  this_canvas_installation_is_only_for_testing_and_w_12e52370: This Canvas installation is only for testing and *will reset every month.*
-  this_canvas_installation_is_only_for_testing_and_w_17ce8bc2:
-    one: This Canvas installation is only for testing and *will reset every week.*
-    other: This Canvas installation is only for testing and *will reset every %{count} weeks.*
-  warnings:
-    test_install:
-      periodic_message: This Canvas installation is only for testing and *will reset periodically.*
-      title: Canvas Test Installation
-  students_are_not_allowed_to_access_test_installati_11b9078: Students are not allowed to access test installations.
-  this_environment_is_currently_being_updated_with_a_235f1875: This environment is currently being updated with a copy of the latest production data. Please check back later.
-  instructure_legacy_a2cacda7: Instructure Legacy
-  instructure_default_73317bb1: Instructure Default
-  internet2_254c6ca6: Internet2
-  bulk_course_migrations:
-    only_one_bulk_migration: Only one bulk course migration can be run at a time.
-    bulk_course_migration:
-      migration_finished_on: Finished on %{date}
-      migration_cancelled_on: Cancelled on %{date}
-      migration_failed_on: Failed on %{date}
-      see_results: See results
-      migration_waiting: The bulk migration is waiting to run.
-      migration_queueing: The individual course migrations are being queued to run.
-      migration_started_at: Bulk migration started at %{time}
-      finished: Finished
-      failed: Failed
-      waiting_to_export: Waiting to export from Blackboard
-      waiting_to_import: Waiting to import into Canvas
-      exporting: Exporting from Blackboard
-      importing: Importing into Canvas
-      show_warnings: Show warnings
-    index:
-      page_title: Bulk Course Migration
-      credential_description: This tool will help you migrate multiple courses at the same time from a Blackboard Vista/CE system. Add a set of credentials for your Blackboard system then add Canvas course identifiers to the provided CSV template to migrate your courses.
-      login_credentials: Blackboard login credentials
-      school: School
-      user_name: User Name
-      available_courses: Available Courses
-      csv_template: CSV Template
-      buttons:
-        add_credentials: Add Credentials
-        migrate_courses: Migrate Courses
-      labels:
-        school: School
-        user_name: User Name
-        password: Password
-        only_use_one: Only use one of these two columns
-      school_not_supported: Please have your administrator contact Instructure to help get your school supported.
-      upload_migration_csv: Upload a Migration CSV
-      bulk_description: 'These are the headers expected in the CSV:'
-      column_name: Column Name
-      description: Description
-      lcid_description: The lcid of the course in the Blackboard system.
-      user_name_description: The user name of the user that has teacher/designer access to the course for the row. This must match one of the user name's listed in the Blackboard login credentials above.
-      course_id_description: The canvas id of the course to import into.
-      sis_id_description: The SIS ID of the canvas course to import into.
-      csv_description: 'Any other columns can be added but they will be ignored. Here is an example of a simple CSV for 3 courses in the account for a user name of "greg":'
-      errors:
-        choose_file: You must choose a .csv file to upload
-      current_migration_batch: Current Migration Batch
-      previous_migration_batches: Previous Migration Batches
-  webct_credentials:
-    credential_not_found: Credential not found.
-  bulk_course_migration:
-    queue_error: There was an error while queueing the migrations.
-    no_credentials_found: No credentials were found for the user name %{user_name}
-    no_credentials_given: No user name was given for the course %{course_identifier}
-    no_course_found: No course was found with %{id_type} of %{id}
-    no_course_id_given: No Canvas course was identified for bb_lcid %{id}
-    no_lcid_found: No bb_lcid was specified for a row
-    export_failed_not_found: The course with bb_lcid %{id} could not be found in Blackboard with user %{user_name}
-    export_failed: There was an error exporting the course with bb_lcid %{id} from Blackboard
-    export_failed_with_id: There was an error importing the course with bb_lcid %{id} into Canvas
-    export_failed_no_id: There was an error importing a course
-  angel:
-    file_import_fail: Could not import file "%{file_path}"
-    file_copy_fail: Could not copy folder "%{base_path}"
-    file_copy_fail_message: Could not rename directory to path "%{path}"
-  blackboard:
-    no_manifest: This Blackboard .zip has no imsmanifest.xml file in the root directory.
-  no_marks_5e7d2b59: No Marks
-  formula_many_warning_title: There are %{count} Formula questions in this bank that will need to have their possible answers regenerated
-  formula_warning_title: Possible answers will need to be regenerated for Formula question
-  webct_name: Blackboard Vista/CE (WebCT)
-  webct_display: Blackboard Vista/CE (WebCT)
-  webct_file_description: Blackboard Vista/CE, WebCT 6+ Course
-  ange_name: Angel Converter
-  angel_display: ANGEL Learning
-  angel_file_description: Angel export .zip format
-  bb_name: Blackboard Converter
-  bb_display: Blackboard Learn
-  bb_file_description: Blackboard 6/7/8/9 export .zip file
-  d2l_name: D2L Converter
-  d2l_display: Desire2Learn
-  d2l_file_description: D2L export .zip format
-  ecollege_name: Ecollege Converter
-  ecollege_file_description: Ecollege
   moodle_dropdown_many_warning_title: There are %{count} Multiple Dropdowns questions in this bank that may have been imported incorrectly
   moodle_dropdown_warning_title: Multiple Dropdowns question may have been imported incorrectly
   moodle_formula_many_warning_title: There are %{count} Formula questions in this bank that will need to have their possible answers regenerated
   moodle_formula_warning_title: Possible answers will need to be regenerated for Formula question
   m2c_name: Moodle Importer
   m2c_file_description: Moodle 1.9/2.x
-  search_term_is_mututally_exclusive_with_name_and_d_28406c32: search_term is mututally exclusive with name and domain
-  name_is_required_ba379522: Name is required
-  domain_is_required_1d4c8b25: Domain is required
-  account_creation_still_in_progress_ac0e0a18: Account creation still in progress
-  user_search_results_f5445b8b: User Search Results
-  unable_to_find_clever_district_district_id_61deb1cb: Unable to find Clever District %{district_id}
-  multiple_canvas_accounts_are_associated_with_cleve_c1739660: Multiple Canvas accounts are associated with Clever District %{district_id}
-  salesforce_account_id_eb5c78ad: Salesforce Account Id
   no_migration_file: File required for content migration.
   qti_img_matching_question: Imported matching question contains images on both sides, which is unsupported
   qti_img_matching_question_distractors: Imported matching question contains images inside the choices, and could not be fixed because it also contains distractors
   qti_name: QTI Converter
   qti_display: QTI
   qti_file_description: QTI .zip file
-  respondus_lockdown_browser_support_413352eb: Respondus LockDown Browser support
   google_drive_7cb003c9: Google Drive
   google_docs_preview_9f41b23c: Google Docs Preview
   skype_18850ba7: Skype
@@ -8999,7 +8370,6 @@ en:
     assessment_request_title: Peer Review for %{title}
   oauth_2_eb9d97: OAuth 2
   api_token_scopes_67b11c16: API Token Scopes
-  account_domain_lookups_f9d1147e: Account Domain Lookups
   account_notifications_f3b7f01f: Account Notifications
   account_reports_eeb41194: Account Reports
   accounts_752dc365: Accounts
@@ -10592,70 +9962,6 @@ en:
     index:
       titles:
         messages: Messages for %{name}
-    course_already_started:
-      email:
-        course_already_started: Your course has already started
-        body: |-
-          Hi %{user},
-
-          %{course}, your course on Canvas Network, started a couple days ago, and we noticed you haven't logged in yet. We just wanted to send you one last reminder in case you forgot.
-
-          To log in, go to %{site} and enter your username and password. If you haven't set a password yet, you can set one here: %{password_url}
-
-          If you simply can't make this particular course, feel free to browse our course catalog at %{site} to find something else that inspires you. New courses are being added all the time!
-
-          We hope to see you soon,
-
-          Canvas Network
-    course_required_materials:
-      email:
-        course_required_materials: Materials and instructions for %{course}
-        body: |-
-          Hi %{user},
-
-          Good news! %{course}, the course you enrolled in on Canvas Network, will be starting soon.
-
-          To help make sure you get the most from your course, you should check for any special instructions or course materials listed by the instructor.  You can look for this on the course details page on Canvas Network, or just click the link below.
-
-          %{url}
-
-          Keep learning,
-
-          Canvas Network
-    course_started:
-      email:
-        course_starts_today: Your course begins today
-        body: |-
-          Hello %{user},
-
-          This is a friendly reminder that %{course}, your course on Canvas Network, begins today. You can now log in to %{site} and get started!
-
-          Don't forget to set up your Canvas Network profile, so others in the course know who you are. You can update your profile at %{profile_url}
-
-          Keep learning,
-
-          Canvas Network
-    course_starts_in_week:
-      email:
-        course_starts_next_week: Your course starts next week
-        body: |-
-          %{user},
-
-          It's almost time! %{course}, a course you enrolled in on Canvas Network, begins next week. We know how excited you must be, and we're excited too.
-
-          What can you do to get ready?
-
-          If you haven't already created your Canvas Network profile, you can log in and set it up at Canvas.net. Your profile will help other people in the course know who you are. There, you can also set up your notification preferences.
-
-          Finally, you can review the required materials and any instructions for your course here: %{url}
-
-          Keep learning,
-
-          Canvas Network
-    account_suspended:
-      email:
-        subject: Institution Suspended
-        body: "%{institution} has been suspended.  Please contact your Customer Success Manager to find out why."
     messages:
       failure: There was an error sending your email. Please reload the page and try again.
       success: Your email is being delivered.
@@ -10889,6 +10195,7 @@ en:
   join_the_conversation_using_this_link_link_9017499: 'Join the conversation using this link: %{link}.'
   join_the_conversation_using_the_link_below_54ab1f0e: Join the conversation using the link below.
   new_comment_on_announcement_discussion_topic_cours_7905b782: New Comment on Announcement %{discussion_topic}, %{course}
+  course_8a63b4a3: Course
   signup_type_8b4506f3: Signup Type
   assignment_created_assignment_name_course_name_324a5639: Assignment Created - %{assignment_name}, %{course_name}
   a_new_assignment_has_been_created_for_your_course__12b72639: A new assignment has been created for your course, %{course_name}
@@ -11022,7 +10329,6 @@ en:
     apply: Apply
     submit: Submit
     add_item: Add Item
-    find_user: Find User
     delete: Delete
     login: Login
     send: Send
@@ -11560,6 +10866,7 @@ en:
   add_a_course_b72b18d7: Add a Course
   you_are_not_enrolled_in_any_courses_a5c63286: You are not enrolled in any courses.
   nickname_1e6da3ad: Nickname
+  term_e1c1d390: Term
   enrolled_as_272da3b9: Enrolled as
   published_4bb5209e: Published
   group_a8f5ed9c: Group
@@ -12350,218 +11657,10 @@ en:
   admin_csv_f8d1b3eb: Admin CSV
   created_by_sis_e1449c31: Created by SIS
   group_categories_csv_21eb0566: Group Categories CSV
-  451_message:
-    title: Not Authorized
-    headings:
-      page: Not Authorized
-    description: You are not authorized to access this site because you are located in a country subject to U.S. trade restrictions.
-  settings:
-    service_cloud_settings:
-      labels:
-        api_url: Salesforce API Host (https://something.salesforce.com)
-        consumer_key: Salesforce Consumer Key
-        consumer_secret: Salesforce Consumer Secret
-        refresh_token: Refresh Token
-        is_sandbox: This is a salesfoce sandbox account
-        send_custom_fields: Send the custom fields listed below with each ticket
-    web_to_case_settings:
-      labels:
-        api_url: Salesforce API Endpoint URL
-        orgid: Salesforce Org ID
-        record_type: Record Type
-        ret_val: Return URL
-    recaptcha_settings:
-      instructions: |-
-        Before you can use the ReCAPTCHA plugin you'll need to
-        [sign up for an account on ReCAPTCHA](%{url}). Make sure to set up your
-        domain correctly to handle your site domain(s).  After you've set up an
-        account, enter your public and private keys below.
-
-        **Note:** any changes you make to these settings won't be
-        updated until you restart your server.
-      labels:
-        recaptcha_public_key: ReCAPTCHA Public Key
-        recaptcha_private_key: ReCAPTCHA Private Key
-  get_the_following_from_your_salesforce_connected_a_881fc9a3: Get the following from your Salesforce Connected App
-  you_ll_need_a_refresh_token_follow_the_steps_at_th_79a3984b: You'll need a refresh token, follow the steps at this link, you may want a technical expert to help
-  salesforce_has_a_different_login_host_for_sanbox_a_2d878ae9: Salesforce has a different login host for sanbox accounts than it does for production accounts, so if you're using a Salesforce sanbox account and you don't check this box it won't be able to authenticate (and this works in reverse too, if you have a production account and you DO check this box it won't authenticate)
-  if_you_enable_this_feature_be_sure_that_your_sales_566967e6: If you enable this feature, be sure that your salesforce account has these custom fields added exactly with the names in the left column of the table
-  field_name_31fff38e: Field Name
-  the_error_stack_trace_if_there_is_one_b7e008a1: The error stack trace, if there is one
-  the_severity_of_the_issue_as_selected_by_the_user__88db91d9: The severity of the issue, as selected by the user from a dropdown menu.
-  the_account_id_of_the_account_to_which_the_reporti_93ddb00f: The account ID of the account to which the reporting user belongs
-  the_full_hostname_for_the_account_instance_somethi_e325da1f: The full hostname for the account instance (something.instructure.com, for example)
-  the_url_of_the_page_the_user_was_on_when_they_repo_11dfa92f: The URL of the page the user was on when they reported the error
-  the_roles_held_by_the_reporting_user_student_teach_8fa5a269: the roles held by the reporting user (student, teacher, admin, etc)
-  the_url_a_sufficiently_priviledged_user_could_use__e6b02c56: The url a sufficiently priviledged user could use to masquerade as the reporting user on the same page to try and reproduce the problem
-  a_handy_key_value_dump_of_a_host_of_interesting_en_d0518dfe: A handy key/value dump of a host of interesting environment info for the reporting user
-  the_unique_id_used_for_representing_the_specific_r_3bdf5870: The unique id used for representing the specific request/response cycle this error report occured around
-  should_be_self_evident_the_canvas_id_of_the_report_44378262: should be self-evident, the canvas ID of the reporting user
-  same_value_as_canvas_url__c_will_probably_be_going_37027686: Same value as 'Canvas_URL__c', will probably be going away soon
-  the_salesforce_account_id_if_it_exists_e7949706: The Salesforce Account ID (if it exists)
-  add_your_zendesk_instance_s_custom_field_id_for_ea_3aeb75f4: 'Add your Zendesk instance''s custom field ID for each of the following (fields that do not have ID''s will not be logged):'
-  provisioned_catalog_account_26339afd: Provisioned Catalog Account
-  region_47e29025: 'Region:'
-  url_cc9398ca: 'URL:'
-  beta_url_3c7b88ec: 'Beta URL:'
-  note_it_may_take_up_to_a_week_for_the_beta_url_to__d695bddc: 'Note: It may take up to a week for the Beta URL to provision, depending on the Beta refresh cycle.'
-  provision_a_catalog_account_8cea67f6: Provision a Catalog Account
-  catalog_name_46d37909: Catalog Name
-  school_of_rock_4b7b1fd0: School of Rock
-  example_school_of_rock_41f32c31: 'example: "School of Rock"'
-  region_939f2a6c: Region
-  url_type_3ece27d2: URL Type
-  subdomain_url_1e43b6f0: Subdomain URL
-  example_https_schoolofrock_catalog_instructure_com_b7a35ab5: 'example: "https://schoolofrock.catalog.instructure.com"'
-  vanity_url_76f93382: Vanity URL
-  example_https_schoolofrock_edu_d4326f03: 'example: "https://schoolofrock.edu"'
-  catalog_url_a01655dd: Catalog URL
-  canvas_dashboard_links_will_navigate_to_the_catalo_4143635e: Canvas dashboard links will navigate to the Catalog dashboard
-  create_132b3be1: Create
-  edit_your_catalog_account_cce59310: Edit your Catalog Account
-  update_4d8ee62: Update
-  user_id_or_sis_id_sis_id_should_be_prepended_with__980ff02b: User ID or SIS ID (SIS ID should be prepended with sis_user_id:)
-  include_deleted_enrollments_1c87684a: Include Deleted Enrollments
-  enrolled_a6a517cd: Enrolled
-  withdrawn_4c838347: Withdrawn
-  all_configured_apps_a14eef0a: All Configured Apps
-  course_implemented_apps_fa658f5a: Course Implemented Apps
-  include_unpublished_courses_7a0e7aab: Include Unpublished Courses
-  course_canvas_id_9e36b24c: Course Canvas ID
-  this_is_a_report_of_all_students_enrolled_in_a_cou_d0137d3c: |-
-    This is a report of all students enrolled in a course in a given term that
-    have submitted an assignment. This report contains one row per student
-      submission.
-  include_unsubmitted_deleted_submissions_99fc2aad: Include Unsubmitted & Deleted Submissions
-  course_sis_id_sis_id_or_canvas_id_4d323f5c: 'Course SIS ID (SIS_ID:####) OR Canvas ID: (###)'
-  start_dates_8f1c22a8: 'Start Dates:'
-  start_date_from_20503757: 'Start Date From:'
-  start_date_to_1e6e6bbe: 'Start Date To:'
-  end_dates_249d8dbb: 'End Dates:'
-  end_date_from_cdd9d90: 'End Date From:'
-  end_date_to_8b17929d: 'End Date To:'
-  this_report_shows_the_student_final_grade_results__5a508b55: This report shows the student final grade results for all students in a given term. The resulting CSV file will have one row per enrollment, and will show the current and final grade that is displayed in the course gradebook.
-  this_report_displays_student_engagement_activity_c1d96b5c: This report displays student engagement activity.
-  alumno_88c80e37: Alumno
-  curso_f0ee9b5: Curso
-  id_del_curso_4ef15337: ID del Curso
-  sis_del_curso_bf9d61ae: SIS del Curso
-  id_del_alumno_bc4bcf8a: ID del Alumno
-  sis_del_alumno_716babc5: SIS del Alumno
-  this_report_displays_teacher_engagement_activity_f_5888d45b: This report displays teacher engagement activity for each teacher enrollment.
-  models_to_include_9fb154ca: Models to include
-  additional_options_7cefee79: Additional Options
-  always_include_dates_1ae2935e: Always Include Dates
-  the_default_report_only_includes_course_section_da_729092f0: The default report only includes Course/Section dates if Enrollment restrictions are enabled
-  demos:
-    demos_add:
-      labels:
-        master_template: Master template
-        school_name: School Name
-        username: Email Address
-    register:
-      sign_up_to_canvas: Sign up to try Canvas
-      personalize_demo: Personalize Your Demo
-      labels:
-        organization_type: Organization Type
-        school_position: Title
-        school_name: School / Organization
-        name: Name
-        phone: Phone Number
-        username: Email
-        location: Location
-        type_what_you_see: Type what you see
-        type_what_you_hear: Type what you hear
-      choose: Choose One
-      higher_education: Higher Ed
-      higher_education_for_profit: Higher Ed For-Profit
-      k12: K12
-      k12_for_profit: K12 For-Profit
-      corporate: Corporate
-      government: Government
-      cio: CIO
-      dean: Dean
-      director: Director
-      instructional_designer: Instructional Designer
-      lms_administrator: LMS Administrator
-      provost: Provost
-      school_administrator: School Administrator
-      student: Student
-      support: Support
-      teacher_instructor: Teacher/Instructor
-      technologist: Technologist
-      vp: VP
-      assistant_superintendent: Assistant Superintendent
-      bus_finance_purchasing_director: Bus/Finance/Purchasing Dir
-      e_rate_administrator: ERate Administrator
-      instructional_media_svcs_dir: Instructional Media Svcs Dir
-      library_media_specialist: Library/Media Specialist
-      network_system_administrator: Network System Administrator
-      principal: Principal
-      school_technology_coordinator: School Technology Coordinator
-      superintendent: Superintendent
-      technology_computer_coord: Technology/Computer Coord
-      technology_education_director: Technology Education Director
-      c_level: C-Level
-      employee: Employee
-      manager: Manager
-      executive_officer: Executive Officer
-      gs_1_7: GS 1-7
-      gs_8_10: GS 8-10
-      gs_11_15: GS 11-15
-      other: Other
-      united_states_and_canada: United States and Canada
-      europe_uk: Europe - UK
-      europe_other: Europe - Other
-      africa: Africa
-      asia_and_middle_east: Asia and Middle East
-      australia_new_zealand_and_oceania: Australia, New Zealand, and Oceania
-      south_america_central_america_and_caribbean: South America, Central America, and Caribbean
-      subscribe: I want to receive news, tips and info from Instructure
-      agree_to_terms: I agree to the *terms of use* and acknowledge the **privacy policy**.
-      incorrect: Incorrect. Try again.
-      begin_trial: Begin Trial
-    _register:
-      add_site: Add Site
-      invalid_email: Invalid email address
-      specify_location: Please specify your geographic location
-      you_must_agree_to_terms: You must agree to the terms of use
-      personalizing: Personalizing...
-      ready: Ready!
-      registered_successfully: Registered successfully!
-      try_again: Try Again
-  recaptcha_not_configured_3a6ef9ee: Recaptcha not configured
-  demo_sites_require_recaptcha_settings_to_be_config_8bf9c7e3: Demo sites require Recaptcha settings to be configured. Please see your site admin for this instance of Canvas.
-  canvas_cloud_information_fdd404f2: Canvas Cloud Information
-  created_by_b39b9c8b: Created By
-  delete_domain_domain_c5b68f5: Delete domain %{domain}
-  add_new_domain_e097d4a0: Add new domain
-  delete_domain_5ba75b7c: Delete domain
-  users_matching_search_term_c604db9e: Users Matching "%{search_term}"
-  root_accounts_cc035dcf: Root Accounts
-  create_a_new_account_4cf7c0f9: Create a New Account
-  account_domain_78f43049: Account Domain
-  trusted_account_url_e6200e41: Trusted Account URL
-  trusted_account_669ba397: Trusted Account
-  site_admin:
-    domain_not_found:
-      page_title: Oops, Canvas can’t find your login page.
-      you_typed: You typed
-      body_description: Please check your Canvas URL and try again. If you do not know your Canvas URL, please contact your institution or course instructor.
-      body_reference: If you're interested in a free Canvas account not tied to a specific institution you can sign up at
-      links:
-        canvas_instructure: canvas.instructure.com
-    institution_suspended:
-      page_title: Institution Suspended
-      links:
-        stop_masquerading: "[Stop Masquerading]"
-        logout: Logout
-      body: Your school's Canvas account is temporarily suspended. Please contact your Canvas administrator.
   respondus_soap_endpoint:
     plugin_settings:
       labels:
         enabled: Enabled (must enable QTI Converter as well)
-  provision_a_quiz_next_service_c7c6bd87: Provision a Quiz.Next Service
   there_are_no_announcements_for_this_course_5ee649c3: There are no announcements for this course.
   back_to_table_of_contents_d878b315: Back to Table of Contents
   back_to_announcements_1036e43e: Back to Announcements
@@ -14257,6 +13356,7 @@ en:
       daily: Daily
       weekly: Weekly
       never: Never
+    weekly_notification_range: Your weekly notifications will be sent on weekends.
     communication:
       errors:
         saving_preferences_failed: Oops! Something broke.  Please try again
@@ -14459,6 +13559,7 @@ en:
     teacher_assistant: TA
     observer: Observer
     course_designer: Course Designer
+    auditor: Auditor
   listWithOthers:
     other:
       one: 1 other
@@ -15022,6 +14123,7 @@ en:
   add_user_s_by_b2549f89: Add user(s) by
   example_cb3509b8: 'Example:'
   role_13a7be77: Role
+  section_c7f66a0d: Section
   can_interact_with_users_in_their_section_only_48cb8c43: Can interact with users in their section only
   when_adding_multiple_users_use_a_comma_or_line_bre_67f9c87d: When adding multiple users, use a comma or line break to separate users.
   there_were_several_possible_matches_with_the_impor_ad58bcd0: There were several possible matches with the import. Please resolve them below.
@@ -15229,6 +14331,7 @@ en:
   comments_e07bcbe3: Comments
   rubric_fc39da76: Rubric
   due_5d7267be: 'Due:'
+  _5a374287: "..."
   ungraded_pointspossible_e2f86bd9: ungraded/%{pointsPossible}
   ungraded_147a0dce: ungraded
   formattedgrade_points_90505a61: "%{formattedGrade} Points"
@@ -16053,6 +15156,13 @@ en:
   add_discussion_653dab4c: Add discussion
   add_new_set_of_due_dates_e8e240f: Add new set of due dates
   add_8523c19b: Add
+  DueDateCalendars:
+    ntu-cool:
+      jsx:
+        due_dates:
+          DueDateCalendars:
+            Due: Submissions after the due date will be marked as late in the gradebook
+            Until: Students can no longer submit after this date
   available_from_f84e4611: Available from
   remove_these_dates_48453a81: Remove These Dates
   due_date_falls_in_a_closed_grading_period_e447ff2f: Due date falls in a closed Grading Period
@@ -16238,6 +15348,7 @@ en:
   copy_to_folder_32ecc3c3: Copy to Folder
   moving_a4d552df: Moving...
   before_publishing_you_must_set_usage_rights_on_you_dcd7b567: Before publishing, you must set usage rights on your files.
+  update_4d8ee62: Update
   unpublish_9f2d730b: Unpublish
   not_visible_in_student_files_22f11883: Not visible in student files
   schedule_student_availability_332154a: Schedule student availability
@@ -16602,6 +15713,7 @@ en:
   a_name_for_this_set_is_required_222bad23: A name for this set is required
   successfully_created_a_set_38374719: Successfully created a set
   there_was_a_problem_submitting_your_set_27ca2ed0: There was a problem submitting your set
+  create_132b3be1: Create
   posting_grades_cd7cd758: Posting grades
   count_hidden_e8d2c57c: "%{count} hidden"
   post_1e445890: Post
@@ -16767,14 +15879,47 @@ en:
   expand_tutorial_tray_22630c49: Expand tutorial tray
   collapse_tutorial_tray_66ee7dc1: Collapse tutorial tray
   share_important_updates_with_users_97ec11ad: Share important updates with users
-  share_important_information_with_all_users_in_your_bc49ee7f: |-
+  share_important_information_with_all_users_in_your_fd2933e: |-
     Share important information with all users in your course.
-              Choose to get a copy of your own announcements in Notifications.
-  create_content_for_your_course_500a7032: Create content for your course
-  create_assignments_on_the_assignments_page_organiz_90c78fdc: |-
+              When the announcement was posted, NTU COOL will automatically send a notification to users' emails.
+  how_to_post_an_announcement_5f626a12: How to post an announcement
+  new_user_tutorial:
+    how_to_post_an_announcement_url: https://drive.google.com/file/d/147ARqRvY3xEzLAT490kiF2dCqsNFOh_y/view?usp=sharing
+    tutorial_video_announcements_url: https://www.youtube.com/watch?v=tupfmCiH558&list=PLKjqFgaBNOo8fv5ZWEIUSlSqzXDVC2SV_&index=6
+    how_to_assign_assignments_url: https://drive.google.com/file/d/1z0iIyJeq5RLFwHaggmermbJgfw5t1-Mg/view?usp=sharing
+    how_to_correct_assignments_url: https://drive.google.com/file/d/1cw70AI3WrCFfbV2EOrcZl2Z12bYSOHXB/view?usp=sharing
+    tutorial_video_assign_assignments_url: https://www.youtube.com/watch?v=IeVYgHhMKNU&list=PLKjqFgaBNOo8fv5ZWEIUSlSqzXDVC2SV_&index=10
+    tutorial_video_correct_assignments_url: https://www.youtube.com/watch?v=SuxMtw0TzVY&list=PLKjqFgaBNOo8fv5ZWEIUSlSqzXDVC2SV_&index=12
+    tutorial_video_discussion_url: https://www.youtube.com/watch?v=MjSi2tkkMxk&amp;list=PLKjqFgaBNOo8fv5ZWEIUSlSqzXDVC2SV_&amp;index=14
+    tutorial_video_files_url: https://www.youtube.com/watch?v=o7R6n_Yt17A&list=PLKjqFgaBNOo8fv5ZWEIUSlSqzXDVC2SV_&index=9
+    how_to_nanage_scores_url: https://drive.google.com/file/d/19TSuAISnxKnP90Bs2l-007X6p47Mprpm/view?usp=sharing
+    tutorial_video_manage_scores_url: https://www.youtube.com/watch?v=cg12SK8NISk&list=PLKjqFgaBNOo8fv5ZWEIUSlSqzXDVC2SV_&index=13
+    how_do_i_import_and_export_grades_url: https://docs.google.com/document/d/1_pgN6BAVIK4RmJzVy6DUs5HV8e25zTiLoc287QnMgzk/edit#heading=h.hhzohz9fudr
+    home_user_guide_url: https://docs.google.com/document/d/1_pgN6BAVIK4RmJzVy6DUs5HV8e25zTiLoc287QnMgzk/edit#heading=h.ypz36a4n5hvl
+    how_to_publish_handouts_url: https://drive.google.com/file/d/1m0bpSWz7BHDjhOxFxQ7JqMDNB-u5UeDF/view?usp=sharing
+    tutorial_video_modules_url: https://www.youtube.com/watch?v=lPZo_Mc8mfQ&list=PLKjqFgaBNOo8fv5ZWEIUSlSqzXDVC2SV_&index=7
+    tutorial_vide_publish_videos_url: https://www.youtube.com/watch?v=m4kchtMBNxI&list=PLKjqFgaBNOo8fv5ZWEIUSlSqzXDVC2SV_&index=15
+    how_do_i_edit_pages_url: https://docs.google.com/document/d/1_pgN6BAVIK4RmJzVy6DUs5HV8e25zTiLoc287QnMgzk/edit#heading=h.kq9xgh62ph56
+    how_to_send_emails_to_students_url: https://drive.google.com/file/d/1Nur4yoFQbcGEm0nQwHRSZBeiboHkyQcU/view?usp=sharing
+    tutorial_video_send_emails_url: https://www.youtube.com/watch?v=kN2roz8R_Do&list=PLKjqFgaBNOo8fv5ZWEIUSlSqzXDVC2SV_&index=19
+    tutorial_video_add_members: https://www.youtube.com/watch?v=nZDvz-rAiCo&list=PLKjqFgaBNOo8fv5ZWEIUSlSqzXDVC2SV_&index=4
+    tutorial_video_create_groups_url: https://www.youtube.com/watch?v=8uObPRzoTTc&list=PLKjqFgaBNOo8fv5ZWEIUSlSqzXDVC2SV_&index=5
+    how_to_create_quizzes_url: https://drive.google.com/file/d/1tYgrJ19wpXhFjxJVMaN2E1wHYJcU0EX4/view?usp=sharing
+    tutorial_video_create_quizzes_url: https://www.youtube.com/watch?v=HCviiSfcAUQ&list=PLKjqFgaBNOo8fv5ZWEIUSlSqzXDVC2SV_&index=17
+    tutorial_video_manage_quiz_results_url: https://www.youtube.com/watch?v=uORfe9tfM8A&list=PLKjqFgaBNOo8fv5ZWEIUSlSqzXDVC2SV_&index=18
+    how_do_i_change_the_settings_in_a_course_url: https://docs.google.com/document/d/1_pgN6BAVIK4RmJzVy6DUs5HV8e25zTiLoc287QnMgzk/edit#heading=h.m9jh3tjgo2kd
+    how_to_create_a_course_syllabus_url: https://drive.google.com/file/d/16Tk4rAcgB47OxjErLIIxtKdJ9FnB_Jxg/view?usp=sharing
+    tutorial_video_syllabus_url: https://www.youtube.com/watch?v=jWpTqlDMZqY&list=PLKjqFgaBNOo8fv5ZWEIUSlSqzXDVC2SV_&index=8
+  tutorial_video_announcements_49df123a: 'Tutorial Video: Announcements'
+  create_various_types_of_graded_assignments_f569b16e: Create various types of graded assignments
+  create_assignments_on_the_assignments_page_organiz_78ffa840: |-
     Create assignments on the Assignments page. Organize assignments
-                    into groups like Homework, In-class Work, Essays, Discussions
+                    into groups like Homework, Presentation, Discussions
                     and Quizzes. Assignment groups can be weighted.
+  how_to_assign_assignments_9e4a9e3a: How to assign assignments
+  how_to_correct_assignments_af0c2d3a: How to correct assignments
+  tutorial_video_assign_assignments_3d77c279: 'Tutorial Video: Assign assignments'
+  tutorial_video_correct_assignments_c2541074: 'Tutorial Video: Correct assignments'
   work_and_create_together_c65f358b: Work and create together
   provide_a_space_for_users_to_work_on_a_single_goog_8edec82b: |-
     Provide a space for users to work on a single Google Doc
@@ -16785,56 +15930,101 @@ en:
               groups. Broadcast real-time audio and video, share presentation
               slides, give demonstrations of applications and online resources,
               and more.
-  encourage_class_participation_4e069479: Encourage class participation
-  create_as_many_discussion_topics_as_needed_as_assi_45ec1df: |-
-    Create as many discussion topics as needed, as assignments
-              for grading or as a forum for shared ideas and information.
-  images_documents_and_more_dccb362f: Images, Documents, and more
-  upload_course_files_syllabi_readings_or_other_docu_21f8725f: |-
-    Upload course files, syllabi, readings, or other documents.
-              Lock folders to keep them hidden from students. Add files to Modules,
-              Assignments, Discussions, or Pages.
-  track_individual_student_and_class_progress_c13cf2d1: Track individual student and class progress
-  input_and_distribute_grades_for_students_display_g_9a2e46a0: |-
-    Input and distribute grades for students. Display grades as
-              points, percentages, complete or incomplete, pass or fail, GPA scale,
-              and letter grades. Group assignments for grade weighting.
+  facilitate_course_interaction_c0bab195: Facilitate course interaction
+  the_discussion_function_allows_instructors_teachin_5606800d: |-
+    The discussion function allows instructors, teaching assistants, and students
+              to interact and discuss with each other. Students can post questions and share their
+              reflections on it. Besides, instructors and teaching assistants can set up different themes
+              and require students to comment on as graded assignments. Moreover, outstanding works of
+              students can be uploaded to discussion posts for the whole class to appreciate.
+  tutorial_video_discussion_ca03c207: 'Tutorial Video: Discussion'
+  upload_images_and_documents_for_students_to_downlo_db130568: Upload Images, and Documents for students to download
+  instructors_can_upload_handouts_supplementary_mate_e3c2f285: |-
+    Instructors can upload handouts, supplementary materials, and images to
+              the Files. It is highly recommended that instructors use the folders to
+              distinguish between different file types or weekly schedule. Students can
+              easily find and download the files they need in different folders.
+  tutorial_video_files_93da34dd: 'Tutorial Video: Files'
+  track_students_assignment_submission_status_and_gr_5982cbf7: Track students' assignment submission status and grades
+  on_this_page_you_can_track_the_assignment_submissi_31ca67a6: |-
+    On this page, you can track the assignment submission status and
+              student's grades. You can also export a CSV file and add new graded
+              items such as midterms based on the file format. After you import the file
+              to the grade book, it will automatically create a column for the new
+              graded item that you add on the file. If you want to change the points,
+              groups, and weights of assignments, you need to set them on the
+              assignment page.
+  how_to_manage_scores_e90ae898: How to manage scores
+  tutorial_video_manage_scores_5660dbc1: 'Tutorial Video: Manage scores'
+  how_do_i_import_and_export_grades_83409b15: How do I import and export grades
   home_351838cd: Home
   this_is_your_course_landing_page_33d445ec: This is your course landing page
   when_people_visit_your_course_this_is_the_first_pa_5093ec45: |-
     When people visit your course, this is the first page they'll see.
               We've set your homepage to Modules, but you have the option to change it.
-  you_can_publish_your_course_from_the_home_page_whe_a36d49d6: |-
-    You can publish your course from the home page whenever you’re ready
-              to share it with students. Until your course is published, only instructors will be able to access it.
+  until_the_course_is_published_only_instructors_and_597a56c1: |-
+    Until the course is published, only instructors and TAs will be able to
+           access it. The course is published by default, and students can access it
+           after they login to NTU COOL.
+  how_do_i_set_my_home_page_92d4c79: How do I set my home page
   bring_your_content_into_your_course_c0f3df7e: Bring your content into your course
   bring_existing_content_from_another_course_or_cour_6e740692: |-
     Bring existing content from another course or course
               management system into your Canvas course.
   organize_your_course_content_c3c7ed03: Organize your course content
-  organize_and_segment_your_course_by_topic_unit_cha_4c38a6b9: |-
-    Organize and segment your course by topic, unit, chapter,
-                      or week. Sequence select modules by defining criteria and
-                      prerequisites.
-  create_educational_resources_8219326e: Create educational resources
-  build_pages_containing_content_and_educational_res_6474319f: |-
-    Build Pages containing content and educational resources that
-                    help students learn but aren't assignments. Include text,
-                    multimedia, and links to files and external resources.
-  add_students_tas_and_observers_to_your_course_e84692dd: Add Students, TAs, and Observers to your course
-  manage_enrollment_status_create_groups_and_add_use_3c91de1b: Manage enrollment status, create groups, and add users from this page.
-  assess_and_survey_your_students_ce8172a9: Assess and survey your students
-  create_and_administer_online_quizzes_and_surveys_b_7d2fa85f: Create and administer online quizzes and surveys, both graded and ungraded.
-  manage_your_course_details_664c335f: Manage your course details
-  update_and_view_sections_course_details_navigation_de248be8: |-
-    Update and view sections, course details, navigation, feature
-                    options and external app integrations, all visible only to Instructors.
-  an_auto_generated_chronological_summary_of_your_co_eeafee13: An auto-generated chronological summary of your course
-  communicate_to_your_students_exactly_what_will_be__7312d45d: |-
-    Communicate to your students exactly what will be required
-              of them throughout the course in chronological order. Generate a
-              built-in Syllabus based on Assignments and Events that you've created.
+  instructors_can_arrange_the_course_resources_in_th_f25ee384: |-
+    Instructors can arrange the course resources in the Modules section.
+              For instance, instructors can upload weekly handouts, videos, assignments, and discussions in Modules.
+              Aside from sorting by weeks, instructors can arrange modules by topics.
+  how_to_publish_handouts_e43fd460: How to publish handouts
+  tutorial_video_modules_b656180f: 'Tutorial Video: Modules'
+  tutorial_video_publish_videos_de676eaa: 'Tutorial Video: Publish videos'
+  create_and_compile_educational_resources_46350a0e: Create and compile educational resources
+  teachers_and_tas_can_build_pages_containing_conten_43345efb: |-
+    Teachers and TAs can build Pages containing content and educational
+              resources that help students learn but aren't assignments. Include text,
+              multimedia, and links to files and external resources. Students can also
+              create content on Pages if they were given the authority by teachers or
+              teaching assistants.
+  how_do_i_edit_pages_189c85cc: How do I edit Pages
+  add_auditors_tas_and_teachers_to_your_course_bd7d7696: Add Auditors, TAs, and Teachers to your course
+  ntu_cool_will_automatically_synchronize_the_studen_787408e9: |-
+    NTU COOL will automatically synchronize the student list with the NTU
+              Course Selection System. Therefore, enrolled students including NTU
+              and NTU System (NTUST and NTNU) students will be added to NTU COOL
+              automatically. You can add members such as auditors or manage student
+              groups on this page.
+  how_to_send_emails_to_students_172479be: How to send emails to students
+  tutorial_video_send_emails_a4a1251d: 'Tutorial Video: Send emails'
+  tutorial_video_add_members_6f32084c: 'Tutorial Video: Add members'
+  tutorial_video_create_groups_96511fa3: 'Tutorial Video: Create groups'
+  assess_students_learning_efficacy_71ff6d96: Assess students' learning efficacy
+  there_are_two_main_functions_in_ntu_cool_quizzes_c_a426e0ae: |-
+    There are two main functions in NTU COOL quizzes: creating quizzes and
+              managing quiz results. In creating quizzes, you can do the basic settings,
+              such as quiz instructions, points, published date, and whom to assign. The
+              system supports various question types including multiple choices and
+              true or false questions. You can also view the quiz results instantly and
+              download files with detailed results.
+  how_to_create_quizzes_21b494a: How to create quizzes
+  tutorial_video_create_quizzes_af5c81f0: 'Tutorial Video: Create quizzes'
+  tutorial_video_manage_quiz_results_5bb5fec5: 'Tutorial Video: Manage quiz results'
+  change_basic_settings_such_as_course_languages_and_dcd1ba0f: Change basic settings such as course languages, and the navigation bar
+  on_the_setting_page_you_can_change_the_course_lang_7128614: |-
+    On the setting page, you can change the course language, hide
+              unnecessary functions from the navigation bar, or set the start and end
+              date of the course.
+  how_do_i_change_the_settings_in_a_course_ffb3a088: How do I change the Settings in a course
+  announce_course_basic_information_schedules_and_th_92fd9f4: Announce course basic information, schedules, and the grading policy
+  you_can_use_the_editor_to_build_or_paste_a_table_a_2d9ea1a2: |-
+    You can use the editor to build or paste a table about the information such as
+              course objectives, schedules, and the grading policy. Also, the system will
+              automatically generate a list of all graded assignments on this page.
+              The list can't be edited.
+  how_to_create_a_course_syllabus_6b396c13: How to create a course syllabus
+  tutorial_video_syllabus_1e276b09: 'Tutorial Video: Syllabus'
   end_tutorial_7fb16b6f: End Tutorial
+  user_guide_b449906f: User Guide
   modules_tutorial_tray_d58ac3cb: Modules Tutorial Tray
   pages_tutorial_tray_169464a9: Pages Tutorial Tray
   syllabus_tutorial_tray_97e8ef82: Syllabus Tutorial Tray
@@ -17847,7 +17037,6 @@ en:
   yyyy_mm_dd_hh_mm_a01b6081: YYYY-MM-DD hh:mm
   other_1c6d9c79: Other
   wiki_6603e81b: Wiki
-  _5a374287: "..."
   load_more_results_460f49a9: Load more results
   course_files_a31f97fc: Course files
   group_files_82e5dcdb: Group files
@@ -18119,25 +17308,6 @@ en:
   goto_next_page_e8e1ae6f: Goto next page
   goto_last_page_405adce9: Goto last page
   goto_page_page_num_bd656bd5: Goto page %{page_num}
-  manage_snapshots_modal_b0517bb6: Manage Snapshots Modal
-  manage_snapshots_1dc4b79d: Manage Snapshots
-  snapshots_are_backups_of_your_canvas_trial_taking__f18bd571: Snapshots are backups of your Canvas trial. Taking a snapshot will create a unique "version", making a perfect record of the state of your trial at the moment of the snapshot.
-  take_a_snapshot_now_5b622d85: Take a Snapshot Now
-  previous_snapshots_d8cd4820: Previous Snapshots
-  click_on_a_snapshot_to_revert_back_to_your_trial_a_39250fdb: 'Click on a snapshot to revert back to your trial as it was when the snapshot was taken. Note: You will lose any work you have done since the snapshot was taken and it cannot be undone!'
-  switch_to_ea940b5b: 'Switch to:'
-  snapshots_6e1806b4: Snapshots
-  bulk_migration:
-    confirm:
-      delete_credential: Are you sure you want to remove these credentials?
-      cancel_migration: Are you sure you want to cancel this migration? All courses already in progress will finish.
-    messages:
-      uploading_button: Uploading CSV File...
-    buttons:
-      migrate_courses: Migrate Courses
-    errors:
-      upload_failed: Upload Failed, please try again
-  are_you_sure_you_want_to_delete_domain_domain_c9b4b5f5: Are you sure you want to delete domain %{domain}?
   assignment_details_dialog:
     grading_statistics_for_assignment: 'Grade statistics for: %{assignment.name}'
     no_one_scored_lower: No one scored lower than %{min}
@@ -18246,6 +17416,7 @@ en:
   notifications_search_results_80a0b06f: Notifications Search Results
   course_activity_bfe11267: Course Activity
   grade_change_activity_75fb525: Grade Change Activity
+  course_id_b0bc82d4: Course Id
   assignment_id_b040cee0: Assignment Id
   ex_ba24edf6: EX
   select_a_log_type_to_search_247fc6b4: Select a log type to search.
@@ -18388,8 +17559,6 @@ en:
   open_message_d7b12975: Open Message
   reply_to_conversation_subject_4b2e6fe7: Reply to conversation %{subject}
   reply_to_conversation_f1aa0d4: Reply to conversation
-  message_actions_for_conversation_subject_fdb54c88: Message actions for conversation %{subject}
-  message_actions_for_conversation_d29b26cc: Message actions for conversation
   reply_to_conversation_text_cd45c48f: Reply to conversation %{text}
   message_actions_for_text_27eead86: Message actions for %{text}
   this_attachment_has_been_unpublished_by_the_author_37bff9c3: This attachment has been unpublished by the author.
@@ -18761,6 +17930,7 @@ en:
   25th_75th_percentile_aa4c11f2: 25th-75th Percentile
   graph_of_grades_for_each_assignment_4c44d4d1: Graph of grades for each assignment
   participations_1823832d: Participations
+  current_score_6c81792: Current Score
   account_name_analytics_62bf60ae: "%{account.name} Analytics"
   summary_statistics_f74852a5: Summary Statistics
   activity_by_category_9c2033d1: Activity by Category
