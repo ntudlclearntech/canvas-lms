@@ -379,7 +379,7 @@ export default class MobileGlobalMenu extends React.Component {
             </List.Item>
           ))}
 
-          {true /* TODO: put a check for if we should show help */ && (
+          {false /* TODO: put a check for if we should show help */ && (
             <List.Item>
               <ToggleDetails
                 iconPosition="end"
