@@ -41,6 +41,7 @@
 }
 
 .NewUserTutorialTray__EndTutorialContainer {
+  display: none;
   position: absolute;
   bottom: $ic-sp;
   #{direction(right)}: $ic-sp;
