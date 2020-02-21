@@ -207,7 +207,7 @@ class Notification < ActiveRecord::Base
     when 'Announcement'
       FREQ_IMMEDIATELY
     when 'Announcement Created By You'
-      FREQ_NEVER
+      FREQ_IMMEDIATELY
     when 'Calendar'
       FREQ_NEVER
     when 'Student Appointment Signups'
@@ -225,29 +225,29 @@ class Notification < ActiveRecord::Base
     when 'Discussion'
       FREQ_NEVER
     when 'DiscussionEntry'
-      FREQ_DAILY
+      FREQ_NEVER
     when 'Announcement Reply'
       FREQ_NEVER
     when 'Due Date'
-      FREQ_WEEKLY
+      FREQ_IMMEDIATELY
     when 'Grading'
-      FREQ_IMMEDIATELY
+      FREQ_DAILY
     when 'Grading Policies'
-      FREQ_WEEKLY
+      FREQ_NEVER
     when 'Invitation'
-      FREQ_IMMEDIATELY
+      FREQ_DAILY
     when 'Late Grading'
       FREQ_DAILY
     when 'Membership Update'
-      FREQ_DAILY
+      FREQ_NEVER
     when 'Other'
-      FREQ_DAILY
+      FREQ_NEVER
     when 'Registration'
       FREQ_IMMEDIATELY
     when 'Migration'
       FREQ_IMMEDIATELY
     when 'Submission Comment'
-      FREQ_DAILY
+      FREQ_NEVER
     when 'Reminder'
       FREQ_DAILY
     when 'TestImmediately'
@@ -261,13 +261,15 @@ class Notification < ActiveRecord::Base
     when 'Conversation Message'
       FREQ_IMMEDIATELY
     when 'Added To Conversation'
-      FREQ_IMMEDIATELY
-    when 'Conversation Created'
       FREQ_NEVER
+    when 'Conversation Created'
+      FREQ_IMMEDIATELY
     when 'Recording Ready'
       FREQ_IMMEDIATELY
     when 'Content Link Error'
-      FREQ_DAILY
+      FREQ_NEVER
+    when 'Blueprint'
+      FREQ_NEVER
     else
       FREQ_DAILY
     end
