@@ -127,10 +127,17 @@ class Login::SamlController < ApplicationController
       aac.apply_federated_attributes(pseudonym, provider_attributes)
     end
 
-    if pseudonym['sis_user_id'].blank?
-      sis_user_id = subject_name_id&.id.downcase
-      sis_user_id += /^[a-zA-Z0-9]{9}$/.match(sis_user_id) ? "@ntu.edu.tw" : ""
+    sis_user_id = subject_name_id&.id.downcase
+    sis_user_id += /^[a-zA-Z0-9]{9}$/.match(sis_user_id) ? "@ntu.edu.tw" : ""
+    old_sis_user_id = pseudonym['sis_user_id']
+
+    if pseudonym['sis_user_id'] != sis_user_id
       pseudonym['sis_user_id'] = sis_user_id
+
+      unless pseudonym.save
+        Rails.logger.warn("sis_user_id already exists: #{sis_user_id}")
+        pseudonym['sis_user_id'] = old_sis_user_id
+      end
 
       if pseudonym.changed?
         unless pseudonym.save
