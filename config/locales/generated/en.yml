@@ -8393,7 +8393,6 @@ en:
   content_exports_e5a66f6a: Content Exports
   content_migrations_c2841e9f: Content Migrations
   content_security_policy_settings_3e87fcb2: Content Security Policy Settings
-  content_shares_e1e1: Content Shares
   conversations_69a8dc26: Conversations
   course_audit_log_77407457: Course Audit log
   course_quiz_extensions_4102f98f: Course Quiz Extensions
@@ -8412,14 +8411,11 @@ en:
   grading_standards_b73bfa72: Grading Standards
   group_categories_7a569a4d: Group Categories
   groups_6c90e26a: Groups
-  image_search_b0944fc2: Image Search
   jwts_4f397c85: JWTs
   late_policy_9d0e76b5: Late Policy
-  line_items_828f62cc: Line Items
   liveassessments_92d9edc0: LiveAssessments
   logins_9aee0cbe: Logins
   modules_c4325335: Modules
-  names_and_role_ebff0149: Names and Role
   notification_preferences_cf47083d: Notification Preferences
   originality_reports_1e36b935: Originality Reports
   outcome_groups_3bc3b150: Outcome Groups
@@ -8438,7 +8434,6 @@ en:
   polls_d8096fb7: Polls
   proficiency_ratings_e4078451: Proficiency Ratings
   progress_9de4af8f: Progress
-  public_jwk_ee2d719d: Public JWK
   quiz_assignment_overrides_cec1973b: Quiz Assignment Overrides
   quiz_extensions_d2550649: Quiz Extensions
   quiz_ip_filters_685f7f63: Quiz IP Filters
@@ -8452,13 +8447,11 @@ en:
   quiz_submission_user_list_9d782163: Quiz Submission User List
   quiz_submissions_75eaf377: Quiz Submissions
   quizzes_7e598f57: Quizzes
-  result_8f971a09: Result
   roles_730b879e: Roles
   rubrics_b5ef369b: Rubrics
   sis_import_errors_d7fe542b: SIS Import Errors
   sis_imports_d88db59e: SIS Imports
   sis_integration_ffd3705d: SIS Integration
-  score_f7ac9e08: Score
   search_280d00bd: Search
   sections_94731e51: Sections
   services_ccd7bca0: Services
@@ -11476,6 +11469,7 @@ en:
     view_privacy_policy: View Privacy Policy
   please_enter_your_label_name_7745272d: 'Please enter your %{label_name}:'
   login_with_auth_type_a0aaa52a: Login with *%{auth_type}*
+  contact_us_8f8b592d: 'Contact us:'
   this_course_cannot_be_added_to_the_courses_menu_at_a3fbb11e: This course cannot be added to the courses menu at this time.
   chat_2153c6b7: Chat
   all_terms_cd27b0fb: All Terms
@@ -14502,6 +14496,7 @@ en:
   search_by_student_name_26536097: Search by student name
   disable_extra_filter_options_1d1cdc02: disable extra filter options
   enable_extra_filter_options_b52c23e6: enable extra filter options
+  score_f7ac9e08: Score
   submission_date_8f659c0c: Submission Date
   more_cf9cc661: More
   attempt_number_83dcd86a: Attempt %{number}
@@ -15018,6 +15013,7 @@ en:
   target_link_uri_bbed67d1: "* Target Link URI"
   openid_connect_initiation_url_d9037d30: "* OpenID Connect Initiation Url"
   jwk_method_6d5d0c84: "* JWK Method"
+  public_jwk_ee2d719d: Public JWK
   public_jwk_url_b5564c1d: Public JWK URL
   lti_advantage_services_c1746cb4: LTI Advantage Services
   services_must_be_supported_by_the_tool_in_order_to_1f194a36: Services must be supported by the tool in order to work. Check with your Tool Vendor to ensure service capabilities.
