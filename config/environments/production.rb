@@ -2,7 +2,7 @@
 # Copyright (C) 2011 - present Instructure, Inc.
 #
 # This file is part of Canvas.
-#
+
 # Canvas is free software: you can redistribute it and/or modify it under
 # the terms of the GNU Affero General Public License as published by the Free
 # Software Foundation, version 3 of the License.
@@ -31,7 +31,7 @@ environment_configuration(defined?(config) && config) do |config|
 
   # Specifies the header that your web server uses for directly sending files
   # If you have mod_xsendfile enabled in apache:
-  # config.action_dispatch.x_sendfile_header = 'X-Sendfile'
+  config.action_dispatch.x_sendfile_header = 'X-Sendfile'
   # For nginx:
   # config.action_dispatch.x_sendfile_header = 'X-Accel-Redirect'
 
