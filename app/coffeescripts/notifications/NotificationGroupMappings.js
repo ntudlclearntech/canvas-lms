@@ -31,7 +31,7 @@ export default class NotificationGroupMappings {
         'due_date',
         'grading_policies',
         'course_content',
-        'files',
+        //'files',
         'announcement',
         'announcement_created_by_you',
         'announcement_reply',
