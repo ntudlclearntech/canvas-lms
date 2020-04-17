@@ -70,6 +70,9 @@ class NotificationPolicy < ActiveRecord::Base
       end
       user.save!
     else
+      # Prevent users change the files notification manually, view gitlab MR #25 for more details
+      params[:frequency] = "never" if params[:category] == "files"
+      
       # User preference change not being made. Make a notification policy change.
 
       # Using the category name, fetch all Notifications for the category. Will set the desired value on them.
