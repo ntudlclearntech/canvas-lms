@@ -7262,18 +7262,18 @@ zh-Hant:
   current_volume_level_c55ab825: 目前音量
   currently_assigned_to_tokenname_click_to_remove_5a853a84: "目前已分到 %{tokenName}，再按以移除"
   curso_f0ee9b5: Curso
-  curve_grades_b7a75443: 繪製成績曲線
+  curve_grades_b7a75443: 依成績曲線調分
   curve_grades_dialog: 
     average_score: 平均分數
     buttons: 
-      curve_grades: 成績曲線
-      curving_grades: 正在繪製成績曲線…
-    curve_average: "輸入 *%{assignment.name}* 的曲線平均成績。下圖顯示了基於當前學生分數繪製成績曲線的最佳嘗試。"
-    curve_grade_for_assignment: "繪製 %{assignment.name} 的成績曲線"
+      curve_grades: 依此成績曲線進行調分
+      curving_grades: 正在依成績曲線調分…
+    curve_average: "輸入您預期的 *%{assignment.name}* 的平均分數。下圖顯示了依您輸入的平均分數、以及基於學生目前得分情況進行調分後的成績曲線結果。"
+    curve_grade_for_assignment: "以成績曲線調整 %{assignment.name} 全體分數"
     labels: 
-      assign_blanks: 將零分配至未提交的學生
+      assign_blanks: 將未繳交作業的學生評為零分
     out_of_points_possible: "總分 %{assignment.points_possible}"
-    this_is_permanent: 成績曲線繪製無法取消。先前繪製的曲線成績歷史可用，但繪製曲線的操作無法復原。
+    this_is_permanent: 依成績曲線調分的結果將覆蓋目前的分數，且無法復原，請謹慎操作。
   curving_assignments_e9479ee3: 繪製作業曲線
   custom_6979cd81: 定制
   custom_css_and_javascript_may_cause_accessibility__93d2a823: "定制 CSS 和 Javascript 腳本或許會導致訪問故障，或與未來 Canvas 的更新產生衝突！"
