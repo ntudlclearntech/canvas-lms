@@ -74,7 +74,7 @@ describe FilePreviewsController do
     attachment_model content_type: 'application/msword'
     get :show, params: {course_id: @course.id, file_id: @attachment.id}
     expect(response).to be_redirect
-    expect(response.location).to match %r{\A//docs.google.com/viewer}
+    expect(response.location).to match %r{\A//#{Rails.configuration.predoc[viewer_url]}/viewer}
   end
 
   it "should redirect to file if it's html" do
