@@ -167,6 +167,7 @@ class ApplicationController < ActionController::Base
             collapse_global_nav: @current_user.try(:collapse_global_nav?),
             show_feedback_link: show_feedback_link?
           },
+          DOC_VIEWER_URL: Rails.configuration.predoc['viewer_url']
         }
         @js_env[:current_user] = @current_user ? Rails.cache.fetch(['user_display_json', @current_user].cache_key, :expires_in => 1.hour) { user_display_json(@current_user, :profile, [:avatar_is_fallback]) } : {}
         @js_env[:page_view_update_url] = page_view_path(@page_view.id, page_view_token: @page_view.token) if @page_view
