@@ -286,5 +286,8 @@ module CanvasRails
       # no validation; we don't use Rails' CookieStore session middleware, so we
       # don't care about secret_key_base
     end
+
+	# load predoc url
+	config.predoc = config_for(:predoc)
   end
 end
