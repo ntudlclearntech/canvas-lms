@@ -146,7 +146,9 @@ $.fn.loadDocPreview = function(options) {
       const loadGooglePreview = function() {
         // this handles both ssl and plain http.
         const googleDocPreviewUrl =
-          '//docs.google.com/viewer?' +
+          '//' +
+          ENV.DOC_VIEWER_URL +
+          '/viewer?' +
           $.param({
             embedded: true,
             url: opts.public_url
