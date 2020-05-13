@@ -196,7 +196,7 @@ class Quizzes::Quiz < ActiveRecord::Base
   def build_assignment(force: false)
     if !self.assignment_id && self.graded? && (force || ![:assignment, :clone, :migration].include?(@saved_by))
       assignment = self.assignment
-      assignment ||= self.context.assignments.build(:title => self.title, :due_at => self.due_at, :submission_types => 'online_quiz')
+      assignment ||= self.context.assignments.build(:title => self.title, :due_at => self.due_at, :submission_types => 'online_quiz', :workflow_state => 'unpublished')
       assignment.assignment_group_id = self.assignment_group_id
       assignment.only_visible_to_overrides = self.only_visible_to_overrides
       assignment.saved_by = :quiz
