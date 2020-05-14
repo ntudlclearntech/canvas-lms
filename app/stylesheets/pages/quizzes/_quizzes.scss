@@ -1269,6 +1269,12 @@ ul#quiz_versions {
   }
   #options_tab{
     overflow-x: scroll;
+
+    .control-label {
+      text-align: right;
+      width: 130px;
+    }
+
   }
   #quiz_tabs {
     margin-top: $ic-sp;
