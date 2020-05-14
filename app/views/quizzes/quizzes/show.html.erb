@@ -137,9 +137,50 @@
         <a href="<%= edit_course_quiz_path(@context, @quiz) %>" class='btn edit_assignment_link quiz-edit-button' role='button'>
           <i class="icon-edit"></i> <%= admin_edit_title %>
         </a>
+
+        <% if !editing_restricted?(@quiz) %>
+          <% if @quiz.locked? %>
+            <%= form_for @quiz, as: :quiz, method: :put, :url => context_url(@context, :context_quiz_url, @quiz.id), :html => { :id => 'quiz_unlock_form', :style => "display:none;" } do |f| %>
+              <%= hidden_field_tag 'quiz[locked]', false %>
+              <div id="unlock_for_how_long_dialog" title="<%= t('titles.unlock_for_how_long', "How long would you like to unlock the quiz for?") %>" style="display:none;">
+                <label class="pull-left" for="no_time_limit">
+                  <%= f.radio_button('do_lock_at', false, :checked => true) %>
+                  <%= f.label('do_lock_at_false', :no_time_limit, :en => 'No time limit') %>
+                </label>
+                <label id="how_long_to_unlock_wrapper" style="float: <%= direction('left') %>; margin-<%= direction('left') %>: 30px;" for="until">
+                  <%= f.radio_button('do_lock_at', true, checked: false) %>
+                  <%= f.label('do_lock_at', :available_until, en: 'Until', value: true) %>
+                  <label class="screenreader-only" id="quiz_lock_at_label">
+                    <%= t("Available Until Date") %>
+                    <%= datepicker_screenreader_prompt %>
+                  </label>
+                  <%= f.text_field :lock_at,
+                                    class: "datetime_field",
+                                    style: "width: 150px;",
+                                    value: datetime_string(@quiz.lock_at),
+                                    "aria-labelledby" => "quiz_lock_at_label",
+                                    "data-tooltip" => "",
+                                    title: accessible_date_format %>
+                </label>
+              </div>
+            <% end %>
+            <% qos_unlock_quiz_title = @quiz.survey? ? t('buttons.unlock_survey', "Unlock") : t('buttons.unlock_quiz', "Unlock") %>
+            <a href="#" id="let_students_take_this_quiz_button" class='btn' role="button">
+              <i class="icon-unlock"></i> <%= qos_unlock_quiz_title %>
+            </a>
+          <% else %>
+            <%= form_for @quiz, as: :quiz, method: :put, :url => context_url(@context, :context_quiz_url, @quiz.id), :html => { :id => 'quiz_lock_form', :style => "display:none;" } do |f| %>
+              <%= hidden_field_tag 'quiz[locked]', true %>
+            <% end %>
+            <% qos_lock_quiz_title = @quiz.survey? ? t('buttons.lock_survey', "Lock") : t('buttons.lock_quiz', "Lock") %>
+            <a href="#" id="lock_this_quiz_now_link" class='btn' role="button">
+              <i class="icon-lock"></i> <%= qos_lock_quiz_title %>
+            </a>
+          <% end %>
+        <% end %>
         <% end %>
 
-        <div class="inline-block">
+        <div class="inline-block" style="margin-left: 7px;">
           <a class="al-trigger btn" role="button" aria-haspopup="true" aria-owns="toolbar-1" href="#">
             <i class="icon-more" aria-hidden="true"></i>
             <span class="screenreader-only"><%= admin_manage_title %></span>
@@ -164,6 +205,7 @@
               </li>
             <% end %>
 
+<!-- 2020/05/13 The lock menu item is moved out of the "More" button to be a header bar button 
             <% if can_do(@quiz, @current_user, :update) && !editing_restricted?(@quiz) %>
               <% if @quiz.locked? %>
                 <%= form_for @quiz, as: :quiz, method: :put, :url => context_url(@context, :context_quiz_url, @quiz.id), :html => { :id => 'quiz_unlock_form' } do |f| %>
@@ -208,7 +250,7 @@
                 </li>
               <% end %>
             <% end %>
-
+-->
             <% if (can_do(@quiz, @current_user, :grade) || can_do(@quiz, @current_user, :review_grades)) && @quiz.available? %>
               <li role="presentation">
                 <a href="#" class="quiz_details_link" tabindex="-1" role="menuitem">
@@ -273,8 +315,9 @@
     </div>
     <% end %>
 
-    <% if needs_unpublished_warning?(@quiz) %>
+    <% if needs_unpublished_warning?(@quiz) || @quiz.locked? %>
     <div class="alert">
+      <% if needs_unpublished_warning?(@quiz) %>
       <div class="row-fluid">
         <div class="span8 unpublished_warning">
           <%= quiz_published_state_warning %>
@@ -297,6 +340,14 @@
           <% end %>
         </div>
       </div>
+      <% end %>
+      <% if @quiz.locked? %>
+      <div class="row-fluid">
+        <div class="span8 unpublished_warning">
+          <strong><%= t('warnings.quiz_locked', "The Quiz is locked.") %></strong>
+        </div>
+      </div>
+      <% end %>
     </div>
     <% end %>
 

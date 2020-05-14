@@ -1854,7 +1854,7 @@ zh-Hant:
   after_4c71e718: 之後
   after_cbb5ebae: 之後......
   after_date_981cd41b: "在 %{date} 之後"
-  after_last_attempt_c9168da2: 最後一次嘗試之後
+  after_last_attempt_c9168da2: 僅在繳交次數達到允許重新作答次數後，才會顯示
   after_the_assignment_is_graded_53754607: 作業評分之後
   after_the_due_date_eee89c9c: 截止日期之後
   ahead_21f22939: 之前
@@ -1977,7 +1977,7 @@ zh-Hant:
   allow_intra_group_peer_reviews_53f1e455: 允許同組學生之間進行同儕互評
   allow_lor_tools: "允許使用者檢視和使用為 LOR 配置的外部工具。"
   allow_moderator_to_review_multiple_independent_gra_c59d64f6: 允許核分人檢閱指定的提交項目所獲的多個獨立評分
-  allow_multiple_attempts_e67a0a37: 允許多次嘗試
+  allow_multiple_attempts_e67a0a37: 提交後允許重新作答
   allow_opt_out_of_inbox: "允許使用者選擇退出交談的收件匣。這將導致所有交談訊息和通知作為 ASAP 通知傳送到使用者的主要電子郵箱，隱藏交談收件匣中未讀取訊息標記，並且隱藏交談的通知偏好設定。"
   allow_outcome_extra_credit_57c1e84e: 允許成果額外加分
   allow_passive_acceptance_of_terms_of_service_63ef5994: 允許被動接受服務條款
@@ -1995,7 +1995,7 @@ zh-Hant:
   allow_the_ability_to_send_notifications_through_ou_fdaace5a: 允許通過分發隊列的方式發送通知。
   allow_this_tool_to_access_the_ims_names_and_role_p_33e16d7f: "允許此工具訪問 IMS 名稱和角色佈建服務"
   allow_users_to_comment_45b8f753: 允許使用者評論
-  allowed_attempts_4e229caa: 允許的嘗試
+  allowed_attempts_4e229caa: 允許重新作答的次數
   allows_a_user_to_access_the_act_as_user_link_on_st_7d3e3e3d: 允許使用者於學生情境卡上存取「作為使用者」連結
   allows_a_user_to_view_the_sis_id_in_a_user_s_login_802288b9: "允許使用者於其他使用者的登入詳細資料中查看 SIS ID。"
   allows_a_user_to_view_user_sis_ids_in_a_course_peo_dd6404c: "允許使用者於課程成員頁面中查看使用者 SIS ID。"
@@ -2490,7 +2490,7 @@ zh-Hant:
   answer_incorrect_answer_80efe585: "%{answer}，（不正確答案）"
   answer_sequence_cfeda025: 答案順序
   answer_text_80_character_limit_2fce1113: "答案文字 (不多於80個字符)"
-  answer_text_909894d6: 答案文字
+  answer_text_909894d6: 答案文字選項
   answer_weight_43420dc5: 答題加權
   answers_which_scored_in_the_bottom_27_74409483: 得分排名位於底部27%的答案
   answers_which_scored_in_the_middle_46_46466ffd: 得分排名位於中部46%的答案
@@ -2673,7 +2673,7 @@ zh-Hant:
   assessment_title_7ab69b66: 評估標題
   assessment_type_81a73b9c: 評估類型
   asset_string_ddeaf719: 資產字串
-  assign_eedf72bb: 指派
+  assign_eedf72bb: 指派對象及時間
   assign_reviews_on_date_7e48ec50: 按照日期分配檢閱
   assign_to_6b806cd9: 指派給：
   assign_to_95404a83: 指派給
@@ -7671,7 +7671,7 @@ zh-Hant:
   deployment_id_for_toolname_app_e54a7364: "%{toolName} 應用程式的部署 ID"
   description_436c48d7: 說明
   description_61f4296: "* 描述"
-  details_98a31b68: 詳細資料
+  details_98a31b68: 設定
   details_a6f427c3: 詳細資料：
   determines_visibility_and_management_of_outcomes_t_79ca45b: |-
       決定帳戶導航工具內的學習成果標籤可見度和管理程序。
@@ -11123,7 +11123,7 @@ zh-Hant:
   hide_admin_navigation_menu_5cab9c9e: 隱藏管理員導航工具選單
   hide_all_artifacts_d654fbd5: 隱藏所有項目
   hide_all_details_61d7ebb: 隱藏所有詳細資料
-  hide_correct_answers_at_2421b0aa: 隱藏正確答案於
+  hide_correct_answers_at_2421b0aa: 隱藏正確答案日期
   hide_correct_answers_at_b1a59408: 隱藏正確答案於
   hide_course_sections_for_course_name_bd1911af: "隱藏課程的所有課程班別%{name}"
   hide_courses_menu_1b8ca649: 隱藏課程選項
@@ -11893,9 +11893,9 @@ zh-Hant:
   len_maxlen_97f1c88d: "%{len}/%{maxLen}"
   length_notifications_found_25276610: "%{length} 發現通知"
   length_results_found_3afd01e5: "%{length} 找到結果"
-  let_students_see_the_correct_answers_dacc2faf: 允許學生檢視正確答案
+  let_students_see_the_correct_answers_dacc2faf: 公布正確答案
   let_students_see_their_quiz_responses_fbc07d14: 允許學生檢視他們的測驗回應
-  let_students_see_their_quiz_responses_incorrect_qu_f5c9cb70: "讓學生看見他們的測驗結果 ( 在學生回饋中標示不正確問題 )"
+  let_students_see_their_quiz_responses_incorrect_qu_f5c9cb70: "讓學生看見他們的測驗結果 ( 題目、作答答案、是否答對和得分情況 )"
   letter_grade_29ff1938: 等第成績
   letter_grade_f00fedc4: 字母分級
   level_5fdf654a: 等級
@@ -12129,7 +12129,7 @@ zh-Hant:
   lock_discussion_title_failed_9d49f2d: "無法鎖定討論區 %{title}"
   lock_discussion_title_succeeded_fb24ebfc: "成功鎖定討論區 %{title}"
   lock_icon_a9916601: 鎖定圖標
-  lock_questions_after_answering_5aecef9d: 回答後鎖定問題
+  lock_questions_after_answering_5aecef9d: 進入下一題畫面後無法返回前一題
   lock_selected_announcements_33740f80: 鎖定所選公告
   lock_this_setting_for_sub_accounts_2ae5af17: 為子帳戶鎖定此設置
   locked_762f138b: 已鎖定
@@ -15499,12 +15499,12 @@ zh-Hant:
   only_a_maximum_of_limit_events_can_be_created_b81c405e: "最多只能建立 %{limit} 個活動"
   only_account_administrators_can_change_this_settin_149f8fe3: 僅帳戶管理員可以變更此設定。
   only_add_posts_with_a_specific_phrase_in_the_title_b8b7b04e: 只加入標題中具有特定語詞的貼文
-  only_after_their_last_attempt_3593d101: 僅在他們的最後一次嘗試之後
+  only_after_their_last_attempt_3593d101: 僅在繳交次數達到允許重新作答次數後，才會顯示
   only_announcements_can_be_section_specific_1ff992a: 只有公告可以是特定分班的
   only_available_to_students_with_link_not_visible_i_b21ec391: 僅適用於有連結的學生。在學生文件夾中不可見。
   only_course_announcements_and_discussions_can_be_s_924d4386: 只有課程公告和討論區可以是特定分班的
   only_course_announcements_can_be_section_specific_eabcd6e0: 只有課程公告可以是特定分班的
-  only_once_after_each_attempt_cc842738: 每次嘗試之後僅一次
+  only_once_after_each_attempt_cc842738: 僅在每次送出答案時顯示一次
   only_show_announcement_on_current_account_domain_fc341eea: 只在當前帳戶域上顯示公告
   only_teachers_can_see_this_course_until_it_is_publ_6fac97a7: 在本課程發佈之前，只有教師可以看到本課程
   ontime_on_time_late_late_missing_missing_145e9e5d: "%{onTime} 按時提交，%{late} 遲交，%{missing} 未交"
@@ -15551,7 +15551,7 @@ zh-Hant:
     : 是
     ? "yes"
     : 是
-  options_3ab0ea65: 選項
+  options_3ab0ea65: 詳細設定
   options_for_title_label_17f821ff: "選項%{title_label}"
   or_9b70ccaa: 或者
   or_a01eec62: 或者
@@ -17273,7 +17273,7 @@ zh-Hant:
       item_analysis_not_available: 題項分析不適用於調查
     student_analysis: 學生分析
   quiz_reports_ef7ddf1c: 測驗報告
-  quiz_restrictions_5db831c5: 測驗限制
+  quiz_restrictions_5db831c5: 參加測驗限制
   quiz_results_are_protected_for_this_quiz_and_are_n_1ea03502: 此測驗的測驗結果受保護，學生看不到。
   quiz_results_are_protected_for_this_quiz_and_are_n_c85bd56e: 此測驗的測驗結果受保護，學生看不到，除非他們提交了最後一次嘗試。
   quiz_results_are_protected_for_this_quiz_and_can_b_fc4fc208: 此測驗的測驗結果受保護，在提交之後可立即檢視一次。
@@ -17547,7 +17547,7 @@ zh-Hant:
       current_filter: 當前篩選器
       default_question_input: "[選擇]"
       default_text_only_question_name: 空格字元
-      default_title: 未命名的測驗
+      default_title: 測驗標題
       errors: 
         invalid_hide_results: 隱藏結果無效
         invalid_ip_filter: "IP 篩選器無效"
@@ -17972,7 +17972,7 @@ zh-Hant:
         new_assignment: 新作業
         new_discussion: 新討論
         one_question_at_a_time: 每次顯示一個問題
-        one_time_results: 每次嘗試之後僅一次
+        one_time_results: 僅在每次送出答案時顯示一次
         points_possible: "點 %{n}"
         post_to_sis: "公佈成績至 SIS"
         quiz_access_code: 需要存取代碼
@@ -18089,27 +18089,27 @@ zh-Hant:
         view_previous_attempts: 檢視全部測驗嘗試紀錄
       quiz_show_teacher: 
         anonymous_submissions: 匿名提交項目
-        attempts: 可嘗試次數
+        attempts: 允許重新作答的次數
         available_from: 開放時間
-        cant_go_back: 回答後鎖定問題
+        cant_go_back: 進入下一題畫面後無法返回前一題
         code: 訪問碼
         due: 截止時間
         filter: "IP 篩選器"
         for: 對象
         group: 作業類別
         label: 
-          time_limit: 時間限制
-        multiple_attempts: 多次嘗試
+          time_limit: 限制作答時間
+        multiple_attempts: 提交後允許重新作答
         no_time_limit: 沒有時間限制
-        one_question_at_a_time: 每次一個問題
+        one_question_at_a_time: 每頁只顯示一個問題
         points: 總分
         quiz_type: 測驗類型
         require_lockdown_browser: "需要 Respondus LockDown 瀏覽器"
         require_lockdown_browser_for_results: 需要檢視測驗結果
         require_lockdown_browser_monitor: 需要網路攝影機
         score_to_keep: 要保留的分數
-        show_correct_answers: 顯示正確答案
-        shuffle_answers: 隨機排列答案
+        show_correct_answers: 公布正確答案日期
+        shuffle_answers: 隨機排列選項
         time_limit: 
           one: "%{count} 分鐘"
           other: "%{count} 分鐘"
@@ -18183,10 +18183,10 @@ zh-Hant:
           loading_in_lockdown: "在 Respondus LockDown 瀏覽器中載入測驗"
       show: 
         buttons: 
-          lock_quiz: 現在鎖定此測驗
-          lock_survey: 現在鎖定此調查
-          unlock_quiz: 現在讓學生參加此測驗
-          unlock_survey: 現在讓學生參加此測驗
+          lock_quiz: 鎖定
+          lock_survey: 鎖定
+          unlock_quiz: 開放
+          unlock_survey: 開放
         course_concluded_notice: 由於課程已結束，不再提供此測驗。
         labels: 
           available_until: 直到
@@ -18222,6 +18222,7 @@ zh-Hant:
           unlock_for_how_long: 您想解除鎖定此測驗多久？
         warnings: 
           draft_version: 這是測驗的草稿版本的預覽
+          quiz_locked: 此測驗已鎖定，學生無法作答。
       single_answer: 
         upload: 上傳
       statistics: 
@@ -20435,7 +20436,7 @@ zh-Hant:
   show_by_type_c5d61732: 按類型顯示
   show_calendar_events_in_the_month_view_on_multiple_e94c33ae: 在月份視圖中顯示行事曆事件，如果單行無法容納，則顯示為多行。
   show_concluded_enrollments_6a05544c: 顯示已結束權限的成員
-  show_correct_answers_at_30c37e01: 將正確答案顯示在
+  show_correct_answers_at_30c37e01: 公布正確答案日期
   show_correct_answers_at_a5475aa3: 將正確答案顯示在
   show_course_sections_for_course_name_5f715702: "顯示課程的所有班別%{name}"
   show_courses_from_8a087f63: 顯示課程從
@@ -20461,7 +20462,7 @@ zh-Hant:
   show_new_analytics_for_course_and_user_data_18e92636: 顯示課程與使用者資料新分析
   show_new_quizzes_on_the_quizzes_page_b2db14d8: 顯示測驗頁面的新測驗
   show_notes_column_22d2b6c1: 顯示注釋欄
-  show_one_question_at_a_time_271e346d: 每次顯示一個問題
+  show_one_question_at_a_time_271e346d: 每頁只顯示一個問題
   show_only_blueprint_courses_9fb37b41: 只顯示計劃課程
   show_originality_report_to_students_be22f5ee: 向學生展示原創檢測報告
   show_params_3401895b: 顯示參數
@@ -20475,7 +20476,7 @@ zh-Hant:
   showing_all_announcements_36ff0cec: 正在顯示所有公告
   showing_all_discussions_7e09f4b7: 正在顯示所有討論
   showing_all_sets_of_grading_periods_6c160874: 顯示所有評分時段組
-  shuffle_answers_edb602b7: 隨機排序答案
+  shuffle_answers_edb602b7: 隨機排序選項
   signup_type_8b4506f3: 註冊類型
   similarity_detection_dcada48: 相似性檢測
   similarity_detection_platform_9e424d70: 相似性檢測平台
@@ -21777,7 +21778,7 @@ zh-Hant:
   this_question_group_is_set_to_pick_more_questions__2e3552c4: 該問題群組已設置，已選擇比可用數量更多的問題。
   this_question_will_show_a_checkbox_next_to_each_an_169cd6d9: 此問題會在每個答案旁邊顯示一個複選框。
   this_quiz_has_been_excused_d89d2b74: 此測驗已被免除。
-  this_quiz_is_unpublished_only_teachers_can_see_the_51d281b1: "*此測驗未發佈*。在此測驗發佈之前，只有教師可以看到。"
+  this_quiz_is_unpublished_only_teachers_can_see_the_51d281b1: "此測驗未發佈，只有教師可以看到。"
   this_quiz_needs_review_50e014e: 此測驗需要檢閱
   this_rating_is_selected_ca68fce6: 已選擇此評級。
   this_recorder_uses_flash_as_a_result_you_may_find__427d2ddb: "本記錄器使用 Flash。因此，您會發現，更方便的方法是使用本地計算機進行記錄，然後使用媒體上傳功能將其上傳。"
@@ -21846,7 +21847,7 @@ zh-Hant:
   time_block_5a7cda5c: 時間塊
   time_left_in_your_instant_trial_5dd0392b: "%{time} 留下您的即時試用"
   time_left_in_your_instant_trial_extend_now_afb9bd2f: "%{time} 留下您的即時試用 *(現在擴展)*"
-  time_limit_a6f1a51e: 時間限制
+  time_limit_a6f1a51e: 限制作答時間為
   time_zone_f56f5183: 時區
   time_zones: 
     abu_dhabi: 阿布達比
