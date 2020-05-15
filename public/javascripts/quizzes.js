@@ -1042,7 +1042,7 @@ export const quiz = (window.quiz = {
       .find("input[name='answer_selection_type']")
       .val(result.answer_selection_type)
       .change()
-    $form.find('.add_answer_link').showIf(options.addable)
+    $form.find('.add_answer_link').css("display", options.addable ? "block": "none") //.showIf(options.addable)
     var $answers = $formQuestion.find('.form_answers .answer')
     if ($answers.length === 0 && result.answer_type != 'none') {
       $formQuestion
