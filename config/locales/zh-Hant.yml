@@ -2490,7 +2490,7 @@ zh-Hant:
   answer_incorrect_answer_80efe585: "%{answer}，（不正確答案）"
   answer_sequence_cfeda025: 答案順序
   answer_text_80_character_limit_2fce1113: "答案文字 (不多於80個字符)"
-  answer_text_909894d6: 答案文字選項
+  answer_text_909894d6: 選項
   answer_weight_43420dc5: 答題加權
   answers_which_scored_in_the_bottom_27_74409483: 得分排名位於底部27%的答案
   answers_which_scored_in_the_middle_46_46466ffd: 得分排名位於中部46%的答案
@@ -17746,7 +17746,7 @@ zh-Hant:
           missing_word: 定義下拉式清單前後的文字。建立一組可能的答案，並選擇一個正確的答案。
           multi_answer_sets: 在以下編輯器中，在您要顯示答案方框的每一個地方輸入被中括號括起來的參考文字（不能有空格）
           multiple_answers: 此問題會在每個答案旁邊顯示一個複選框，學生必須選擇您標記為正確的所有答案。
-          multiple_choice: 輸入您的問題和多個答案，然後選擇一個正確的答案。
+          multiple_choice: 輸入您的問題和多個選項，然後選擇一個正確的答案。
           multiple_dropdowns: 請輸入您的問題，並指定每個下拉式清單的所在處。然後定義每個下拉式清單的潛在答案，每個下拉式清單可設定一個正確答案。
           numerical: 定義正確答案為範圍內的任意數位，或一個數位加上或減去一些誤差邊際。學生將得到一個空的文本框以輸入自己的數值答案。
           short_answer: |-
@@ -17777,7 +17777,7 @@ zh-Hant:
           points: 配分
           question: 問題
         links: 
-          add_another_answer: 新增另一個答案
+          add_another_answer: 新增另一個選項
           need_help: 需要支援？
         multi_answer_sets_example: "例如 『玫瑰為 [color1]，紫羅蘭為 [color2]』"
         offer_combinations: "提供 %{how_many} 個可能的值組合（最多 %{max_combinations}）"

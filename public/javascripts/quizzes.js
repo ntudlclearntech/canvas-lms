@@ -65,7 +65,7 @@ import AssignmentExternalTools from 'jsx/assignments/AssignmentExternalTools'
 let dueDateList, overrideView, quizModel, sectionList, correctAnswerVisibility, scoreValidation
 
 const lockManager = new LockManager()
-lockManager.init({itemType: 'quiz', page: 'edit'})
+lockManager.init({ itemType: 'quiz', page: 'edit' })
 const lockedItems = lockManager.isChildContent() ? lockManager.getItemLocks() : {}
 
 RichContentEditor.preloadRemoteModule()
@@ -101,11 +101,11 @@ function adjustOverridesForFormParams(overrides) {
   }
 }
 
-const isShowingResults = function() {
+const isShowingResults = function () {
   return $('#never_hide_results').prop('checked')
 }
 
-const isShowingResultsJustOnce = function() {
+const isShowingResultsJustOnce = function () {
   return $('#quiz_one_time_results').prop('checked')
 }
 
@@ -130,9 +130,9 @@ const renderDueDates = () => {
 }
 
 const clickSetCorrect = I18n.t(
-    'titles.click_to_set_as_correct',
-    'Click to set this answer as correct'
-  ),
+  'titles.click_to_set_as_correct',
+  'Click to set this answer as correct'
+),
   isSetCorrect = I18n.t('titles.set_as_correct', 'This answer is set as correct'),
   clickUnsetCorrect = I18n.t(
     'titles.click_to_unset_as_correct',
@@ -234,8 +234,8 @@ function getChangeMultiFunc($questionContent, questionType, $select) {
     if (!$select.find('option:not(.shown_when_no_other_options_available)').length) {
       $select.append(
         "<option class='shown_when_no_other_options_available' value='0'>" +
-          htmlEscape(I18n.t('enter_answer_variable_above', '[ Enter Answer Variables Above ]')) +
-          '</option>'
+        htmlEscape(I18n.t('enter_answer_variable_above', '[ Enter Answer Variables Above ]')) +
+        '</option>'
       )
     }
     $select.find('option.to_be_removed').remove()
@@ -310,7 +310,7 @@ export const quiz = (window.quiz = {
       answer.answer_weight = 0
     }
 
-    $answer.fillFormData(answer, {call_change: false})
+    $answer.fillFormData(answer, { call_change: false })
     $answer.find('.select_answer input').showIf(!answer.answer_html)
     $answer.find('.matching_answer .answer_match_left').showIf(!answer.answer_match_left_html)
     $answer.find('.matching_answer .answer_match_left_html').showIf(answer.answer_match_left_html)
@@ -811,9 +811,9 @@ export const quiz = (window.quiz = {
               I18n.t('labels.other_incorrect_matches', 'Other Incorrect Match Options')
             )
           ) +
-            "<ul class='matching_answer_incorrect_matches_list'>" +
-            codeHtml +
-            '</ul>'
+          "<ul class='matching_answer_incorrect_matches_list'>" +
+          codeHtml +
+          '</ul>'
         )
       }
     }
@@ -834,12 +834,12 @@ export const quiz = (window.quiz = {
         )
       }
     }
-    $('html,body').scrollTo({top: $question.offset().top - 10, left: 0})
+    $('html,body').scrollTo({ top: $question.offset().top - 10, left: 0 })
     $question
       .find('.question_points_holder')
       .showIf(
         !$question.closest('.question_holder').hasClass('group') &&
-          question.question_type != 'text_only_question'
+        question.question_type != 'text_only_question'
       )
     $question.find('.unsupported_question_type_message').remove()
     quiz.updateDisplayComments()
@@ -847,7 +847,7 @@ export const quiz = (window.quiz = {
       const answers = question.answers
 
       $question.fillTemplateData({
-        data: {id: question.id},
+        data: { id: question.id },
         id: 'question_' + question.id,
         hrefValues: ['id']
       })
@@ -929,7 +929,7 @@ export const quiz = (window.quiz = {
       .find('.question_points_holder')
       .showIf(
         !$formQuestion.closest('.question_holder').hasClass('group') &&
-          question_type !== 'text_only_question'
+        question_type !== 'text_only_question'
       )
 
     const options = {
@@ -1047,10 +1047,10 @@ export const quiz = (window.quiz = {
     if ($answers.length === 0 && result.answer_type != 'none') {
       $formQuestion
         .find('.form_answers')
-        .append(makeFormAnswer({answer_type: result.answer_type, question_type}))
+        .append(makeFormAnswer({ answer_type: result.answer_type, question_type }))
       $formQuestion
         .find('.form_answers')
-        .append(makeFormAnswer({answer_type: result.answer_type, question_type}))
+        .append(makeFormAnswer({ answer_type: result.answer_type, question_type }))
       $answers = $formQuestion.find('.form_answers .answer')
     }
     if (result.answer_selection_type == 'any_answer') {
@@ -1069,7 +1069,7 @@ export const quiz = (window.quiz = {
         $answers.filter(':first').addClass('correct_answer')
       }
     }
-    $form.find('.answer').each(function() {
+    $form.find('.answer').each(function () {
       let weight = 0
       if ($(this).hasClass('correct_answer')) {
         weight = 100
@@ -1089,7 +1089,7 @@ export const quiz = (window.quiz = {
 
   calculatePointsPossible() {
     let tally = 0
-    $('#questions .question_holder:not(.group) .question:not(#question_new)').each(function() {
+    $('#questions .question_holder:not(.group) .question:not(#question_new)').each(function () {
       let val = numberHelper.parse(
         $(this)
           .find('.question_points,.question_points.hidden')
@@ -1100,7 +1100,7 @@ export const quiz = (window.quiz = {
       }
       tally += val
     })
-    $('#questions .group_top:not(#group_top_new)').each(function() {
+    $('#questions .group_top:not(#group_top_new)').each(function () {
       let val = numberHelper.parse(
         $(this)
           .find('.question_points')
@@ -1133,7 +1133,7 @@ export const quiz = (window.quiz = {
 
   updateDisplayComments() {
     this.checkShowDetails()
-    $('.question_holder > .question > .question_comment').each(function() {
+    $('.question_holder > .question > .question_comment').each(function () {
       const plain = $.trim(
         $(this)
           .find('.question_comment_text')
@@ -1148,7 +1148,7 @@ export const quiz = (window.quiz = {
         .css('display', '')
         .toggleClass('empty', !plain && !rich)
     })
-    $('.question_holder .answer_comment_holder').each(function() {
+    $('.question_holder .answer_comment_holder').each(function () {
       const plain = $.trim(
         $(this)
           .find('.answer_comment')
@@ -1163,7 +1163,7 @@ export const quiz = (window.quiz = {
         .css('display', '')
         .toggleClass('empty', !plain && !rich)
     })
-    $('#questions .group_top:not(#group_top_new)').each(function() {
+    $('#questions .group_top:not(#group_top_new)').each(function () {
       let pickCount =
         $(this)
           .find('.pick_count')
@@ -1301,7 +1301,7 @@ scoreValidation = {
 
   initValidators() {
     $('input#quiz_points_possible')
-      .on('invalid:not_a_number', function(e) {
+      .on('invalid:not_a_number', function (e) {
         $(this).errorBox(
           I18n.t(
             'errors.quiz_score_not_a_number',
@@ -1309,10 +1309,10 @@ scoreValidation = {
           )
         )
       })
-      .on('invalid:greater_than', function(e) {
+      .on('invalid:greater_than', function (e) {
         $(this).errorBox(I18n.t('errors.quiz_score_too_short', 'Score must be greater than 0.'))
       })
-      .on('invalid:less_than', function(e) {
+      .on('invalid:less_than', function (e) {
         $(this).errorBox(
           I18n.t('errors.quiz_score_too_long', 'Score must be less than 2,000,000,000.')
         )
@@ -1354,7 +1354,7 @@ const ipFilterValidation = {
   },
 
   initValidators() {
-    $('#quiz_ip_filter').on('invalid:ip_filter', function(e) {
+    $('#quiz_ip_filter').on('invalid:ip_filter', function (e) {
       $(this).errorBox(I18n.t('IP filter is not valid.'))
     })
   },
@@ -1386,7 +1386,7 @@ correctAnswerVisibility = {
     const $options = (that.$options = $('#quiz_show_correct_answers_options'))
     const $pickers = (that.$pickers = $options.find('.date_field'))
 
-    $pickers.each(function() {
+    $pickers.each(function () {
       const $field = $(this)
       const formattedDate = Handlebars.helpers.datetimeFormatted($field.val() || '')
 
@@ -1438,7 +1438,7 @@ correctAnswerVisibility = {
     const $show_at = that.$options.find('#quiz_show_correct_answers_at')
 
     // Clear any existing error boxes
-    that.$pickers.each(function() {
+    that.$pickers.each(function () {
       const $errorBox = $(this).data('associated_error_box')
 
       if ($errorBox) {
@@ -1497,10 +1497,10 @@ correctAnswerVisibility = {
    */
   serialize(e, data) {
     let showResults, showCorrectAnswers, showResultsOnce
-    const resetField = function(key, value) {
+    const resetField = function (key, value) {
       data['quiz[' + key + ']'] = value || ''
     }
-    const serializeField = function(key) {
+    const serializeField = function (key) {
       const $field = $('#quiz_' + key)
       let date
 
@@ -1562,7 +1562,7 @@ function makeQuestion(data) {
   const question = $.extend(
     {},
     quiz.defaultQuestionData,
-    {question_name: I18n.t('default_quesiton_name', 'Question')},
+    { question_name: I18n.t('default_quesiton_name', 'Question') },
     data
   )
   const $question = $('#question_template').clone(true)
@@ -1570,7 +1570,7 @@ function makeQuestion(data) {
     .attr('id', '')
     .find('.question')
     .attr('id', 'question_new')
-  $question.fillTemplateData({data: question, except: ['answers']})
+  $question.fillTemplateData({ data: question, except: ['answers'] })
   $question.find('.original_question_text').fillFormData(question)
   if (question.answers) {
     question.answer_count = question.answers.length
@@ -1579,7 +1579,7 @@ function makeQuestion(data) {
   }
   for (let i = 0; i < question.answer_count; i++) {
     const weight = i == 0 ? 100 : 0
-    const answer = {answer_weight: weight}
+    const answer = { answer_weight: weight }
     if (question.answers && question.answers[i]) {
       $.extend(answer, question.answers[i])
     }
@@ -1629,7 +1629,7 @@ function makeDisplayAnswer(data, escaped) {
     answer.answer_weight = 0
   }
 
-  $answer.fillFormData({answer_text: answer.answer_text})
+  $answer.fillFormData({ answer_text: answer.answer_text })
   $answer.fillTemplateData({
     data: answer,
     htmlValues: ['answer_html', 'answer_match_left_html', 'answer_comment_html']
@@ -1688,7 +1688,7 @@ function quizData($question) {
   if ($question) {
     $list = $question
   }
-  $list.each(function(i) {
+  $list.each(function (i) {
     const $question = $(this)
     let questionData = $question.getTemplateData({
       textValues: [
@@ -1720,7 +1720,7 @@ function quizData($question) {
       questionData.question_text = questionData.text_before_answers
     }
     const matches = []
-    $question.find('.matching_answer_incorrect_matches_list li').each(function() {
+    $question.find('.matching_answer_incorrect_matches_list li').each(function () {
       matches.push($(this).text())
     })
     questionData.matching_answer_incorrect_matches = matches.join('\n')
@@ -1733,13 +1733,13 @@ function quizData($question) {
       question.question_type == 'fill_in_multiple_blanks_question'
     ) {
       only_add_for_blank_ids = true
-      $question.find('.blank_id_select option').each(function() {
+      $question.find('.blank_id_select option').each(function () {
         blank_ids_hash[$(this).text()] = true
       })
     }
     if (question.question_type != 'calculated_question') {
       // must use > in selector
-      $question.find('.text > .answers .answer').each(function() {
+      $question.find('.text > .answers .answer').each(function () {
         const numberValues = [
           'answer_exact',
           'answer_error_margin',
@@ -1773,26 +1773,26 @@ function quizData($question) {
       })
     } else {
       question.formulas = []
-      $question.find('.formulas_holder .formulas_list > div').each(function() {
+      $question.find('.formulas_holder .formulas_list > div').each(function () {
         question.formulas.push($.trim($(this).text()))
       })
       question.variables = []
       $question
         .find('.variable_definitions_holder .variable_definitions tbody tr')
-        .each(function() {
-          const data = $(this).getTemplateData({textValues: ['name', 'min', 'max', 'scale']})
+        .each(function () {
+          const data = $(this).getTemplateData({ textValues: ['name', 'min', 'max', 'scale'] })
           data.min = numberHelper.parse(data.min)
           data.max = numberHelper.parse(data.max)
           data.scale = numberHelper.parse(data.scale)
           question.variables.push(data)
         })
       question.answers = []
-      $question.find('.equation_combinations tbody tr').each(function() {
+      $question.find('.equation_combinations tbody tr').each(function () {
         const data = {}
         data.variables = []
         $(this)
           .find('td:not(.final_answer)')
-          .each(function(i) {
+          .each(function (i) {
             const variable = {}
             variable.name = question.variables[i].name
             variable.value = numberHelper.parse($(this).text()) || 0
@@ -1888,7 +1888,7 @@ function questionLimitReached(inclusiveLimit) {
   let numQuestions = $('#questions .question_holder').not('.group').length
   $('#questions .group_top')
     .find('input[name="quiz_group[pick_count]"]')
-    .each(function() {
+    .each(function () {
       numQuestions += parseInt(this.value)
     })
   if (inclusiveLimit ? numQuestions > QUESTION_LIMIT : numQuestions >= QUESTION_LIMIT) {
@@ -1897,7 +1897,7 @@ function questionLimitReached(inclusiveLimit) {
         I18n.t(
           'question_limit_reached',
           'You have reached the maximum number of questions allowed for a quiz (%{count}/%{limit}).\n\nAs a workaround, consider spreading the material across multiple quizzes.',
-          {count: numQuestions, limit: QUESTION_LIMIT}
+          { count: numQuestions, limit: QUESTION_LIMIT }
         )
       )
     })
@@ -1957,7 +1957,7 @@ function toggleConditionalReleaseTab(quizType) {
   }
 }
 
-$(document).ready(function() {
+$(document).ready(function () {
   quiz.init().updateDisplayComments()
   correctAnswerVisibility.init()
   scoreValidation.init()
@@ -1980,28 +1980,28 @@ $(document).ready(function() {
   const $quiz_edit_wrapper = $('#quiz_edit_wrapper')
   $('.datetime_field').datetime_field()
   $('#questions')
-    .delegate('.group_top,.question,.answer_select,.comment', 'mouseover', function(event) {
+    .delegate('.group_top,.question,.answer_select,.comment', 'mouseover', function (event) {
       $(this).addClass('hover')
     })
-    .delegate('.group_top,.question,.answer_select,.comment', 'mouseout', function(event) {
+    .delegate('.group_top,.question,.answer_select,.comment', 'mouseout', function (event) {
       $(this).removeClass('hover')
     })
 
-  $('#questions').delegate('.answer', 'mouseover', function(event) {
+  $('#questions').delegate('.answer', 'mouseover', function (event) {
     $('#questions .answer.hover').removeClass('hover')
     $(this).addClass('hover')
   })
 
   $quiz_options_form
     .find('#extend_due_at')
-    .change(function() {
+    .change(function () {
       $('#quiz_lock_after').showIf($(this).attr('checked'))
     })
     .change()
 
   $quiz_options_form
     .find('#multiple_attempts_option')
-    .change(function(event) {
+    .change(function (event) {
       $('#multiple_attempts_suboptions').showIf($(this).attr('checked'))
       const $text = $('#multiple_attempts_suboptions #quiz_allowed_attempts')
 
@@ -2013,7 +2013,7 @@ $(document).ready(function() {
 
   $quiz_options_form
     .find('#time_limit_option')
-    .change(function(event, noFocus) {
+    .change(function (event, noFocus) {
       if (!$(this).attr('checked')) {
         $('#quiz_time_limit').val('')
       } else if (!noFocus) {
@@ -2023,7 +2023,7 @@ $(document).ready(function() {
     .triggerHandler('change', [true])
 
   $('#limit_attempts_option')
-    .change(function(event, noFocus) {
+    .change(function (event, noFocus) {
       const $item = $('#quiz_allowed_attempts')
       if ($(this).attr('checked')) {
         let val = parseInt($item.data('saved_value') || $item.val() || '2', 10)
@@ -2042,7 +2042,7 @@ $(document).ready(function() {
     .triggerHandler('change', [true])
 
   $('#enable_quiz_ip_filter, #enable_quiz_access_code')
-    .on('change', function() {
+    .on('change', function () {
       const $checkbox = $(this)
       const $optionGroup = $checkbox.closest('.option-group')
       const checked = $checkbox.prop('checked')
@@ -2069,7 +2069,7 @@ $(document).ready(function() {
         $optionGroup.find('[type="text"]').val('')
       }
     })
-    .each(function() {
+    .each(function () {
       $(this).triggerHandler('change')
     })
 
@@ -2099,7 +2099,7 @@ $(document).ready(function() {
     }
   })
 
-  $('#quiz_require_lockdown_browser').change(function() {
+  $('#quiz_require_lockdown_browser').change(function () {
     $('#lockdown_browser_suboptions').showIf($(this).attr('checked'))
     $('#quiz_require_lockdown_browser_for_results')
       .attr('checked', true)
@@ -2108,9 +2108,9 @@ $(document).ready(function() {
 
   $('#lockdown_browser_suboptions').showIf($('#quiz_require_lockdown_browser').attr('checked'))
 
-  $('#ip_filters_dialog').delegate('.ip_filter', 'click', function(event) {
+  $('#ip_filters_dialog').delegate('.ip_filter', 'click', function (event) {
     event.preventDefault()
-    const filter = $(this).getTemplateData({textValues: ['filter']}).filter
+    const filter = $(this).getTemplateData({ textValues: ['filter'] }).filter
     $('#protect_quiz')
       .attr('checked', true)
       .triggerHandler('change')
@@ -2148,7 +2148,7 @@ $(document).ready(function() {
                 .find('.ip_filter.blank:first')
                 .clone(true)
                 .removeClass('blank')
-              $filter.fillTemplateData({data: filter})
+              $filter.fillTemplateData({ data: filter })
               $dialog.find('.filters tbody').append($filter.show())
             }
             $dialog
@@ -2171,7 +2171,7 @@ $(document).ready(function() {
   })
 
   $('#quiz_one_question_at_a_time')
-    .change(function() {
+    .change(function () {
       const $this = $(this)
       $('#one_question_at_a_time_options').showIf($this.attr('checked'))
       if (!$this.attr('checked')) {
@@ -2180,7 +2180,7 @@ $(document).ready(function() {
     })
     .triggerHandler('change')
 
-  $('.question').on('change', '.limit_text', function() {
+  $('.question').on('change', '.limit_text', function () {
     const answerValue = $(this).val()
     const textLength = answerValue.length
     if (textLength > 80) {
@@ -2264,10 +2264,10 @@ $(document).ready(function() {
         valid = false
         const headerOffset = $('#quiz_title')
           .errorBox(
-            I18n.t('The Quiz name must be under %{length} characters', {length: maxNameLength + 1})
+            I18n.t('The Quiz name must be under %{length} characters', { length: maxNameLength + 1 })
           )
           .offset()
-        $('html,body').scrollTo({top: headerOffset.top, left: 0})
+        $('html,body').scrollTo({ top: headerOffset.top, left: 0 })
       }
       if (!valid) {
         return false
@@ -2277,7 +2277,7 @@ $(document).ready(function() {
         const offset = $('#quiz_title')
           .errorBox(I18n.t('errors.field_is_required', 'This field is required'))
           .offset()
-        $('html,body').scrollTo({top: offset.top, left: 0})
+        $('html,body').scrollTo({ top: offset.top, left: 0 })
         return false
       }
       data['quiz[title]'] = quiz_title
@@ -2319,7 +2319,7 @@ $(document).ready(function() {
             $quiz_options_form.trigger('submit')
           }
         })
-        missingDateView.cancel = function() {
+        missingDateView.cancel = function () {
           missingDateView.$dialog.dialog('close').remove()
         }
         missingDateView.render()
@@ -2477,7 +2477,7 @@ $(document).ready(function() {
     .end()
 
   $('#show_question_details')
-    .change(function(event) {
+    .change(function (event) {
       $('#questions').toggleClass('brief', !$(this).attr('checked'))
     })
     .triggerHandler('change')
@@ -2544,14 +2544,14 @@ $(document).ready(function() {
     })
     .change()
 
-  $('.question_form :input').keycodes('esc', function(event) {
+  $('.question_form :input').keycodes('esc', function (event) {
     $(this)
       .parents('form')
       .find("input[value='" + I18n.t('#buttons.cancel', 'Cancel') + "']")
       .click()
   })
 
-  $(document).delegate('.blank_id_select', 'change', function() {
+  $(document).delegate('.blank_id_select', 'change', function () {
     const variable = $(this).val()
     const idx = $(this)[0].selectedIndex
     $(this)
@@ -2564,7 +2564,7 @@ $(document).ready(function() {
           .closest('.question')
           .find('.answer.answer_idx_' + idx)
           .filter(':not(.answer_for_' + variable + ')')
-          .each(function() {
+          .each(function () {
             $(this).attr(
               'class',
               $(this)
@@ -2592,7 +2592,7 @@ $(document).ready(function() {
 
   $('.blank_id_select').change()
 
-  $(document).delegate('.delete_question_link', 'click', function(event) {
+  $(document).delegate('.delete_question_link', 'click', function (event) {
     event.preventDefault()
     $(this)
       .parents('.question_holder')
@@ -2612,7 +2612,7 @@ $(document).ready(function() {
       })
   })
 
-  $(document).delegate('.edit_question_link', 'click', function(event) {
+  $(document).delegate('.edit_question_link', 'click', function (event) {
     event.preventDefault()
     var $question = $(this).parents('.question')
     setQuestionID($question)
@@ -2640,7 +2640,7 @@ $(document).ready(function() {
     })
     question.question_text = $question.find("textarea[name='question_text']").val()
     const matches = []
-    $question.find('.matching_answer_incorrect_matches_list li').each(function() {
+    $question.find('.matching_answer_incorrect_matches_list li').each(function () {
       matches.push($(this).text())
     })
     question.matching_answer_incorrect_matches = matches.join('\n')
@@ -2742,7 +2742,7 @@ $(document).ready(function() {
       $formQuestion.triggerHandler('recompute_variables', true)
     } else {
       // must use > in selector
-      $question.find('.text > .answers .answer').each(function(index) {
+      $question.find('.text > .answers .answer').each(function (index) {
         const answer = $(this).getTemplateData({
           textValues: data.textValues,
           htmlValues: data.htmlValues
@@ -2773,7 +2773,7 @@ $(document).ready(function() {
       .find(':input:visible:first')
       .focus()
       .select()
-    $('html,body').scrollTo({top: $form.offset().top - 10, left: 0})
+    $('html,body').scrollTo({ top: $form.offset().top - 10, left: 0 })
     setTimeout(() => {
       $formQuestion.find('.question_content').triggerHandler('change')
       $formQuestion.addClass('ready')
@@ -2789,7 +2789,7 @@ $(document).ready(function() {
         'input[value=' + REGRADE_OPTIONS[questionID] + ']'
       )
       const newAnswer = $form.find('.correct_answer')
-      toggleAnswer($question, {regradeOption, newAnswer})
+      toggleAnswer($question, { regradeOption, newAnswer })
     }
     toggleSelectAnswerAltText(
       $('.form_answers .answer'),
@@ -2798,7 +2798,7 @@ $(document).ready(function() {
     togglePossibleCorrectAnswerLabel($('.form_answers .answer'))
   })
 
-  $(".question_form :input[name='question_type']").change(function() {
+  $(".question_form :input[name='question_type']").change(function () {
     // is this the initial loado of the question type
     const loading = $(this).parents('.question.initialLoad').length > 0
     const holder = $(this).parents('.question_holder')
@@ -2811,7 +2811,7 @@ $(document).ready(function() {
     }
   })
 
-  $('#question_form_template .cancel_link').click(function(event) {
+  $('#question_form_template .cancel_link').click(function (event) {
     const $displayQuestion = $(this)
       .parents('form')
       .prev()
@@ -2825,7 +2825,7 @@ $(document).ready(function() {
         .remove()
     }
     $displayQuestion.show()
-    $('html,body').scrollTo({top: $displayQuestion.offset().top - 10, left: 0})
+    $('html,body').scrollTo({ top: $displayQuestion.offset().top - 10, left: 0 })
     if (isNew) {
       $displayQuestion.parent().remove()
       quiz.updateDisplayComments()
@@ -2833,7 +2833,7 @@ $(document).ready(function() {
     quiz.updateDisplayComments()
   })
 
-  $(document).delegate('a.comment_focus', 'click', function(event) {
+  $(document).delegate('a.comment_focus', 'click', function (event) {
     event.preventDefault()
     const $link = $(this)
     const $comment = $link.closest('.question_comment, .answer_comments')
@@ -2882,12 +2882,12 @@ $(document).ready(function() {
   })
 
   $(document)
-    .delegate('.numerical_answer_type', 'change', function() {
+    .delegate('.numerical_answer_type', 'change', function () {
       numericalAnswerTypeChange($(this))
     })
     .change()
 
-  $(document).delegate('.select_answer_link', 'click', function(event) {
+  $(document).delegate('.select_answer_link', 'click', function (event) {
     event.preventDefault()
 
     const $question = $(this).parents('.question')
@@ -2908,7 +2908,7 @@ $(document).ready(function() {
     const holder = $question.parents('.question_holder')
     const isNew = holder.find('#question_new').length > 0
     if (isNew || !canRegradeQuestion($question) || !$('#student_submissions_warning').length > 0) {
-      toggleAnswer($question, {newAnswer, regradeOption: null})
+      toggleAnswer($question, { newAnswer, regradeOption: null })
     } else {
       const isDisabled = holder.find('input[name="regrade_disabled"]').val() == '1'
       const questionType = $question.find('.question_type').val()
@@ -2919,7 +2919,7 @@ $(document).ready(function() {
         multipleAnswer: questionType === 'multiple_answers_question'
       })
       regradeOptions.on('update', regradeOption => {
-        const newAnswerData = {regradeOption, newAnswer}
+        const newAnswerData = { regradeOption, newAnswer }
         toggleAnswer($question, newAnswerData)
       })
     }
@@ -2978,7 +2978,7 @@ $(document).ready(function() {
       .find('.display_question')
       .attr('id')
       .replace('question_', '')
-    question.data({questionID})
+    question.data({ questionID })
   }
 
   function canRegradeQuestion($el) {
@@ -3016,7 +3016,7 @@ $(document).ready(function() {
 
   function correctAnswerIDs($el) {
     const answers = []
-    $el.find('.answer').each(function(index) {
+    $el.find('.answer').each(function (index) {
       if ($(this).hasClass('correct_answer')) answers.push(index)
     })
     return answers
@@ -3037,7 +3037,7 @@ $(document).ready(function() {
     }
   }
 
-  $('.question_form :input').change(function() {
+  $('.question_form :input').change(function () {
     if ($(this).parents('.answer').length > 0) {
       const $answer = $(this).parents('.answer')
       $answer.find(":input[name='" + $(this).attr('name') + "']").val($(this).val())
@@ -3045,7 +3045,7 @@ $(document).ready(function() {
   })
 
   $('.question_form select.answer_selection_type')
-    .change(function() {
+    .change(function () {
       if ($(this).val() == 'single_answer') {
         $(this)
           .parents('.question')
@@ -3058,7 +3058,7 @@ $(document).ready(function() {
     })
     .change()
 
-  $('.delete_answer_link').click(function(event) {
+  $('.delete_answer_link').click(function (event) {
     event.preventDefault()
 
     const holder = $(this).parents('.question_holder')
@@ -3071,7 +3071,7 @@ $(document).ready(function() {
       const msg = I18n.t(
         'confirms.delete_answer',
         'Are you sure? Deleting answers from a question with submissions ' +
-          'disables the option to regrade this question.'
+        'disables the option to regrade this question.'
       )
       if (!confirm(msg)) {
         return
@@ -3091,11 +3091,11 @@ $(document).ready(function() {
     $ansHeader.focus()
   })
 
-  $('.add_question_group_link').click(function(event) {
+  $('.add_question_group_link').click(function (event) {
     event.preventDefault()
     if (questionLimitReached()) return
     $('.question_form .submit_button:visible,.quiz_group_form .submit_button:visible').each(
-      function() {
+      function () {
         $(this)
           .parents('form')
           .submit()
@@ -3118,7 +3118,7 @@ $(document).ready(function() {
     $group_top.find('.submit_button').text(I18n.t('buttons.create_group', 'Create Group'))
   })
 
-  $('.add_question_link').click(function(event) {
+  $('.add_question_link').click(function (event) {
     event.preventDefault()
     if (questionLimitReached()) return
     $('.question_form:visible,.group_top.editing .quiz_group_form:visible').submit()
@@ -3148,7 +3148,7 @@ $(document).ready(function() {
       .text(I18n.t('buttons.create_question', 'Create Question'))
     $form.find('option.missing_word').remove()
     $question.find('.question_type').change()
-    $('html,body').scrollTo({top: $question.offset().top - 10, left: 0})
+    $('html,body').scrollTo({ top: $question.offset().top - 10, left: 0 })
     $question
       .find(':input:first')
       .focus()
@@ -3168,7 +3168,7 @@ $(document).ready(function() {
 
   const $findBankDialog = $('#find_bank_dialog')
 
-  $('.find_bank_link').click(function(event) {
+  $('.find_bank_link').click(function (event) {
     event.preventDefault()
     const $dialog = $findBankDialog
     $dialog.data('form', $(this).closest('.quiz_group_form'))
@@ -3194,7 +3194,7 @@ $(document).ready(function() {
               .find('.bank.blank:first')
               .clone(true)
               .removeClass('blank')
-            $bank.fillTemplateData({data: bank, dataValues: ['id', 'context_type', 'context_id']})
+            $bank.fillTemplateData({ data: bank, dataValues: ['id', 'context_type', 'context_id'] })
             $dialog.find('.bank_list').append($bank)
             $bank.data('bank_data', bank)
             $bank.show()
@@ -3222,7 +3222,7 @@ $(document).ready(function() {
   })
 
   $findBankDialog
-    .delegate('.bank', 'click', function() {
+    .delegate('.bank', 'click', function () {
       $findBankDialog.find('.bank.selected').removeClass('selected')
       $(this).addClass('selected')
       $findBankDialog.find('.submit_button').attr('disabled', false)
@@ -3242,7 +3242,7 @@ $(document).ready(function() {
       }
       $formBank
         .show()
-        .fillTemplateData({data: bank})
+        .fillTemplateData({ data: bank })
         .data('bank_data', bank)
       $findBankDialog.dialog('close')
     })
@@ -3278,7 +3278,7 @@ $(document).ready(function() {
               .find('.bank.blank:first')
               .clone(true)
               .removeClass('blank')
-            $bank.fillTemplateData({data: bank})
+            $bank.fillTemplateData({ data: bank })
             $dialog.find('.bank_list').append($bank)
             $bank.data('bank_data', bank)
             $bank.show()
@@ -3310,19 +3310,19 @@ $(document).ready(function() {
     })
   })
 
-  const updateFindQuestionDialogQuizGroups = function(id) {
+  const updateFindQuestionDialogQuizGroups = function (id) {
     const groups = []
     $findQuestionDialog
       .find('.quiz_group_select')
       .find('option.group')
       .remove()
     $findQuestionDialog.find('.quiz_group_select_holder').show()
-    $('#questions .group_top:visible').each(function() {
+    $('#questions .group_top:visible').each(function () {
       const group = {}
       group.id = $(this)
         .attr('id')
         .substring(10)
-      group.name = $(this).getTemplateData({textValues: ['name']}).name
+      group.name = $(this).getTemplateData({ textValues: ['name'] }).name
       const $option = $('<option/>')
       $option.text(TextHelper.truncateText(group.name))
       $option.val(group.id)
@@ -3338,11 +3338,11 @@ $(document).ready(function() {
     $('#quiz_group_select').change()
   }
 
-  $('#quiz_group_select').change(function() {
+  $('#quiz_group_select').change(function () {
     if ($(this).val() == 'new') {
       const $dialog = $('#add_question_group_dialog')
       const question_ids = []
-      $findQuestionDialog.find('.question_list :checkbox:checked').each(function() {
+      $findQuestionDialog.find('.question_list :checkbox:checked').each(function () {
         question_ids.push(
           $(this)
             .parents('.found_question')
@@ -3413,7 +3413,7 @@ $(document).ready(function() {
           id: 'group_top_' + group.id,
           hrefValues: ['id']
         })
-        $group_top.fillFormData(data, {object_name: 'quiz_group'})
+        $group_top.fillFormData(data, { object_name: 'quiz_group' })
         $('#unpublished_changes_message').slideDown()
         $group_bottom.attr('id', 'group_bottom_' + group.id)
         quiz.updateDisplayComments()
@@ -3436,7 +3436,7 @@ $(document).ready(function() {
     $('#quiz_group_select').val('none')
   })
 
-  const showQuestions = function(questionData) {
+  const showQuestions = function (questionData) {
     const questionList = questionData.questions
     const $bank = $findQuestionDialog.find('.bank.selected_side_tab')
     const bank = $bank.data('bank_data')
@@ -3445,8 +3445,8 @@ $(document).ready(function() {
       return
     }
     const existingIDs = {}
-    $('.display_question:visible').each(function() {
-      const id = $(this).getTemplateData({textValues: ['assessment_question_id']})
+    $('.display_question:visible').each(function () {
+      const id = $(this).getTemplateData({ textValues: ['assessment_question_id'] })
         .assessment_question_id
       if (id) {
         existingIDs[id] = true
@@ -3461,14 +3461,14 @@ $(document).ready(function() {
       const question = questionList[idx].assessment_question
       if (!existingIDs[question.id] || true) {
         $div.html(question.question_data.question_text)
-        question.question_text = TextHelper.truncateText($div.text(), {max: 75})
+        question.question_text = TextHelper.truncateText($div.text(), { max: 75 })
         question.question_name = question.question_data.question_name
         const $question = $findQuestionDialog
           .find('.found_question.blank')
           .clone(true)
           .removeClass('blank')
         $question.toggleClass('already_added', !!existingIDs[question.id])
-        $question.fillTemplateData({data: question})
+        $question.fillTemplateData({ data: question })
         $question.find(':checkbox').attr('id', 'find_bank_question_' + question.id)
         $question.find('label').attr('for', 'find_bank_question_' + question.id)
         $question.data('question_data', question)
@@ -3479,9 +3479,9 @@ $(document).ready(function() {
   }
 
   $('#find_question_dialog')
-    .delegate('.bank', 'click', function(event) {
+    .delegate('.bank', 'click', function (event) {
       event.preventDefault()
-      const id = $(this).getTemplateData({textValues: ['id']}).id
+      const id = $(this).getTemplateData({ textValues: ['id'] }).id
       const data = $findQuestionDialog.data('banks')[id]
       $findQuestionDialog.find('.bank').removeClass('selected')
       $findQuestionDialog.find('.selected_side_tab').removeClass('selected_side_tab')
@@ -3503,7 +3503,7 @@ $(document).ready(function() {
         showQuestions(data)
       }
     })
-    .delegate('.page_link', 'click', function(event) {
+    .delegate('.page_link', 'click', function (event) {
       event.preventDefault()
       const $link = $(this)
       if ($link.hasClass('loading')) {
@@ -3570,10 +3570,10 @@ $(document).ready(function() {
     .delegate('.cancel_button', 'click', event => {
       $findQuestionDialog.dialog('close')
     })
-    .delegate('.group_button', 'click', function(event) {
+    .delegate('.group_button', 'click', function (event) {
       const $dialog = $('#add_found_questions_as_group_dialog')
       const question_ids = []
-      $findQuestionDialog.find('.question_list :checkbox:checked').each(function() {
+      $findQuestionDialog.find('.question_list :checkbox:checked').each(function () {
         question_ids.push(
           $(this)
             .parents('.found_question')
@@ -3586,9 +3586,9 @@ $(document).ready(function() {
         title: I18n.t('titles.add_questions_as_group', 'Add Questions as a Group')
       })
     })
-    .delegate('.submit_button', 'click', function(event) {
+    .delegate('.submit_button', 'click', function (event) {
       const question_ids = []
-      $findQuestionDialog.find('.question_list :checkbox:checked').each(function() {
+      $findQuestionDialog.find('.question_list :checkbox:checked').each(function () {
         question_ids.push(
           $(this)
             .parents('.found_question')
@@ -3647,7 +3647,7 @@ $(document).ready(function() {
       )
     })
 
-  $('.add_answer_link').bind('click', function(event, skipFocus) {
+  $('.add_answer_link').bind('click', function (event, skipFocus) {
     event.preventDefault()
     const $question = $(this).parents('.question')
     var answers = []
@@ -3773,6 +3773,9 @@ $(document).ready(function() {
       } else if (answer_selection_type == 'matching') {
         $answer.removeClass('correct_answer')
       }
+      const placeholderText = $answer.find('input[name="answer_text"]:text').attr('placeholder')
+      $answer.find('input[name="answer_text"]:text').attr('placeholder', `${placeholderText} ${$question.find('.form_answers > .answer').length + 1}`)
+      
       $question.find('.form_answers').append($answer.show())
       if (!skipFocus) {
         $('html,body').scrollTo($answer)
@@ -3784,13 +3787,13 @@ $(document).ready(function() {
     }
   })
 
-  $(document).delegate('.answer_comment_holder', 'click', function(event) {
+  $(document).delegate('.answer_comment_holder', 'click', function (event) {
     $(this)
       .find('.answer_comment')
       .slideToggle()
   })
 
-  $('#question_form_template').submit(function(event) {
+  $('#question_form_template').submit(function (event) {
     event.preventDefault()
     event.stopPropagation()
     const $displayQuestion = $(this).prev()
@@ -3843,7 +3846,7 @@ $(document).ready(function() {
       questionData.question_type == 'fill_in_multiple_blanks_question' ||
       questionData.question_type == 'short_answer_question'
     ) {
-      const checkForNotBlanks = function(elements) {
+      const checkForNotBlanks = function (elements) {
         return elements.filter((i, element) => !!element.value).length
       }
       if (questionData.question_type == 'fill_in_multiple_blanks_question') {
@@ -3896,16 +3899,16 @@ $(document).ready(function() {
       question.question_type == 'fill_in_multiple_blanks_question'
     ) {
       only_add_for_blank_ids = true
-      $question.find('.blank_id_select option').each(function() {
+      $question.find('.blank_id_select option').each(function () {
         blank_ids_hash[$(this).text()] = true
       })
     }
 
-    $question.find('.blank_id_select option').each(function() {
+    $question.find('.blank_id_select option').each(function () {
       $displayQuestion.find('.blank_id_select').append($(this).clone())
     })
 
-    var $answers = $question.find('.answer').each(function(i) {
+    var $answers = $question.find('.answer').each(function (i) {
       const $answer = $(this)
       $answer.show()
       const data = $answer.getFormData()
@@ -3939,7 +3942,7 @@ $(document).ready(function() {
       question.answers = []
       question.variables = []
       const sorts = {}
-      $question.find('.variables .variable').each(function(i) {
+      $question.find('.variables .variable').each(function (i) {
         const data = {}
         data.scale = '0'
         data.name = $(this)
@@ -3967,7 +3970,7 @@ $(document).ready(function() {
         question.variables.push(data)
       })
       question.formulas = []
-      $question.find('.formulas .formula').each(function() {
+      $question.find('.formulas .formula').each(function () {
         const data = {}
         data.formula = $.trim($(this).text())
         question.formulas.push(data)
@@ -3980,7 +3983,7 @@ $(document).ready(function() {
       question.answerDecimalPoints =
         numberHelper.parse($question.find('.combination_error_margin').val()) || 0
       const $ths = $question.find('.combinations thead th')
-      $question.find('.combinations tbody tr').each(function() {
+      $question.find('.combinations tbody tr').each(function () {
         const data = {}
         data.variables = []
 
@@ -3992,7 +3995,7 @@ $(document).ready(function() {
 
         $(this)
           .find('td:not(.final_answer)')
-          .each(function(i) {
+          .each(function (i) {
             const variable = {}
             variable.name = $.trim($ths.eq(i).text())
             variable.value = numberHelper.parse($(this).text()) || 0
@@ -4011,7 +4014,7 @@ $(document).ready(function() {
       n_correct = details.n_correct
 
     $form.remove()
-    $('html,body').scrollTo({top: $displayQuestion.offset().top - 10, left: 0})
+    $('html,body').scrollTo({ top: $displayQuestion.offset().top - 10, left: 0 })
     let url = $('#quiz_urls .add_question_url,#bank_urls .add_question_url').attr('href')
     let method = 'POST'
     const isNew = $displayQuestion.attr('id') == 'question_new'
@@ -4099,7 +4102,7 @@ $(document).ready(function() {
         event.preventDefault()
       }
     })
-    .delegate('input.float_value', 'change blur focus', function(event) {
+    .delegate('input.float_value', 'change blur focus', function (event) {
       const $el = $(this)
 
       if ($el.hasClass('long')) {
@@ -4120,14 +4123,14 @@ $(document).ready(function() {
         event.preventDefault()
       }
     })
-    .delegate('input.precision_value', 'change blur focus', function(event) {
+    .delegate('input.precision_value', 'change blur focus', function (event) {
       const $el = $(this)
       quiz.parseInputRange($el, 'int', 1, 16)
       $el.siblings('.float_value.precision').change()
     })
 
   $('#questions')
-    .delegate('.question_teaser_link', 'click', function(event) {
+    .delegate('.question_teaser_link', 'click', function (event) {
       event.preventDefault()
       const $teaser = $(this).parents('.question_teaser')
       const question_data = $teaser.data('question')
@@ -4181,14 +4184,14 @@ $(document).ready(function() {
         }
       }
     })
-    .delegate('.teaser.question_text', 'click', function(event) {
+    .delegate('.teaser.question_text', 'click', function (event) {
       event.preventDefault()
       $(this)
         .parents('.question_teaser')
         .find('.question_teaser_link')
         .click()
     })
-    .delegate('.edit_teaser_link', 'click', function(event) {
+    .delegate('.edit_teaser_link', 'click', function (event) {
       event.preventDefault()
       $(this)
         .parents('.question_teaser')
@@ -4272,7 +4275,7 @@ $(document).ready(function() {
       }
 
       $group.find('.find_bank_link').hide()
-      $group.fillFormData(data, {object_name: 'quiz_group'})
+      $group.fillFormData(data, { object_name: 'quiz_group' })
       let $bottom = $group.next()
       while ($bottom.length > 0 && !$bottom.hasClass('group_bottom')) {
         $bottom = $bottom.next()
@@ -4413,13 +4416,13 @@ $(document).ready(function() {
           '_' +
           item.id +
           '">' +
-          htmlEscape(I18n.t('before_quiz_item', 'before %{name}', {name: item.name})) +
+          htmlEscape(I18n.t('before_quiz_item', 'before %{name}', { name: item.name })) +
           '</option>'
       )
       options.push(
         '<option value="last">' +
-          htmlEscape(I18n.t('at_the_bottom', '-- at the bottom --')) +
-          '</option>'
+        htmlEscape(I18n.t('at_the_bottom', '-- at the bottom --')) +
+        '</option>'
       )
       this.$form.find('#move_select_question').html($.raw(options.join('')))
     },
@@ -4553,12 +4556,12 @@ $(document).ready(function() {
       $.ajaxJSON(
         url,
         'POST',
-        JSON.stringify({order: params}),
+        JSON.stringify({ order: params }),
         data => {
           this.$questions.loadingImage('remove')
         },
         {},
-        {contentType: 'application/json'}
+        { contentType: 'application/json' }
       )
     },
 
@@ -4571,13 +4574,13 @@ $(document).ready(function() {
       const params = []
       $.each(this.itemsInGroup(group), (i, item) => {
         if (item.type + '_' + item.id == place) {
-          params.push({type: selected.type, id: selected.id})
+          params.push({ type: selected.type, id: selected.id })
         }
-        params.push({type: item.type, id: item.id})
+        params.push({ type: item.type, id: item.id })
       })
 
       if (place == 'last') {
-        params.push({type: selected.type, id: selected.id})
+        params.push({ type: selected.type, id: selected.id })
       }
       return params
     }
@@ -4611,7 +4614,7 @@ $(document).ready(function() {
         while ($obj.length > 0 && !$obj.hasClass('group_bottom')) {
           $obj = $obj.next()
           if (!$obj.hasClass('ui-sortable-placeholder')) {
-            take_with.push({item: $obj, visible: $obj.is(':visible')})
+            take_with.push({ item: $obj, visible: $obj.is(':visible') })
             $obj.hide()
           }
         }
@@ -4625,8 +4628,8 @@ $(document).ready(function() {
         }
         ui.placeholder.append(
           "<div class='question_placeholder' style='height: " +
-            $.raw(ui.helper.height() - 10) +
-            "px;'>&nbsp;</div>"
+          $.raw(ui.helper.height() - 10) +
+          "px;'>&nbsp;</div>"
         )
       }
     },
@@ -4698,7 +4701,7 @@ $(document).ready(function() {
           $obj = $obj.next()
         }
       } else {
-        $container.children('.question_holder:not(.group),.group_top').each(function() {
+        $container.children('.question_holder:not(.group),.group_top').each(function () {
           items.push($(this))
         })
       }
@@ -4711,10 +4714,10 @@ $(document).ready(function() {
           const $question = $obj.find('.question')
           const attrID = $question.attr('id')
           var id = attrID ? attrID.substring(9) : $question.find('.id').text()
-          object = {type: 'question', id}
+          object = { type: 'question', id }
         } else {
           var id = $obj.attr('id').substring(10)
-          object = {type: 'group', id}
+          object = { type: 'group', id }
         }
         list.push(object)
       })
@@ -4722,25 +4725,25 @@ $(document).ready(function() {
       $.ajaxJSON(
         url,
         'POST',
-        JSON.stringify({order: list}),
+        JSON.stringify({ order: list }),
         data => {
           $container.loadingImage('remove')
         },
         {},
-        {contentType: 'application/json'}
+        { contentType: 'application/json' }
       )
     }
   })
 
   $(document)
-    .delegate('.edit_group_link', 'click', function(event) {
+    .delegate('.edit_group_link', 'click', function (event) {
       if ($(this).closest('.group_top').length == 0) {
         return
       }
       event.preventDefault()
       const $top = $(this).parents('.group_top')
-      const data = $top.getTemplateData({textValues: ['name', 'pick_count', 'question_points']})
-      $top.fillFormData(data, {object_name: 'quiz_group'})
+      const data = $top.getTemplateData({ textValues: ['name', 'pick_count', 'question_points'] })
+      $top.fillFormData(data, { object_name: 'quiz_group' })
       $top.addClass('editing')
       $top
         .find(':text:visible:first')
@@ -4752,7 +4755,7 @@ $(document).ready(function() {
         .attr('method', 'PUT')
       $top.find('.submit_button').text(I18n.t('buttons.update_group', 'Update Group'))
     })
-    .delegate('.delete_group_link', 'click', function(event) {
+    .delegate('.delete_group_link', 'click', function (event) {
       if ($(this).closest('.group_top').length == 0) {
         return
       }
@@ -4771,14 +4774,14 @@ $(document).ready(function() {
           $list.dim()
         },
         success() {
-          $list.fadeOut(function() {
+          $list.fadeOut(function () {
             $(this).remove()
             quiz.updateDisplayComments()
           })
         }
       })
     })
-    .delegate('.group_edit.cancel_button', 'click', function(event) {
+    .delegate('.group_edit.cancel_button', 'click', function (event) {
       if ($(this).closest('.group_top').length == 0) {
         return
       }
@@ -4799,7 +4802,7 @@ $(document).ready(function() {
       }
       quiz.updateDisplayComments()
     })
-    .delegate('.collapse_link', 'click', function(event) {
+    .delegate('.collapse_link', 'click', function (event) {
       if ($(this).closest('.group_top').length == 0) {
         return
       }
@@ -4820,7 +4823,7 @@ $(document).ready(function() {
         $obj = $obj.next()
       }
     })
-    .delegate('.expand_link', 'click', function(event) {
+    .delegate('.expand_link', 'click', function (event) {
       if ($(this).closest('.group_top').length == 0) {
         return
       }
@@ -4857,7 +4860,7 @@ $(document).ready(function() {
     const keyboardShortcutsView = new RCEKeyboardShortcuts()
     keyboardShortcutsView.render().$el.insertBefore($('.toggle_description_views_link:first'))
 
-    $('.toggle_description_views_link').click(function(event) {
+    $('.toggle_description_views_link').click(function (event) {
       event.preventDefault()
       RichContentEditor.callOnRCE($('#quiz_description'), 'toggle')
       //  todo: replace .andSelf with .addBack when JQuery is upgraded.
@@ -4868,7 +4871,7 @@ $(document).ready(function() {
         .focus()
     })
 
-    $('.toggle_question_content_views_link').click(function(event) {
+    $('.toggle_question_content_views_link').click(function (event) {
       event.preventDefault()
       RichContentEditor.callOnRCE(
         $(this)
@@ -4884,7 +4887,7 @@ $(document).ready(function() {
         .focus()
     })
 
-    $('.toggle_text_after_answers_link').click(function(event) {
+    $('.toggle_text_after_answers_link').click(function (event) {
       event.preventDefault()
       RichContentEditor.callOnRCE(
         $(this)
@@ -4901,7 +4904,7 @@ $(document).ready(function() {
     })
   }
 
-  $('#calc_helper_methods').change(function() {
+  $('#calc_helper_methods').change(function () {
     const method = $(this).val()
     $('#calc_helper_method_description').text(calcCmd.functionDescription(method))
     const html =
@@ -4913,7 +4916,7 @@ $(document).ready(function() {
 
   $('#equations_dialog_tabs').tabs()
 
-  $('.delete_quiz_link').click(function(event) {
+  $('.delete_quiz_link').click(function (event) {
     event.preventDefault()
     $(this)
       .parents('.quiz')
@@ -4954,7 +4957,7 @@ $(document).ready(function() {
   }
 })
 
-$.fn.multipleAnswerSetsQuestion = function() {
+$.fn.multipleAnswerSetsQuestion = function () {
   const $question = $(this)
   const $questionContent = $question.find('.question_content')
   const $select = $question.find('.blank_id_select')
@@ -4978,7 +4981,7 @@ $.fn.multipleAnswerSetsQuestion = function() {
   }
 
   $select
-    .change(function() {
+    .change(function () {
       if (
         questionType !== 'multiple_dropdowns_question' &&
         questionType !== 'fill_in_multiple_blanks_question'
@@ -4989,10 +4992,10 @@ $.fn.multipleAnswerSetsQuestion = function() {
         .find('.form_answers .answer')
         .hide()
         .addClass('hidden')
-      $select.find('option').each(function(i) {
+      $select.find('option').each(function (i) {
         $question
           .find('.form_answers .answer_for_' + $(this).val())
-          .each(function() {
+          .each(function () {
             $(this).attr(
               'class',
               $(this)
@@ -5006,7 +5009,7 @@ $.fn.multipleAnswerSetsQuestion = function() {
         const variable = $select.val()
         const variableIdx = $select[0].selectedIndex
         if (variableIdx >= 0) {
-          $question.find('.form_answers .answer').each(function() {
+          $question.find('.form_answers .answer').each(function () {
             const $this = $(this)
             if (!$this.attr('class').match(/answer_idx_/)) {
               if ($this.attr('class').match(/answer_for_/)) {
@@ -5015,7 +5018,7 @@ $.fn.multipleAnswerSetsQuestion = function() {
                 if (blankId && blankId[0]) {
                   blankId = blankId[0].substring(11)
                 }
-                $select.find('option').each(function(i) {
+                $select.find('option').each(function (i) {
                   if ($(this).text() == blankId) {
                     idx = i
                   }
@@ -5030,12 +5033,12 @@ $.fn.multipleAnswerSetsQuestion = function() {
             }
           })
         }
-        $select.find('option').each(function(i) {
+        $select.find('option').each(function (i) {
           const text = $(this).text()
           $question
             .find('.form_answers .answer.answer_idx_' + i)
             .find('.blank_id')
-            .each(function() {
+            .each(function () {
               $(this).text(text)
             })
         })
@@ -5055,7 +5058,7 @@ $.fn.multipleAnswerSetsQuestion = function() {
         if (!$valid_answers.filter('.correct_answer').length) {
           $valid_answers.filter(':first').addClass('correct_answer')
         }
-        $valid_answers.each(function() {
+        $valid_answers.each(function () {
           $(this)
             .find('.blank_id')
             .text(variable)
@@ -5065,7 +5068,7 @@ $.fn.multipleAnswerSetsQuestion = function() {
     .change()
 }
 
-$.fn.formulaQuestion = function() {
+$.fn.formulaQuestion = function () {
   const $question = $(this)
   if ($question.data('formula_question_bindings')) {
     return
@@ -5074,7 +5077,7 @@ $.fn.formulaQuestion = function() {
   $question.find('.supercalc').superCalc({
     pre_process() {
       const result = []
-      $question.find('.variables .variable').each(function() {
+      $question.find('.variables .variable').each(function () {
         const data = {
           name: $(this).attr('data-name'),
           value: $(this).attr('data-value')
@@ -5087,7 +5090,7 @@ $.fn.formulaQuestion = function() {
       $question.triggerHandler('settings_change', true)
     }
   })
-  $question.find('.compute_combinations').click(function() {
+  $question.find('.compute_combinations').click(function () {
     const $button = $(this)
     $button.text(I18n.t('buttons.generating', 'Generating...')).attr('disabled', true)
     const question_type = $question.find('.question_type').val()
@@ -5096,7 +5099,7 @@ $.fn.formulaQuestion = function() {
     }
     const $table = $question.find('.combinations')
     $table.find('thead tr').empty()
-    $question.find('.variables .variable').each(function() {
+    $question.find('.variables .variable').each(function () {
       const $th = $('<th/>')
       $th.text(
         $(this)
@@ -5120,7 +5123,7 @@ $.fn.formulaQuestion = function() {
     let succeeded = 0
     const existingCombinations = {}
     const mod = 0
-    const finished = function() {
+    const finished = function () {
       $question.find('.supercalc').superCalc('clear_cached_finds')
       $button.text('Generate').attr('disabled', false)
       if (succeeded == 0) {
@@ -5139,7 +5142,7 @@ $.fn.formulaQuestion = function() {
               other:
                 'The system could only generate %{count} valid combinations for the parameters given'
             },
-            {count: succeeded}
+            { count: succeeded }
           )
         )
       }
@@ -5154,7 +5157,7 @@ $.fn.formulaQuestion = function() {
     const answer_tolerance = parseFloatOrPercentage(
       $question.find('.combination_answer_tolerance').val()
     )
-    var next = function() {
+    var next = function () {
       $button.text(
         I18n.t('buttons.generating_combinations_progress', 'Generating... (%{done}/%{total})', {
           done: succeeded,
@@ -5163,22 +5166,22 @@ $.fn.formulaQuestion = function() {
       )
       const fragment = document.createDocumentFragment()
       for (let idx = 0; idx < 5 && succeeded < cnt && failedCount < 25; idx++) {
-        $variable_values.each(function() {
+        $variable_values.each(function () {
           $(this)
             .find('.variable_setting:first')
-            .trigger('change', {cache: true})
+            .trigger('change', { cache: true })
         })
         $question.find('.supercalc').superCalc('recalculate', true)
         const result = $status.attr('data-res')
         const solution = new QuizFormulaSolution(result)
         var combination = []
-        $variable_values.each(function() {
+        $variable_values.each(function () {
           combination.push($(this).attr('data-value'))
         })
         if (!existingCombinations[combination] || true) {
           if (solution.isValid()) {
             var $result = $('<tr/>')
-            $variable_values.each(function() {
+            $variable_values.each(function () {
               const $td = $('<td/>')
               $td.text(I18n.n($(this).attr('data-value')))
               $result.append($td)
@@ -5230,11 +5233,11 @@ $.fn.formulaQuestion = function() {
     }
     $question.triggerHandler('recompute_variables', true)
   })
-  $question.bind('recompute_variables', function(event, in_dom) {
-    $question.find('.variables .variable').each(function() {
+  $question.bind('recompute_variables', function (event, in_dom) {
+    $question.find('.variables .variable').each(function () {
       $(this)
         .find('.variable_setting:first')
-        .trigger('change', in_dom ? {recompute: true, cache: true} : {cache: true})
+        .trigger('change', in_dom ? { recompute: true, cache: true } : { cache: true })
     })
   })
   $question.bind('settings_change', (event, remove) => {
@@ -5309,7 +5312,7 @@ $.fn.formulaQuestion = function() {
   })
   $question
     .find('.question_content')
-    .bind('change', function(event) {
+    .bind('change', function (event) {
       const text = RichContentEditor.callOnRCE($(this), 'get_code')
       const matches = text.match(/\[[A-Za-z][A-Za-z0-9]*\]/g)
       $question
@@ -5330,19 +5333,19 @@ $.fn.formulaQuestion = function() {
 
                 $variable = $(
                   "<tr class='variable'>" +
-                    "<th id='" +
-                    label_id +
-                    "' class='name'></th>" +
-                    "<td><div><input aria-labelledby='" +
-                    label_id +
-                    " equation_var_minimum' type='text' name='min' class='float_value min variable_setting' style='width: 70%;' value='1'/></div></td>" +
-                    "<td><div><input aria-labelledby='" +
-                    label_id +
-                    " equation_var_maximum' type='text' name='max' class='float_value max variable_setting' style='width: 70%;' value='10'/></div></td>" +
-                    "<td><div style='width: 70%;'><select aria-labelledby='" +
-                    label_id +
-                    " equation_var_precision' name='round' class='float_value round variable_setting'><option>0</option><option>1</option><option>2</option><option>3</option></div></td>" +
-                    "<td aria-labelledby='equation_var_example' class='value'></td></tr>"
+                  "<th id='" +
+                  label_id +
+                  "' class='name'></th>" +
+                  "<td><div><input aria-labelledby='" +
+                  label_id +
+                  " equation_var_minimum' type='text' name='min' class='float_value min variable_setting' style='width: 70%;' value='1'/></div></td>" +
+                  "<td><div><input aria-labelledby='" +
+                  label_id +
+                  " equation_var_maximum' type='text' name='max' class='float_value max variable_setting' style='width: 70%;' value='10'/></div></td>" +
+                  "<td><div style='width: 70%;'><select aria-labelledby='" +
+                  label_id +
+                  " equation_var_precision' name='round' class='float_value round variable_setting'><option>0</option><option>1</option><option>2</option><option>3</option></div></td>" +
+                  "<td aria-labelledby='equation_var_example' class='value'></td></tr>"
                 )
 
                 $question.find('.variables tbody').append($variable)
@@ -5375,7 +5378,7 @@ function numericalAnswerTypeChange($el) {
 }
 
 // attach HTML answers but only when they click the button
-$('#questions').delegate('.edit_html', 'click', function(event) {
+$('#questions').delegate('.edit_html', 'click', function (event) {
   event.preventDefault()
   const $this = $(this)
   let toggler = $this.data('editorToggle')
@@ -5386,7 +5389,7 @@ $('#questions').delegate('.edit_html', 'click', function(event) {
   if (!toggler) {
     toggler = new MultipleChoiceToggle($this, {
       editorBoxLabel: I18n.t('label.answer.text', 'Answer text, rich text area'),
-      tinyOptions: {width: rceWidth}
+      tinyOptions: { width: rceWidth }
     })
     $this.data('editorToggle', toggler)
   }

@@ -135,7 +135,9 @@
     <div style="text-align: center;">
       <textarea style="width: 90%; height: 120px;" class="question_content" name="question_text"></textarea>
     </div>
-    <b tabindex="0" role="heading" class="answers_header"><%= before_label(:answers, "Answers") %></b>
+    <div style="margin-bottom: 31px;">
+      <b tabindex="0" role="heading" class="answers_header"><%= before_label(:answers, "Answers") %></b>
+    </div>
     <div style="display: none;">
     <select class="answer_selection_type" name="answer_selection_type">
       <option value="single_answer"><%= t('options.only_one_correct', "Only One Correct Answer") %></option>
@@ -208,7 +210,7 @@
     </div>
     <div class="form_answers">
     </div>
-    <div style="text-align: <%= direction('right') %>;" class="add_answer">
+    <div class="add_answer" style="margin-bottom:31px; margin-left:35px;">
       <a href="#" class="add_answer_link icon-add"><%= t('links.add_another_answer', "Add Another Answer") %></a>
     </div>
     <div class="matching_answer_incorrect_matches_holder" style="margin-top: 15px;">
@@ -229,7 +231,7 @@
       </div>
     </div>
 
-    <div class="question_comment question_correct_comment comment empty">
+    <div class="question_comment question_correct_comment comment empty" style="margin-left: 35px;">
       <div class="comment_top"></div>
       <% edit_correct_comment_text = t('titles.click_to_enter_correct_answer_comments', "Click to enter comments for a correct answer") %>
       <a href="#" class="comment_focus" title="<%= edit_correct_comment_text %>">
@@ -269,7 +271,7 @@
     </div>
 
     <div class="clear"></div>
-    <div class="button-container">
+    <div class="button-container" style="display: flex;justify-content: flex-end;">
       <button type="button" class="btn btn-small cancel_link"><%= t('#buttons.cancel', "Cancel") %></button>
       <button type="submit" class="btn btn-small submit_button btn-primary"><%= t('buttons.create_update_question', "Create/Update Question") %></button>
     </div>
