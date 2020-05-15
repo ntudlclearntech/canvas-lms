@@ -123,7 +123,7 @@
     </div>
     <div tabindex="0" class="multi_answer_sets multi_answer_sets_subheader">
       <%= t('explanations.multi_answer_sets', "In the box below, every place you want to show an answer box, type a reference word (no spaces) surrounded by brackets") %><br/>
-      (<%= t(:multi_answer_sets_example, 'i.e. "Roses are [color1], violets are [color2]"') %>)
+      <%= t(:multi_answer_sets_example, 'i.e. "Roses are [color1], violets are [color2]"') %>
     </div>
     <% unless @context.feature_enabled?(:rce_enhancements) %>
       <div style="float: <%= direction('right') %>; margin-<%= direction('right') %>: 10%; font-size: 0.8em;">
@@ -144,7 +144,7 @@
       <option value="multiple_answer"><%= t('options.students_select_multiple', "Students Select Multiple Answers") %></option>
     </select>
     </div>
-    <div class="multi_answer_sets">
+    <div class="multi_answer_sets" style="min-height: 69px;">
       <%= t(:show_possible_answers, "Show Possible Answers for %{question}", :question => raw("<select class='blank_id_select' aria-label='#{ t(:show_possible_answers_no_question, "Show Possible Answers for")}'></select>")) %>
     </div>
     <div class="equation_answers">
@@ -210,8 +210,8 @@
     </div>
     <div class="form_answers">
     </div>
-    <div class="add_answer" style="margin-bottom:31px; margin-left:35px;">
-      <a href="#" class="add_answer_link icon-add"><%= t('links.add_another_answer', "Add Another Answer") %></a>
+    <div class="add_answer" style="margin-left:35px;">
+      <a href="#" class="add_answer_link icon-add" style="margin-bottom:31px;"><%= t('links.add_another_answer', "Add Another Answer") %></a>
     </div>
     <div class="matching_answer_incorrect_matches_holder" style="margin-top: 15px;">
       <b id="distractor_label"><%= before_label(:distractors, "Additional Match Possibilities (distractors)") %></b>

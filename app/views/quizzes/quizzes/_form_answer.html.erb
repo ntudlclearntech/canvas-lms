@@ -37,11 +37,11 @@
           <input type="hidden" name="answer_html"/>
           <span class="answer_html" style="display:inline-block;width:100%;"></span>
         </div>
-        <div class="fixed_answer answer_type">
+        <div class="fixed_answer answer_type" style="padding-top: 6px; margin-bottom: 31px;">
           <b class="answer_text" tabindex="0"></b>
         </div>
-        <div class="short_answer answer_type">
-          <label class="short_answer_header" for="answer_text"><b><%= t 'possible_answer', 'Possible Answer' %></b></label>
+        <div class="short_answer answer_type" style="min-height: 69px;">
+          <!-- <label class="short_answer_header" for="answer_text"><b><%= t 'possible_answer', 'Possible Answer' %></b></label> -->
           <input type="text" name="answer_text" aria-label="<%= t 'possible_answer', 'Possible Answer' %>" placeholder="<%= t('Answer Text') %>"/>
         </div>
         <div class="matching_answer answer_match answer_type">
