@@ -44,14 +44,14 @@
           <!-- <label class="short_answer_header" for="answer_text"><b><%= t 'possible_answer', 'Possible Answer' %></b></label> -->
           <input type="text" name="answer_text" aria-label="<%= t 'possible_answer', 'Possible Answer' %>" placeholder="<%= t('Answer Text') %>"/>
         </div>
-        <div class="matching_answer answer_match answer_type">
-          <div class="answer_match_left">
+        <div class="matching_answer answer_match answer_type" style="min-height: 69px;">
+          <div class="answer_match_left" style="overflow: hidden;">
             <% matching_left_text = t('Matching left side') %>
-            <input type="text" style="width: 85%;" name="answer_match_left" placeholder="<%= matching_left_text %>" aria-label="<%= matching_left_text %>"/>
+            <input type="text" style="width: 94%;" name="answer_match_left" placeholder="<%= matching_left_text %>" aria-label="<%= matching_left_text %>"/>
           </div>
           <input type="hidden" name="answer_match_left_html"/>
           <div class="answer_match_left_html"></div>
-          <div class="answer_match_middle">&nbsp;
+          <div class="answer_match_middle"><hr/>
           </div>
           <div class="answer_match_right">
             <% matching_right_text = t('Matching right side') %>

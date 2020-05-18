@@ -29,8 +29,12 @@ export default function addAriaDescription($answer, id) {
     text
   })
 
-  const placeholderText = $answer.find('input[name="answer_text"]:text').attr('placeholder')
+  let placeholderText = $answer.find('input[name="answer_text"]:text').attr('placeholder')
   $answer.find('input[name="answer_text"]:text').attr('placeholder', `${placeholderText} ${id}`)
+  placeholderText = $answer.find('input[name="answer_match_left"]:text').attr('placeholder')
+  $answer.find('input[name="answer_match_left"]:text').attr('placeholder', `${placeholderText} ${id}`)
+  placeholderText = $answer.find('input[name="answer_match_right"]:text').attr('placeholder')
+  $answer.find('input[name="answer_match_right"]:text').attr('placeholder', `${placeholderText} ${id}`)
 
   $answer.find('input:text').attr('aria-describedby', labelId)
   $answer.find('.deleteAnswerId').text(text)
