@@ -911,6 +911,14 @@ li.quiz {
   }
 }
 
+.question.selectable.multiple_answers_question {
+  .answer {
+    .answer_select .answer_image {
+      background-image: url(/images/partial_answer_square.png);
+    }
+  }
+}
+
 // Don't display the "select answer" answer_box for "fill-in-the-blank" questions where
 // it doesn't make sense to have incorrect answers so selecting a correct one doesn't apply.
 .question.fill_in_multiple_blanks_question {
@@ -1976,6 +1984,9 @@ ul#quiz_versions {
 
         // flip the arrow in RTL
         @if $direction == 'rtl' { transform: scale(-1, 1) }
+      }
+      &.selectable.multiple_answers_question .form_answers .answer.correct_answer .answer_select .answer_image {
+        background-image: url(/images/correct_answer_square.png);
       }
     }
     .blank_id_select {
