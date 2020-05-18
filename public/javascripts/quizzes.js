@@ -3772,7 +3772,12 @@ $(document).ready(function () {
         $answer.addClass('fill_in_blank_answer')
       } else if (answer_selection_type == 'matching') {
         $answer.removeClass('correct_answer')
-      }
+        const answerNum = $question.find('.form_answers > .answer').length + 1
+        let placeholderText = $answer.find('input[name="answer_match_left"]:text').attr('placeholder')
+        $answer.find('input[name="answer_match_left"]:text').attr('placeholder', `${placeholderText} ${answerNum}`)
+        placeholderText = $answer.find('input[name="answer_match_right"]:text').attr('placeholder')
+        $answer.find('input[name="answer_match_right"]:text').attr('placeholder', `${placeholderText} ${answerNum}`)
+        }
       const placeholderText = $answer.find('input[name="answer_text"]:text').attr('placeholder')
       $answer.find('input[name="answer_text"]:text').attr('placeholder', `${placeholderText} ${$question.find('.form_answers > .answer').length + 1}`)
       
