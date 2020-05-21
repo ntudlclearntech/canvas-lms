@@ -135,7 +135,7 @@
     <div style="text-align: center;">
       <textarea style="width: 90%; height: 120px;" class="question_content" name="question_text"></textarea>
     </div>
-    <div style="margin-bottom: 31px;">
+    <div style="margin-bottom: 22px;">
       <b tabindex="0" role="heading" class="answers_header"><%= before_label(:answers, "Answers") %></b>
     </div>
     <div style="display: none;">
@@ -144,7 +144,7 @@
       <option value="multiple_answer"><%= t('options.students_select_multiple', "Students Select Multiple Answers") %></option>
     </select>
     </div>
-    <div class="multi_answer_sets" style="min-height: 69px;">
+    <div class="multi_answer_sets" style="min-height: 60px;">
       <%= t(:show_possible_answers, "Show Possible Answers for %{question}", :question => raw("<select class='blank_id_select' aria-label='#{ t(:show_possible_answers_no_question, "Show Possible Answers for")}'></select>")) %>
     </div>
     <div class="equation_answers">
@@ -211,13 +211,13 @@
     <div class="form_answers">
     </div>
     <div class="add_answer" style="margin-left:35px;">
-      <a href="#" class="add_answer_link icon-add" style="margin-bottom:31px;"><%= t('links.add_another_answer', "Add Another Answer") %></a>
+      <a href="#" class="add_answer_link icon-add" style="margin-bottom:22px;"><%= t('links.add_another_answer', "Add Another Answer") %></a>
     </div>
     <div class="matching_answer_incorrect_matches_holder" style="margin-top: 15px;">
       <b id="distractor_label"><%= before_label(:distractors, "Additional Match Possibilities (distractors)") %></b>
       <div id="distractor_instructions" style="font-size: 0.8em;"><%= t(:distractor_instructions, "type each distractor on its own line") %></div>
-      <div style="text-align: center; margin-bottom:31px; margin-left:12px;">
-      <textarea style="width: 90%; height: 50px;" aria-labelledby="distractor_label" aria-describedby="distractor_instructions" name="matching_answer_incorrect_matches"></textarea>
+      <div style="margin-bottom:22px; margin-left:33px; margin-right: 42px;">
+      <textarea style="width: 98.5%; height: 50px;" aria-labelledby="distractor_label" aria-describedby="distractor_instructions" name="matching_answer_incorrect_matches"></textarea>
       </div>
     </div>
     <div class="missing_word_after_answer" style="margin-top: 15px;">
@@ -273,7 +273,7 @@
     <div class="clear"></div>
     <div class="button-container" style="display: flex;justify-content: flex-end;">
       <button type="button" class="btn btn-small cancel_link"><%= t('#buttons.cancel', "Cancel") %></button>
-      <button type="submit" class="btn btn-small submit_button btn-primary"><%= t('buttons.create_update_question', "Create/Update Question") %></button>
+      <button type="submit" class="btn btn-small submit_button btn-primary" style="margin-left: 10px;"><%= t('buttons.create_update_question', "Create/Update Question") %></button>
     </div>
   </div>
 </div>

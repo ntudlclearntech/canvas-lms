@@ -1042,7 +1042,7 @@ export const quiz = (window.quiz = {
       .find("input[name='answer_selection_type']")
       .val(result.answer_selection_type)
       .change()
-    $form.find('.add_answer_link').css("display", options.addable ? "block": "none") //.showIf(options.addable)
+    $form.find('.add_answer_link').css("display", options.addable ? "block" : "none") //.showIf(options.addable)
     var $answers = $formQuestion.find('.form_answers .answer')
     if ($answers.length === 0 && result.answer_type != 'none') {
       $formQuestion
@@ -1069,7 +1069,7 @@ export const quiz = (window.quiz = {
         $answers.filter(':first').addClass('correct_answer')
       }
     }
-    $form.find('.answer').each(function () {
+    $form.find('.answer').each(function (index) {
       let weight = 0
       if ($(this).hasClass('correct_answer')) {
         weight = 100
@@ -1078,6 +1078,21 @@ export const quiz = (window.quiz = {
         .find('.answer_weight')
         .text(weight)
       quiz.updateFormAnswer($(this), result)
+
+      const $answer = $(this)
+      let placeholderText = ""
+      if (question_type == 'multiple_dropdowns_question') {
+        placeholderText = $answer.find('input[name="answer_text"]:text').attr('placeholder')
+        if (!placeholderText.match(/.*\d$/)) {
+          $answer.find('input[name="answer_text"]:text').attr('placeholder', `${placeholderText} ${index + 1}`)
+        }
+      } else if (question_type == 'fill_in_multiple_blanks_question') {
+        placeholderText = $answer.find('input[name="answer_text"]:text:not(".disabled_answer")').attr('placeholder')
+        if (!placeholderText.match(/.*\d$/)) {
+          $answer.find('input[name="answer_text"]:text:not(".disabled_answer")').attr('placeholder', `${placeholderText} ${index + 1}`)
+        }
+      }
+
     })
     $form
       .find('.answer_type')
@@ -2751,6 +2766,16 @@ $(document).ready(function () {
         answer.question_type = data.question_type
         const $answer = makeFormAnswer(answer)
         addAriaDescription($answer, index + 1)
+
+        // update input placeholder with index 
+        const id = index + 1
+        let placeholderText = $answer.find('input[name="answer_text"]:text').attr('placeholder')
+        $answer.find('input[name="answer_text"]:text').attr('placeholder', `${placeholderText} ${id}`)
+        placeholderText = $answer.find('input[name="answer_match_left"]:text').attr('placeholder')
+        $answer.find('input[name="answer_match_left"]:text').attr('placeholder', `${placeholderText} ${id}`)
+        placeholderText = $answer.find('input[name="answer_match_right"]:text').attr('placeholder')
+        $answer.find('input[name="answer_match_right"]:text').attr('placeholder', `${placeholderText} ${id}`)
+
         $form.find('.form_answers').append($answer)
       })
     }
@@ -3770,6 +3795,8 @@ $(document).ready(function () {
       } else if (answer_selection_type == 'blanks') {
         $answer.addClass('correct_answer')
         $answer.addClass('fill_in_blank_answer')
+        const placeholderText = $answer.find('input[name="answer_text"]:text:not(".disabled_answer")').attr('placeholder')
+        $answer.find('input[name="answer_text"]:text:not(".disabled_answer")').attr('placeholder', `${placeholderText} ${$question.find('.form_answers > .answer').length + 1}`)
       } else if (answer_selection_type == 'matching') {
         $answer.removeClass('correct_answer')
         const answerNum = $question.find('.form_answers > .answer').length + 1
@@ -3777,10 +3804,10 @@ $(document).ready(function () {
         $answer.find('input[name="answer_match_left"]:text').attr('placeholder', `${placeholderText} ${answerNum}`)
         placeholderText = $answer.find('input[name="answer_match_right"]:text').attr('placeholder')
         $answer.find('input[name="answer_match_right"]:text').attr('placeholder', `${placeholderText} ${answerNum}`)
-        }
-      const placeholderText = $answer.find('input[name="answer_text"]:text').attr('placeholder')
-      $answer.find('input[name="answer_text"]:text').attr('placeholder', `${placeholderText} ${$question.find('.form_answers > .answer').length + 1}`)
-      
+      } else {
+        const placeholderText = $answer.find('input[name="answer_text"]:text').attr('placeholder')
+        $answer.find('input[name="answer_text"]:text').attr('placeholder', `${placeholderText} ${$question.find('.form_answers > .answer').length + 1}`)
+      }
       $question.find('.form_answers').append($answer.show())
       if (!skipFocus) {
         $('html,body').scrollTo($answer)
