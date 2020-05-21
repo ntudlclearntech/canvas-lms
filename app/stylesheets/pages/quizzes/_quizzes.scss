@@ -896,6 +896,7 @@ li.quiz {
 
       cursor: pointer;
       background-image: url(/images/partial_answer_round.png);
+      background-size: 20px 20px;
       width: 100%;
     }
     // &.hover .answer_select .answer_image,
@@ -915,6 +916,7 @@ li.quiz {
   .answer {
     .answer_select .answer_image {
       background-image: url(/images/partial_answer_square.png);
+      background-size: 20px 20px;
     }
   }
 }
@@ -1980,6 +1982,7 @@ ul#quiz_versions {
       /* Display persistent correct answer arrow when editing only. */
       &.selectable .form_answers .answer.correct_answer .answer_select .answer_image {
         background-image: url(/images/correct_answer_round.png);
+        background-size: 20px 20px;
         width: 100%;
 
         // flip the arrow in RTL
@@ -1987,6 +1990,7 @@ ul#quiz_versions {
       }
       &.selectable.multiple_answers_question .form_answers .answer.correct_answer .answer_select .answer_image {
         background-image: url(/images/correct_answer_square.png);
+        background-size: 20px 20px;
       }
     }
     .blank_id_select {

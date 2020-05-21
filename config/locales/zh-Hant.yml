@@ -8608,7 +8608,7 @@ zh-Hant:
   enter_the_sis_ids_of_the_users_you_would_like_to_a_1bdce982: "輸入您要添加的使用者的 SIS ID（用逗號分隔）"
   enter_the_sis_ids_of_the_users_you_would_like_to_a_25e441f1: "輸入您要添加的使用者的 SIS ID，並以逗號或間線分隔"
   enter_url_e8bb8a33: "輸入 URL"
-  enter_your_question_and_multiple_answers_31370054: 輸入您的問題和多個答案。
+  enter_your_question_and_multiple_answers_31370054: 輸入您的問題和多個選項。
   enter_your_question_specifying_where_each_blank_sh_2c6e8035: 請輸入您的問題，並指定每個空白的所在處。學生必須在每個空白處的文本框中鍵入正確答案。
   enter_your_question_specifying_where_each_dropdown_b428a9ff: 請輸入您的問題，並指定每個下拉式清單的所在處。然後定義每個下拉式清單的潛在答案。
   enter_your_question_text_4729b886: 輸入您的問題文字。
@@ -17723,6 +17723,8 @@ zh-Hant:
         matching_right: 比對右邊
         numerical_answer: 數字答案
         possible_answer: 可能的答案
+        option: 選項
+        answer_placeholder: 答案
         titles: 
           click_to_enter_answer_comments: 按一下以輸入註解，如果學生選擇了此答案
           click_to_set_as_correct: 按一下以設定此答案為正確的
@@ -17746,18 +17748,17 @@ zh-Hant:
           file_upload: 學生將能夠為自己的答案上傳文檔。
           fill_in_multiple_blanks: 請輸入您的問題，並指定每個空白的所在處。並以中括號定義填答的空格處，並輸入每個空格的所有正確答案。學生必須在每個空白處的文本框中鍵入其中一個正確答案，才算得分。此題的「配分」會平均分給每個空格的作答結果。
           formula_definition: 接下來，您將需要寫下用於計算正確答案的一個或多個公式。只使用與以上所列相同的變量名。
-          matching: 建立配對的選項。學生們將會看到左邊的題目，並需要從右邊下拉式清單中選擇相符的答案。不同題目可以有相同的答案，您可以增加額外的誘導答案，將會出現在每題的配對清單中。此題的「配分」會平均分給每個下拉式清單的作答結果。
+          matching: 建立配對的選項。學生們將會看到左邊的題目，並需要從右邊下拉式清單中選擇相符的答案。不同題目可以有相同的答案，您可以增加額外的誘導答案，將會出現在每題的配對清單中。此題的「配分」會平均分給每個配對的結果。
           missing_word: 定義下拉式清單前後的文字。建立一組可能的答案，並選擇一個正確的答案。
           multi_answer_sets: 在以下編輯器中，在您要顯示答案方框的每一個地方輸入被中括號括起來的參考文字（不能有空格，僅限英文與阿拉伯數字）
           multiple_answers: |-
               此問題會在每個答案旁邊顯示一個複選框，學生必須選擇您標記為正確的所有答案。  
-              題計分方式為：每個選項占分為總分/正確選項的個數，答對分數減去答錯分數即為本題得分，若沒有選到正確或錯誤的，則不加分也不扣分，扣到0為止。
+              此題計分方式為：每個選項占分為總分/正確選項的個數，答對分數減去答錯分數即為本題得分，若沒有選到正確或錯誤的，則不加分也不扣分，扣到0為止。
           multiple_choice: 輸入您的問題和多個選項，然後選擇一個正確的答案。
           multiple_dropdowns: 請輸入您的問題，並以中括號定義每個填答的下拉式清單處，並輸入下拉式清單的所有選項及正確答案，每個下拉式清單只可設定一個正確答案。此題的「配分」會平均分給每個下拉式清單的作答結果。
           numerical: 定義正確答案為範圍內的任意數位，或一個數位加上或減去一些誤差邊際。學生將得到一個空的文本框以輸入自己的數值答案。
           short_answer: |-
-              請輸入您的問題文字，然後在下方輸入所有正確答案。  
-              學生們會獲得一個填答框，以輸入自己的答案。
+              請輸入您的問題文字，然後在下方輸入所有正確答案。學生們會獲得一個填答框，以輸入自己的答案。
           text_only: 適合用做題目引言，或區分題目群組之間的段落文字。不會被計分。
           true_false: 輸入您的問題文字，然後選擇『正確』或者『錯誤』作為正確答案。
           variable_definitions: 您在上面輸入您的變量之後，您應該會看到這裡列出相應的變量。您可以為以下各變量指定可能值的範圍。
@@ -17804,7 +17805,7 @@ zh-Hant:
           short_answer: 填空題
           text_only: 文字引言
           true_false: 是非題
-        show_possible_answers: "顯示 %{question} 的潛在答案"
+        show_possible_answers: "顯示 %{question} 的所有正確答案"
         show_possible_answers_no_question: 顯示以下問題的潛在答案：
         titles: 
           click_to_enter_correct_answer_comments: 點選以輸入有關正確答案的評論
