@@ -418,6 +418,9 @@ var quizSubmission = (function() {
       if (true || sec) {
         times.push(I18n.t('seconds_count', 'Second', {count: sec}))
       }
+      if ($timeRunningTimeRemaining.length == 0) {
+        $timeRunningTimeRemaining = $('.time_running,.time_remaining')
+      } 
       $timeRunningTimeRemaining.text(times.join(', '))
     },
 
