@@ -102,6 +102,8 @@ class GradebookExporter
     include_root_account = @course.root_account.trust_exists?
     should_show_totals = show_totals?
     include_sis_id = @options[:include_sis_id]
+    should_show_totals = false
+    include_sis_id = false
 
     CsvWithI18n.generate(@options.slice(:encoding, :col_sep, :include_bom)) do |csv|
       # First row
