@@ -1995,7 +1995,7 @@ zh-Hant:
   allow_the_ability_to_send_notifications_through_ou_fdaace5a: 允許通過分發隊列的方式發送通知。
   allow_this_tool_to_access_the_ims_names_and_role_p_33e16d7f: "允許此工具訪問 IMS 名稱和角色佈建服務"
   allow_users_to_comment_45b8f753: 允許使用者評論
-  allowed_attempts_4e229caa: 允許重新作答的次數
+  allowed_attempts_4e229caa: 允許的作答次數
   allows_a_user_to_access_the_act_as_user_link_on_st_7d3e3e3d: 允許使用者於學生情境卡上存取「作為使用者」連結
   allows_a_user_to_view_the_sis_id_in_a_user_s_login_802288b9: "允許使用者於其他使用者的登入詳細資料中查看 SIS ID。"
   allows_a_user_to_view_user_sis_ids_in_a_course_peo_dd6404c: "允許使用者於課程成員頁面中查看使用者 SIS ID。"
@@ -2495,7 +2495,7 @@ zh-Hant:
   answers_which_scored_in_the_bottom_27_74409483: 得分排名位於底部27%的答案
   answers_which_scored_in_the_middle_46_46466ffd: 得分排名位於中部46%的答案
   answers_which_scored_in_the_top_27_a605232d: 得分排名位於頂部27%的答案
-  answers_will_be_shown_after_your_last_attempt_d9db6b1d: 答案將在最後一次嘗試後顯示
+  answers_will_be_shown_after_your_last_attempt_d9db6b1d: 答案將在最後一次作答後顯示
   any_sub_account_ec7069f2: 任何子帳戶
   any_term_d49af19f: 任何學期
   anyone_with_the_url_9d7e5e07: "有 URL 的任何人"
@@ -3238,7 +3238,7 @@ zh-Hant:
       other: "%{count} 個規則"
     select_assignment: "[選擇作業]"
     show: 
-      allowed_attempts: 允許的嘗試
+      allowed_attempts: 允許的作答次數
       assignment_locked: 此作業目前已鎖定。
       attempts: 嘗試
       available_from: 開放時間
@@ -17277,7 +17277,7 @@ zh-Hant:
   quiz_reports_ef7ddf1c: 測驗報告
   quiz_restrictions_5db831c5: 參加測驗限制
   quiz_results_are_protected_for_this_quiz_and_are_n_1ea03502: 此測驗的測驗結果受保護，學生看不到。
-  quiz_results_are_protected_for_this_quiz_and_are_n_c85bd56e: 此測驗的測驗結果受保護，學生看不到，除非他們提交了最後一次嘗試。
+  quiz_results_are_protected_for_this_quiz_and_are_n_c85bd56e: 此測驗的測驗結果受保護，學生看不到，除非他們提交了最後一次作答。
   quiz_results_are_protected_for_this_quiz_and_can_b_fc4fc208: 此測驗的測驗結果受保護，在提交之後可立即檢視一次。
   quiz_score_to_keep_d1f7c4b1: 要保留的測驗分數
   quiz_settings_4e17f005: 測驗設定
@@ -17299,7 +17299,7 @@ zh-Hant:
       hide_all: 隱藏所有問題的答案詳情
       show: 顯示答案詳情
       show_all: 顯示所有問題的答案詳情
-    attempts: "嘗試：已嘗試 %{count} 次，總計 %{total} 次"
+    attempts: "作答紀錄：填答 %{count} 次，提交 %{total} 次"
     correct_answer: 正確答案
     correct_essay_student_ratio: "您學生中的 %{ratio}% 就此問題獲得滿分。"
     correct_multiple_response_ratio: "您學生中的 %{ratio}% 回答正確。"
@@ -17512,9 +17512,9 @@ zh-Hant:
       confirms: 
         taking_time_away: 這將比學生目前擁有的時間更短。仍然繼續？
       errors: 
-        quiz_submission_extra_attempts_not_a_number: 額外的嘗試次數必須是數字。
-        quiz_submission_extra_attempts_too_long: "額外的嘗試次數必須小於 1000。"
-        quiz_submission_extra_attempts_too_short: "額外的嘗試次數必須大於 0。"
+        quiz_submission_extra_attempts_not_a_number: 額外的作答次數必須是數字。
+        quiz_submission_extra_attempts_too_long: "額外的作答次數必須小於 1000。"
+        quiz_submission_extra_attempts_too_short: "額外的作答次數必須大於 0。"
         quiz_submission_extra_time_not_a_number: 額外的時間必須是數字。
         quiz_submission_extra_time_too_long: "額外的時間必須小於 10080。"
         quiz_submission_extra_time_too_short: "額外的時間必須大於 0。"
@@ -17560,8 +17560,8 @@ zh-Hant:
       types: 
         quiz: 測驗
         survey: 調查
-    quiz_attempts_length_error: "測驗嘗試次數僅限於 3 位數，如果您想給您的學生無限的嘗試，請勿勾選左側的『允許多次嘗試』的選擇框"
-    quiz_attempts_nan_error: 測驗嘗試次數只能以數字指定
+    quiz_attempts_length_error: "測驗作答次數僅限於 3 位數，如果您想給您的學生無限的作答機會，請勿勾選左側的『允許多次作答』的選擇框"
+    quiz_attempts_nan_error: 測驗作答次數只能以數字指定
     quiz_group: 
       errors: 
         no_bank: "找不到測驗群組 %{group_name} 的題庫"
@@ -17673,7 +17673,7 @@ zh-Hant:
           intro: 簡介
           variables: 變量
       errors: 
-        no_more_attempts: 您沒有任何未使用的測驗嘗試
+        no_more_attempts: 您沒有任何未使用的測驗作答機會
         quiz_deleted: 該測驗已被刪除
         quiz_update_failed: 測驗更新失敗
       fabulous_quizzes: 
@@ -17815,10 +17815,10 @@ zh-Hant:
       history: 
         anonymous_username: 學生
         buttons: 
-          allow_extra_attempt: 允許這個學生進行額外的嘗試
+          allow_extra_attempt: 增加這個學生 1 次額外作答機會
         count_attempts_left: 
-          one: "%{user} 還有 %{count} 次嘗試"
-          other: "%{user} 還有 %{count} 次嘗試"
+          one: "%{user} 還有 %{count} 次作答機會"
+          other: "%{user} 還有 %{count} 次作答機會"
         default_quiz_name: "測驗 %{course_name}"
         default_survey_name: "調查 %{course_name}"
         grade_by_question_warning: 拖放進群組的問題影響按問題特徵進行的評分。
@@ -17833,17 +17833,17 @@ zh-Hant:
         logged_out_user: "已登出的使用者 %{index}"
         named_quiz_results: "%{user} 的 %{quiz_name} 結果"
         next_questions_arrow_title: 後續問題
-        no_more_attempts: "%{user} 沒有嘗試次數了"
+        no_more_attempts: "%{user} 沒有作答機會了"
         page_title_quiz: "%{user} 的測驗記錄"
         page_title_survey: "%{user} 的調查記錄"
         prev_questions_arrow_title: 以前的問題
         quiz_not_yet_taken: 測驗尚未進行。
         quiz_not_yet_taken_or_in_progress: 測驗尚未進行或正在進行中
-        quiz_unlimited_attempts: 此測驗不限制嘗試次數
-        score_for_attempt: "嘗試 %{attempt_number}：%{score}"
+        quiz_unlimited_attempts: 此測驗不限制作答次數
+        score_for_attempt: "作答 %{attempt_number}：%{score}"
         survey_not_yet_taken: 調查尚未進行。
         survey_not_yet_taken_or_in_progress: 調查尚未進行或目前正在進行中
-        survey_unlimited_attempts: 此調查不限制嘗試次數
+        survey_unlimited_attempts: 此調查不限制作答次數
         titles: 
           score_pending_review: 此分數處於待檢閱狀態，並且可能會更改
           submission_needs_review: 此提交項目需要檢閱
@@ -17870,7 +17870,7 @@ zh-Hant:
           submission_needs_review: 此提交項目需要檢閱
       moderate: 
         add_time: 新增時間
-        attempts: 嘗試
+        attempts: 次
         autosubmit_link_description: 檢查未提交的測驗
         buttons: 
           change_extensions_for_selected_students: "更改 %{n} 個選定學生的延期"
@@ -17879,14 +17879,14 @@ zh-Hant:
         end_quiz_reference_time_current_end: 當前結束時間
         end_quiz_reference_time_now: 現在
         end_the_quiz: 結束測驗
-        extended_quiz_time_explanation: 您可以就其當前的測驗嘗試給這個學生更多的時間。您想給他們多少時間？
-        extra_time_on_every_attempt: 每次嘗試的額外時間
+        extended_quiz_time_explanation: 您可以就其當前的作答機會給這個學生更多的時間。您想給他們多少時間？
+        extra_time_on_every_attempt: 額外的作答時間
         finished_in: "已在 %{duration} 內完成"
         global_extra_attempt_time: "每個人都已經獲得 %{count} 分鐘"
         global_extra_attempts: "每人已獲得 %{n}"
         headers: 
-          attempt: 嘗試
-          attempts_left: 剩餘嘗試次數
+          attempt: 作答次數
+          attempts_left: 剩餘作答次數
           score: 分數
           student: 學生
           student_extensions: 學生延期
@@ -17894,8 +17894,8 @@ zh-Hant:
         in_progress: 進行中
         labels: 
           ending: 正在結束
-          extra_attempts: 額外的嘗試
-          manually_unlock: 手動解除鎖定測驗，以進行下一次嘗試
+          extra_attempts: 額外的作答機會
+          manually_unlock: 手動解除鎖定測驗，以進行下一次作答
           reset_has_seen_results: 讓學生再看一次結果
           started: 已開始
         maximum_of_1440_minutes: "最長 1440 分鐘（24 小時）"
@@ -17904,17 +17904,17 @@ zh-Hant:
         moderate_page_title: "%{title}：中等"
         outstanding_autosubmission_description: 這些是未提交的測驗，可能因為學生在提交前離開測驗頁面。如果您要評分，請按下方的『提交』按鈕。
         outstanding_quiz_submissions_found: 發現未提交的測驗
-        page_title: 學生嘗試紀錄
+        page_title: 學生作答紀錄
         reload_student_table: 重新加載學生表
         student_gets_extra_time: 
-          one: "*%{student_name}* **在每次嘗試中獲得 %{count} 分鐘的加時**"
-          other: "*%{student_name}* **在每次嘗試中獲得 %{count} 分鐘的加時**"
+          one: "*%{student_name}* **在每次作答中增加 %{count} 分鐘的作答時間**"
+          other: "*%{student_name}* **在每次作答中增加 %{count} 分鐘的作答時間**"
         student_n: "學生 %{n}"
         submitting: 正在提交...
         titles: 
           change_user_extensions: 更改使用者延期
-          extra_attempts: 再次加時嘗試
-          extra_quiz_minutes: 每次嘗試的加時（分鐘）
+          extra_attempts: 再次增加作答時間
+          extra_quiz_minutes: 每次作答額外增加的時間（分鐘）
           manually_unlocked: 手動解除鎖定
           minutes_to_add: 要添加的分鐘數
           select_deselect_all: 全選/取消全選
@@ -17936,7 +17936,7 @@ zh-Hant:
         muted_quiz_description: 您的測驗分數不可用，因為您的導師還沒有完成對其的評分。當您的導師完成對此測驗的評分時，您的分數將出現在此頁面上。
         muted_quiz_header: 您的測驗已取消提醒
       new: 
-        allowed_attempts: 允許的嘗試次數
+        allowed_attempts: 允許的作答次數
         anonymous_submissions: 保持提交項目匿名
         buttons: 
           not_published: 未發佈
@@ -17956,8 +17956,8 @@ zh-Hant:
         label: 
           time_limit: 時間限制
         labels: 
-          allow_multiple_attempts: 允許多次嘗試
-          hide_results_only_after_last: 僅在他們的最後一次嘗試之後
+          allow_multiple_attempts: 允許多次作答
+          hide_results_only_after_last: 僅在他們的最後一次作答之後
           ip_addresses: "按 IP 地址篩選"
           ip_filter: "篩選 IP 地址"
           never_hide_results: 讓學生查看他們的測驗反應
@@ -17967,7 +17967,7 @@ zh-Hant:
           require_access_code: 需要存取碼
           restrict_quiz: 測驗限制
           show_question_details: 顯示問題詳細資料
-        limited_attempts: 允許的嘗試
+        limited_attempts: 允許的作答次數
         links: 
           cancel: 取消
           find_questions: 尋找問題
@@ -17991,7 +17991,7 @@ zh-Hant:
         score_to_keep: 要保留的測驗分數
         show_correct_answers: 讓學生查看正確答案
         show_correct_answers_at: 顯示正確答案於
-        show_correct_answers_last_attempt: 僅在他們的最後一次嘗試之後
+        show_correct_answers_last_attempt: 僅在他們的最後一次作答之後
         shuffle_answers: 拖曳答案
         students_cannot_view_responses_after_course_concludes: 課程結束後學生不能檢視測驗反應
         time_limit: 多少分鐘？
@@ -18038,14 +18038,14 @@ zh-Hant:
           questions: 問題
       question_statistic: 
         attempts: 
-          one: "%{count} 個嘗試"
-          other: "%{count} 個嘗試"
+          one: "%{count} 個作答機會"
+          other: "%{count} 個作答機會"
         empty_response: 空回應
         labels: 
           other_answers: 其他答案
         no_data: 沒有資料
         no_responses: 沒有記錄的有關該問題的回應
-        percent_of_responses: "%{total} 中的 %{percent}% 次嘗試選定了此答案"
+        percent_of_responses: "%{total} 中的 %{percent}% 次作答選定了此答案"
         response_count: 
           one: "給 %{count} 個學生提供了此問題"
           other: "給 %{count} 個學生提供了此問題"
@@ -18055,7 +18055,7 @@ zh-Hant:
           delete_this_question: 刪除此問題
           edit_this_question: 編輯此問題
       quiz_details: 
-        allowed_attempts: 可嘗試次數
+        allowed_attempts: 可作答次數
         headers: 
           due: 截止時間
           points: 分數
@@ -18075,28 +18075,28 @@ zh-Hant:
           quiz_score: 分數
       quiz_right_side: 
         attempts_left: 
-          one: "%{count} 次以上的嘗試可用"
-          other: "%{count} 次以上的嘗試可用"
+          one: "還有%{count} 次作答機會"
+          other: "還有%{count} 次作答機會"
         attempts_so_far: 
-          one: "到目前為止 %{count} 次嘗試"
-          other: "到目前為止進行了 %{count} 次嘗試"
+          one: "到目前為止 %{count} 次作答"
+          other: "到目前為止進行了 %{count} 次作答"
         labels: 
           current_score: 當前分數
           kept_score: 保持的分數
-          last_attempt_details: 最後一次嘗試的詳細資料
+          last_attempt_details: 最後一次作答的詳細資料
           submission_details: 作業繳交的詳細資料
           time: 時間
         links: 
           preview_quiz_again: 再次預覽測驗
           preview_survey_again: 再次預覽調查
-        no_more_attempts: 沒有更多的嘗試可用
+        no_more_attempts: 沒有更多的作答機會可用
         questions_not_graded: 有些問題還沒有評分
         score_set_manually: 此分數由教師設置
-        unlimited_attempts: 無限制的嘗試
-        view_previous_attempts: 檢視全部測驗嘗試紀錄
+        unlimited_attempts: 無限制作答次數
+        view_previous_attempts: 檢視全部測驗作答紀錄
       quiz_show_teacher: 
         anonymous_submissions: 匿名提交項目
-        attempts: 允許重新作答的次數
+        attempts: 允許的作答次數
         available_from: 開放時間
         cant_go_back: 進入下一題畫面後無法返回前一題
         code: 訪問碼
@@ -18124,7 +18124,7 @@ zh-Hant:
         until: 關閉時間
         view_responses: 讓學生看見他們的測驗結果
       quiz_submission: 
-        attempt_duration: "此嘗試持續 %{duration}。"
+        attempt_duration: "此作答持續 %{duration}。"
         buttons: 
           update_scores: 更新分數
         labels: 
@@ -18135,7 +18135,7 @@ zh-Hant:
           fudge_points_generic_explanation: 您可以透過添加正分或負分至此方框，手動調整分數。
           questions_need_review: 以下問題需要檢閱
           quiz_score: 測驗分數
-          score_for_attempt: 此嘗試的分數
+          score_for_attempt: 此作答紀錄的分數
           score_for_quiz: 此測驗的分數
           score_for_survey: 此調查的分數
           survey_score: 調查分數
@@ -18156,9 +18156,9 @@ zh-Hant:
           one: "%{count} 點"
           other: "%{count} 點"
         labels: 
-          allowed_attempts: 允許的嘗試
-          attempts_left: 剩餘嘗試次數
-          attempts_so_far: 到目前為止的嘗試
+          allowed_attempts: 允許的作答次數
+          attempts_left: 剩餘作答次數
+          attempts_so_far: 到目前為止的作答次數
           latest_submission: 最新的提交項目
           quiz_details: 測驗詳細資料
           quiz_due: 截止日期
@@ -18175,7 +18175,7 @@ zh-Hant:
           one: "%{count} 點"
           other: "%{count} 點"
         student_mute_notification: 導師正在進行評分
-        unlimited_attempts: 無限制的嘗試
+        unlimited_attempts: 無限制作答次數
       read_only: 
         default_page_title: 新測驗
         headers: 
@@ -18204,7 +18204,7 @@ zh-Hant:
           keep_editing_this_quiz: 保持編輯此測驗
           keep_editing_this_survey: 保持編輯此調查
           message_students_who: 通知以下學生們…
-          moderate_this_quiz: 調整學生嘗試設定
+          moderate_this_quiz: 調整學生作答次數設定
           moderate_this_survey: 調整此調查
           preview: 預覽
           quiz_statistics: 測驗統計資料
@@ -18250,26 +18250,26 @@ zh-Hant:
           standard_deviation: 標準差
           users_selected_the_answer: "以下使用者選擇了答案，%{answer_text}"
         links: 
-          count_all_attempts: 計算**所有**嘗試
-          count_only_latest_attempts: 只計算每一個最新嘗試
+          count_all_attempts: 計算**所有**作答紀錄
+          count_only_latest_attempts: 只計算每一個最新作答紀錄
         page_title: 統計資料
-        quiz_all_version_disclaimer: 此報告顯示了基於所有使用者的所有嘗試的測驗統計資料。
-        quiz_latest_version_disclaimer: 此報告顯示了基於每個使用者的最新嘗試的測驗統計資料。
+        quiz_all_version_disclaimer: 此報告顯示了基於所有使用者的所有作答紀錄的測驗統計資料。
+        quiz_latest_version_disclaimer: 此報告顯示了基於每個使用者的最新作答紀錄的測驗統計資料。
         student_n: "學生 %{student_counter}"
-        survey_all_version_disclaimer: 此報告顯示了基於所有使用者的所有嘗試的調查統計資料。
-        survey_latest_version_disclaimer: 此報告顯示了基於每個使用者的最新嘗試的調查統計資料。
+        survey_all_version_disclaimer: 此報告顯示了基於所有使用者的所有作答紀錄的調查統計資料。
+        survey_latest_version_disclaimer: 此報告顯示了基於每個使用者的最新作答紀錄的調查統計資料。
       statistics_cqs: 
         page_title: 統計數據
       statistics_crumb: 統計數據
       submission_version: 
-        attempt_number: "嘗試 %{att_no}"
+        attempt_number: "作答紀錄 %{att_no}"
         kept: 保留的
         latest: 最新的
       submission_versions: 
-        attempt: 嘗試
-        attempt_history: 嘗試記錄
+        attempt: 作答記錄
+        attempt_history: 作答記錄
         questions_not_graded: 有些問題還沒有評分
-        quiz_attempt_history_description: 顯示您的測驗嘗試記錄的表格。每次嘗試在左側。嘗試、時間和分數在頂部。
+        quiz_attempt_history_description: 顯示您的測驗作答記錄的表格。每次作答在左側。作答次數、時間和分數在頂部。
         regraded: 已重新評分
         score: 分數
         time: 時間
@@ -18297,7 +18297,7 @@ zh-Hant:
           return_to_quiz_page: "[按一下此處](%{url})，以返回測驗頁面。"
       take_quiz_right_side: 
         labels: 
-          attempt_due: 嘗試截止日期
+          attempt_due: 測驗截止日期
           score: 分數
           time_elapsed: 已用時間
           time_running: 執行時間
@@ -18336,8 +18336,8 @@ zh-Hant:
       students_who_have_taken_the_quiz: 已參加測驗的學生
     statistics: 
       count_attempts: 
-        one: "%{count} 個嘗試"
-        other: "%{count} 個嘗試"
+        one: "%{count} 個作答紀錄"
+        other: "%{count} 個作答紀錄"
       titles: 
         submitted_users_for_quesiton: "%{user} 的已提交的使用者"
       uncounted_submissions: 
@@ -18378,7 +18378,7 @@ zh-Hant:
         due_date_five_minutes_left: 還剩五分鐘，測試就會被標設為遲到
         due_date_one_minute_left: 還剩一分鐘，測試就會被標設為遲到
         due_date_thirty_minutes_left: 還剩三十分鐘，測試就會被標設為遲到
-        extra_time: 已為您提供了關於此嘗試的額外時間
+        extra_time: 已為您提供了關於此作答機會的額外時間
         less_time: 您的用於此測驗的時間已減少。
         submission_five_minutes_left: 測驗將在五分鐘後提交
         submission_one_minute_left: 測驗將在一分鐘後提交
@@ -18521,8 +18521,8 @@ zh-Hant:
         您已達到測驗所允許的問題的最大數目 (%{count}/%{limit})。
         
         作為一種變通方法，請考慮在多個測驗中傳播材料。
-    quiz_attempts_length_error: "測驗嘗試次數僅限於 3 位數，如果您想給您的學生無限的嘗試，請勿勾選左側的「允許多次嘗試」的選擇方塊"
-    quiz_attempts_nan_error: 測驗嘗試次數只能以數字指定
+    quiz_attempts_length_error: "測驗作答次數僅限於 3 位數，如果您想給您的學生無限的作答次數，請勿勾選左側的「允許多次作答」的選擇方塊"
+    quiz_attempts_nan_error: 測驗作答次數只能以數字指定
     quiz_short_answer_length_error: "填充空白處的問題答案必須在 80 個字元以下"
     retrieving_filters: 正在取回篩選器…
     titles: 
@@ -20708,7 +20708,7 @@ zh-Hant:
     submissions_dropdown: 
       grade: "（評分：%{grade}）"
       loud_late: 逾期
-      see_all_quiz_attempts: 檢視所有測驗嘗試
+      see_all_quiz_attempts: 檢視所有測驗作答紀錄
       submission_to_view: 檢視作業繳交：
       submitted: "*已繳交：* %{submittedAt}"
     submit: 提交
@@ -20809,7 +20809,7 @@ zh-Hant:
   state_unpublished_e19c06e6: 狀態：未發佈
   statistics: 
     csv_columns: 
-      attempt: 嘗試
+      attempt: 作答紀錄
       id: ID
       n_correct: "n  正確"
       n_incorrect: "n 不正確"
@@ -22500,7 +22500,7 @@ zh-Hant:
   unknown_status_status_message_3a4ed4d5: "狀態不明，%{status}：%{message}"
   unknown_user_1113fcaa: 未知使用者
   unknown_user_url_82196ba7: "未知使用者 URL"
-  unlimited_attempts_81a37d4: 無限制的嘗試
+  unlimited_attempts_81a37d4: 無限制作答次數
   unlimited_ff19e96d: 無限制
   unlock_562bc4cb: 解除鎖定
   unlock_at_bb930b34: 預定發佈日期
@@ -23652,7 +23652,7 @@ zh-Hant:
   you_don_t_have_access_to_view_this_resource_8378e0e8: 您無權查看此資源。
   you_don_t_have_permission_to_access_this_resource_447d3a5e: 您無權訪問此資源。
   you_don_t_have_permission_to_manage_grades_for_thi_a9a1be3a: 您沒有權限管理本課程的成績。
-  you_have_been_given_extra_time_on_this_attempt_9d8bff6c: 您已獲得關於此嘗試的額外時間
+  you_have_been_given_extra_time_on_this_attempt_9d8bff6c: 您已獲得額外的作答時間
   you_have_changed_the_progression_requirements_for__6772bc89: 您已更改某一活動課程的進度要求。可能有些學生的進度已達到此單元、以及基於單元的其他單元的進度要求。
   you_have_completed_a_peer_review_for_person_thank__1371f37e: "您已完成 %{person} 的同儕互評。謝謝"
   you_have_count_submissions_to_grade_6c5b511a: "您有 %{count} 個提交項目要評分"
