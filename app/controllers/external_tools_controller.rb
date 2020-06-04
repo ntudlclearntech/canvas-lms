@@ -368,7 +368,8 @@ class ExternalToolsController < ApplicationController
       placement = placement_from_params
       return unless find_tool(params[:id], placement)
 
-      add_crumb(@context.name, named_context_url(@context, :context_url))
+      I18n.set_locale_with_localizer
+      add_crumb(@tool.label_for(placement_from_params, I18n.locale.to_s), nil)
 
       @return_url = named_context_url(@context, :context_external_content_success_url, 'external_tool_redirect', {include_host: true})
       @redirect_return = true
