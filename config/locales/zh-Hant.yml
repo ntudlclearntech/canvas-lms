@@ -15062,7 +15062,7 @@ zh-Hant:
   notice_inactive_student_bcc4248a: 通知：不活躍的學生
   notice_the_grading_period_is_closed_for_this_stude_6c3ce0f9: 注意：此學生的評分時間已結束
   notification: 
-    added_to_conversation_description: 您已被您被加入收件人
+    added_to_conversation_description: 您被加入收件人
     added_to_conversation_display: 您被加入收件人
     all_submissions_description: |-
         *只限教師及管理員：*
