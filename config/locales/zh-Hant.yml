@@ -1854,7 +1854,7 @@ zh-Hant:
   after_4c71e718: 之後
   after_cbb5ebae: 之後......
   after_date_981cd41b: "在 %{date} 之後"
-  after_last_attempt_c9168da2: 僅在繳交次數達到允許重新作答次數後，才會顯示
+  after_last_attempt_c9168da2: 僅在繳交次數達到允許的作答次數後，才會顯示
   after_the_assignment_is_graded_53754607: 作業評分之後
   after_the_due_date_eee89c9c: 截止日期之後
   ahead_21f22939: 之前
@@ -15499,7 +15499,7 @@ zh-Hant:
   only_a_maximum_of_limit_events_can_be_created_b81c405e: "最多只能建立 %{limit} 個活動"
   only_account_administrators_can_change_this_settin_149f8fe3: 僅帳戶管理員可以變更此設定。
   only_add_posts_with_a_specific_phrase_in_the_title_b8b7b04e: 只加入標題中具有特定語詞的貼文
-  only_after_their_last_attempt_3593d101: 僅在繳交次數達到允許重新作答次數後，才會顯示
+  only_after_their_last_attempt_3593d101: 僅在繳交次數達到允許的作答次數後，才會顯示
   only_announcements_can_be_section_specific_1ff992a: 只有公告可以是特定分班的
   only_available_to_students_with_link_not_visible_i_b21ec391: 僅適用於有連結的學生。在學生文件夾中不可見。
   only_course_announcements_and_discussions_can_be_s_924d4386: 只有課程公告和討論區可以是特定分班的
@@ -18115,7 +18115,7 @@ zh-Hant:
         require_lockdown_browser_for_results: 需要檢視測驗結果
         require_lockdown_browser_monitor: 需要網路攝影機
         score_to_keep: 要保留的分數
-        show_correct_answers: 公布正確答案日期
+        show_correct_answers: 公布正確答案
         shuffle_answers: 隨機排列選項
         time_limit: 
           one: "%{count} 分鐘"
@@ -18204,8 +18204,8 @@ zh-Hant:
           keep_editing_this_quiz: 保持編輯此測驗
           keep_editing_this_survey: 保持編輯此調查
           message_students_who: 通知以下學生們…
-          moderate_this_quiz: 調整學生作答次數設定
-          moderate_this_survey: 調整此調查
+          moderate_this_quiz: 調整學生作答次數
+          moderate_this_survey: 調整學生作答次數
           preview: 預覽
           quiz_statistics: 測驗統計資料
           see_full_quiz: 檢視完整測驗
