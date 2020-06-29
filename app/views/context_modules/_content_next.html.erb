@@ -46,6 +46,16 @@
 <% end %>
 
 <div class="header-bar">
+  <div class="header-bar-left ic-Form-control module-search">
+    <input
+        class="ic-Input"
+        id="search-module-input"
+        name="search-module-input"
+        type="search"
+        value=""
+        placeholder="<%= t('#context_modules.placeholders.search_module', 'Search for Module') %>"
+      >
+  </div>
   <div class="header-bar-right header-bar__module-layout">
     <div class="header-bar-right__buttons">
       <% if @can_view_grades %>
