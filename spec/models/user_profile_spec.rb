@@ -43,6 +43,13 @@ describe UserProfile do
         expect(tabs.map { |t| t[:id] }).to include UserProfile::TAB_CONTENT_SHARES
       end
 
+      it "should show shared content tab when user has account membership" do
+        account_admin_user(account: account)
+        account.enable_feature!(:direct_share)
+        tabs = @admin.profile.tabs_available(@admin, :root_account => account)
+        expect(tabs.map { |t| t[:id] }).to include UserProfile::TAB_CONTENT_SHARES
+      end
+
       it "should not show shared content tab when user has only student enrollments" do
         student_in_course(:active_all => true)
         account.enable_feature!(:direct_share)
@@ -200,6 +207,28 @@ describe UserProfile do
           expect(tabs.map { |t| t[:id] }).to include(
             account.context_external_tools.first.asset_string
           )
+        end
+      end
+    end
+
+    describe "QR mobile login" do
+      before :once do
+        user_factory(active_all: true)
+      end
+
+      context "mobile_qr_login flag is enabled" do
+        it "should show the QR mobile login tab" do
+          account.enable_feature! :mobile_qr_login
+          tabs = @user.profile.tabs_available(@user, :root_account => account)
+          expect(tabs.map { |t| t[:id] }).to include UserProfile::TAB_QR_MOBILE_LOGIN
+        end
+      end
+
+      context "mobile_qr_login flag is disabled" do
+        it "should not show the QR mobile login tab" do
+          account.disable_feature! :mobile_qr_login
+          tabs = @user.profile.tabs_available(@user, :root_account => account)
+          expect(tabs.map { |t| t[:id] }).not_to include UserProfile::TAB_QR_MOBILE_LOGIN
         end
       end
     end

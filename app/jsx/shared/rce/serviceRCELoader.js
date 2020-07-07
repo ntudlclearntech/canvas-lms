@@ -23,6 +23,25 @@ import editorOptions from './editorOptions'
 import loadEventListeners from './loadEventListeners'
 import polyfill from './polyfill'
 import splitAssetString from 'compiled/str/splitAssetString'
+import closedCaptionLanguages from '../closedCaptionLanguages'
+
+async function getTinyInstance(remoteEditor) {
+  // eslint-disable-next-line no-unused-vars
+  return new Promise((resolve, reject) => {
+    let ed = remoteEditor.mceInstance()
+    if (ed) {
+      resolve(ed)
+    } else {
+      const iid = setInterval(() => {
+        ed = remoteEditor.mceInstance()
+        if (ed) {
+          clearInterval(iid)
+          resolve(ed)
+        }
+      }, 1000)
+    }
+  })
+}
 
 function getTrayProps() {
   if (!ENV.context_asset_string) {
@@ -68,13 +87,26 @@ const RCELoader = {
     const renderingTarget = this.getRenderingTarget(textarea, tinyMCEInitOptions.getRenderingTarget)
     const propsForRCE = this.createRCEProps(textarea, tinyMCEInitOptions)
 
-    this.loadRCE(RCE => {
-      RCE.renderIntoDiv(renderingTarget, propsForRCE, remoteEditor => {
-        remoteEditor
-          .mceInstance()
-          .on('init', () => callback(textarea, polyfill.wrapEditor(remoteEditor)))
+    if (ENV?.FEATURES?.la_620_old_rce_init_fix) {
+      // in the old rce using an old tinymce, it's possible renderIntoDiv's callback is called
+      // before tinymce adds the new editor to its internal list, and remoteEditor.mceInstance()
+      // wil return null. Waiting on getTinyInstance works around that.
+      // Put it back to the simple `else` case once the old rce is no longer used
+      this.loadRCE(RCE => {
+        RCE.renderIntoDiv(renderingTarget, propsForRCE, async remoteEditor => {
+          const tinyed = await getTinyInstance(remoteEditor)
+          tinyed.on('init', () => callback(textarea, polyfill.wrapEditor(remoteEditor)))
+        })
       })
-    })
+    } else {
+      this.loadRCE(RCE => {
+        RCE.renderIntoDiv(renderingTarget, propsForRCE, remoteEditor => {
+          remoteEditor
+            .mceInstance()
+            .on('init', () => callback(textarea, polyfill.wrapEditor(remoteEditor)))
+        })
+      })
+    }
   },
 
   loadSidebarOnTarget(target, callback) {
@@ -137,7 +169,7 @@ const RCELoader = {
    * @return {Element} the textarea
    */
   getTargetTextarea(initialTarget) {
-    return $(initialTarget).get(0).type == 'textarea'
+    return $(initialTarget).get(0).type === 'textarea'
       ? $(initialTarget).get(0)
       : $(initialTarget)
           .find('textarea')
@@ -208,6 +240,30 @@ const RCELoader = {
       }
     }
 
+    const myLanguage = ENV.LOCALE
+    const languages = Object.keys(closedCaptionLanguages)
+      .map(locale => {
+        return {id: locale, label: closedCaptionLanguages[locale]}
+      })
+      .sort((a, b) => {
+        if (a.id === myLanguage) {
+          return -1
+        } else if (b.id === myLanguage) {
+          return 1
+        } else {
+          return a.label.localeCompare(b.label, myLanguage)
+        }
+      })
+
+    // when rce_auto_save flag is removed, remember to default
+    // the autosave property in RCEWrapper to reasonable values
+    const autosave = {
+      enabled: ENV.use_rce_enhancements && ENV.rce_auto_save,
+      rce_auto_save_max_age_ms: Number.isNaN(ENV.rce_auto_save_max_age_ms)
+        ? 3600000
+        : ENV.rce_auto_save_max_age_ms
+    }
+
     return {
       defaultContent: textarea.value || tinyMCEInitOptions.defaultContent,
       editorOptions: editorOptions.bind(null, width, textarea.id, tinyMCEInitOptions, null),
@@ -217,7 +273,9 @@ const RCELoader = {
       onBlur: tinyMCEInitOptions.onBlur,
       textareaClassName: textarea.className,
       textareaId: textarea.id,
-      trayProps: getTrayProps()
+      trayProps: getTrayProps(),
+      languages,
+      autosave
     }
   }
 }

@@ -22,7 +22,7 @@ import Attempt from './Attempt'
 import DateTitle from './DateTitle'
 import {Flex} from '@instructure/ui-layout'
 import GradeDisplay from './GradeDisplay'
-import {Heading} from '@instructure/ui-elements'
+import {Heading} from '@instructure/ui-heading'
 import I18n from 'i18n!assignments_2_student_header'
 import LatePolicyStatusDisplay from './LatePolicyStatusDisplay'
 import {number} from 'prop-types'
@@ -80,12 +80,9 @@ class Header extends React.Component {
 
   /* eslint-disable jsx-a11y/anchor-is-valid */
   renderFakeMostRecent = () => {
-    // This field is only for use in the InstructureCon demo and will be replaced;
-    // <a> tags without href elements are inaccessible by keyboard and should not normally
-    // be used, this is a quick and dirty measure that will not persist to consumer use.
     return (
       <Flex.Item as="div" align="end" textAlign="end">
-        {I18n.t('Calculated by:')}
+        {I18n.t('Calculated by: ')}
         <a>{I18n.t('Most Recent')}</a>
       </Flex.Item>
     )
@@ -131,7 +128,7 @@ class Header extends React.Component {
           </Heading>
 
           {!this.state.isSticky && <AssignmentGroupModuleNav assignment={this.props.assignment} />}
-          <Flex margin={this.state.isSticky ? '0' : '0 0 medium 0'}>
+          <Flex margin={this.state.isSticky ? '0' : '0 0 medium 0'} wrap="wrap" wrapItems>
             <Flex.Item shrink>
               <DateTitle isSticky={this.state.isSticky} assignment={this.props.assignment} />
             </Flex.Item>
@@ -178,7 +175,9 @@ class Header extends React.Component {
               <StepContainer
                 assignment={this.props.assignment}
                 submission={this.props.submission}
-                forceLockStatus={!this.props.assignment.env.currentUser} // TODO: replace with new 'self' graphql query when ready
+                forceLockStatus={
+                  !this.props.assignment.env.currentUser || !!this.props.assignment.env.modulePrereq
+                }
                 isCollapsed={this.state.isSticky}
               />
             </div>

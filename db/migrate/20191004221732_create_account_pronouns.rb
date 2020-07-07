@@ -25,7 +25,5 @@ class CreateAccountPronouns < ActiveRecord::Migration[5.2]
       t.timestamps
       t.string :workflow_state
     end
-    AccountPronoun.reset_column_information
-    AccountPronoun.create_defaults
   end
 end

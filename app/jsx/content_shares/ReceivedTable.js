@@ -21,12 +21,14 @@ import {arrayOf, func} from 'prop-types'
 import I18n from 'i18n!content_share'
 import {Table} from '@instructure/ui-table'
 import {Menu} from '@instructure/ui-menu'
-import {ScreenReaderContent} from '@instructure/ui-a11y'
+import {ScreenReaderContent} from '@instructure/ui-a11y-content'
 import {Button} from '@instructure/ui-buttons'
 import {IconMoreLine, IconEyeLine, IconImportLine, IconTrashLine} from '@instructure/ui-icons'
 import {View} from '@instructure/ui-layout'
 import FriendlyDatetime from 'jsx/shared/FriendlyDatetime'
-import {Avatar, Badge, Text} from '@instructure/ui-elements'
+import {Avatar} from '@instructure/ui-avatar'
+import {Text} from '@instructure/ui-text'
+import {Tooltip} from '@instructure/ui-tooltip'
 import contentShareShape from 'jsx/shared/proptypes/contentShare'
 
 const friendlyShareNames = {
@@ -41,10 +43,11 @@ ReceivedTable.propTypes = {
   shares: arrayOf(contentShareShape),
   onPreview: func,
   onImport: func,
-  onRemove: func
+  onRemove: func,
+  onUpdate: func
 }
 
-export default function ReceivedTable({shares, onPreview, onImport, onRemove}) {
+export default function ReceivedTable({shares, onPreview, onImport, onRemove, onUpdate}) {
   function renderActionMenu(share) {
     return (
       <Menu
@@ -70,21 +73,74 @@ export default function ReceivedTable({shares, onPreview, onImport, onRemove}) {
     )
   }
 
-  function renderUnreadBadge(state) {
-    if (state !== 'read')
+  function renderUnreadBadge({id, name, read_state}) {
+    function setReadState() {
+      if (typeof onUpdate === 'function') onUpdate(id, {read_state: 'read'})
+    }
+    function setUnreadState() {
+      if (typeof onUpdate === 'function') onUpdate(id, {read_state: 'unread'})
+    }
+
+    function srText() {
+      if (read_state === 'unread') {
+        return I18n.t('%{name} mark as read', {name})
+      }
+      return I18n.t('%{name} mark as unread', {name})
+    }
+
+    if (read_state !== 'read') {
       return (
-        <div data-testid="received-table-row-unread">
-          <Badge margin="0 0 xxx-small 0" standalone type="notification" />
-          <ScreenReaderContent>{I18n.t('unread')}</ScreenReaderContent>
-        </div>
+        <Tooltip renderTip={srText()}>
+          <Button
+            variant="link"
+            size="small"
+            data-testid="received-table-row-unread"
+            onClick={setReadState}
+            margin="0 x-small 0 0"
+          >
+            {/* unread indicator, until we can use InstUI Badge for both unread and read indicators */}
+            <View
+              display="block"
+              borderWidth="medium"
+              width="1rem"
+              height="1rem"
+              borderRadius="circle"
+              borderColor="info"
+              background="info"
+            />
+            <ScreenReaderContent>{srText()}</ScreenReaderContent>
+          </Button>
+        </Tooltip>
       )
-    else return <ScreenReaderContent>{I18n.t('read')}</ScreenReaderContent>
+    } else {
+      return (
+        <Tooltip renderTip={srText()}>
+          <Button
+            variant="link"
+            size="small"
+            data-testid="received-table-row-read"
+            onClick={setUnreadState}
+            margin="0 x-small 0 0"
+          >
+            <View
+              display="block"
+              borderWidth="medium"
+              width="1rem"
+              height="1rem"
+              borderRadius="circle"
+              borderColor="info"
+            />
+            <ScreenReaderContent>{srText()}</ScreenReaderContent>
+          </Button>
+        </Tooltip>
+      )
+    }
   }
 
   function renderRow(share) {
     return (
       <Table.Row key={share.id}>
-        <Table.Cell textAlign="end">{renderUnreadBadge(share.read_state)}</Table.Cell>
+        <Table.Cell textAlign="end">{renderUnreadBadge(share)}</Table.Cell>
         <Table.Cell>{share.name}</Table.Cell>
         <Table.Cell>
           <Text>{friendlyShareNames[share.content_type]}</Text>
@@ -95,6 +151,7 @@ export default function ReceivedTable({shares, onPreview, onImport, onRemove}) {
             size="small"
             name={share.sender.display_name}
             src={share.sender.avatar_image_url}
+            data-fs-exclude
           />{' '}
           {share.sender.display_name}
         </Table.Cell>

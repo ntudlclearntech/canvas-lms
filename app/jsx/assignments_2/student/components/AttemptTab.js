@@ -19,8 +19,10 @@
 import {Assignment} from '../graphqlData/Assignment'
 import {bool, func, string} from 'prop-types'
 import {FormField} from '@instructure/ui-form-field'
+import {friendlyTypeName, getCurrentSubmissionType} from '../helpers/SubmissionHelpers'
 import I18n from 'i18n!assignments_2_attempt_tab'
 import LoadingIndicator from '../../shared/LoadingIndicator'
+import LockedAssignment from './LockedAssignment'
 import React, {Component, lazy, Suspense} from 'react'
 import {Submission} from '../graphqlData/Submission'
 import SubmissionChoiceSVG from '../SVG/SubmissionChoice.svg'
@@ -36,39 +38,14 @@ const UrlEntry = lazy(() => import('./AttemptType/UrlEntry'))
 export default class AttemptTab extends Component {
   static propTypes = {
     activeSubmissionType: string,
-    assignment: Assignment.shape,
+    assignment: Assignment.shape.isRequired,
     createSubmissionDraft: func,
     editingDraft: bool,
-    submission: Submission.shape,
+    submission: Submission.shape.isRequired,
     updateActiveSubmissionType: func,
     updateEditingDraft: func,
     updateUploadingFiles: func,
     uploadingFiles: bool
-  }
-
-  friendlyTypeName = type => {
-    switch (type) {
-      case 'media_recording':
-        return I18n.t('Media')
-      case 'online_text_entry':
-        return I18n.t('Text Entry')
-      case 'online_upload':
-        return I18n.t('File')
-      case 'online_url':
-        return I18n.t('URL')
-      default:
-        throw new Error('submission type not yet supported in A2')
-    }
-  }
-
-  getCurrentSubmissionType = () => {
-    if (this.props.submission.url !== null) {
-      return 'online_url'
-    } else if (this.props.submission.body !== null && this.props.submission.body !== '') {
-      return 'online_text_entry'
-    } else if (this.props.submission.attachments.length !== 0) {
-      return 'online_upload'
-    }
   }
 
   renderFileUpload = () => {
@@ -116,6 +93,7 @@ export default class AttemptTab extends Component {
     return (
       <Suspense fallback={<LoadingIndicator />}>
         <UrlEntry
+          assignment={this.props.assignment}
           createSubmissionDraft={this.props.createSubmissionDraft}
           submission={this.props.submission}
           updateEditingDraft={this.props.updateEditingDraft}
@@ -127,7 +105,14 @@ export default class AttemptTab extends Component {
   renderMediaAttempt = () => {
     return (
       <Suspense fallback={<LoadingIndicator />}>
-        <MediaAttempt assignment={this.props.assignment} />
+        <MediaAttempt
+          key={this.props.submission.attempt}
+          assignment={this.props.assignment}
+          createSubmissionDraft={this.props.createSubmissionDraft}
+          submission={this.props.submission}
+          updateUploadingFiles={this.props.updateUploadingFiles}
+          uploadingFiles={this.props.uploadingFiles}
+        />
       </Suspense>
     )
   }
@@ -181,7 +166,7 @@ export default class AttemptTab extends Component {
           </option>
           {this.props.assignment.submissionTypes.map(type => (
             <option key={type} value={type}>
-              {this.friendlyTypeName(type)}
+              {friendlyTypeName(type)}
             </option>
           ))}
         </select>
@@ -190,9 +175,11 @@ export default class AttemptTab extends Component {
   }
 
   render() {
-    if (this.props.assignment.submissionTypes.length > 1) {
+    if (this.props.assignment.lockInfo.isLocked && this.props.submission.state === 'unsubmitted') {
+      return <LockedAssignment assignment={this.props.assignment} />
+    } else if (this.props.assignment.submissionTypes.length > 1) {
       const submissionType = ['submitted', 'graded'].includes(this.props.submission.state)
-        ? this.getCurrentSubmissionType()
+        ? getCurrentSubmissionType(this.props.submission)
         : this.props.activeSubmissionType
       return (
         <div data-testid="attempt-tab">

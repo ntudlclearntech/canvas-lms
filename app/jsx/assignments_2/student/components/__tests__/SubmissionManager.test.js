@@ -22,6 +22,7 @@ import {fireEvent, render} from '@testing-library/react'
 import {mockAssignmentAndSubmission, mockQuery} from '../../mocks'
 import {MockedProvider} from '@apollo/react-testing'
 import React from 'react'
+import StudentViewContext from '../Context'
 import SubmissionManager from '../SubmissionManager'
 import {SubmissionMocks} from '../../graphqlData/Submission'
 
@@ -79,6 +80,35 @@ describe('SubmissionManager', () => {
     expect(queryByText('Submit')).not.toBeInTheDocument()
   })
 
+  it('does not render the submit button if we are not on the latest submission', async () => {
+    const props = await mockAssignmentAndSubmission({
+      Submission: SubmissionMocks.onlineUploadReadyToSubmit
+    })
+    const {queryByText} = render(
+      <StudentViewContext.Provider value={{nextButtonEnabled: true}}>
+        <MockedProvider>
+          <SubmissionManager {...props} />
+        </MockedProvider>
+      </StudentViewContext.Provider>
+    )
+
+    expect(queryByText('Submit')).not.toBeInTheDocument()
+  })
+
+  it('does not render the submit button if the assignment is locked', async () => {
+    const props = await mockAssignmentAndSubmission({
+      LockInfo: {isLocked: true},
+      Submission: SubmissionMocks.onlineUploadReadyToSubmit
+    })
+    const {queryByText} = render(
+      <MockedProvider>
+        <SubmissionManager {...props} />
+      </MockedProvider>
+    )
+
+    expect(queryByText('Submit')).not.toBeInTheDocument()
+  })
+
   it('disables the submit button after it is pressed', async () => {
     const props = await mockAssignmentAndSubmission({
       Submission: SubmissionMocks.onlineUploadReadyToSubmit
@@ -109,5 +139,37 @@ describe('SubmissionManager', () => {
     const submitButton = getByText('Submit')
     fireEvent.click(submitButton)
     expect(getByText('Submit').closest('button')).toHaveAttribute('disabled')
+  })
+
+  describe('with multiple submission types drafted', () => {
+    it('renders a confirmation modal if the submit button is pressed', async () => {
+      const props = await mockAssignmentAndSubmission({
+        Assignment: {
+          submissionTypes: ['online_text_entry', 'online_url']
+        },
+        Submission: {
+          submissionDraft: {
+            activeSubmissionType: 'online_text_entry',
+            body: 'some text here',
+            meetsTextEntryCriteria: true,
+            meetsUrlCriteria: true,
+            url: 'http://www.google.com'
+          }
+        }
+      })
+
+      const {getByTestId, getByText} = render(
+        <MockedProvider>
+          <SubmissionManager {...props} />
+        </MockedProvider>
+      )
+
+      const submitButton = getByText('Submit')
+      fireEvent.click(submitButton)
+
+      expect(getByTestId('submission-confirmation-modal')).toBeInTheDocument()
+      expect(getByTestId('cancel-submit')).toBeInTheDocument()
+      expect(getByTestId('confirm-submit')).toBeInTheDocument()
+    })
   })
 })

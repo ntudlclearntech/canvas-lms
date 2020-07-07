@@ -16,7 +16,7 @@
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-require File.expand_path(File.dirname(__FILE__) + '/../api_spec_helper')
+require_relative '../api_spec_helper'
 
 
 describe UsersController, type: :request do
@@ -136,7 +136,7 @@ describe UsersController, type: :request do
   end
 
   it 'should not crash when mixing items with/without due dates (users controller)' do
-    @a2.update_attributes(due_at: nil)
+    @a2.update(due_at: nil)
     api_call(:get, "/api/v1/users/self/todo",
              controller: "users", action: "todo_items", format: "json")
     expect(response).to be_successful
@@ -144,7 +144,7 @@ describe UsersController, type: :request do
 
   it 'should not crash when mixing items with/without due dates (courses controller)' do
     @teacher_course.enroll_student(@teacher).accept!
-    @a2.update_attributes(due_at: nil)
+    @a2.update(due_at: nil)
     Assignment.create!(context: @teacher_course, due_at: 1.day.from_now, title: 'text', submission_types: 'online_text_entry', points_possible: 15)
     api_call(:get, "/api/v1/courses/#{@teacher_course.id}/todo",
              controller: "courses", action: "todo_items",
@@ -205,18 +205,50 @@ describe UsersController, type: :request do
   it "should include future assignments that don't expect an online submission (courses endpoint)" do
     past_ungraded = @student_course.assignments.create! due_at: 2.days.ago, workflow_state: 'published', submission_types: 'not_graded'
     ungraded = @student_course.assignments.create! due_at: 2.days.from_now, workflow_state: 'published', submission_types: 'not_graded'
+    due_overridden = @student_course.assignments.create! workflow_state: 'published', submission_types: 'not_graded'
+    create_adhoc_override_for_assignment(due_overridden, @user, {due_at: 2.days.from_now})
     json = api_call :get, "/api/v1/courses/#{@student_course.id}/todo", :controller => "courses", :action => "todo_items",
         :format => "json", :course_id => @student_course.to_param
-    expect(json.map {|e| e['assignment']['id']}).to include ungraded.id
+    expect(json.map {|e| e['assignment']['id']}).to include ungraded.id, due_overridden.id
     expect(json.map {|e| e['assignment']['id']}).not_to include past_ungraded.id
   end
 
   it "should include future assignments that don't expect an online submission (users endpoint)" do
     past_ungraded = @student_course.assignments.create! due_at: 2.days.ago, workflow_state: 'published', submission_types: 'not_graded'
     ungraded = @student_course.assignments.create! due_at: 2.days.from_now, workflow_state: 'published', submission_types: 'not_graded'
+    due_overridden = @student_course.assignments.create! workflow_state: 'published', submission_types: 'not_graded'
+    create_adhoc_override_for_assignment(due_overridden, @user, {due_at: 2.days.from_now})
     json = api_call :get, "/api/v1/users/self/todo", :controller => "users", :action => "todo_items", :format => "json"
-    expect(json.map {|e| e['assignment']['id']}).to include ungraded.id
+    expect(json.map {|e| e['assignment']['id']}).to include ungraded.id, due_overridden.id
     expect(json.map {|e| e['assignment']['id']}).not_to include past_ungraded.id
+  end
+
+  it "should respect grading permissions (users endpoint)" do
+    course_with_ta(course: @teacher_course, active_all: true)
+    @ta = @user
+    json = api_call :get, "/api/v1/users/self/todo", controller: "users", action: "todo_items", format: "json"
+    expect(json.map {|e| e['assignment']['id']}).to include @a2.id
+
+    RoleOverride.create!(context: @course.account,
+                         permission: 'manage_grades',
+                         role: ta_role,
+                         enabled: false)
+
+    json = api_call :get, "/api/v1/users/self/todo", controller: "users", action: "todo_items", format: "json"
+    expect(json.length).to eq 0
+  end
+
+  it "should not include items from courses concluded by terms dates if the user is also an admin" do
+    account_admin_user(account: @teacher_course.root_account, user: @user)
+    json = api_call :get, "/api/v1/users/self/todo", controller: "users", action: "todo_items", format: "json"
+    expect(json.map {|e| e['assignment']['id']}).to include @a2.id
+
+    et = @teacher_course.enrollment_term
+    et.end_at = 1.day.ago
+    et.save!
+
+    json = api_call :get, "/api/v1/users/self/todo", controller: "users", action: "todo_items", format: "json"
+    expect(json).to eq []
   end
 
   it "includes ungraded quizzes by request" do
@@ -497,7 +529,7 @@ describe UsersController, type: :request do
       expect(json['assignments_needing_submitting']).to eq 16
     end
 
-    it "doesnt count assignments that dont need grading" do
+    it "doesn't count assignments that don't need grading" do
       a = Assignment.create!(:context => @teacher_course,
                          :due_at => 1.day.from_now,
                          :title => 'no grading',

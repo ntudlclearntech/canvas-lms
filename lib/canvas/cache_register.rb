@@ -27,9 +27,9 @@ module Canvas
     # (which is far less often than the many times per day users are currently being touched)
 
     ALLOWED_TYPES = {
-      'Account' => %w{account_chain role_overrides},
+      'Account' => %w{account_chain role_overrides global_navigation},
       'Course' => %w{account_associations},
-      'User' => %w{enrollments groups account_users todo_list submissions},
+      'User' => %w{enrollments groups account_users todo_list submissions user_services},
       'Assignment' => %w{availability},
       'Quizzes::Quiz' => %w{availability}
     }.freeze
@@ -47,8 +47,7 @@ module Canvas
     end
 
     def self.enabled?
-      # add a switch just in case things aren't getting cleared quite the way they should
-       !::Rails.cache.is_a?(::ActiveSupport::Cache::NullStore) && Canvas.redis_enabled? && Setting.get("revert_cache_register", "false") != "true"
+       !::Rails.cache.is_a?(::ActiveSupport::Cache::NullStore) && Canvas.redis_enabled?
     end
 
     module ActiveRecord
@@ -60,7 +59,7 @@ module Canvas
           end
 
           def valid_cache_key_type?(key_type)
-            if CacheRegister::ALLOWED_TYPES[self.name]&.include?(key_type.to_s)
+            if CacheRegister::ALLOWED_TYPES[self.base_class.name]&.include?(key_type.to_s)
               true
             elsif ::Rails.env.production?
               false # fail gracefully
@@ -71,8 +70,8 @@ module Canvas
 
           def skip_touch_for_type?(key_type)
             valid_cache_key_type?(key_type) &&
-              CacheRegister::MIGRATED_TYPES[self.name]&.include?(key_type.to_s) &&
-              Setting.get("revert_cache_register_migration_#{self.name.downcase}_#{key_type}", "false") != "true"
+              CacheRegister::MIGRATED_TYPES[self.base_class.name]&.include?(key_type.to_s) &&
+              Setting.get("revert_cache_register_migration_#{self.base_class.name.downcase}_#{key_type}", "false") != "true"
           end
 
           def touch_and_clear_cache_keys(ids_or_records, *key_types)

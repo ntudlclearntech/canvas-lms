@@ -715,9 +715,15 @@ export function initializeCollection(endpoint) {
   }
 }
 
-export function initializeDocuments(props) {
+export function initializeDocuments(_props) {
   return {
-    [props.contextType]: {
+    course: {
+      files: [],
+      bookmark: 'documents1',
+      isLoading: false,
+      hasMore: true
+    },
+    user: {
       files: [],
       bookmark: 'documents1',
       isLoading: false,
@@ -726,9 +732,15 @@ export function initializeDocuments(props) {
   }
 }
 
-export function initializeMedia(props) {
+export function initializeMedia(_props) {
   return {
-    [props.contextType]: {
+    course: {
+      files: [],
+      bookmark: 'media1',
+      isLoading: false,
+      hasMore: true
+    },
+    user: {
       files: [],
       bookmark: 'media1',
       isLoading: false,
@@ -808,7 +820,7 @@ export function fetchPage(uri) {
       if (PAGES[uri]) {
         resolve(PAGES[uri])
       } else {
-        reject('bad page!')
+        reject(new Error('bad page!'))
       }
     }, 1000)
   })
@@ -820,7 +832,7 @@ export function searchFlickr(term) {
       if (FLICKR_RESULTS[term]) {
         resolve(FLICKR_RESULTS[term])
       } else {
-        reject('No search results!')
+        reject(new Error('No search results!'))
       }
     }, 1000)
   })
@@ -832,7 +844,7 @@ export function searchUnsplash(term) {
       if (UNSPLASH_RESULTS[term]) {
         resolve(UNSPLASH_RESULTS[term])
       } else {
-        reject('No search results!')
+        reject(new Error('No search results!'))
       }
     }, 1000)
   })
@@ -860,12 +872,11 @@ export function getFile(id) {
 export function fetchDocs(state) {
   return new Promise((resolve, reject) => {
     setTimeout(() => {
-      let response
       const bookmark =
-        state.documents[state.contextType] && state.documents[state.contextType].bookmark
-      if (bookmark) {
-        response = DOCUMENTS[bookmark]
-      }
+        (state.documents[state.contextType] && state.documents[state.contextType].bookmark) ||
+        'documents1'
+
+      const response = DOCUMENTS[bookmark]
 
       if (response) {
         resolve(response)
@@ -880,7 +891,8 @@ export function fetchMedia(state) {
   return new Promise((resolve, reject) => {
     setTimeout(() => {
       let response
-      const bookmark = state.media[state.contextType] && state.media[state.contextType].bookmark
+      const bookmark =
+        (state.media[state.contextType] && state.media[state.contextType].bookmark) || 'media1'
       if (bookmark) {
         response = MEDIA[bookmark]
       }
@@ -890,6 +902,29 @@ export function fetchMedia(state) {
       } else {
         reject(new Error('Invalid bookmark'))
       }
+    }, FAKE_TIMEOUT)
+  })
+}
+
+export function updateMediaObject(state, {media_object_id, title}) {
+  // eslint-disable-next-line no-unused-vars
+  return new Promise((resolve, reject) => {
+    setTimeout(() => {
+      resolve({
+        id: media_object_id,
+        title,
+        media_type: 'video',
+        date: '2019-10-29T13:08:36Z',
+        published: true
+      })
+    }, FAKE_TIMEOUT)
+  })
+}
+
+export function updateMediaObjectFailure() {
+  return new Promise((resolve, reject) => {
+    setTimeout(() => {
+      reject()
     }, FAKE_TIMEOUT)
   })
 }

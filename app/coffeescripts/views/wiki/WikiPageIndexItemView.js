@@ -34,7 +34,8 @@ export default class WikiPageIndexItemView extends Backbone.View {
     this.prototype.els = {
       '.wiki-page-link': '$wikiPageLink',
       '.publish-cell': '$publishCell',
-      '.master-content-lock-cell': '$lockCell'
+      '.master-content-lock-cell': '$lockCell',
+      'a.al-trigger': '$settingsMenu'
     }
     this.prototype.events = {
       'click a.al-trigger': 'settingsMenu',
@@ -64,10 +65,15 @@ export default class WikiPageIndexItemView extends Backbone.View {
   toJSON() {
     const json = super.toJSON(...arguments)
     json.CAN = {
-      MANAGE: !!this.WIKI_RIGHTS.manage,
-      PUBLISH: !!this.WIKI_RIGHTS.manage && this.contextName === 'courses',
-      // TODO: Consider allowing duplicating pages in other contexts
-      DUPLICATE: !!this.WIKI_RIGHTS.manage && this.contextName === 'courses'
+      MANAGE:
+        !!this.WIKI_RIGHTS.create_page ||
+        !!this.WIKI_RIGHTS.delete_page ||
+        !!this.WIKI_RIGHTS.publish_page ||
+        !!this.WIKI_RIGHTS.update,
+      PUBLISH: !!this.WIKI_RIGHTS.publish_page,
+      DUPLICATE: !!this.WIKI_RIGHTS.create_page && this.contextName === 'courses',
+      UPDATE: !!this.WIKI_RIGHTS.update,
+      DELETE: !!this.WIKI_RIGHTS.delete_page
     }
 
     json.DIRECT_SHARE_ENABLED = ENV.DIRECT_SHARE_ENABLED
@@ -262,12 +268,12 @@ export default class WikiPageIndexItemView extends Backbone.View {
 
   sendWikiPageTo(ev) {
     ev.preventDefault()
-    console.log(`send page ${this.model.get('page_id')} to user`)
+    this.indexView.setSendToItem(this.model, this.$settingsMenu)
   }
 
   copyWikiPageTo(ev) {
     ev.preventDefault()
-    console.log(`copy page ${this.model.get('page_id')} to course`)
+    this.indexView.setCopyToItem(this.model, this.$settingsMenu)
   }
 }
 WikiPageIndexItemView.initClass()

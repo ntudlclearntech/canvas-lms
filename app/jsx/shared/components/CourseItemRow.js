@@ -133,7 +133,7 @@ export default class CourseItemRow extends Component {
         case 'toggleButton':
           break
         default:
-          throw new Error(I18n.t('Illegal element focus request'))
+          throw new Error('Illegal element focus request')
       }
       this.props.clearFocusDirectives()
     }
@@ -225,6 +225,7 @@ export default class CourseItemRow extends Component {
                 size="small"
                 name={this.props.author.display_name || I18n.t('Unknown')}
                 src={this.props.author.avatar_image_url}
+                data-fs-exclude
               />
             </div>
           )}

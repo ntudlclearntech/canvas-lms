@@ -23,7 +23,7 @@ import {Tray} from '@instructure/ui-overlays'
 import preventDefault from 'compiled/fn/preventDefault'
 import I18n from 'i18n!MobileNavigation'
 import {View} from '@instructure/ui-layout'
-import {Spinner} from '@instructure/ui-elements'
+import {Spinner} from '@instructure/ui-spinner'
 
 const MobileContextMenu = React.lazy(() => import('./MobileContextMenu'))
 const MobileGlobalMenu = React.lazy(() => import('./MobileGlobalMenu'))
@@ -41,7 +41,7 @@ export default class MobileNavigation extends React.Component {
     }).isRequired
   }
 
-  componentWillMount() {
+  componentDidMount() {
     $('.mobile-header-hamburger').on(
       'touchstart click',
       preventDefault(() => this.setState({globalNavIsOpen: true}))
@@ -69,27 +69,29 @@ export default class MobileNavigation extends React.Component {
     const closeGlobalNav = () => this.setState({globalNavIsOpen: false})
     const spinner = (
       <View display="block" textAlign="center">
-        <Spinner size="large" margin="large auto" renderTitle={I18n.t('...Loading')} />
+        <Spinner size="large" margin="large auto" renderTitle={() => I18n.t('...Loading')} />
       </View>
     )
     return (
       <>
-        <Tray
-          size="large"
-          label={I18n.t('Global Navigation')}
-          open={this.state.globalNavIsOpen}
-          onDismiss={closeGlobalNav}
-          shouldCloseOnDocumentClick
-        >
-          {this.state.globalNavIsOpen && (
-            <React.Suspense fallback={spinner}>
-              <MobileGlobalMenu
-                DesktopNavComponent={this.props.DesktopNavComponent}
-                onDismiss={closeGlobalNav}
-              />
-            </React.Suspense>
-          )}
-        </Tray>
+        {this.state.globalNavIsOpen && (
+          <Tray
+            size="large"
+            label={I18n.t('Global Navigation')}
+            open={this.state.globalNavIsOpen}
+            onDismiss={closeGlobalNav}
+            shouldCloseOnDocumentClick
+          >
+            {this.state.globalNavIsOpen && (
+              <React.Suspense fallback={spinner}>
+                <MobileGlobalMenu
+                  DesktopNavComponent={this.props.DesktopNavComponent}
+                  onDismiss={closeGlobalNav}
+                />
+              </React.Suspense>
+            )}
+          </Tray>
+        )}
         {this.state.contextNavIsOpen && (
           <React.Suspense fallback={spinner}>
             <MobileContextMenu spinner={spinner} />

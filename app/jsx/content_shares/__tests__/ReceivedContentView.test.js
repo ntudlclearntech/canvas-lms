@@ -20,7 +20,7 @@ import React from 'react'
 import {render, fireEvent, act} from '@testing-library/react'
 import useFetchApi from 'jsx/shared/effects/useFetchApi'
 import ReceivedContentView from 'jsx/content_shares/ReceivedContentView'
-import {assignmentShare} from 'jsx/content_shares/__tests__/test-utils'
+import {assignmentShare, unreadDiscussionShare} from 'jsx/content_shares/__tests__/test-utils'
 import fetchMock from 'fetch-mock'
 
 jest.mock('jsx/shared/effects/useFetchApi')
@@ -28,16 +28,18 @@ jest.mock('jsx/shared/effects/useFetchApi')
 describe('view of received content', () => {
   let liveRegion
 
-  beforeAll(() => {
+  beforeEach(() => {
     liveRegion = document.createElement('div')
     liveRegion.id = 'flash_screenreader_holder'
     liveRegion.setAttribute('role', 'alert')
     document.body.appendChild(liveRegion)
   })
 
-  afterAll(() => {
+  afterEach(() => {
     if (liveRegion) liveRegion.remove()
   })
+
+  afterEach(fetchMock.restore)
 
   it('renders spinner while loading', () => {
     useFetchApi.mockImplementationOnce(({loading}) => loading(true))
@@ -112,8 +114,12 @@ describe('view of received content', () => {
     expect(lastFetchCall[0]).toMatchObject({params: {page: 3}})
   })
 
-  it('displays a preview modal when requested', () => {
+  it('displays a preview modal when requested', async () => {
     const shares = [assignmentShare]
+    fetchMock.put(`/api/v1/users/self/content_shares/${assignmentShare.id}`, {
+      status: 200,
+      body: JSON.stringify({read_state: 'read', id: unreadDiscussionShare.id})
+    })
     useFetchApi.mockImplementationOnce(({loading, success}) => {
       loading(false)
       success(shares)
@@ -121,6 +127,7 @@ describe('view of received content', () => {
     const {getByText} = render(<ReceivedContentView />)
     fireEvent.click(getByText(/manage options/i))
     fireEvent.click(getByText('Preview'))
+    await act(() => fetchMock.flush(true))
     expect(document.querySelector('iframe')).toBeInTheDocument()
   })
 
@@ -136,6 +143,45 @@ describe('view of received content', () => {
     expect(await findByText(/select a course/i)).toBeInTheDocument()
   })
 
+  it('announces when new shares are loaded', () => {
+    const shares = [assignmentShare]
+    useFetchApi.mockImplementationOnce(({loading, success}) => {
+      loading(false)
+      success(shares)
+    })
+    const {getByText} = render(<ReceivedContentView />)
+    expect(getByText('1 shared item loaded.')).toBeInTheDocument()
+  })
+
+  describe('mark as read', () => {
+    const shares = [unreadDiscussionShare]
+
+    beforeEach(() => {
+      useFetchApi.mockImplementationOnce(({loading, success}) => {
+        loading(false)
+        success(shares)
+      })
+      fetchMock.put(`/api/v1/users/self/content_shares/${unreadDiscussionShare.id}`, {
+        status: 200,
+        body: JSON.stringify({read_state: 'read', id: unreadDiscussionShare.id})
+      })
+    })
+
+    it('makes an update API call', async () => {
+      const {getByTestId} = render(<ReceivedContentView />)
+      fireEvent.click(getByTestId('received-table-row-unread'))
+      await act(() => fetchMock.flush(true))
+      expect(fetchMock.called()).toBeTruthy()
+    })
+
+    it('updates the unread dot', async () => {
+      const {queryByTestId, getByTestId} = render(<ReceivedContentView />)
+      fireEvent.click(getByTestId('received-table-row-unread'))
+      await act(() => fetchMock.flush(true))
+      expect(queryByTestId('received-table-row-unread')).toBeNull()
+    })
+  })
+
   describe('remove', () => {
     const oldWindowConfirm = window.confirm
 
@@ -145,7 +191,6 @@ describe('view of received content', () => {
 
     afterEach(() => {
       window.confirm = oldWindowConfirm
-      fetchMock.restore()
     })
 
     it('removes a content share when requested', async () => {

@@ -62,7 +62,7 @@ describe Types::UserType do
 
   context "avatarUrl" do
     before(:once) do
-      @student.update_attributes! avatar_image_url: 'not-a-fallback-avatar.png'
+      @student.update! avatar_image_url: 'not-a-fallback-avatar.png'
     end
 
     it "is nil when avatars are not enabled" do
@@ -76,28 +76,18 @@ describe Types::UserType do
 
     it "returns nil when a user has no avatar" do
       user.account.enable_service(:avatars)
-      user.update_attributes! avatar_image_url: nil
+      user.update! avatar_image_url: nil
       expect(user_type.resolve("avatarUrl")).to be_nil
     end
   end
 
-  context "pronoun" do
-    before(:each) do
-      AccountPronoun.create_defaults
-    end
-
-    it "returns user pronoun" do
+  context "pronouns" do
+    it "returns user pronouns" do
       @student.account.root_account.settings[:can_add_pronouns] = true
       @student.account.root_account.save!
-      @student.account_pronoun_id = AccountPronoun.first
+      @student.pronouns = "Dude/Guy"
       @student.save!
-      expect(user_type.resolve("pronoun")).to eq AccountPronoun.first.display_pronoun
-    end
-
-    it "will not return pronoun if account setting is not set" do
-      @student.account_pronoun_id = AccountPronoun.first
-      @student.save!
-      expect(user_type.resolve("pronoun")).to eq nil
+      expect(user_type.resolve("pronouns")).to eq "Dude/Guy"
     end
   end
 
@@ -140,7 +130,7 @@ describe Types::UserType do
 
   context "email" do
     before(:once) do
-      @student.update_attributes! email: "cooldude@example.com"
+      @student.update! email: "cooldude@example.com"
     end
 
     it "returns email for teachers/admins" do
@@ -175,6 +165,12 @@ describe Types::UserType do
         expect(@user_group_ids.include?(id)).to be true
         expect(@deleted_user_group_ids.include?(id)).to be false
       end
+    end
+
+    it "only returns groups for current_user" do
+      expect(
+        user_type.resolve('groups { _id }', current_user: @teacher)
+      ).to be_nil
     end
   end
 end

@@ -22,7 +22,7 @@ import BreadcrumbLinkWithTip from './BreadcrumbLinkWithTip'
 import errorShipUrl from 'jsx/shared/svg/ErrorShip.svg'
 import FileSelectTable from './FileSelectTable'
 import GenericErrorPage from '../../../../../../shared/components/GenericErrorPage/index'
-import I18n from 'i18n!assignments_2'
+import I18n from 'i18n!assignments_2_MoreOptions_CanvasFiles'
 import LoadingIndicator from '../../../../../shared/LoadingIndicator'
 import parseLinkHeader from '../../../../../../shared/parseLinkHeader'
 import React from 'react'
@@ -32,7 +32,7 @@ import {Flex} from '@instructure/ui-layout'
 
 class CanvasFiles extends React.Component {
   state = {
-    loadedFolders: {'0': {id: '0', name: 'Root', subFileIDs: [], subFolderIDs: []}},
+    loadedFolders: {'0': {id: '0', name: I18n.t('Root'), subFileIDs: [], subFolderIDs: []}},
     loadedFiles: {},
     error: null,
     pendingAPIRequests: 0,
@@ -77,7 +77,16 @@ class CanvasFiles extends React.Component {
       }
     }
     if (this._isMounted) {
-      this.setState({selectedFolderID: folderID})
+      this.setState({selectedFolderID: folderID}, () => {
+        // we are guaranteed to always have a folder in the selection, so we will either focus
+        // on the parent folder, or the first rendered folder in the root
+        const newFocus =
+          document.getElementById('parent-folder') ||
+          document.getElementById(
+            `folder-${this.state.loadedFolders[this.state.selectedFolderID].subFolderIDs[0]}`
+          )
+        newFocus.focus()
+      })
     }
   }
 
@@ -218,7 +227,7 @@ class CanvasFiles extends React.Component {
 
     return (
       <Flex.Item padding="medium xx-small xx-small xx-small">
-        <Breadcrumb label="current folder path">
+        <Breadcrumb label={I18n.t('current folder path')}>
           {path.map((currentFolder, i) => {
             // special case to make the last folder in the path (i.e. the current folder)
             // not a link

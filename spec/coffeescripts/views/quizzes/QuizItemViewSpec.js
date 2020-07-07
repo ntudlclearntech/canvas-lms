@@ -25,6 +25,7 @@ import fakeENV from 'helpers/fakeENV'
 import CyoeHelper from 'jsx/shared/conditional_release/CyoeHelper'
 import assertions from 'helpers/assertions'
 import 'helpers/jquery.simulate'
+import ReactDOM from 'react-dom'
 
 const fixtures = $('#fixtures')
 
@@ -125,11 +126,19 @@ test('shows solid quiz icon for new.quizzes', () => {
   equal(view.$('i.icon-quiz.icon-Solid').length, 1)
 })
 
-test('shows line quiz icon for old quizzes', () => {
+test('shows a non-student a line quiz icon for old quizzes', () => {
+  Object.assign(window.ENV, {current_user_roles: ['teacher']})
   const quiz = createQuiz({id: 1, title: 'Foo', can_update: true})
   const view = createView(quiz, {canManage: true, migrate_quiz_enabled: false})
   equal(view.$('i.icon-quiz').length, 1)
   equal(view.$('i.icon-quiz.icon-Solid').length, 0)
+})
+
+test('shows a student a solid quiz icon for old quizzes', () => {
+  Object.assign(window.ENV, {current_user_roles: ['student']})
+  const quiz = createQuiz({id: 1, title: 'Foo', can_update: true})
+  const view = createView(quiz, {canManage: true, migrate_quiz_enabled: false})
+  equal(view.$('i.icon-quiz.icon-Solid').length, 1)
 })
 
 test('#migrateQuiz is called', function() {
@@ -432,20 +441,6 @@ test('renders mastery paths link for quiz if quiz has is released by a rule', ()
   equal(view.$('.mastery-path-icon').length, 1)
 })
 
-test('does not render direct share menu items when not DIRECT_SHARE_ENABLED', () => {
-  const quiz = createQuiz({id: 1, title: 'Foo', can_update: true})
-  const view = createView(quiz)
-  equal(view.$('.quiz-copy-to').length, 0)
-  equal(view.$('.quiz-send-to').length, 0)
-})
-
-test('renders direct share menu items when DIRECT_SHARE_ENABLED', () => {
-  const quiz = createQuiz({id: 1, title: 'Foo', can_update: true})
-  const view = createView(quiz, {DIRECT_SHARE_ENABLED: true})
-  equal(view.$('.quiz-copy-to').length, 1)
-  equal(view.$('.quiz-send-to').length, 1)
-})
-
 test('can duplicate when a quiz can be duplicated', () => {
   const quiz = createQuiz({
     id: 1,
@@ -549,4 +544,132 @@ test('displays failed to duplicate message when assignment failed to duplicate',
   })
   const view = createView(quiz)
   ok(view.$el.text().includes('Something went wrong with making a copy of "Foo"'))
+})
+
+QUnit.module('direct share', hooks => {
+  hooks.beforeEach(() => {
+    $('<div id="direct-share-mount-point">').appendTo('#fixtures')
+    fakeENV.setup({COURSE_ID: 123})
+    sinon.stub(ReactDOM, 'render')
+  })
+
+  hooks.afterEach(() => {
+    ReactDOM.render.restore()
+    fakeENV.teardown()
+    $('#direct-share-mount-point').remove()
+  })
+
+  test('does not render direct share menu items when not DIRECT_SHARE_ENABLED', () => {
+    const quiz = createQuiz({id: 1, title: 'Foo', can_update: true})
+    const view = createView(quiz)
+    equal(view.$('.quiz-copy-to').length, 0)
+    equal(view.$('.quiz-send-to').length, 0)
+  })
+
+  test('renders direct share menu items when DIRECT_SHARE_ENABLED', () => {
+    const quiz = createQuiz({id: 1, title: 'Foo', can_update: true})
+    const view = createView(quiz, {DIRECT_SHARE_ENABLED: true})
+    equal(view.$('.quiz-copy-to').length, 1)
+    equal(view.$('.quiz-send-to').length, 1)
+  })
+
+  test('opens and closes the Copy To tray', () => {
+    const quiz = createQuiz({id: 1, title: 'Foo', can_update: true})
+    const view = createView(quiz, {DIRECT_SHARE_ENABLED: true})
+    view.$(`.al-trigger`).simulate('click')
+    view.$(`.quiz-copy-to`).simulate('click')
+    const args = ReactDOM.render.firstCall.args
+    equal(args[0].props.open, true)
+    equal(args[0].props.sourceCourseId, 123)
+    deepEqual(args[0].props.contentSelection, {quizzes: [1]})
+
+    clearTimeout(args[0].props.onDismiss())
+    equal(ReactDOM.render.lastCall.args[0].props.open, false)
+  })
+
+  test('opens and closes the Send To tray', () => {
+    const quiz = createQuiz({id: '1', title: 'Foo', can_update: true})
+    const view = createView(quiz, {DIRECT_SHARE_ENABLED: true})
+    view.$(`.al-trigger`).simulate('click')
+    view.$(`.quiz-send-to`).simulate('click')
+    const args = ReactDOM.render.firstCall.args
+    equal(args[0].props.open, true)
+    equal(args[0].props.sourceCourseId, 123)
+    deepEqual(args[0].props.contentShare, {content_type: 'quiz', content_id: '1'})
+
+    clearTimeout(args[0].props.onDismiss())
+    equal(ReactDOM.render.lastCall.args[0].props.open, false)
+  })
+
+  test('uses the correct content_type for new quizzes', () => {
+    const quiz = createQuiz({id: '1', title: 'Foo', can_update: true, quiz_type: 'quizzes.next'})
+    const view = createView(quiz, {DIRECT_SHARE_ENABLED: true})
+    view.$(`.al-trigger`).simulate('click')
+    view.$(`.quiz-send-to`).simulate('click')
+    const args = ReactDOM.render.firstCall.args
+    equal(args[0].props.open, true)
+    equal(args[0].props.sourceCourseId, 123)
+    deepEqual(args[0].props.contentShare, {content_type: 'assignment', content_id: '1'})
+
+    clearTimeout(args[0].props.onDismiss())
+    equal(ReactDOM.render.lastCall.args[0].props.open, false)
+  })
+})
+
+QUnit.module('Quiz#quizzesRespondusEnabled', hooks => {
+  hooks.beforeEach(() => {
+    fakeENV.setup({current_user_roles: []})
+  })
+
+  hooks.afterEach(() => {
+    fakeENV.teardown()
+  })
+
+  test('returns false if the assignment is not RLDB enabled', () => {
+    fakeENV.setup({current_user_roles: ['student']})
+    const quiz = createQuiz({
+      id: 1,
+      quiz_type: 'quizzes.next',
+      require_lockdown_browser: false
+    })
+    const view = createView(quiz)
+    const json = view.toJSON()
+    equal(json.quizzesRespondusEnabled, false)
+  })
+
+  test('returns false if the assignment is not a N.Q assignment', () => {
+    fakeENV.setup({current_user_roles: ['student']})
+    const quiz = createQuiz({
+      id: 1,
+      quiz_type: 'practice',
+      require_lockdown_browser: true
+    })
+    const view = createView(quiz)
+    const json = view.toJSON()
+    equal(json.quizzesRespondusEnabled, false)
+  })
+
+  test('returns false if the user is not a student', () => {
+    fakeENV.setup({current_user_roles: ['teacher']})
+    const quiz = createQuiz({
+      id: 1,
+      quiz_type: 'quizzes.next',
+      require_lockdown_browser: true
+    })
+    const view = createView(quiz)
+    const json = view.toJSON()
+    equal(json.quizzesRespondusEnabled, false)
+  })
+
+  test('returns true if the assignment is a RLDB enabled N.Q', () => {
+    fakeENV.setup({current_user_roles: ['student']})
+    const quiz = createQuiz({
+      id: 1,
+      quiz_type: 'quizzes.next',
+      require_lockdown_browser: true
+    })
+    const view = createView(quiz)
+    const json = view.toJSON()
+    equal(json.quizzesRespondusEnabled, true)
+  })
 })

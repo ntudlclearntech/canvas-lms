@@ -80,7 +80,7 @@ describe Types::AssignmentType do
     assignment.grader_count = 1
     assignment.final_grader_id = teacher.id
     assignment.save!
-    assignment.update_attributes final_grader_id: teacher.id
+    assignment.update final_grader_id: teacher.id
     expect(assignment_type.resolve("moderatedGrading { enabled }")).to eq assignment.moderated_grading
     expect(assignment_type.resolve("moderatedGrading { finalGrader { _id } }")).to eq teacher.id.to_s
     expect(assignment_type.resolve("moderatedGrading { gradersAnonymousToGraders }")).to eq assignment.graders_anonymous_to_graders
@@ -119,7 +119,7 @@ describe Types::AssignmentType do
 
   context "description" do
     before do
-      assignment.update_attributes description: %|Hi <img src="/courses/#{course.id}/files/12/download"<h1>Content</h1>|
+      assignment.update description: %|Hi <img src="/courses/#{course.id}/files/12/download"<h1>Content</h1>|
     end
 
     it "includes description when lock settings allow" do
@@ -159,14 +159,14 @@ describe Types::AssignmentType do
   end
 
   it "returns nil when allowed_attempts is an invalid non-positive value" do
-    assignment.update_attributes allowed_attempts: 0
+    assignment.update allowed_attempts: 0
     expect(assignment_type.resolve("allowedAttempts")).to eq nil
-    assignment.update_attributes allowed_attempts: -1
+    assignment.update allowed_attempts: -1
     expect(assignment_type.resolve("allowedAttempts")).to eq nil
   end
 
   it "returns allowed_attempts value set on the assignment" do
-    assignment.update_attributes allowed_attempts: 7
+    assignment.update allowed_attempts: 7
     expect(assignment_type.resolve("allowedAttempts")).to eq 7
   end
 
@@ -186,7 +186,7 @@ describe Types::AssignmentType do
             states: submitted,
             sectionIds: 42,
             enrollmentTypes: StudentEnrollment,
-            userSearch: foo,
+            userSearch: "foo",
             scoredLessThan: 3
             scoredMoreThan: 1
             gradingStatus: needs_grading
@@ -271,7 +271,7 @@ describe Types::AssignmentType do
         section1_student = section1.enroll_user(User.create!, "StudentEnrollment", "active").user
         section2_student = section2.enroll_user(User.create!, "StudentEnrollment", "active").user
         @section1_student_submission = assignment.submit_homework(section1_student, body: "hello world")
-        assignment.submit_homework(section2_student, body: "hello universe")
+        @section2_student_submission = assignment.submit_homework(section2_student, body: "hello universe")
       end
 
       it "returns submissions only for the given section" do
@@ -281,6 +281,18 @@ describe Types::AssignmentType do
           }
         GQL
         expect(section1_submission_ids.map(&:to_i)).to contain_exactly(@section1_student_submission.id)
+      end
+
+      it "respects visibility for limited teachers" do
+        teacher.enrollments.first.update! course_section: section2,
+          limit_privileges_to_course_section: true
+
+        submissions =  assignment_type.resolve(<<~GQL, current_user: teacher)
+          submissionsConnection { nodes { _id } }
+        GQL
+
+        expect(submissions).not_to include @section1_student_submission.id.to_s
+        expect(submissions).to include @section2_student_submission.id.to_s
       end
     end
   end
@@ -312,7 +324,7 @@ describe Types::AssignmentType do
             states: submitted,
             sectionIds: 42,
             enrollmentTypes: StudentEnrollment,
-            userSearch: foo,
+            userSearch: "foo",
             scoredLessThan: 3
             scoredMoreThan: 1
             gradingStatus: needs_grading
@@ -457,7 +469,7 @@ describe Types::AssignmentType do
     it "works for groups" do
       gc = assignment.group_category = GroupCategory.create! name: "asdf", context: course
       group = gc.groups.create! name: "group", context: course
-      assignment.update_attributes group_category: gc
+      assignment.update group_category: gc
       group_override = assignment.assignment_overrides.create!(set: group)
       expect(
         assignment_type.resolve(<<~GQL, current_user: teacher)
@@ -521,7 +533,7 @@ describe Types::AssignmentType do
     end
 
     it "works when lock_info is a hash" do
-      assignment.update_attributes! unlock_at: 1.month.from_now
+      assignment.update! unlock_at: 1.month.from_now
       expect(assignment_type.resolve("lockInfo { isLocked }")).to eq true
     end
   end

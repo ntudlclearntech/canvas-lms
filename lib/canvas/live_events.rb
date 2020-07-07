@@ -45,6 +45,21 @@ module Canvas::LiveEvents
     ctx
   end
 
+  def self.conversation_created(conversation)
+    post_event_stringified('conversation_created', {
+      conversation_id: conversation.id,
+      updated_at: conversation.updated_at
+    })
+  end
+
+  def self.conversation_forwarded(conversation)
+    post_event_stringified('conversation_forwarded', {
+      conversation_id: conversation.id,
+      updated_at: conversation.updated_at
+      },
+      amended_context(nil))
+  end
+
   def self.get_course_data(course)
     {
       course_id: course.global_id,
@@ -70,6 +85,15 @@ module Canvas::LiveEvents
       course_id: course.global_id,
       syllabus_body: LiveEvents.truncate(course.syllabus_body),
       old_syllabus_body: LiveEvents.truncate(old_syllabus_body)
+    })
+  end
+
+  def self.conversation_message_created(conversation_message)
+    post_event_stringified('conversation_message_created', {
+      author_id: conversation_message.author_id,
+      conversation_id: conversation_message.conversation_id,
+      created_at: conversation_message.created_at,
+      message_id: conversation_message.id
     })
   end
 
@@ -249,6 +273,37 @@ module Canvas::LiveEvents
     Assignment.where(:id => assignment_ids).each{|a| assignment_updated(a)}
   end
 
+  def self.get_assignment_override_data(override)
+    data_hash = {
+      assignment_override_id: override.id,
+      assignment_id: override.assignment_id,
+      due_at: override.due_at,
+      all_day: override.all_day,
+      all_day_date: override.all_day_date,
+      unlock_at: override.unlock_at,
+      lock_at: override.lock_at,
+      type: override.set_type,
+      workflow_state: override.workflow_state,
+    }
+
+    case override.set_type
+    when 'CourseSection'
+      data_hash[:course_section_id] = override.set_id
+    when 'Group'
+      data_hash[:group_id] = override.set_id
+    end
+
+    data_hash
+  end
+
+  def self.assignment_override_created(override)
+    post_event_stringified('assignment_override_created', get_assignment_override_data(override))
+  end
+
+  def self.assignment_override_updated(override)
+    post_event_stringified('assignment_override_updated', get_assignment_override_data(override))
+  end
+
   def self.get_submission_data(submission)
     {
       submission_id: submission.global_id,
@@ -264,6 +319,8 @@ module Canvas::LiveEvents
       body: LiveEvents.truncate(submission.body),
       url: submission.url,
       attempt: submission.attempt,
+      late: submission.late?,
+      missing: submission.missing?,
       lti_assignment_id: submission.assignment.lti_context_id,
       group_id: submission.group_id
     }
@@ -473,6 +530,7 @@ module Canvas::LiveEvents
     post_event_stringified('grade_change', {
       submission_id: submission.global_id,
       assignment_id: submission.global_assignment_id,
+      assignment_name: submission.assignment.name,
       grade: submission.grade,
       old_grade: old_submission.try(:grade),
       score: submission.score,
@@ -488,7 +546,7 @@ module Canvas::LiveEvents
     }, amended_context(submission.assignment.context))
   end
 
-  def self.asset_access(asset, category, role, level)
+  def self.asset_access(asset, category, role, level, context: nil, context_membership: nil)
     asset_subtype = nil
     if asset.is_a?(Array)
       asset_subtype = asset[0]
@@ -497,15 +555,27 @@ module Canvas::LiveEvents
       asset_obj = asset
     end
 
-    post_event_stringified('asset_accessed', {
-      asset_name: asset_obj.try(:name) || asset_obj.try(:title),
-      asset_type: asset_obj.class.reflection_type_name,
-      asset_id: asset_obj.global_id,
-      asset_subtype: asset_subtype,
-      category: category,
-      role: role,
-      level: level
-    }.merge(LiveEvents::EventSerializerProvider.serialize(asset_obj)))
+    enrollment_data = {}
+    if context_membership&.is_a?(Enrollment)
+      enrollment_data = {
+        enrollment_id: context_membership.id,
+        section_id: context_membership.course_section_id
+      }
+    end
+
+    post_event_stringified(
+      'asset_accessed',
+      {
+        asset_name: asset_obj.try(:name) || asset_obj.try(:title),
+        asset_type: asset_obj.class.reflection_type_name,
+        asset_id: asset_obj.global_id,
+        asset_subtype: asset_subtype,
+        category: category,
+        role: role,
+        level: level
+      }.merge(LiveEvents::EventSerializerProvider.serialize(asset_obj)).merge(enrollment_data),
+      amended_context(context)
+    )
   end
 
   def self.quiz_export_complete(content_export)
@@ -626,7 +696,7 @@ module Canvas::LiveEvents
   def self.get_learning_outcome_result_data(result)
     {
       learning_outcome_id: result.learning_outcome_id,
-      mastery: result.learning_outcome_id,
+      mastery: result.mastery,
       score: result.score,
       created_at: result.created_at,
       attempt: result.attempt,
@@ -711,5 +781,55 @@ module Canvas::LiveEvents
 
   def self.learning_outcome_link_updated(link)
     post_event_stringified('learning_outcome_link_updated', get_learning_outcome_link_data(link).merge(updated_at: link.updated_at))
+  end
+
+  def self.grade_override(score, old_score, enrollment, course)
+    return unless score.course_score && score.override_score != old_score
+    data = {
+      score_id: score.id,
+      enrollment_id: score.enrollment_id,
+      user_id: enrollment.user_id,
+      course_id: enrollment.course_id,
+      grading_period_id: score.grading_period_id,
+      override_score: score.override_score,
+      old_override_score: old_score,
+      updated_at: score.updated_at,
+    }
+    post_event_stringified('grade_override', data, amended_context(course))
+  end
+
+  def self.course_grade_change(score, old_score_values, enrollment)
+    data = {
+      user_id: enrollment.user_id,
+      course_id: enrollment.course_id,
+      workflow_state: score.workflow_state,
+      created_at: score.created_at,
+      updated_at: score.updated_at,
+      current_score: score.current_score,
+      old_current_score: old_score_values[:current_score],
+      final_score: score.final_score,
+      old_final_score: old_score_values[:final_score],
+      unposted_current_score: score.unposted_current_score,
+      old_unposted_current_score: old_score_values[:unposted_current_score],
+      unposted_final_score: score.unposted_final_score,
+      old_unposted_final_score: old_score_values[:unposted_final_score]
+    }
+    post_event_stringified('course_grade_change', data, amended_context(score.course))
+  end
+
+  def self.sis_batch_payload(batch)
+    {
+      sis_batch_id: batch.id,
+      account_id: batch.account_id,
+      workflow_state: batch.workflow_state
+    }
+  end
+
+  def self.sis_batch_created(batch)
+    post_event_stringified('sis_batch_created', sis_batch_payload(batch))
+  end
+
+  def self.sis_batch_updated(batch)
+    post_event_stringified('sis_batch_updated', sis_batch_payload(batch))
   end
 end

@@ -17,19 +17,23 @@
  */
 
 import $ from 'jquery'
-import I18n from 'i18n!new_nav'
+import I18n from 'i18n!Navigation'
 import React from 'react'
 import {func} from 'prop-types'
 import {Tray} from '@instructure/ui-overlays'
 import {CloseButton} from '@instructure/ui-buttons'
-import CoursesTray from './trays/CoursesTray'
-import GroupsTray from './trays/GroupsTray'
-import AccountsTray from './trays/AccountsTray'
-import ProfileTray from './trays/ProfileTray'
-import HelpTray from './trays/HelpTray'
+import {View} from '@instructure/ui-view'
+import {Spinner} from '@instructure/ui-elements'
 import UnreadCounts from './UnreadCounts'
 import preventDefault from 'compiled/fn/preventDefault'
 import parseLinkHeader from 'compiled/fn/parseLinkHeader'
+import tourPubSub from '../nav_tourpoints/tourPubsub'
+
+const CoursesTray = React.lazy(() => import('./trays/CoursesTray'))
+const GroupsTray = React.lazy(() => import('./trays/GroupsTray'))
+const AccountsTray = React.lazy(() => import('./trays/AccountsTray'))
+const ProfileTray = React.lazy(() => import('./trays/ProfileTray'))
+const HelpTray = React.lazy(() => import('./trays/HelpTray'))
 
 const EXTERNAL_TOOLS_REGEX = /^\/accounts\/[^\/]*\/(external_tools)/
 const ACTIVE_ROUTE_REGEX = /^\/(courses|groups|accounts|grades|calendar|conversations|profile)/
@@ -49,6 +53,23 @@ const TYPE_FILTER_MAP = {
 
 const RESOURCE_COUNT = 10
 
+// give the trays that slide out from the the nav bar
+// a place to mount. It has to be outside the <div id=application>
+// to aria-hide everything but the tray when open.
+let portal
+function getPortal() {
+  if (!portal) {
+    portal = document.createElement('div')
+    portal.id = 'nav-tray-portal'
+    // the <header> has z-index: 100. This has to be behind it,
+    portal.setAttribute('style', 'position: relative; z-index: 99;')
+    document.body.appendChild(portal)
+  }
+  return portal
+}
+
+function noop() {}
+
 export default class Navigation extends React.Component {
   static propTypes = {
     unreadComponent: func, // for testing only
@@ -59,34 +80,28 @@ export default class Navigation extends React.Component {
     unreadComponent: UnreadCounts
   }
 
-  constructor(props) {
-    super(props)
-    this.closeTray = this.closeTray.bind(this)
-    this.onInboxUnreadUpdate = this.onInboxUnreadUpdate.bind(this)
-    this.state = {
-      groups: [],
-      accounts: [],
-      courses: [],
-      help: [],
-      profile: [],
-      unread_count: 0,
-      isTrayOpen: false,
-      type: null,
-      coursesLoading: false,
-      coursesAreLoaded: false,
-      accountsLoading: false,
-      accountsAreLoaded: false,
-      groupsLoading: false,
-      groupsAreLoaded: false,
-      helpLoading: false,
-      helpAreLoaded: false,
-      profileAreLoading: false,
-      profileAreLoaded: false
-    }
-    this.unreadInboxCountElement = null
+  state = {
+    groups: [],
+    accounts: [],
+    courses: [],
+    help: [],
+    profile: [],
+    unreadSharesCount: 0,
+    isTrayOpen: false,
+    type: null,
+    coursesLoading: false,
+    coursesAreLoaded: false,
+    accountsLoading: false,
+    accountsAreLoaded: false,
+    groupsLoading: false,
+    groupsAreLoaded: false,
+    helpLoading: false,
+    helpAreLoaded: false,
+    profileAreLoading: false,
+    profileAreLoaded: false
   }
 
-  UNSAFE_componentWillMount() {
+  componentDidMount() {
     /**
      * Mount up stuff to our existing DOM elements, yes, it's not very
      * React-y, but it is workable and maintainable, plus it doesn't require
@@ -112,26 +127,42 @@ export default class Navigation extends React.Component {
         preventDefault(this.handleMenuClick.bind(this, type))
       )
     })
+    this.openPublishUnsubscribe = tourPubSub.subscribe(
+      'navigation-tray-open',
+      ({type, noFocus}) => {
+        this.ensureLoaded(type)
+        this.openTray(type, noFocus)
 
-    // give the trays that slide out from the the nav bar
-    // a place to mount. It has to be outside the <div id=application>
-    // to aria-hide everything but the tray when open.
-    let portal = document.getElementById('nav-tray-portal')
-    if (!portal) {
-      portal = document.createElement('div')
-      portal.id = 'nav-tray-portal'
-      // the <header> has z-index: 100. This has to be behind it,
-      portal.setAttribute('style', 'position: relative; z-index: 99;')
-      document.body.appendChild(portal)
-    }
+        // If we're already open for the specified type
+        // send a message that we are open.
+        if (this.state.isTrayOpen && this.state.type === type) {
+          tourPubSub.publish('navigation-tray-opened', type)
+        }
+      }
+    )
+    this.closePublishUnsubscribe = tourPubSub.subscribe('navigation-tray-close', () => {
+      this.closeTray()
+    })
+    this.overrideDismissUnsubscribe = tourPubSub.subscribe(
+      'navigation-tray-override-dismiss',
+      tf => {
+        this.setState({overrideDismiss: tf})
+      }
+    )
   }
 
-  UNSAFE_componentWillUpdate(_newProps, newState) {
-    if (newState.activeItem !== this.state.activeItem) {
+  componentWillUnmount() {
+    this.openPublishUnsubscribe && this.openPublishUnsubscribe()
+    this.overrideDismissUnsubscribe && this.overrideDismissUnsubscribe()
+    this.closePublishUnsubscribe && this.closePublishUnsubscribe()
+  }
+
+  componentDidUpdate(_prevProps, prevState) {
+    if (prevState.activeItem !== this.state.activeItem) {
       $(`.${ACTIVE_CLASS}`)
         .removeClass(ACTIVE_CLASS)
         .removeAttr('aria-current')
-      $(`#global_nav_${newState.activeItem}_link`)
+      $(`#global_nav_${this.state.activeItem}_link`)
         .closest('li')
         .addClass(ACTIVE_CLASS)
         .attr('aria-current', 'page')
@@ -209,13 +240,17 @@ export default class Navigation extends React.Component {
     }
   }
 
-  openTray(type) {
-    this.setState({type, isTrayOpen: true, activeItem: type})
+  openTray(type, noFocus) {
+    // Sometimes we don't want the tray to capture focus,
+    // so we specify that here.
+    this.setState({type, noFocus, isTrayOpen: true, activeItem: type})
   }
 
-  closeTray() {
+  closeTray = () => {
     this.determineActiveLink()
-    this.setState({isTrayOpen: false}, () => {
+    // Regardless of whether it captured focus before,
+    // we should make sure it does on future openings.
+    this.setState({isTrayOpen: false, noFocus: false}, () => {
       setTimeout(() => {
         this.setState({type: null})
       }, 150)
@@ -252,7 +287,7 @@ export default class Navigation extends React.Component {
         return (
           <ProfileTray
             userDisplayName={window.ENV.current_user.display_name}
-            userPronoun={window.ENV.current_user.pronoun}
+            userPronouns={window.ENV.current_user.pronouns}
             userAvatarURL={
               window.ENV.current_user.avatar_is_fallback
                 ? null
@@ -260,6 +295,7 @@ export default class Navigation extends React.Component {
             }
             loaded={this.state.profileAreLoaded}
             tabs={this.state.profile}
+            counts={{unreadShares: this.state.unreadSharesCount}}
           />
         )
       case 'help':
@@ -295,40 +331,104 @@ export default class Navigation extends React.Component {
 
   // Also have to attend to the unread dot on the mobile view inbox
   onInboxUnreadUpdate(unreadCount) {
+    if (this.state.unreadInboxCount !== unreadCount) this.setState({unreadInboxCount: unreadCount})
     const el = document.getElementById('mobileHeaderInboxUnreadBadge')
     if (el) el.style.display = unreadCount > 0 ? '' : 'none'
     if (typeof this.props.onDataReceived === 'function') this.props.onDataReceived()
   }
 
+  onSharesUnreadUpdate(unreadCount) {
+    if (this.state.unreadSharesCount !== unreadCount)
+      this.setState({unreadSharesCount: unreadCount})
+  }
+
+  inboxUnreadSRText(count) {
+    return I18n.t(
+      {
+        one: 'One unread message.',
+        other: '%{count} unread messages.'
+      },
+      {count}
+    )
+  }
+
+  sharesUnreadSRText(count) {
+    return I18n.t(
+      {
+        one: 'One unread share.',
+        other: '%{count} unread shares.'
+      },
+      {count}
+    )
+  }
+
   render() {
     const UnreadComponent = this.props.unreadComponent
-
-    if (this.unreadInboxCountElement === null)
-      this.unreadInboxCountElement = document.querySelector(
-        '#global_nav_conversations_link .menu-item__badge'
-      )
 
     return (
       <>
         <Tray
+          key={this.state.type}
           label={this.getTrayLabel()}
           size="small"
           open={this.state.isTrayOpen}
-          onDismiss={this.closeTray}
+          // We need to override closing trays
+          // so the tour can properly go through them
+          // without them unexpectedly closing.
+          onDismiss={this.state.overrideDismiss ? noop : this.closeTray}
           shouldCloseOnDocumentClick
-          mountNode={document.getElementById('nav-tray-portal')}
+          shouldContainFocus={!this.state.noFocus}
+          mountNode={getPortal()}
           theme={{smallWidth: '28em'}}
+          onEntered={() => {
+            tourPubSub.publish('navigation-tray-opened', this.state.type)
+          }}
         >
-          <CloseButton placement="end" onClick={this.closeTray}>
-            {I18n.t('Close')}
-          </CloseButton>
-          <div className="tray-with-space-for-global-nav">{this.renderTrayContent()}</div>
+          <div className={`navigation-tray-container ${this.state.type}-tray`}>
+            <CloseButton placement="end" onClick={this.closeTray}>
+              {I18n.t('Close')}
+            </CloseButton>
+            <div className="tray-with-space-for-global-nav">
+              <React.Suspense
+                fallback={
+                  <View display="block" textAlign="center">
+                    <Spinner
+                      size="large"
+                      margin="large auto"
+                      renderTitle={() => I18n.t('...Loading')}
+                    />
+                  </View>
+                }
+              >
+                {this.renderTrayContent()}
+              </React.Suspense>
+            </div>
+          </div>
         </Tray>
+        {ENV.DIRECT_SHARE_ENABLED && ENV.current_user_id && (
+          <UnreadComponent
+            targetEl={
+              this.unreadSharesCountElement ||
+              (this.unreadSharesCountElement = document.querySelector(
+                '#global_nav_profile_link .menu-item__badge'
+              ))
+            }
+            dataUrl="/api/v1/users/self/content_shares/unread_count"
+            onUpdate={unreadCount => this.onSharesUnreadUpdate(unreadCount)}
+            srText={this.sharesUnreadSRText}
+          />
+        )}
         {!ENV.current_user_disabled_inbox && (
           <UnreadComponent
-            targetEl={this.unreadInboxCountElement}
+            targetEl={
+              this.unreadInboxCountElement ||
+              (this.unreadInboxCountElement = document.querySelector(
+                '#global_nav_conversations_link .menu-item__badge'
+              ))
+            }
             dataUrl="/api/v1/conversations/unread_count"
-            onUpdate={this.onInboxUnreadUpdate}
+            onUpdate={unreadCount => this.onInboxUnreadUpdate(unreadCount)}
+            srText={this.inboxUnreadSRText}
           />
         )}
       </>

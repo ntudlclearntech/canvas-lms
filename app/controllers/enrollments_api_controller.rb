@@ -410,8 +410,11 @@ class EnrollmentsApiController < ApplicationController
                                     course_index_enrollments :
                                     user_index_enrollments
 
-      enrollments = enrollments.joins(:user).select("enrollments.*").
-        order(:type, User.sortable_name_order_by_clause("users"), :id)
+      use_bookmarking = @domain_root_account&.feature_enabled?(:bookmarking_for_enrollments_index)
+      enrollments = use_bookmarking ?
+        enrollments.joins(:user).select("enrollments.*, users.sortable_name AS sortable_name") :
+        enrollments.joins(:user).select("enrollments.*").
+          order(:type, User.sortable_name_order_by_clause("users"), :id)
 
       has_courses = enrollments.where_clause.instance_variable_get(:@predicates).
         any? { |cond| cond.is_a?(String) && cond =~ /courses\./ }
@@ -464,8 +467,16 @@ class EnrollmentsApiController < ApplicationController
         end
       end
 
+      collection =
+        if use_bookmarking
+          bookmarker = BookmarkedCollection::SimpleBookmarker.new(Enrollment,
+            {:type => {:skip_collation => true}, :sortable_name => {:type => :string, :null => false}}, :id)
+          BookmarkedCollection.wrap(bookmarker, enrollments)
+        else
+          enrollments
+        end
       enrollments = Api.paginate(
-        enrollments,
+        collection,
         self, send("api_v1_#{endpoint_scope}_enrollments_url"))
 
       ActiveRecord::Associations::Preloader.new.preload(enrollments, [:user, :course, :course_section, :root_account, :sis_pseudonym])
@@ -498,6 +509,12 @@ class EnrollmentsApiController < ApplicationController
 
   # @API Enroll a user
   # Create a new user enrollment for a course or section.
+  #
+  # @argument enrollment[start_at] [DateTime]
+  #   The start time of the enrollment, in ISO8601 format. e.g. 2012-04-18T23:08:51Z
+  #
+  # @argument enrollment[end_at] [DateTime]
+  #   The end time of the enrollment, in ISO8601 format. e.g. 2012-04-18T23:08:51Z
   #
   # @argument enrollment[user_id] [Required, String]
   #   The ID of the user to be enrolled in the course.
@@ -662,6 +679,9 @@ class EnrollmentsApiController < ApplicationController
     end
     if options[:user_id] != 'self'
       errors << "enrollment[user_id] must be 'self' when self-enrolling"
+    end
+    if MasterCourses::MasterTemplate.is_master_course?(@context)
+      errors << "course is not open for self-enrollment"
     end
     return render_create_errors(errors) if errors.present?
 
@@ -839,17 +859,26 @@ class EnrollmentsApiController < ApplicationController
       return scope && scope.where(course_id: @context.id)
     end
 
-    if authorized_action(@context, @current_user, [:read_roster, :view_all_grades, :manage_grades])
+    if @context.grants_any_right?(@current_user, session, :read_roster, :view_all_grades, :manage_grades)
       scope = @context.apply_enrollment_visibility(@context.all_enrollments, @current_user).where(enrollment_index_conditions)
 
       unless params[:state].present?
         include_inactive = @context.grants_right?(@current_user, session, :read_as_admin)
         scope = include_inactive ? scope.all_active_or_pending : scope.active_or_pending
       end
-      scope
-    else
-      false
+      return scope
+    elsif @context.user_has_been_observer?(@current_user)
+      # Observers can see enrollments for the users they're observing, as well
+      # as their own enrollments
+      observer_enrollments = @context.observer_enrollments.active.where(user_id: @current_user)
+      observed_student_ids = observer_enrollments.pluck(:associated_user_id).uniq.compact
+
+      return @context.enrollments.where(user: @current_user).where(enrollment_index_conditions).union(
+        @context.student_enrollments.where(user_id: observed_student_ids).where(enrollment_index_conditions)
+      )
     end
+
+    render_unauthorized_action and return false
   end
 
   # Internal: Collect user enrollments that @current_user has permissions to

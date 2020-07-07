@@ -18,6 +18,7 @@
 
 @import "base/environment";
 
+// create grid for main tray layout
 .NewUserTutorialTray {
   width: 18.75rem;
   box-sizing: border-box;
@@ -74,13 +75,9 @@
   width: 5.25rem;
 }
 
-// HACK to help IE with inline SVG
-_:-ms-fullscreen, :root {
-  .NewUserTutorialTray__ImageContainer svg  {
-    height: 10rem;
-  }
-
-  .Modules .NewUserTutorialTray__ImageContainer svg  {
-    height: 19.5rem;
-  }
+// create grid so we can center panda images
+.NewUserTutorialTray__Content {
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto 1fr;
 }

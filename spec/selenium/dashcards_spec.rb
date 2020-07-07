@@ -223,13 +223,12 @@ describe 'dashcards' do
 
     context "dashcard color picker" do
       before :each do
-        wait_for_new_page_load{ get '/' }
+        get '/'
         f('.ic-DashboardCard__header-button').click
         wait_for_ajaximations
       end
 
       it 'should customize dashcard color by selecting from color palette', priority: "1", test_id: 238196 do
-        skip('test task ticket created: ADMIN-2962')
         # Gets the default background color
         old_color = @user.reload.custom_colors.fetch("course_#{@course.id}")
 

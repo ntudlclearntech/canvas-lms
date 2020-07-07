@@ -25,7 +25,7 @@ import {ScreenReaderContent} from '@instructure/ui-a11y'
 import {SubmissionComment} from '../../graphqlData/SubmissionComment'
 import {VideoPlayer} from '@instructure/ui-media-player'
 
-function CommentRow(props) {
+export default function CommentRow(props) {
   const {author, mediaObject, read} = props.comment
   let mediaTracks = null
   if (mediaObject) {
@@ -54,6 +54,7 @@ function CommentRow(props) {
           name={author ? author.shortName : I18n.t('Anonymous')}
           src={author ? author.avatarUrl : ''}
           margin="0 small 0 0"
+          data-fs-exclude
         />
       </div>
       <div className="comment-text-comment-container">
@@ -89,5 +90,3 @@ function CommentRow(props) {
 CommentRow.propTypes = {
   comment: SubmissionComment.shape.isRequired
 }
-
-export default React.memo(CommentRow)

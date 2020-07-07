@@ -53,7 +53,7 @@ describe CalendarEventsApiController, type: :request do
     it 'should hide location attributes when user is not logged in a public course' do
       @me = nil
       @user = nil
-      @course.update_attributes(:is_public => true, :indexed => true)
+      @course.update(:is_public => true, :indexed => true)
       @course.calendar_events.create(
         :title => '2',
         :start_at => '2012-01-08 12:00:00',
@@ -69,7 +69,7 @@ describe CalendarEventsApiController, type: :request do
     end
 
     it 'should show location attributes when user logged in a public course' do
-      @course.update_attributes(:is_public => true, :indexed => true)
+      @course.update(:is_public => true, :indexed => true)
       evt = @course.calendar_events.create(
         :title => '2',
         :start_at => '2012-01-08 12:00:00',
@@ -136,7 +136,7 @@ describe CalendarEventsApiController, type: :request do
         @e2 = @user.calendar_events.create!(:title => "today in AKST", :start_at => @akst.parse('2012-01-29 21:00:00')) { |c| c.context = @user }
         @e3 = @user.calendar_events.create!(:title => "tomorrow in AKST", :start_at => @akst.parse('2012-01-30 21:00:00')) { |c| c.context = @user }
 
-        @user.update_attributes! :time_zone => "Alaska"
+        @user.update! :time_zone => "Alaska"
       end
 
       it "shows today's events in user's timezone, even if UTC has crossed into tomorrow" do
@@ -875,13 +875,15 @@ describe CalendarEventsApiController, type: :request do
               "id" => @student1.id,
               "display_name" => @student1.short_name,
               "avatar_image_url" => "http://www.example.com/images/messages/avatar-50.png",
-              "html_url" => "http://www.example.com/about/#{@student1.id}"
+              "html_url" => "http://www.example.com/about/#{@student1.id}",
+              "pronouns"=>nil
             },
             {
               "id" => @student2.id,
               "display_name" => @student2.short_name,
               "avatar_image_url" => "http://www.example.com/images/messages/avatar-50.png",
-              "html_url" => "http://www.example.com/users/#{@student2.id}"
+              "html_url" => "http://www.example.com/users/#{@student2.id}",
+              "pronouns"=>nil
             }
           ]
         end
@@ -894,13 +896,15 @@ describe CalendarEventsApiController, type: :request do
               "id" => @student1.id,
               "display_name" => @student1.short_name,
               "avatar_image_url" => "http://www.example.com/images/messages/avatar-50.png",
-              "html_url" => "http://www.example.com/users/#{@student1.id}"
+              "html_url" => "http://www.example.com/users/#{@student1.id}",
+              "pronouns"=>nil
             },
             {
               "id" => @student2.id,
               "display_name" => @student2.short_name,
               "avatar_image_url" => "http://www.example.com/images/messages/avatar-50.png",
-              "html_url" => "http://www.example.com/users/#{@student2.id}"
+              "html_url" => "http://www.example.com/users/#{@student2.id}",
+              "pronouns"=>nil
             }
           ]
         end
@@ -932,13 +936,15 @@ describe CalendarEventsApiController, type: :request do
               "id" => @student1.id,
               "display_name" => @student1.short_name,
               "avatar_image_url" => "http://www.example.com/images/messages/avatar-50.png",
-              "html_url" => "http://www.example.com/about/#{@student1.id}"
+              "html_url" => "http://www.example.com/about/#{@student1.id}",
+              "pronouns"=>nil
             },
             {
               "id" => @student2.id,
               "display_name" => @student2.short_name,
               "avatar_image_url" => "http://www.example.com/images/messages/avatar-50.png",
-              "html_url" => "http://www.example.com/users/#{@student2.id}"
+              "html_url" => "http://www.example.com/users/#{@student2.id}",
+              "pronouns"=>nil
             }
           ]
           json = api_call(:get, "/api/v1/calendar_events/#{event2.id}/participants",
@@ -948,7 +954,8 @@ describe CalendarEventsApiController, type: :request do
               "id" => @student.id,
               "display_name" => @student.short_name,
               "avatar_image_url" => "http://www.example.com/images/messages/avatar-50.png",
-              "html_url" => "http://www.example.com/about/#{@student.id}"
+              "html_url" => "http://www.example.com/about/#{@student.id}",
+              "pronouns"=>nil
             }
           ]
         end
@@ -2447,14 +2454,13 @@ describe CalendarEventsApiController, type: :request do
           format: 'json',
           selected_contexts: ['course_1', 'course_2', 'course_3']
       })
-      expect(@user.reload.preferences[:selected_calendar_contexts]).to eq(['course_1', 'course_2', 'course_3'])
+      expect(@user.reload.get_preference(:selected_calendar_contexts)).to eq(['course_1', 'course_2', 'course_3'])
     end
   end
 
   context 'visible_contexts' do
     it 'includes custom colors' do
-      @user.custom_colors[@course.asset_string] = '#0099ff'
-      @user.save!
+      @user.set_preference(:custom_colors, {@course.asset_string => '#0099ff'})
 
       json = api_call(:get, '/api/v1/calendar_events/visible_contexts', {
         controller: 'calendar_events_api',
@@ -2469,8 +2475,7 @@ describe CalendarEventsApiController, type: :request do
     end
 
     it 'includes whether the context has been selected' do
-      @user.preferences[:selected_calendar_contexts] = [@course.asset_string];
-      @user.save!
+      @user.set_preference(:selected_calendar_contexts, [@course.asset_string])
 
       json = api_call(:get, '/api/v1/calendar_events/visible_contexts', {
         controller: 'calendar_events_api',

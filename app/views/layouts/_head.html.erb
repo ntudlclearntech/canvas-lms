@@ -16,7 +16,7 @@
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 
 -%><!DOCTYPE html>
-<html class="scripts-not-loaded" dir="<%= use_rtl? ? 'rtl' : 'ltr' %>"   lang=<%= raw I18n.locale.to_json %>>
+<html class="scripts-not-loaded" dir="<%= I18n.rtl? ? 'rtl' : 'ltr' %>"   lang=<%= raw I18n.locale.to_json %>>
 <head>
   <meta charset="utf-8">
   <link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin>
@@ -51,7 +51,7 @@
       ))
     end
   %>
-  <%= browser_performance_monitor_embed %>
+  <%= render_datadog_rum_js %>
   <%= favicon_link_tag(favicon) %>
   <%= favicon_link_tag(brand_variable('ic-brand-apple-touch-icon'), rel: 'apple-touch-icon', type: nil) %>
   <%= stylesheet_link_tag(active_brand_config_url('css'), media: "all") %>
@@ -80,7 +80,6 @@
     }
     document.addEventListener('click', _earlyClick)
   </script>
-  <%= load_scripts_async_in_order([active_brand_config_url('js')]) %>
 
   <% js_bundle :navigation_header unless @headers == false %>
 
@@ -99,4 +98,8 @@
   <% end %>
   <title><%= @page_title || (yield :page_title).presence || t('default_page_title', "Canvas LMS") %></title>
   <%= render partial: 'layouts/google_analytics_snippet' %>
+
+  <% if fullstory_enabled_for_session?(session) %>
+    <%= render :partial => "shared/fullstory_snippet" %>
+  <% end %>
 </head>

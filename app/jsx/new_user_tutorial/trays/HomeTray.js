@@ -18,7 +18,6 @@
 
 import React from 'react'
 import I18n from 'i18n!new_user_tutorial'
-import {Text} from '@instructure/ui-elements'
 import TutorialTrayContent from './TutorialTrayContent'
 import UserGuideContent from './UserGuideContent'
 
@@ -26,8 +25,29 @@ const HomeTray = () => (
   <TutorialTrayContent
     name="Home"
     heading={I18n.t('Home')}
-    subheading={I18n.t('This is your course landing page')}
-    image="/images/tutorial-tray-images/publish.png"
+    subheading={I18n.t('Welcome your students')}
+    image="/images/tutorial-tray-images/Panda_Home.svg"
+    seeAllLink={{
+      label: I18n.t('See more in Canvas Guides'),
+      href: `https://community.canvaslms.com/docs/DOC-10460-
+      canvas-instructor-guide-table-of-contents#jive_content_id_Course_Navigation`
+    }}
+    links={[
+      {
+        label: I18n.t('How do I use the Course Home Page as an instructor?'),
+        href: 'https://community.canvaslms.com/docs/DOC-12947-4152724144'
+      },
+      {
+        label: I18n.t(
+          'What layout options are available in the Course Home Page as an instructor?'
+        ),
+        href: 'https://community.canvaslms.com/docs/DOC-12816-4152719700'
+      },
+      {
+        label: I18n.t('How do I change the Course Home Page?'),
+        href: 'https://community.canvaslms.com/docs/DOC-13012-4152724499'
+      }
+    ]}
   >
     <Text as="p">
       {I18n.t(`When people visit your course, this is the first page they'll see.

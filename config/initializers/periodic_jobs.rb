@@ -153,6 +153,10 @@ Rails.configuration.after_initialize do
     )
   end
 
+  Delayed::Periodic.cron 'Auditors::ActiveRecord::Partitioner', '0 0 * * *' do
+    with_each_shard_by_database(Auditors::ActiveRecord::Partitioner, :process)
+  end
+
   Delayed::Periodic.cron 'Quizzes::QuizSubmissionEventPartitioner.process', '0 0 * * *' do
     with_each_shard_by_database(Quizzes::QuizSubmissionEventPartitioner, :process)
   end
@@ -230,5 +234,9 @@ Rails.configuration.after_initialize do
 
   Delayed::Periodic.cron 'Purgatory.expire_old_purgatories', '0 0 * * *', priority: Delayed::LOWER_PRIORITY do
     with_each_shard_by_database(Purgatory, :expire_old_purgatories)
+  end
+
+  Delayed::Periodic.cron 'Feature.remove_obsolete_flags', '0 8 * * 0', priority: Delayed::LOWER_PRIORITY do
+    with_each_shard_by_database(Feature, :remove_obsolete_flags)
   end
 end
