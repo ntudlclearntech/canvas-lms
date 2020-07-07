@@ -16,13 +16,14 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import React, {useState, lazy} from 'react'
+import React, {useState, lazy, useCallback} from 'react'
 import I18n from 'i18n!content_share'
 import CanvasLazyTray from 'jsx/shared/components/CanvasLazyTray'
 import ContentHeading from './ContentHeading'
 import ReceivedTable from './ReceivedTable'
 import PreviewModal from './PreviewModal'
-import {Spinner, Text} from '@instructure/ui-elements'
+import {Text} from '@instructure/ui-text'
+import {Spinner} from '@instructure/ui-elements'
 import useFetchApi from 'jsx/shared/effects/useFetchApi'
 import doFetchApi from 'jsx/shared/effects/doFetchApi'
 import Paginator from 'jsx/shared/components/Paginator'
@@ -40,14 +41,29 @@ export default function ReceivedContentView() {
   const [currentContentShare, setCurrentContentShare] = useState(null)
   const [whichModalOpen, setWhichModalOpen] = useState(null)
 
-  const getSharesUrl = '/api/v1/users/self/content_shares/received'
+  const sharesUrl = '/api/v1/users/self/content_shares'
+
+  const handleSetShares = useCallback(
+    data => {
+      setShares(data)
+      const message = I18n.t(
+        {
+          one: '1 shared item loaded.',
+          other: '%{count} shared items loaded.'
+        },
+        {count: data.length}
+      )
+      showFlashAlert({message, srOnly: true, type: 'info'})
+    },
+    [setShares]
+  )
 
   useFetchApi({
-    success: setShares,
+    success: handleSetShares,
     meta: setResponseMeta,
     error: setError,
     loading: setIsLoading,
-    path: getSharesUrl,
+    path: `${sharesUrl}/received`,
     params: {page: currentPage}
   })
 
@@ -55,9 +71,28 @@ export default function ReceivedContentView() {
     setShares(shares.filter(share => share.id !== doomedShare.id))
   }
 
+  // Handle an update to a read state from the displayed table
+  function onUpdate(share_id, updateParms) {
+    doFetchApi({
+      method: 'PUT',
+      path: `${sharesUrl}/${share_id}`,
+      body: updateParms
+    })
+      .then(r => {
+        const {id, read_state} = r.json
+        setShares(shares.map(share => (share.id === id ? {...share, read_state} : share)))
+      })
+      .catch(setError)
+  }
+
+  function markRead(share) {
+    onUpdate(share.id, {read_state: 'read'})
+  }
+
   function onPreview(share) {
     setCurrentContentShare(share)
     setWhichModalOpen('preview')
+    markRead(share)
   }
 
   function onImport(share) {
@@ -67,9 +102,9 @@ export default function ReceivedContentView() {
 
   function onRemove(share) {
     // eslint-disable-next-line no-alert
-    const shouldRemove = window.confirm(I18n.t('Are you sure you wan to remove this item?'))
+    const shouldRemove = window.confirm(I18n.t('Are you sure you want to remove this item?'))
     if (shouldRemove) {
-      doFetchApi({path: `/api/v1/users/self/content_shares/${share.id}`, method: 'DELETE'})
+      doFetchApi({path: `${sharesUrl}/${share.id}`, method: 'DELETE'})
         .then(() => removeShareFromList(share))
         .catch(err =>
           showFlashAlert({message: I18n.t('There was an error removing the item'), err})
@@ -92,6 +127,7 @@ export default function ReceivedContentView() {
           onPreview={onPreview}
           onImport={onImport}
           onRemove={onRemove}
+          onUpdate={onUpdate}
         />
       )
     return <NoContent />
@@ -113,7 +149,7 @@ export default function ReceivedContentView() {
     }
   }
 
-  if (error) throw new Error(I18n.t('Retrieval of Received Shares failed'))
+  if (error) throw new Error('Retrieval of Received Shares failed')
 
   return (
     <>
@@ -136,9 +172,14 @@ export default function ReceivedContentView() {
         label={I18n.t('Import...')}
         open={whichModalOpen === 'import'}
         placement="end"
+        padding="medium"
         onDismiss={closeModal}
       >
-        <CourseImportPanel contentShare={currentContentShare} onClose={closeModal} />
+        <CourseImportPanel
+          contentShare={currentContentShare}
+          onClose={closeModal}
+          onImport={markRead}
+        />
       </CanvasLazyTray>
     </>
   )

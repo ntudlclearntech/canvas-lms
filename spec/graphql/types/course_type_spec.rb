@@ -64,7 +64,7 @@ describe Types::CourseType do
       before(:once) do
         gpg = GradingPeriodGroup.create! title: "asdf",
           root_account: course.root_account
-        course.enrollment_term.update_attributes grading_period_group: gpg
+        course.enrollment_term.update grading_period_group: gpg
         @term1 = gpg.grading_periods.create! title: "past grading period",
         start_date: 2.weeks.ago,
           end_date: 1.weeks.ago
@@ -103,6 +103,25 @@ describe Types::CourseType do
           assignmentsConnection(filter: {gradingPeriodId: null}) { edges { node { _id } } }
         GQL
         expect(result.sort).to match course.assignments.published.map(&:to_param).sort
+      end
+
+      it "returns assignments in order by position" do
+        ag = @course.assignment_groups.create! name: "Other Assignments", position: 1
+        other_ag_assignment = @course.assignments.create! assignment_group: ag, name: "other ag"
+
+        @term1_assignment1.assignment_group.update!(position: 2)
+        @term2_assignment1.update!(position: 1)
+        @term1_assignment1.update!(position: 2)
+
+        expect(
+          course_type.resolve(<<~GQL, current_user: @student)
+            assignmentsConnection(filter: {gradingPeriodId: null}) { edges { node { _id } } }
+          GQL
+        ).to eq [
+          other_ag_assignment,
+          @term2_assignment1,
+          @term1_assignment1,
+        ].map { |a| a.id.to_s }
       end
     end
   end
@@ -258,7 +277,7 @@ describe Types::CourseType do
     end
   end
 
-  describe "usersConnection" do
+  context "users and enrollments" do
     before(:once) do
       @student1 = @student
       @student2 = student_in_course(active_all: true).user
@@ -270,48 +289,73 @@ describe Types::CourseType do
       }.user
     end
 
-    it "returns all visible users" do
-      expect(
-        course_type.resolve(
-          "usersConnection { edges { node { _id } } }",
-          current_user: @teacher
-        )
-      ).to eq [@teacher, @student1, other_teacher, @student2, @inactive_user].map(&:to_param)
+    describe "usersConnection" do
+      it "returns all visible users" do
+        expect(
+          course_type.resolve(
+            "usersConnection { edges { node { _id } } }",
+            current_user: @teacher
+          )
+        ).to eq [@teacher, @student1, other_teacher, @student2, @inactive_user].map(&:to_param)
+      end
+
+      it "returns only the specified users" do
+        # deprecated method
+        expect(
+          course_type.resolve(<<~GQL, current_user: @teacher)
+            usersConnection(userIds: ["#{@student1.id}"]) { edges { node { _id } } }
+          GQL
+        ).to eq [@student1.to_param]
+
+        # current method
+        expect(
+          course_type.resolve(<<~GQL, current_user: @teacher)
+            usersConnection(filter: {userIds: ["#{@student1.id}"]}) { edges { node { _id } } }
+          GQL
+        ).to eq [@student1.to_param]
+      end
+
+      it "doesn't return users that aren't visible to you" do
+        expect(
+          course_type.resolve(
+            "usersConnection { edges { node { _id } } }",
+            current_user: other_teacher
+          )
+        ).to eq [other_teacher.id.to_s]
+      end
+
+      it "allows filtering by enrollment state" do
+        expect(
+          course_type.resolve(<<~GQL, current_user: @teacher)
+            usersConnection(
+              filter: {enrollmentStates: [active completed]}
+            ) { edges { node { _id } } }
+          GQL
+        ).to match_array [@teacher, @student1, @student2, @concluded_user].map(&:to_param)
+      end
     end
 
-    it "returns only the specified users" do
-      # deprecated method
-      expect(
-        course_type.resolve(<<~GQL, current_user: @teacher)
-          usersConnection(userIds: ["#{@student1.id}"]) { edges { node { _id } } }
-        GQL
-      ).to eq [@student1.to_param]
+    describe "enrollmentsConnection" do
+      it "works" do
+        expect(
+          course_type.resolve(
+            "enrollmentsConnection { nodes { _id } }",
+            current_user: @teacher,
+          )
+        ).to match_array @course.all_enrollments.map(&:to_param)
+      end
 
-      # current method
-      expect(
-        course_type.resolve(<<~GQL, current_user: @teacher)
-          usersConnection(filter: {userIds: ["#{@student1.id}"]}) { edges { node { _id } } }
-        GQL
-      ).to eq [@student1.to_param]
-    end
-
-    it "doesn't return users that aren't visible to you" do
-      expect(
-        course_type.resolve(
-          "usersConnection { edges { node { _id } } }",
-          current_user: other_teacher
-        )
-      ).to eq [other_teacher.id.to_s]
-    end
-
-    it "allows filtering by enrollment state" do
-      expect(
-        course_type.resolve(<<~GQL, current_user: @teacher)
-          usersConnection(
-            filter: {enrollmentStates: [active completed]}
-          ) { edges { node { _id } } }
-        GQL
-      ).to match_array [@teacher, @student1, @student2, @concluded_user].map(&:to_param)
+      it "doesn't return users not visible to current_user" do
+        expect(
+          course_type.resolve(
+            "enrollmentsConnection { nodes { _id } }",
+            current_user: other_teacher
+          )
+        ).to match_array [
+          @teacher.enrollments.first.id.to_s,
+          other_teacher.enrollments.first.id.to_s,
+        ]
+      end
     end
   end
 
@@ -352,7 +396,7 @@ describe Types::CourseType do
 
   describe "term" do
     before(:once) do
-      course.enrollment_term.update_attributes(start_at: 1.month.ago)
+      course.enrollment_term.update(start_at: 1.month.ago)
     end
 
     it "works" do
@@ -437,6 +481,40 @@ describe Types::CourseType do
   describe 'Account' do
     it 'works' do
       expect(course_type.resolve("account { _id }")).to eq course.account.id.to_s
+    end
+  end
+
+  describe 'imageUrl' do
+    before(:once) {
+      course.enable_feature! 'course_card_images'
+    }
+
+    it 'returns nil when the feature flag is disabled' do
+      course.disable_feature! 'course_card_images'
+      expect(course_type.resolve("imageUrl")).to be_nil
+    end
+
+    it 'returns a url from an uploaded image' do
+      course.image_id = attachment_model(context: @course).id
+      course.save!
+      expect(course_type.resolve("imageUrl")).to_not be_nil
+    end
+
+    it 'returns a url from settings' do
+      course.image_url = "http://some.cool/gif.gif"
+      course.save!
+      expect(course_type.resolve("imageUrl")).to eq "http://some.cool/gif.gif"
+    end
+  end
+
+  describe 'notificationPrefereneces' do
+    it 'returns the students notification preferences' do
+      communication_channel = @student.communication_channels.create!(path: 'test@test.com')
+      notification = notification_model(:name => 'test', :category => 'Announcement')
+
+      expect(
+        course_type.resolve('notificationPreferences { channels { notificationPolicies { notification { name } } } }')[0][0]
+      ).to eq 'test'
     end
   end
 end

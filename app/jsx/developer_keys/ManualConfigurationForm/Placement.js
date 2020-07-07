@@ -41,7 +41,12 @@ export default class Placement extends React.Component {
     this.state = {placement}
   }
 
-  alwaysDeeplinking = ['editor_button', 'migration_selection', 'homework_submission']
+  alwaysDeeplinking = [
+    'editor_button',
+    'migration_selection',
+    'homework_submission',
+    'conference_selection'
+  ]
 
   canBeEither = ['assignment_selection', 'link_selection']
 
@@ -89,12 +94,18 @@ export default class Placement extends React.Component {
 
   handleSelectionHeightChange = e => {
     const value = e.target.value
-    this.setState(state => ({placement: {...state.placement, selection_height: value}}))
+    const numVal = parseInt(value, 10)
+    this.setState(state => ({
+      placement: {...state.placement, selection_height: !Number.isNaN(numVal) ? numVal : ''}
+    }))
   }
 
   handleSelectionWidthChange = e => {
     const value = e.target.value
-    this.setState(state => ({placement: {...state.placement, selection_width: value}}))
+    const numVal = parseInt(value, 10)
+    this.setState(state => ({
+      placement: {...state.placement, selection_width: !Number.isNaN(numVal) ? numVal : ''}
+    }))
   }
 
   render() {

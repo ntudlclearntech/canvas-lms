@@ -34,7 +34,7 @@ import {
   IconInboxLine,
   IconCalendarMonthLine
 } from '@instructure/ui-icons'
-import I18n from 'i18n!MobileNavigation'
+import I18n from 'i18n!MobileGlobalMenu'
 import HelpDialog from '../help_dialog/HelpDialog'
 import LogoutButton from './LogoutButton'
 
@@ -68,7 +68,7 @@ export default class MobileGlobalMenu extends React.Component {
     current_user: ENV.current_user
   }
 
-  componentWillMount() {
+  UNSAFE_componentWillMount() {
     // this is all the stuff that relies on the DOM of the desktop global nav
     const showGroups = !!document.getElementById('global_nav_groups_link')
 
@@ -137,6 +137,7 @@ export default class MobileGlobalMenu extends React.Component {
                         name={this.props.current_user.display_name}
                         src={this.props.current_user.avatar_image_url}
                         size="x-small"
+                        data-fs-exclude
                       />
                     </Flex.Item>
                     <Flex.Item>
@@ -337,11 +338,11 @@ export default class MobileGlobalMenu extends React.Component {
                 </Flex.Item>
                 <Flex.Item>
                   <Text size="medium">{I18n.t('Inbox')}</Text>
-                  {!!this.props.DesktopNavComponent.state.unread_count && (
+                  {!!this.props.DesktopNavComponent.state.unreadInboxCount && (
                     <Badge
                       standalone
                       margin="0 small"
-                      count={this.props.DesktopNavComponent.state.unread_count}
+                      count={this.props.DesktopNavComponent.state.unreadInboxCount}
                     />
                   )}
                 </Flex.Item>

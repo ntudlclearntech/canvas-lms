@@ -25,10 +25,11 @@ import {
   AUDIO_PLAYER_SIZE
 } from './plugins/instructure_record/VideoOptionsTray/TrayController'
 import {isAudio} from './plugins/shared/fileTypeUtils'
+import {prepEmbedSrc, prepLinkedSrc} from '../common/fileUrl'
 
 export function renderLink(data, contents) {
   const linkAttrs = {...data}
-  linkAttrs.href = linkAttrs.href || linkAttrs.url
+  linkAttrs.href = prepLinkedSrc(linkAttrs.href || linkAttrs.url)
   delete linkAttrs.url
   if (linkAttrs.href) {
     linkAttrs.href = cleanUrl(linkAttrs.href)
@@ -55,6 +56,7 @@ export function renderDoc(doc) {
 
 export function renderLinkedImage(linkElem, image) {
   const linkHref = linkElem.getAttribute('href')
+  image.href = prepEmbedSrc(image.href)
 
   return renderToStaticMarkup(
     <a href={linkHref} data-mce-href={linkHref}>
@@ -90,6 +92,7 @@ export function constructJSXImageElement(image, opts = {}) {
 }
 
 export function renderImage(image, opts) {
+  image.href = prepEmbedSrc(image.href)
   return renderToStaticMarkup(constructJSXImageElement(image, opts))
 }
 
@@ -108,13 +111,16 @@ function constructJSXVideoEmbedding(video) {
       allow="fullscreen"
       allowFullScreen
       data-media-id={`${video.media_id || video.id}`}
+      data-media-type="video"
       src={src}
       style={{
         width: VIDEO_SIZE_DEFAULT.width,
         height: VIDEO_SIZE_DEFAULT.height,
         display: 'inline-block'
       }}
-      title={video.name}
+      title={formatMessage('Video player for {title}', {
+        title: video.title || video.name || video.text
+      })}
     />
   )
 }
@@ -128,13 +134,16 @@ function constructJSXAudioEmbedding(audio) {
   return (
     <iframe
       data-media-id={`${audio.media_id || audio.id}`}
+      data-media-type="audio"
       src={src}
       style={{
         width: AUDIO_PLAYER_SIZE.width,
         height: AUDIO_PLAYER_SIZE.height,
         display: 'inline-block'
       }}
-      title={audio.name}
+      title={formatMessage('Audio player for {title}', {
+        title: audio.title || audio.name || audio.text
+      })}
     />
   )
 }

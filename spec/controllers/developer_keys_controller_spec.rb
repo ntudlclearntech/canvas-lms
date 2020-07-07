@@ -66,14 +66,32 @@ describe DeveloperKeysController do
           expect(expected_id).to eq(dk.global_id)
         end
 
+        it 'should not include non-siteadmin keys' do
+          Account.site_admin.enable_feature!(:site_admin_keys_only)
+
+          site_admin_key = DeveloperKey.create!
+          root_account_key = DeveloperKey.create!(account: Account.default)
+
+          get 'index', params: { account_id: Account.site_admin.id }, format: :json
+
+          expect(json_parse.map { |dk| dk['id'] }).to match_array [site_admin_key.global_id]
+        end
+
         it 'includes valid LTI scopes in js env' do
           get 'index', params: { account_id: Account.site_admin.id }
           expect(assigns[:js_env][:validLtiScopes]).to eq TokenScopes::LTI_SCOPES
         end
 
         it 'includes all valid LTI placements in js env' do
+          # enable conference placement
+          Account.site_admin.enable_feature! :conference_selection_lti_placement
           get 'index', params: { account_id: Account.site_admin.id }
           expect(assigns.dig(:js_env, :validLtiPlacements)).to match_array Lti::ResourcePlacement::PLACEMENTS
+        end
+
+        it 'includes the "includes parameter" release flag' do
+          get 'index', params: { account_id: Account.site_admin.id }
+          expect(assigns.dig(:js_env, :includesFeatureFlagEnabled)).to eq false
         end
 
         describe "js bundles" do
@@ -191,6 +209,11 @@ describe DeveloperKeysController do
           user_session(@admin)
         end
 
+        it 'allows setting "allow_includes"' do
+          post 'create', params: { account_id: root_account.id, developer_key: { scopes: valid_scopes, allow_includes: true } }
+          expect(DeveloperKey.find(json_parse['id']).allow_includes).to eq true
+        end
+
         it 'allows setting scopes' do
           post 'create', params: { account_id: root_account.id, developer_key: { scopes: valid_scopes } }
           expect(DeveloperKey.find(json_parse['id']).scopes).to match_array valid_scopes
@@ -241,6 +264,11 @@ describe DeveloperKeysController do
 
         before do
           user_session(@admin)
+        end
+
+        it 'allows setting "allow_includes"' do
+          put 'update', params: { id: developer_key.id, developer_key: { scopes: valid_scopes, allow_includes: false } }
+          expect(developer_key.reload.allow_includes).to eq false
         end
 
         it 'allows setting scopes for site admin keys' do

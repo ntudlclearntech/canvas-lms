@@ -105,6 +105,26 @@ describe LiveEventsObserver do
     end
   end
 
+  describe "conversation" do
+    it "posts create events" do
+      expect(Canvas::LiveEvents).to receive(:conversation_created).once
+      sender = user_model
+      recipient = user_model
+      conversation(sender, recipient)
+    end
+  end
+
+
+  describe "conversation messsage" do
+    it "posts conversation message create events" do
+      expect(Canvas::LiveEvents).to receive(:conversation_message_created).once
+      user1 = user_model
+      user2 = user_model
+      convo = Conversation.initiate([user1, user2], false)
+      convo.add_message(user1, "create new conversation message")
+    end
+  end
+
   describe "course" do
     it "posts create events" do
       expect(Canvas::LiveEvents).to receive(:course_created).once
@@ -191,6 +211,20 @@ describe LiveEventsObserver do
       assignment_model(:title => "original")
       @assignment.title = "new title"
       @assignment.save
+    end
+  end
+
+  describe "assignment overrides" do
+    it "posts create events" do
+      expect(Canvas::LiveEvents).to receive(:assignment_override_created).once
+      assignment_override_model
+    end
+
+    it "posts update events" do
+      expect(Canvas::LiveEvents).to receive(:assignment_override_updated).once
+      assignment_override_model(:title => "original")
+      @override.title = "new title"
+      @override.save
     end
   end
 
@@ -382,6 +416,24 @@ describe LiveEventsObserver do
         expect(Canvas::LiveEvents).not_to receive(:course_completed).with(anything)
         expect_any_instance_of(CourseProgress).to receive(:completed?).and_return(false)
         context_module_progression.update_attribute(:workflow_state, 'completed')
+      end
+
+      it "should still post even when weird requirements_met unsetting happens" do
+        page = course.wiki_pages.create!(:title => "page")
+        tag = context_module.add_item(:id => page.id, :type => 'wiki_page')
+        context_module.completion_requirements = {tag.id => {:type => 'must_view'}}
+        context_module.save!
+
+        expect(Canvas::LiveEvents).to receive(:course_completed).with(anything)
+        ContextModuleProgression.transaction(requires_new: true) do
+          # complete it
+          context_module_progression.update_attributes(:workflow_state => 'completed',
+            :requirements_met => [{:id => tag.id, :type => 'must_view'}])
+          # sneakily remove the requiremets met because terribleness
+          context_module_progression.update_attributes(:requirements_met => [])
+        end
+        # event fires off now but it should ignore the missing requirements_met in the db and
+        # use the ones that were present when the completion happened
       end
     end
 

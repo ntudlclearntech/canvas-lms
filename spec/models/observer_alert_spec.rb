@@ -21,6 +21,10 @@ describe ObserverAlert do
   include Api
   include Api::V1::ObserverAlertThreshold
 
+  before(:each) do
+    Account.site_admin.enable_feature!(:grade_calculator_performance_improvements)
+  end
+
   describe 'validations' do
     before :once do
       @student = user_model
@@ -90,6 +94,20 @@ describe ObserverAlert do
 
       expect(alert1.title).to include('Course grade: ')
       expect(alert2.title).to include('Course grade: ')
+    end
+
+    it 'creates only one alert per student if the student is enrolled in multiple sections per course' do
+      Enrollment.create!(
+        course_section: @course.course_sections.create!,
+        type: "StudentEnrollment",
+        user_id: @student1.id,
+        course: @course,
+        workflow_state: "active"
+      )
+      @assignment.grade_student(@student1, score: 90, grader: @teacher)
+      expect(
+        ObserverAlert.where(observer_alert_threshold: @threshold1, user_id: @student1.id).count
+      ).to equal(1)
     end
 
     it 'doesnt create an alert if the old score was already above the threshold' do

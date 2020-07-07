@@ -18,7 +18,6 @@
 
 import React from 'react'
 import I18n from 'i18n!new_user_tutorial'
-import {Text} from '@instructure/ui-elements'
 import TutorialTrayContent from './TutorialTrayContent'
 import UserGuideContent from './UserGuideContent'
 
@@ -26,8 +25,32 @@ const ModulesTray = () => (
   <TutorialTrayContent
     name="Modules"
     heading={I18n.t('Modules')}
-    subheading={I18n.t('Organize your course content')}
-    image="/images/tutorial-tray-images/module_tutorial.svg"
+    subheading={I18n.t('Organize course content')}
+    image="/images/tutorial-tray-images/Panda_Modules.svg"
+    imageWidth="9rem"
+    seeAllLink={{
+      label: I18n.t('See more in Canvas Guides'),
+      href: `https://community.canvaslms.com/docs/DOC-10460-canvas-instructor-guide-
+      table-of-contents#jive_content_id_Modules`
+    }}
+    links={[
+      {
+        label: I18n.t('How do I add a module?'),
+        href: 'https://community.canvaslms.com/docs/DOC-13129-415241424'
+      },
+      {
+        label: I18n.t('How do I publish or unpublish a module as an instructor?'),
+        href: 'https://community.canvaslms.com/docs/DOC-10114-4152180497'
+      },
+      {
+        label: I18n.t('How do I add assignment types, pages, and files as module items?'),
+        href: 'https://community.canvaslms.com/docs/DOC-12689-415241427'
+      },
+      {
+        label: I18n.t('How do I move or reorder a module?'),
+        href: 'https://community.canvaslms.com/docs/DOC-12697-415241425'
+      }
+    ]}
   >
     <Text as="p">
       {I18n.t(`Instructors can arrange the course resources in the Modules section.

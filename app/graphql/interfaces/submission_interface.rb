@@ -45,13 +45,15 @@ class UnreadCommentCountLoader < GraphQL::Batch::Loader
       count
 
     submission_ids_and_attempts.each do |submission_id, attempt|
+      relative_submission_id = Shard.relative_id_for(submission_id, Shard.current, Shard.current)
+
       # Group attempts nil, zero, and one together as one set of unread counts
       count = if (attempt || 0) <= 1
-        (unread_count_hash[[submission_id, nil]] || 0) +
-        (unread_count_hash[[submission_id, 0]] || 0) +
-        (unread_count_hash[[submission_id, 1]] || 0)
+        (unread_count_hash[[relative_submission_id, nil]] || 0) +
+        (unread_count_hash[[relative_submission_id, 0]] || 0) +
+        (unread_count_hash[[relative_submission_id, 1]] || 0)
       else
-        unread_count_hash[[submission_id, attempt]] || 0
+        unread_count_hash[[relative_submission_id, attempt]] || 0
       end
 
       fulfill([submission_id, attempt], count)
@@ -234,11 +236,18 @@ module Interfaces::SubmissionInterface
     end
   end
 
+  field :media_object, Types::MediaObjectType, null: true
+  def media_object
+    Loaders::MediaObjectLoader.load(object.media_comment_id)
+  end
+
   field :turnitin_data, [Types::TurnitinDataType], null: true
   def turnitin_data
     return nil if object.turnitin_data.empty?
 
-    promises = object.turnitin_data.keys.map do |asset_string|
+    promises = object.turnitin_data.keys.
+      reject { |key| key == :last_processed_attempt }.
+      map do |asset_string|
       Loaders::AssetStringLoader.load(asset_string).then do |turnitin_context|
         next if turnitin_context.nil?
 

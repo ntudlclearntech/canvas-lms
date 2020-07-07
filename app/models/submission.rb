@@ -122,6 +122,7 @@ class Submission < ActiveRecord::Base
   validates :seconds_late_override, numericality: { greater_than_or_equal_to: 0 }, allow_nil: true
   validates :extra_attempts, numericality: { greater_than_or_equal_to: 0 }, allow_nil: true
   validates :late_policy_status, inclusion: ['none', 'missing', 'late'], allow_nil: true
+  validates :cached_tardiness, inclusion: ['missing', 'late'], allow_nil: true
   validate :ensure_grader_can_grade
   validate :extra_attempts_can_only_be_set_on_online_uploads
   validate :ensure_attempts_are_in_range
@@ -142,6 +143,15 @@ class Submission < ActiveRecord::Base
   scope :with_point_data, -> { where("submissions.score IS NOT NULL OR submissions.grade IS NOT NULL") }
 
   scope :for_context_codes, lambda { |context_codes| where(:context_code => context_codes) }
+
+  scope :postable, -> {
+    all.primary_shard.activate do
+      graded.union(with_hidden_comments)
+    end
+  }
+  scope :with_hidden_comments, -> {
+    where("EXISTS (?)", SubmissionComment.where("submission_id = submissions.id AND hidden = true"))
+  }
 
   # This should only be used in the course drop down to show assignments recently graded.
   scope :recently_graded_assignments, lambda { |user_id, date, limit|
@@ -771,15 +781,16 @@ class Submission < ActiveRecord::Base
   end
 
   # Preload OriginalityReport before using this method
-  def originality_report_url(asset_string, user)
-    if asset_string == self.asset_string
-      originality_reports.where(attachment_id: nil).first&.report_launch_path
-    elsif self.grants_right?(user, :view_turnitin_report)
-      requested_attachment = all_versioned_attachments.find_by_asset_string(asset_string)
-      scope = association(:originality_reports).loaded? ? versioned_originality_reports : originality_reports
-      report = scope.find_by(attachment: requested_attachment)
-      report&.report_launch_path
-    end
+  def originality_report_url(asset_string, user, attempt=nil)
+    return unless self.grants_right?(user, :view_turnitin_report)
+    version_sub = if attempt.present?
+                    attempt.to_i == self.attempt ? self : versions.find{|v| v.model&.attempt == attempt.to_i}&.model
+                  end
+    requested_attachment = all_versioned_attachments.find_by_asset_string(asset_string) unless asset_string == self.asset_string
+    scope = association(:originality_reports).loaded? ? versioned_originality_reports : originality_reports
+    scope = scope.where(submission_time: version_sub.submitted_at) if version_sub
+    report = scope.find_by(attachment: requested_attachment)
+    report&.report_launch_path
   end
 
   def has_originality_report?
@@ -1302,8 +1313,6 @@ class Submission < ActiveRecord::Base
           opts = {
             preferred_plugins: [Canvadocs::RENDER_PDFJS, Canvadocs::RENDER_BOX, Canvadocs::RENDER_CROCODOC],
             wants_annotation: true,
-            # TODO: Remove the next line after the DocViewer Data Migration project RD-4702
-            region: a.shard.database_server.config[:region] || "none"
           }
 
           if context.root_account.settings[:canvadocs_prefer_office_online]
@@ -1324,6 +1333,7 @@ class Submission < ActiveRecord::Base
   def infer_values
     if assignment
       self.context_code = assignment.context_code
+      self.course_id = assignment.context_id
     end
 
     self.seconds_late_override = nil unless late_policy_status == 'late'
@@ -1468,6 +1478,7 @@ class Submission < ActiveRecord::Base
 
     if late_policy&.missing_submission_deduction_enabled?
       if score.nil?
+        self.grade_matches_current_submission = true
         self.score = late_policy.points_for_missing(points_possible, grading_type)
         self.workflow_state = "graded"
       end
@@ -1665,7 +1676,7 @@ class Submission < ActiveRecord::Base
   # use this method to pre-load the versioned_attachments for a bunch of
   # submissions (avoids having O(N) attachment queries)
   # NOTE: all submissions must belong to the same shard
-  def self.bulk_load_versioned_attachments(submissions, preloads: [:thumbnail, :media_object])
+  def self.bulk_load_versioned_attachments(submissions, preloads: [:thumbnail, :media_object, :folder, :attachment_upload_statuses])
     attachment_ids_by_submission_and_index = group_attachment_ids_by_submission_and_index(submissions)
     bulk_attachment_ids = attachment_ids_by_submission_and_index.values.flatten
 
@@ -1743,6 +1754,10 @@ class Submission < ActiveRecord::Base
     self.updated_at <=> other.updated_at
   end
 
+  def course_broadcast_data
+    context&.broadcast_data
+  end
+
   # Submission:
   #   Online submission submitted AFTER the due date (notify the teacher) - "Grade Changes"
   #   Submission graded (or published) - "Grade Changes"
@@ -1755,6 +1770,7 @@ class Submission < ActiveRecord::Base
       BroadcastPolicies::SubmissionPolicy.new(submission).
         should_dispatch_assignment_submitted_late?
     }
+    p.data { course_broadcast_data }
 
     p.dispatch :assignment_submitted
     p.to { assignment.context.instructors_in_charge_of(user_id) }
@@ -1762,6 +1778,7 @@ class Submission < ActiveRecord::Base
       BroadcastPolicies::SubmissionPolicy.new(submission).
         should_dispatch_assignment_submitted?
     }
+    p.data { course_broadcast_data }
 
     p.dispatch :assignment_resubmitted
     p.to { assignment.context.instructors_in_charge_of(user_id) }
@@ -1769,6 +1786,7 @@ class Submission < ActiveRecord::Base
       BroadcastPolicies::SubmissionPolicy.new(submission).
         should_dispatch_assignment_resubmitted?
     }
+    p.data { course_broadcast_data }
 
     p.dispatch :group_assignment_submitted_late
     p.to { assignment.context.instructors_in_charge_of(user_id) }
@@ -1776,6 +1794,7 @@ class Submission < ActiveRecord::Base
       BroadcastPolicies::SubmissionPolicy.new(submission).
         should_dispatch_group_assignment_submitted_late?
     }
+    p.data { course_broadcast_data }
 
     p.dispatch :submission_graded
     p.to { [student] + User.observing_students_in_course(student, assignment.context) }
@@ -1783,6 +1802,7 @@ class Submission < ActiveRecord::Base
       BroadcastPolicies::SubmissionPolicy.new(submission).
         should_dispatch_submission_graded?
     }
+    p.data { course_broadcast_data }
 
     p.dispatch :submission_grade_changed
     p.to { [student] + User.observing_students_in_course(student, assignment.context) }
@@ -1790,6 +1810,7 @@ class Submission < ActiveRecord::Base
       BroadcastPolicies::SubmissionPolicy.new(submission).
         should_dispatch_submission_grade_changed?
     }
+    p.data { course_broadcast_data }
 
     p.dispatch :submission_posted
     p.to { [student] + User.observing_students_in_course(student, assignment.context) }
@@ -1797,6 +1818,7 @@ class Submission < ActiveRecord::Base
       BroadcastPolicies::SubmissionPolicy.new(submission).
         should_dispatch_submission_posted?
     }
+    p.data { course_broadcast_data }
 
   end
 
@@ -1906,20 +1928,6 @@ class Submission < ActiveRecord::Base
   def grading_type
     return nil unless self.assignment
     self.assignment.grading_type
-  end
-
-  # Note 2012-10-12:
-  #   Deprecating this method due to view code in the model. The only place
-  #   it appears to be used is in the _recent_feedback.html.erb partial.
-  def readable_grade
-    warn "[DEPRECATED] The Submission#readable_grade method will be removed soon"
-    return nil unless grade
-    case grading_type
-      when 'points'
-        "#{grade} out of #{assignment.points_possible}" rescue grade.capitalize
-      else
-        grade.capitalize
-    end
   end
 
   def last_teacher_comment
@@ -2313,9 +2321,6 @@ class Submission < ActiveRecord::Base
       end
     end
     res
-  end
-
-  def course_id=(val)
   end
 
   def to_param

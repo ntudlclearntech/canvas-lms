@@ -42,7 +42,6 @@ module Api::V1::User
     if opts[:group_memberships]
       ActiveRecord::Associations::Preloader.new.preload(users, :group_memberships)
     end
-    ActiveRecord::Associations::Preloader.new.preload(users, :account_pronoun)
   end
 
   def user_json(user, current_user, session, includes = [], context = @context, enrollments = nil, excludes = [], enrollment=nil, tool_includes: [])
@@ -66,9 +65,6 @@ module Api::V1::User
                       :integration_id => pseudonym&.integration_id
         end
 
-        if user.account_pronoun && @domain_root_account && Account.site_admin.feature_enabled?(:account_pronouns) && @domain_root_account.settings[:can_add_pronouns]
-          json[:pronoun] = user.account_pronoun.display_pronoun
-        end
 
         if !excludes.include?('pseudonym') && user_json_is_admin?(context, current_user)
           json[:sis_import_id] = pseudonym&.sis_batch_id if @domain_root_account.grants_right?(current_user, session, :manage_sis)
@@ -78,6 +74,10 @@ module Api::V1::User
             json[:login_id] = pseudonym.unique_id
           end
         end
+      end
+
+      if user.pronouns
+        json[:pronouns] = user.pronouns
       end
 
       if includes.include?('avatar_url') && user.account.service_enabled?(:avatars)
@@ -127,7 +127,8 @@ module Api::V1::User
       if includes.include?('permissions')
         json[:permissions] = {
           :can_update_name => user.user_can_edit_name?,
-          :can_update_avatar => service_enabled?(:avatars) && !user.avatar_locked?
+          :can_update_avatar => service_enabled?(:avatars) && !user.avatar_locked?,
+          :limit_parent_app_web_access => user.limit_parent_app_web_access?,
         }
       end
 
@@ -202,12 +203,9 @@ module Api::V1::User
       display_name: user.short_name,
       avatar_image_url: avatar_url_for_user(user),
       html_url: participant_url,
-      sis_user_id: SisPseudonym.for(user, @domain_root_account, type: :trusted)&.sis_user_id || ""
+      sis_user_id: SisPseudonym.for(user, @domain_root_account, type: :trusted)&.sis_user_id || "",
+      pronouns: user.pronouns
     }
-    if user.account_pronoun && @domain_root_account
-      hash[:pronoun] = user.account_pronoun.display_pronoun if @domain_root_account.settings[:can_add_pronouns] != false &&
-        Account.site_admin.feature_enabled?(:account_pronouns)
-    end
     hash[:avatar_is_fallback] = user.avatar_image_url.nil? if includes.include?(:avatar_is_fallback) && avatars_enabled_for_user?(user)
     hash[:fake_student] = true if user.fake_student?
     hash

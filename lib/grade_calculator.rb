@@ -25,6 +25,7 @@ class GradeCalculator
     Rails.logger.debug "GRADE CALCULATOR STARTS (initialize): #{Time.zone.now.to_i}"
     Rails.logger.debug "GRADE CALCULATOR - caller: #{caller(1..1).first}"
     opts = opts.reverse_merge(
+      emit_live_event: true,
       ignore_muted: true,
       update_all_grading_period_scores: true,
       update_course_score: true,
@@ -57,6 +58,7 @@ class GradeCalculator
     # The developers of the future, I leave you this gift:
     #   If you add a new options here, make sure you also update the
     #   opts in the compute_branch method
+    @emit_live_event = opts[:emit_live_event]
     @ignore_muted = opts[:ignore_muted]
     @effective_due_dates = opts[:effective_due_dates]
     @enrollments = opts[:enrollments]
@@ -89,6 +91,9 @@ class GradeCalculator
     user_ids.sort.in_groups_of(100, false) do |user_ids_group|
       GradeCalculator.new(user_ids_group, course, opts).compute_and_save_scores
     end
+
+    # Touch the course to naively expire the cache
+    Course.where(id: course_id).not_recently_touched.update_all(updated_at: Time.now.utc)
   end
 
   def submissions
@@ -120,40 +125,127 @@ class GradeCalculator
     scores_prior_to_compute = Score.where(enrollment: @enrollments.map(&:id), assignment_group_id: nil, course_score: true).to_a
     save_scores
     update_score_statistics
-    create_course_grade_alerts(scores_prior_to_compute)
     # The next line looks weird, but it is intended behaviour.  Its
     # saying "if we're on the branch not calculating hidden scores, run
     # the branch that does."
     calculate_hidden_scores if @ignore_muted
+
+    # Since we @emit_live_event only in the outer call when @ignore_muted is true, this has to be
+    # done after calculate_hidden_scores -- so changes in that inner call are also captured. But
+    # it must be done before calculate_course_score so if @update_course_score is true (we are
+    # scoring a grading period, not a course) we don't trigger an additional alert/live event here.
+    if performance_improvements_enabled?
+      create_course_grade_alerts_and_live_events(scores_prior_to_compute)
+    else
+      old_create_course_grade_alerts_and_live_events(scores_prior_to_compute)
+    end
+
     calculate_course_score if @update_course_score
   end
 
   private
 
+  # TODO: delete this method once grade_calculator_performance_improvements is enabled everywhere
+  def performance_improvements_enabled?
+    return @performance_improvements_enabled if defined?(@performance_improvements_enabled)
+
+    @performance_improvements_enabled = Account.site_admin.feature_enabled?(:grade_calculator_performance_improvements)
+  end
+
   def effective_due_dates
     @effective_due_dates ||= EffectiveDueDates.for_course(@course, @assignments).filter_students_to(@user_ids)
   end
 
-  def create_course_grade_alerts(scores)
+  def observer_ids
+    @observer_ids ||= ObserverEnrollment.where.not(workflow_state: [:rejected, :deleted]).
+      where(course: @course).
+      pluck(:user_id).
+      uniq
+  end
+
+  # TODO: delete this method once grade_calculator_performance_improvements is enabled everywhere
+  def old_create_course_grade_alerts_and_live_events(scores)
     @course.shard.activate do
       ActiveRecord::Associations::Preloader.new.preload(scores, :enrollment)
+      # Make only one alert per user even if they have multiple enrollments (sections in same course)
+      scores = scores.uniq{|s| s.enrollment.user_id}
+      reloaded_scores = Score.where(id: scores.map(&:id)).index_by(&:id)
       scores.each do |score|
-        thresholds = ObserverAlertThreshold.active.where(student: score.enrollment.user_id, alert_type: ['course_grade_high', 'course_grade_low'])
-        previous_score = score.current_score
-        score.reload
-        thresholds.each do |threshold|
-          next unless threshold.did_pass_threshold(previous_score, score.current_score)
-          next unless threshold.observer.enrollments.where(course_id: @course.id).first.present?
+        # Note: only the old score has enrollment pre-loaded
+        create_course_grade_live_event(score, reloaded_scores[score.id]) if @emit_live_event
+        old_create_course_grade_alert(score, reloaded_scores[score.id])
+      end
+    end
+  end
 
-          ObserverAlert.create(observer: threshold.observer, student: threshold.student,
-            observer_alert_threshold: threshold,
-            context: @course, action_date: score.updated_at, alert_type: threshold.alert_type,
-            title: I18n.t("Course grade: %{grade}% in %{course_code}", {
-              grade: score.current_score,
-              course_code: @course.course_code
-            }))
+  def create_course_grade_alerts_and_live_events(scores)
+    @course.shard.activate do
+      ActiveRecord::Associations::Preloader.new.preload(scores, :enrollment)
+      # Make only one alert per user even if they have multiple enrollments (sections in same course)
+      scores = scores.uniq{|s| s.enrollment.user_id}
+
+      scores.each_slice(100) do |scores_batch|
+        scores_info = scores_batch.each_with_object({ student_ids: [], ids: [] }) do |score, memo|
+          memo[:student_ids] << score.enrollment.user_id
+          memo[:ids] << score.id
+        end
+
+        preloaded_thresholds = ObserverAlertThreshold.active.
+          where(user_id: scores_info[:student_ids], alert_type: ['course_grade_high', 'course_grade_low']).
+          group_by(&:user_id)
+
+        reloaded_scores = Score.where(id: scores_info[:ids]).index_by(&:id)
+        scores_batch.each do |score|
+          reloaded_score = reloaded_scores[score.id]
+          # Note: only the old score has enrollment pre-loaded
+          create_course_grade_live_event(score, reloaded_score) if @emit_live_event
+
+          thresholds = preloaded_thresholds.fetch(score.enrollment.user_id, [])
+          create_course_grade_alert(score, reloaded_score, thresholds)
         end
       end
+    end
+  end
+
+  LIVE_EVENT_FIELDS = %i[current_score final_score unposted_current_score unposted_final_score].freeze
+
+  def create_course_grade_live_event(old_score, score)
+    return if LIVE_EVENT_FIELDS.all? { |f| old_score.send(f) == score.send(f) }
+    old_score_values = LIVE_EVENT_FIELDS.map { |f| [f, old_score.send(f)] }.to_h
+    Canvas::LiveEvents.course_grade_change(score, old_score_values, old_score.enrollment)
+  end
+
+  # TODO: delete this method once grade_calculator_performance_improvements is enabled everywhere
+  def old_create_course_grade_alert(old_score, score)
+    # Use preloaded enrollment in old_score
+    thresholds = ObserverAlertThreshold.active.where(student: old_score.enrollment.user_id, alert_type: ['course_grade_high', 'course_grade_low'])
+
+    thresholds.each do |threshold|
+      next unless threshold.did_pass_threshold(old_score.current_score, score.current_score)
+      next unless threshold.observer.enrollments.where(course_id: @course.id).first.present?
+
+      ObserverAlert.create(observer: threshold.observer, student: threshold.student,
+        observer_alert_threshold: threshold,
+        context: @course, action_date: score.updated_at, alert_type: threshold.alert_type,
+        title: I18n.t("Course grade: %{grade}% in %{course_code}", {
+          grade: score.current_score,
+          course_code: @course.course_code
+        }))
+    end
+  end
+
+  def create_course_grade_alert(old_score, score, thresholds)
+    thresholds.each do |threshold|
+      next unless threshold.did_pass_threshold(old_score.current_score, score.current_score)
+      next unless observer_ids.include?(threshold.observer_id)
+
+      ObserverAlert.create(observer_id: threshold.observer_id, user_id: threshold.user_id,
+        observer_alert_threshold: threshold,
+        context: @course, action_date: score.updated_at, alert_type: threshold.alert_type,
+        title: I18n.t("Course grade: %{grade}% in %{course_code}", {
+          grade: score.current_score,
+          course_code: @course.course_code
+        }))
     end
   end
 
@@ -287,6 +379,7 @@ class GradeCalculator
       update_all_grading_period_scores: false,
       update_course_score: false,
       assignments: @assignments,
+      emit_live_event: @emit_live_event,
       ignore_muted: @ignore_muted,
       periods: grading_periods_for_course,
       effective_due_dates: effective_due_dates,
@@ -300,7 +393,7 @@ class GradeCalculator
 
   def calculate_hidden_scores
     # re-run this calculator, except include muted assignments/unposted submissions
-    compute_branch(ignore_muted: false)
+    compute_branch(ignore_muted: false, emit_live_event: false)
   end
 
   def calculate_grading_period_scores
@@ -425,15 +518,19 @@ class GradeCalculator
     return if joined_enrollment_ids.blank?
     return if @grading_period && @grading_period.deleted?
 
-    @course.touch
+    save_scores_in_transaction
+  end
 
-    @course.shard.activate do
-      save_course_and_grading_period_scores
-      save_course_and_grading_period_metadata
-      score_rows = group_score_rows
-      if @grading_period.nil? && score_rows.any?
-        dropped_rows = group_dropped_rows
-        save_assignment_group_scores(score_rows.join(','), dropped_rows.join(','))
+  def save_scores_in_transaction
+    Score.transaction do
+      @course.shard.activate do
+        save_course_and_grading_period_scores
+        save_course_and_grading_period_metadata
+        score_rows = group_score_rows
+        if @grading_period.nil? && score_rows.any?
+          dropped_rows = group_dropped_rows
+          save_assignment_group_scores(score_rows.join(','), dropped_rows.join(','))
+        end
       end
     end
   end
@@ -957,12 +1054,8 @@ class GradeCalculator
   def ignore_submission?(submission:, assignment:)
     return false unless @ignore_muted
 
-    if @course.post_policies_enabled?
-      # If we decided to ignore this submission earlier in this run (see
-      # create_group_sums), it will be nil, in which case keep ignoring it
-      submission.blank? || !submission.posted?
-    else
-      assignment.muted?
-    end
+    # If we decided to ignore this submission earlier in this run (see
+    # create_group_sums), it will be nil, in which case keep ignoring it
+    submission.blank? || !submission.posted?
   end
 end

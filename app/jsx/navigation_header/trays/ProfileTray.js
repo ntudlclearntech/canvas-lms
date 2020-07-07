@@ -16,20 +16,40 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import I18n from 'i18n!new_nav'
+import I18n from 'i18n!ProfileTray'
 import React from 'react'
-import {string, bool, arrayOf, shape} from 'prop-types'
-import {Avatar, Heading, List, Text, Spinner} from '@instructure/ui-elements'
-import {Button} from '@instructure/ui-buttons'
+import {arrayOf, bool, object, shape, string} from 'prop-types'
+import {Avatar, Badge, Heading, List, Text, Spinner} from '@instructure/ui-elements'
+import {Link} from '@instructure/ui-link'
 import {View} from '@instructure/ui-layout'
 import LogoutButton from '../LogoutButton'
+import {AccessibleContent} from '@instructure/ui-a11y'
 
-function ProfileTab({id, html_url, label}) {
+// Trying to keep this as generalized as possible, but it's still a bit
+// gross matching on the id of the tray tabs given to us by Rails
+const idsToCounts = [{id: 'content_shares', countName: 'unreadShares'}]
+
+const a11yCount = count => (
+  <AccessibleContent alt={I18n.t('%{count} unread.', {count})}>{count}</AccessibleContent>
+)
+
+function ProfileTab({id, html_url, label, counts}) {
+  function renderCountBadge() {
+    const found = idsToCounts.filter(x => x.id === id)
+    if (found.length === 0) return null // no count defined for this label
+    const count = counts[found[0].countName]
+    if (count === 0) return null // zero count is not displayed
+    return <Badge count={count} standalone margin="0 0 xxx-small small" formatOutput={a11yCount} />
+  }
+
   return (
     <List.Item key={id}>
-      <Button variant="link" margin="none" href={html_url}>
-        {label}
-      </Button>
+      <View className={`profile-tab-${id}`} as="div" margin="small 0">
+        <Link isWithinText={false} href={html_url}>
+          {label}
+          {renderCountBadge()}
+        </Link>
+      </View>
     </List.Item>
   )
 }
@@ -37,10 +57,13 @@ function ProfileTab({id, html_url, label}) {
 ProfileTab.propTypes = {
   id: string.isRequired,
   label: string.isRequired,
-  html_url: string.isRequired
+  html_url: string.isRequired,
+  counts: object
 }
 
-export default function ProfileTray({userDisplayName, userAvatarURL, loaded, userPronoun, tabs}) {
+export default function ProfileTray(props) {
+  const {userDisplayName, userAvatarURL, loaded, userPronouns, tabs, counts} = props
+
   return (
     <View as="div" padding="medium">
       <View textAlign="center">
@@ -51,13 +74,14 @@ export default function ProfileTray({userDisplayName, userAvatarURL, loaded, use
           size="x-large"
           inline={false}
           margin="auto"
+          data-fs-exclude
         />
         <div style={{wordBreak: 'break-word'}}>
           <Heading level="h3" as="h2">
             {userDisplayName}
-            {userPronoun && (
+            {userPronouns && (
               <Text size="large" fontStyle="italic">
-                &nbsp;({userPronoun})
+                &nbsp;({userPronouns})
               </Text>
             )}
           </Heading>
@@ -65,9 +89,9 @@ export default function ProfileTray({userDisplayName, userAvatarURL, loaded, use
         <LogoutButton size="small" margin="medium 0 x-small 0" />
       </View>
       <hr role="presentation" />
-      <List variant="unstyled" margin="0" itemSpacing="small">
+      <List variant="unstyled" margin="none" itemSpacing="small">
         {loaded ? (
-          tabs.map(tab => <ProfileTab key={tab.id} {...tab} />)
+          tabs.map(tab => <ProfileTab key={tab.id} {...tab} counts={counts} />)
         ) : (
           <List.Item key="loading">
             <div style={{textAlign: 'center'}}>
@@ -84,6 +108,7 @@ ProfileTray.propTypes = {
   userDisplayName: string.isRequired,
   userAvatarURL: string.isRequired,
   loaded: bool.isRequired,
-  userPronoun: string,
-  tabs: arrayOf(shape(ProfileTab.propTypes)).isRequired
+  userPronouns: string,
+  tabs: arrayOf(shape(ProfileTab.propTypes)).isRequired,
+  counts: object.isRequired
 }

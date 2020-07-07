@@ -21,7 +21,8 @@ class Auditors::Course
     attributes :course_id,
                :user_id,
                :event_source,
-               :sis_batch_id
+               :sis_batch_id,
+               :account_id
 
     def self.generate(course, user, event_type, event_data = {}, opts = {})
       event_source = opts[:source] || :manual
@@ -90,6 +91,7 @@ class Auditors::Course
       @course = course
 
       attributes['course_id'] = Shard.global_id_for(@course)
+      attributes['account_id'] = Shard.global_id_for(@course.account_id)
     end
 
     def event_data
@@ -101,9 +103,15 @@ class Auditors::Course
 
       attributes['data'] = @event_data.to_json
     end
+
+    def account
+      course.account
+    end
   end
 
   Stream = Auditors.stream do
+    backend_strategy :cassandra
+    active_record_type Auditors::ActiveRecord::CourseRecord
     database -> { Canvas::Cassandra::DatabaseBuilder.from_config(:auditors) }
     table :courses
     record_type Auditors::Course::Record
@@ -113,6 +121,12 @@ class Auditors::Course
       table :courses_by_course
       entry_proc lambda{ |record| record.course }
       key_proc lambda{ |course| course.global_id }
+    end
+
+    add_index :account do
+      table :courses_by_account
+      entry_proc lambda{ |record| record.account }
+      key_proc lambda{ |account| account.global_id }
     end
   end
 
@@ -186,15 +200,24 @@ class Auditors::Course
         data[k] = change.map{|v| v.is_a?(String) ? CanvasTextHelper.truncate_text(v, :max_length => 1000) : v}
       end
     end
+    event_record = nil
     course.shard.activate do
-      record = Auditors::Course::Record.generate(course, user, event_type, data, opts)
-      Auditors::Course::Stream.insert(record)
+      event_record = Auditors::Course::Record.generate(course, user, event_type, data, opts)
+      Auditors::Course::Stream.insert(event_record, {backend_strategy: :cassandra}) if Auditors.write_to_cassandra?
+      Auditors::Course::Stream.insert(event_record, {backend_strategy: :active_record}) if Auditors.write_to_postgres?
     end
+    event_record
   end
 
   def self.for_course(course, options={})
     course.shard.activate do
       Auditors::Course::Stream.for_course(course, options)
+    end
+  end
+
+  def self.for_account(account, options={})
+    account.shard.activate do
+      Auditors::Course::Stream.for_account(account, options)
     end
   end
 end

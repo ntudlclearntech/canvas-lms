@@ -116,16 +116,6 @@ module CanvasRails
       ::Canvas::DynamicSettings.find(tree: :private)["enable_rack_deflation"]
     }
 
-    # we don't know what middleware to make SessionsTimeout follow until after
-    # we've loaded config/initializers/session_store.rb
-    initializer("extend_middleware_stack", after: "load_config_initializers") do |app|
-      app.config.middleware.insert_before(config.session_store, LoadAccount)
-      app.config.middleware.swap(ActionDispatch::RequestId, RequestContextGenerator)
-      app.config.middleware.insert_after(config.session_store, RequestContextSession)
-      app.config.middleware.insert_before(Rack::Head, RequestThrottle)
-      app.config.middleware.insert_before(Rack::MethodOverride, PreventNonMultipartParse)
-    end
-
     config.i18n.load_path << Rails.root.join('config', 'locales', 'locales.yml')
 
     config.to_prepare do
@@ -287,7 +277,23 @@ module CanvasRails
       # don't care about secret_key_base
     end
 
-	# load predoc url
-	config.predoc = config_for(:predoc)
+	  # load predoc url
+    config.predoc = config_for(:predoc)
+
+    initializer "canvas.extend_shard", before: "active_record.initialize_database" do
+      # have to do this before the default shard loads
+      Switchman::Shard.serialize :settings, Hash
+      Switchman.cache = -> { MultiCache.cache }
+    end
+
+    # we don't know what middleware to make SessionsTimeout follow until after
+    # we've loaded config/initializers/session_store.rb
+    initializer("extend_middleware_stack", after: :load_config_initializers) do |app|
+      app.config.middleware.insert_before(config.session_store, LoadAccount)
+      app.config.middleware.swap(ActionDispatch::RequestId, RequestContextGenerator)
+      app.config.middleware.insert_after(config.session_store, RequestContextSession)
+      app.config.middleware.insert_before(Rack::Head, RequestThrottle)
+      app.config.middleware.insert_before(Rack::MethodOverride, PreventNonMultipartParse)
+    end
   end
 end

@@ -29,7 +29,7 @@ import {UserGroups} from './UserGroups'
 export const EXTERNAL_TOOLS_QUERY = gql`
   query ExternalTools($courseID: ID!) {
     course(id: $courseID) {
-      externalToolsConnection(filter: {placement: homework_submission, state: public}) {
+      externalToolsConnection(filter: {placement: homework_submission}) {
         nodes {
           ...ExternalTool
         }
@@ -40,10 +40,17 @@ export const EXTERNAL_TOOLS_QUERY = gql`
 `
 
 export const RUBRIC_QUERY = gql`
-  query GetRubric($rubricID: ID!, $submissionID: ID!, $courseID: ID!, $submissionAttempt: Int!) {
-    rubric: node(id: $rubricID) {
-      ... on Rubric {
-        ...Rubric
+  query GetRubric(
+    $assignmentLid: ID!
+    $submissionID: ID!
+    $courseID: ID!
+    $submissionAttempt: Int!
+  ) {
+    assignment: legacyNode(_id: $assignmentLid, type: Assignment) {
+      ... on Assignment {
+        rubric {
+          ...Rubric
+        }
       }
     }
     submission(id: $submissionID) {
@@ -73,10 +80,26 @@ export const STUDENT_VIEW_QUERY = gql`
     assignment(id: $assignmentLid) {
       ...Assignment
       ...AssignmentSubmissionsConnection
+      rubric {
+        id
+      }
     }
   }
   ${Assignment.fragment}
   ${AssignmentSubmissionsConnection.fragment}
+`
+
+export const LOGGED_OUT_STUDENT_VIEW_QUERY = gql`
+  query GetAssignment($assignmentLid: ID!) {
+    assignment(id: $assignmentLid) {
+      ...Assignment
+      rubric {
+        ...Rubric
+      }
+    }
+  }
+  ${Assignment.fragment}
+  ${Rubric.fragment}
 `
 
 export const SUBMISSION_COMMENT_QUERY = gql`

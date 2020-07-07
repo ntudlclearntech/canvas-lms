@@ -75,6 +75,7 @@ class Attachment < ActiveRecord::Base
   has_one :thumbnail, -> { where(thumbnail: 'thumb') }, foreign_key: "parent_id"
   has_many :thumbnails, :foreign_key => "parent_id"
   has_many :children, foreign_key: :root_attachment_id, class_name: 'Attachment'
+  has_many :attachment_upload_statuses
   has_one :crocodoc_document
   has_one :canvadoc
   belongs_to :usage_rights
@@ -329,7 +330,7 @@ class Attachment < ActiveRecord::Base
       context.log_merge_result("File \"#{dup.folder && dup.folder.full_name}/#{dup.display_name}\" created")
     end
     dup.shard.activate do
-      if Attachment.s3_storage? && context.respond_to?(:root_account_id) && self.namespace != context.root_account.file_namespace
+      if Attachment.s3_storage? && !instfs_hosted? && context.respond_to?(:root_account_id) && self.namespace != context.root_account.file_namespace
         dup.save_without_broadcasting!
         dup.make_rootless
         dup.change_namespace(context.root_account.file_namespace)
@@ -508,6 +509,14 @@ class Attachment < ActiveRecord::Base
       splits[3].to_i
     else
       splits[1].to_i
+    end
+  end
+
+  def root_account
+    begin
+      root_account_id && Account.find_cached(root_account_id)
+    rescue ::Canvas::AccountCacheError
+      nil
     end
   end
 
@@ -789,6 +798,11 @@ class Attachment < ActiveRecord::Base
   end
   protected :assign_uuid
 
+  def reset_uuid!
+    self.uuid = CanvasSlug.generate_securish_uuid
+    self.save!
+  end
+
   def inline_content?
     self.content_type.match(/\Atext/) || self.extension == '.html' || self.extension == '.htm' || self.extension == '.swf'
   end
@@ -830,11 +844,7 @@ class Attachment < ActiveRecord::Base
   end
 
   def url_ttl
-    settings = begin
-      root_account_id && Account.find_cached(root_account_id).settings
-    rescue ::Canvas::AccountCacheError
-    end
-    setting = settings&.[](:s3_url_ttl_seconds)
+    setting = root_account&.settings&.[](:s3_url_ttl_seconds)
     setting ||= Setting.get('attachment_url_ttl', 1.hour.to_s)
     setting.to_i.seconds
   end
@@ -1413,6 +1423,7 @@ class Attachment < ActiveRecord::Base
       CrocodocDocument.where(attachment_id: att.children_and_self.select(:id)).delete_all
       canvadoc_scope = Canvadoc.where(attachment_id: att.children_and_self.select(:id))
       CanvadocsSubmission.where(:canvadoc_id => canvadoc_scope.select(:id)).delete_all
+      AnonymousOrModerationEvent.where(:canvadoc_id => canvadoc_scope.select(:id)).delete_all
       canvadoc_scope.delete_all
       att.save!
     end
@@ -1538,7 +1549,7 @@ class Attachment < ActiveRecord::Base
 
   def make_childless(preferred_child = nil)
     return if root_attachment_id
-    child = preferred_child || children.first
+    child = preferred_child || children.take
     return unless child
     raise "must be a child" unless child.root_attachment_id == id
     child.root_attachment_id = nil
@@ -1651,9 +1662,7 @@ class Attachment < ActiveRecord::Base
       doc = canvadoc || create_canvadoc
       doc.upload({
         annotatable: opts[:wants_annotation],
-        preferred_plugins: opts[:preferred_plugins],
-        # TODO: Remove the next line after the DocViewer Data Migration project RD-4702
-        region: doc.shard.database_server.config[:region] || "none"
+        preferred_plugins: opts[:preferred_plugins]
       })
       update_attribute(:workflow_state, 'processing')
     end
@@ -1813,7 +1822,7 @@ class Attachment < ActiveRecord::Base
     addition = 1
     dir = File.dirname(filename)
     dir = dir == "." ? "" : "#{dir}/"
-    extname = filename[/(\.[A-Za-z][A-Za-z0-9]*)+$/] || ''
+    extname = filename[/(\.[A-Za-z][A-Za-z0-9]*)*(\.[A-Za-z0-9]*)$/] || ''
     basename = File.basename(filename, extname)
 
     until block.call(new_name = "#{dir}#{basename}-#{addition}#{extname}")

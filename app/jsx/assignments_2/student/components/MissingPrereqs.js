@@ -19,14 +19,14 @@ import I18n from 'i18n!assignments_2'
 import React from 'react'
 import {string} from 'prop-types'
 
-import {Flex} from '@instructure/ui-layout'
-import {Heading, Text} from '@instructure/ui-elements'
-
 import {Button} from '@instructure/ui-buttons'
+import {Flex} from '@instructure/ui-layout'
+import {Heading} from '@instructure/ui-heading'
+import {Text} from '@instructure/ui-elements'
 
 import locked1SVG from '../SVG/Locked1.svg'
 
-function MissingPrereqs(props) {
+export default function MissingPrereqs(props) {
   return (
     <Flex textAlign="center" justifyItems="center" margin="0 0 large" direction="column">
       <Flex.Item>
@@ -57,5 +57,3 @@ MissingPrereqs.propTypes = {
   preReqTitle: string.isRequired,
   preReqLink: string.isRequired
 }
-
-export default React.memo(MissingPrereqs)

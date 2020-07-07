@@ -21,12 +21,15 @@ require 'atom'
 class User < ActiveRecord::Base
   GRAVATAR_PATTERN = /^https?:\/\/[a-zA-Z0-9.-]+\.gravatar\.com\//
   include TurnitinID
+  include Pronouns
 
   # this has to be before include Context to prevent a circular dependency in Course
   def self.sortable_name_order_by_clause(table = nil)
     col = table ? "#{table}.sortable_name" : 'sortable_name'
     best_unicode_collation_key(col)
   end
+
+  self.ignored_columns = %i[type creation_unique_id creation_sis_batch_id creation_email sis_name bio merge_to unread_inbox_items_count visibility account_pronoun_id]
 
 
   include Context
@@ -46,13 +49,15 @@ class User < ActiveRecord::Base
   include TimeZoneHelper
   time_zone_attribute :time_zone
   include Workflow
+  include UserPreferenceValue::UserMethods # include after other callbacks are defined
 
   def self.enrollment_conditions(state)
     Enrollment::QueryBuilder.new(state).conditions or raise "invalid enrollment conditions"
   end
 
-  has_many :communication_channels, -> { order('communication_channels.position ASC') }, dependent: :destroy
+  has_many :communication_channels, -> { order('communication_channels.position ASC') }, dependent: :destroy, inverse_of: :user
   has_many :notification_policies, through: :communication_channels
+  has_many :notification_policy_overrides, through: :communication_channels
   has_one :communication_channel, -> { where("workflow_state<>'retired'").order(:position) }
   has_many :ignores
   has_many :planner_notes, :dependent => :destroy
@@ -110,7 +115,6 @@ class User < ActiveRecord::Base
   has_many :pseudonyms, -> { order(:position) }, dependent: :destroy
   has_many :active_pseudonyms, -> { where("pseudonyms.workflow_state<>'deleted'") }, class_name: 'Pseudonym'
   has_many :pseudonym_accounts, :source => :account, :through => :pseudonyms
-  has_many :active_pseudonym_accounts, :source => :account, :through => :active_pseudonyms
   has_one :pseudonym, -> { where("pseudonyms.workflow_state<>'deleted'").order(:position) }
   has_many :attachments, :as => 'context', :dependent => :destroy
   has_many :active_images, -> { where("attachments.file_state != ? AND attachments.content_type LIKE 'image%'", 'deleted').order('attachments.display_name').preload(:thumbnail) }, as: :context, inverse_of: :context, class_name: 'Attachment'
@@ -170,9 +174,9 @@ class User < ActiveRecord::Base
   has_many :progresses, :as => :context, :inverse_of => :context
   has_many :one_time_passwords, -> { order(:id) }, inverse_of: :user
   has_many :past_lti_ids, class_name: 'UserPastLtiId', inverse_of: :user
+  has_many :user_preference_values, inverse_of: :user
 
   belongs_to :otp_communication_channel, :class_name => 'CommunicationChannel'
-  belongs_to :account_pronoun
 
   include StickySisFields
   are_sis_sticky :name, :sortable_name, :short_name
@@ -269,8 +273,10 @@ class User < ActiveRecord::Base
 
   def assignment_and_quiz_visibilities(context)
     RequestCache.cache("assignment_and_quiz_visibilities", self, context) do
-      {assignment_ids: DifferentiableAssignment.scope_filter(context.assignments, self, context).pluck(:id),
-        quiz_ids: DifferentiableAssignment.scope_filter(context.quizzes, self, context).pluck(:id)}
+      Shackles.activate(:slave) do
+        {assignment_ids: DifferentiableAssignment.scope_filter(context.assignments, self, context).pluck(:id),
+          quiz_ids: DifferentiableAssignment.scope_filter(context.quizzes, self, context).pluck(:id)}
+      end
     end
   end
 
@@ -655,7 +661,7 @@ class User < ActiveRecord::Base
   end
 
   def filter_visible_groups_for_user(groups)
-    enrollments = self.cached_current_enrollments(preload_dates: true, preload_courses: true)
+    enrollments = self.cached_currentish_enrollments(preload_dates: true, preload_courses: true)
     groups.select do |group|
       group.context_type != 'Course' || enrollments.any? do |en|
         en.course == group.context && !(en.inactive? || en.completed?) && (en.admin? || en.course.available?)
@@ -920,7 +926,9 @@ class User < ActiveRecord::Base
     self.remove_from_root_account(:all)
     self.workflow_state = 'deleted'
     self.deleted_at = Time.now.utc
-    self.save
+    if self.save
+      eportfolios.active.in_batches.destroy_all
+    end
   end
 
   # avoid extraneous callbacks when enrolled in multiple sections
@@ -946,6 +954,9 @@ class User < ActiveRecord::Base
         account_users = self.account_users.active.shard(self)
         has_other_root_accounts = false
         group_memberships_scope = self.group_memberships.active.shard(self)
+
+        # eportfolios will only be in the users home shard
+        eportfolio_scope = self.eportfolios.active
       else
         # make sure to do things on the root account's shard. but note,
         # root_account.enrollments won't include the student view user's
@@ -955,18 +966,22 @@ class User < ActiveRecord::Base
         enrollment_scope = fake_student? ? self.enrollments : root_account.enrollments.where(user_id: self)
         user_observer_scope = self.as_student_observation_links.shard(self)
         user_observee_scope = self.as_observer_observation_links.shard(self)
+
         pseudonym_scope = root_account.pseudonyms.active.where(user_id: self)
 
         account_users = root_account.account_users.where(user_id: self).to_a +
           self.account_users.shard(root_account).where(:account_id => root_account.all_accounts).to_a
         has_other_root_accounts = self.associated_accounts.shard(self).where('accounts.id <> ?', root_account).exists?
         group_memberships_scope = self.group_memberships.active.shard(root_account.shard).joins(:group).where(:groups => {:root_account_id => root_account})
+
+        eportfolio_scope = self.eportfolios.active if self.shard == root_account.shard
       end
 
       self.delete_enrollments(enrollment_scope, updating_user: updating_user)
       group_memberships_scope.destroy_all
       user_observer_scope.destroy_all
       user_observee_scope.destroy_all
+      eportfolio_scope.in_batches.destroy_all if eportfolio_scope
       pseudonym_scope.each(&:destroy)
       account_users.each(&:destroy)
 
@@ -1149,6 +1164,9 @@ class User < ActiveRecord::Base
 
     given { |user| user && user.as_observer_observation_links.where(user_id: self.id).exists? }
     can :read and can :read_as_parent
+
+    given { |user| self.check_accounts_right?(user, :moderate_user_content) }
+    can :moderate_user_content
   end
 
   def can_masquerade?(masquerader, account)
@@ -1440,11 +1458,11 @@ class User < ActiveRecord::Base
   end
 
   def new_user_tutorial_statuses
-    preferences[:new_user_tutorial_statuses] ||= {}
+    get_preference(:new_user_tutorial_statuses) || {}
   end
 
   def custom_colors
-    colors_hash = (preferences[:custom_colors] ||= {})
+    colors_hash = get_preference(:custom_colors) || {}
     if Shard.current != self.shard
       # translate asset strings to be relative to current shard
       colors_hash = Hash[
@@ -1461,11 +1479,12 @@ class User < ActiveRecord::Base
   end
 
   def dashboard_positions
-    preferences[:dashboard_positions] ||= {}
+    @dashboard_positions ||= get_preference(:dashboard_positions) || {}
   end
 
-  def dashboard_positions=(new_positions)
-    preferences[:dashboard_positions] = new_positions
+  def set_dashboard_positions(new_positions)
+    @dashboard_positions = nil
+    set_preference(:dashboard_positions, new_positions)
   end
 
   # Use the user's preferences for the default view
@@ -1479,17 +1498,29 @@ class User < ActiveRecord::Base
     preferences[:dashboard_view] = new_dashboard_view
   end
 
-  def course_nicknames
-    preferences[:course_nicknames] ||= {}
+  def all_course_nicknames(courses=nil)
+    if preferences[:course_nicknames] == UserPreferenceValue::EXTERNAL
+      self.shard.activate do
+        scope = user_preference_values.where(:key => :course_nicknames)
+        scope = scope.where("sub_key IN (?)", courses.map(&:id).map(&:to_json)) if courses
+        Hash[scope.pluck(:sub_key, :value)]
+      end
+    else
+      preferences[:course_nicknames] || {}
+    end
   end
 
   def course_nickname_hash
-    course_nicknames.any? ? Digest::MD5.hexdigest(course_nicknames.sort.join(",")) : "default"
+    if preferences[:course_nicknames].present?
+      @nickname_hash ||= Digest::MD5.hexdigest(user_preference_values.where(:key => :course_nicknames).pluck(:sub_key, :value).sort.join(","))
+    else
+      "default"
+    end
   end
 
   def course_nickname(course)
     shard.activate do
-      course_nicknames[course.id]
+      get_preference(:course_nicknames, course.id)
     end
   end
 
@@ -1502,17 +1533,20 @@ class User < ActiveRecord::Base
   end
 
   def close_announcement(announcement)
-    preferences[:closed_notifications] ||= []
+    closed = get_preference(:closed_notifications).dup || []
     # serialize ids relative to the user
     self.shard.activate do
-      preferences[:closed_notifications] << announcement.id
+      closed << announcement.id
     end
-    preferences[:closed_notifications].uniq!
-    save
+    set_preference(:closed_notifications, closed.uniq)
   end
 
   def prefers_high_contrast?
     !!feature_enabled?(:high_contrast)
+  end
+
+  def prefers_no_celebrations?
+    !!feature_enabled?(:disable_celebrations)
   end
 
   def manual_mark_as_read?
@@ -1544,6 +1578,9 @@ class User < ActiveRecord::Base
   def default_notifications_disabled?
     !!preferences[:default_notifications_disabled]
   end
+
+  # ***** OHI If you're going to add a lot of data into `preferences` here maybe take a look at app/models/user_preference_value.rb instead ***
+  # it will store the data in a separate table on the db and lighten the load on poor `users`
 
   def uuid
     if !read_attribute(:uuid)
@@ -1609,35 +1646,37 @@ class User < ActiveRecord::Base
   # made a tree, it would be the chain between the root and the first branching
   # point.
   def common_account_chain(in_root_account)
-    rid = in_root_account.id
-    accts = self.associated_accounts.where("accounts.id = ? OR accounts.root_account_id = ?", rid, rid)
-    return [] if accts.blank?
-    children = accts.inject({}) do |hash,acct|
-      pid = acct.parent_account_id
-      if pid.present?
-        hash[pid] ||= []
-        hash[pid] << acct
+    Shackles.activate(:slave) do
+      rid = in_root_account.id
+      accts = self.associated_accounts.where("accounts.id = ? OR accounts.root_account_id = ?", rid, rid)
+      return [] if accts.blank?
+      children = accts.inject({}) do |hash,acct|
+        pid = acct.parent_account_id
+        if pid.present?
+          hash[pid] ||= []
+          hash[pid] << acct
+        end
+        hash
       end
-      hash
+
+      enrollment_account_ids = in_root_account.
+        all_enrollments.
+        current_and_concluded.
+        where(user_id: self).
+        joins(:course).
+        distinct.
+        pluck(:account_id)
+
+      longest_chain = [in_root_account]
+      while true
+        break if enrollment_account_ids.include?(longest_chain.last.id)
+
+        next_children = children[longest_chain.last.id]
+        break unless next_children.present? && next_children.count == 1
+        longest_chain << next_children.first
+      end
+      longest_chain
     end
-
-    enrollment_account_ids = in_root_account.
-      all_enrollments.
-      current_and_concluded.
-      where(user_id: self).
-      joins(:course).
-      distinct.
-      pluck(:account_id)
-
-    longest_chain = [in_root_account]
-    while true
-      break if enrollment_account_ids.include?(longest_chain.last.id)
-
-      next_children = children[longest_chain.last.id]
-      break unless next_children.present? && next_children.count == 1
-      longest_chain << next_children.first
-    end
-    longest_chain
   end
 
   def courses_with_primary_enrollment(association = :current_and_invited_courses, enrollment_uuid = nil, options = {})
@@ -1668,9 +1707,11 @@ class User < ActiveRecord::Base
               where("enrollment_states.state IN ('active', 'invited', 'pending_invited', 'pending_active')")
           end
 
-          scope.select("courses.*, enrollments.id AS primary_enrollment_id, enrollments.type AS primary_enrollment_type, enrollments.role_id AS primary_enrollment_role_id, #{Enrollment.type_rank_sql} AS primary_enrollment_rank, enrollments.workflow_state AS primary_enrollment_state, enrollments.created_at AS primary_enrollment_date").
-              order(Arel.sql("courses.id, #{Enrollment.type_rank_sql}, #{Enrollment.state_rank_sql}")).
-              distinct_on(:id).shard(shards).to_a
+          Shackles.activate(:slave) do
+            scope.select("courses.*, enrollments.id AS primary_enrollment_id, enrollments.type AS primary_enrollment_type, enrollments.role_id AS primary_enrollment_role_id, #{Enrollment.type_rank_sql} AS primary_enrollment_rank, enrollments.workflow_state AS primary_enrollment_state, enrollments.created_at AS primary_enrollment_date").
+                order(Arel.sql("courses.id, #{Enrollment.type_rank_sql}, #{Enrollment.state_rank_sql}")).
+                distinct_on(:id).shard(shards).to_a
+          end
         end
         result.dup
       end
@@ -1703,6 +1744,10 @@ class User < ActiveRecord::Base
         end
       end
 
+      Shard.partition_by_shard(res, ->(c){ c.shard }) do |shard_courses|
+        roles = Role.where(:id => shard_courses.map(&:primary_enrollment_role_id).uniq).to_a.index_by(&:id)
+        shard_courses.each{|c| c.primary_enrollment_role = roles[c.primary_enrollment_role_id]}
+      end
       @courses_with_primary_enrollment[cache_key] =
         res.sort_by{ |c| [c.primary_enrollment_rank, Canvas::ICU.collation_key(c.name)] }
     end
@@ -1716,7 +1761,11 @@ class User < ActiveRecord::Base
    # to get a head start
 
   # this method takes an optional {:include_enrollment_uuid => uuid}   so that you can pass it the session[:enrollment_uuid] and it will include it.
-  def cached_current_enrollments(opts={})
+  def cached_currentish_enrollments(opts={})
+    # this method doesn't include the "active_by_date" scope and should probably not be used since
+    # it will give enrollments which are concluded by date
+    # leaving this for existing instances where schools are used to the inconsistent behavior
+    # participating_enrollments seems to be a more accurate representation of "current courses"
     RequestCache.cache('cached_current_enrollments', self, opts) do
       enrollments = self.shard.activate do
         res = Rails.cache.fetch_with_batched_keys(
@@ -1807,6 +1856,17 @@ class User < ActiveRecord::Base
       self.enrollments.shard(in_region_associated_shards).where.not(type: %w{StudentEnrollment StudentViewEnrollment ObserverEnrollment}).
         where.not(workflow_state: %w{rejected inactive deleted}).exists?
     end
+  end
+
+  def account_membership?
+    return @_account_membership if defined?(@_account_membership)
+    @_account_membership = Rails.cache.fetch_with_batched_keys(['has_account_user', ApplicationController.region ].cache_key, batch_object: self, batched_keys: :account_users) do
+      self.account_users.shard(in_region_associated_shards).active.exists?
+    end
+  end
+
+  def can_content_share?
+    non_student_enrollment? || account_membership?
   end
 
   def participating_current_and_concluded_course_ids
@@ -2098,7 +2158,7 @@ class User < ActiveRecord::Base
     @appointment_context_codes ||= {}
     @appointment_context_codes[include_observers] ||= Rails.cache.fetch([self, 'cached_appointment_codes', ApplicationController.region, include_observers ].cache_key, expires_in: 1.day) do
       ret = {:primary => [], :secondary => []}
-      cached_current_enrollments(preload_dates: true).each do |e|
+      cached_currentish_enrollments(preload_dates: true).each do |e|
         next unless (e.student? || (include_observers && e.observer?)) && e.active?
         ret[:primary] << "course_#{e.course_id}"
         ret[:secondary] << "course_section_#{e.course_section_id}"
@@ -2113,7 +2173,7 @@ class User < ActiveRecord::Base
     @manageable_appointment_context_codes ||= Rails.cache.fetch(cache_key, expires_in: 1.day) do
       ret = {:full => [], :limited => [], :secondary => []}
       limited_sections = {}
-      manageable_enrollments_by_permission(:manage_calendar).each do |e|
+      manageable_enrollments_by_permission(:manage_calendar, cached_currentish_enrollments).each do |e|
         next if ret[:full].include?("course_#{e.course_id}")
         if e.limit_privileges_to_course_section
           ret[:limited] << "course_#{e.course_id}"
@@ -2455,7 +2515,13 @@ class User < ActiveRecord::Base
   end
 
   def user_can_edit_name?
-    active_pseudonym_accounts.any? { |a| a.settings[:users_can_edit_name] != false } || active_pseudonym_accounts.empty?
+    accounts = pseudonyms.shard(self).active.map(&:account)
+    return true if accounts.empty?
+    accounts.any? { |a| a.settings[:users_can_edit_name] != false }
+  end
+
+  def limit_parent_app_web_access?
+    pseudonyms.shard(self).active.map(&:account).any? { |a| a.limit_parent_app_web_access? }
   end
 
   def sections_for_course(course)
@@ -2699,9 +2765,9 @@ class User < ActiveRecord::Base
   end
 
   def adminable_accounts_scope
-    Account.shard(self.in_region_associated_shards).active.joins(:account_users).
-      where(account_users: {user_id: self.id}).
-      where.not(account_users: {workflow_state: 'deleted'})
+    # i couldn't get EXISTS (?) to work multi-shard, so this is happening instead
+    account_ids = self.account_users.active.shard(self.in_region_associated_shards).distinct.pluck(:account_id)
+    Account.active.where(:id => account_ids)
   end
 
   def adminable_accounts
@@ -2833,11 +2899,15 @@ class User < ActiveRecord::Base
 
   def user_roles(root_account, exclude_deleted_accounts = nil)
     roles = ['user']
-    enrollment_types = root_account.all_enrollments.where(user_id: self, workflow_state: 'active').distinct.pluck(:type)
+    enrollment_types = Shackles.activate(:slave) do
+      root_account.all_enrollments.where(user_id: self, workflow_state: 'active').distinct.pluck(:type)
+    end
     roles << 'student' unless (enrollment_types & %w[StudentEnrollment StudentViewEnrollment]).empty?
     roles << 'teacher' unless (enrollment_types & %w[TeacherEnrollment TaEnrollment DesignerEnrollment]).empty?
     roles << 'observer' unless (enrollment_types & %w[ObserverEnrollment]).empty?
-    account_users = root_account.cached_all_account_users_for(self)
+    account_users = Shackles.activate(:slave) do
+      root_account.cached_all_account_users_for(self)
+    end
 
     if exclude_deleted_accounts
       account_users = account_users.select { |a| a.account.workflow_state == 'active' }
@@ -2874,8 +2944,16 @@ class User < ActiveRecord::Base
     code = nil
     loop do
       code = SecureRandom.base64().gsub(/\W/, '')[0..5]
-      break if ObserverPairingCode.active.where(code: code).count == 0
+      break unless ObserverPairingCode.active.where(code: code).exists?
     end
     observer_pairing_codes.create(expires_at: 7.days.from_now, code: code)
+  end
+
+  def pronouns
+    translate_pronouns(read_attribute(:pronouns))
+  end
+
+  def pronouns=(pronouns)
+    write_attribute(:pronouns, untranslate_pronouns(pronouns))
   end
 end

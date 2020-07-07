@@ -20,7 +20,7 @@
 #
 # @model AuthenticationProvider
 #     {
-#       "id": "1",
+#       "id": "AuthenticationProvider",
 #       "description": "",
 #       "properties": {
 #         "identifier_format": {
@@ -144,6 +144,7 @@
 #
 # @model FederatedAttributesConfig
 #     {
+#       "id" : "FederatedAttributesConfig",
 #       "description": "A mapping of Canvas attribute names to attribute names that a provider may send, in order to update the value of these attributes when a user logs in. The values can be a FederatedAttributeConfig, or a raw string corresponding to the \"attribute\" property of a FederatedAttributeConfig. In responses, full FederatedAttributeConfig objects are returned if JIT provisioning is enabled, otherwise just the attribute names are returned.",
 #       "properties": {
 #         "admin_roles": {
@@ -195,6 +196,7 @@
 #
 # @model FederatedAttributeConfig
 #     {
+#       "id": "FederatedAttributeConfig",
 #       "description": "A single attribute name to be federated when a user logs in",
 #       "properties": {
 #         "attribute": {
@@ -212,7 +214,9 @@
 #     }
 #
 class AuthenticationProvidersController < ApplicationController
-  before_action :require_context, :require_root_account_management
+  before_action :require_context
+  before_action :require_root_account_management, except: :show
+  before_action :require_user, only: :show
   include Api::V1::AuthenticationProvider
 
   # @API List authentication providers
@@ -741,8 +745,12 @@ class AuthenticationProvidersController < ApplicationController
   #
   # @returns AuthenticationProvider
   def show
-    aac = @account.authentication_providers.active.find params[:id]
+    aac = @account.authentication_providers.active.find(params[:id])
+    return if aac.auth_type != 'canvas' && !require_root_account_management
     render json: aac_json(aac)
+  rescue ActiveRecord::RecordNotFound
+    return unless require_root_account_management
+    raise
   end
 
   # @API Delete authentication provider

@@ -39,6 +39,19 @@ class Notification < ActiveRecord::Base
     "Show In Feed",
   ].freeze
 
+  ALLOWED_SMS_NOTIFICATION_CATEGORIES = [
+    'announcement',
+    'grading'
+  ].freeze
+
+  ALLOWED_SMS_NOTIFICATION_TYPES = [
+    'Assignment Graded',
+    'Confirm SMS Communication Channel',
+    'New Announcement',
+    'Submission Grade Changed',
+    'Submission Graded'
+  ].freeze
+
   FREQ_IMMEDIATELY = 'immediately'
   FREQ_DAILY = 'daily'
   FREQ_WEEKLY = 'weekly'
@@ -46,6 +59,7 @@ class Notification < ActiveRecord::Base
 
   has_many :messages
   has_many :notification_policies, :dependent => :destroy
+  has_many :notification_policy_overrides, inverse_of: :notification, :dependent => :destroy
   before_save :infer_default_content
 
   scope :to_show_in_feed, -> { where("messages.category='TestImmediately' OR messages.notification_name IN (?)", TYPES_TO_SHOW_IN_FEED) }
@@ -76,6 +90,10 @@ class Notification < ActiveRecord::Base
   def self.reset_cache!
     @all = nil
     @all_by_id = nil
+    if ::Rails.env.test? && !@checked_partition && !ActiveRecord::Base.in_migration
+      Messages::Partitioner.process # might have fallen out of date - but we should only check if we're actually running notification specs
+      @checked_partition = true
+    end
   end
 
   def duplicate
@@ -91,7 +109,7 @@ class Notification < ActiveRecord::Base
   protected :infer_default_content
 
   # Public: create (and dispatch, and queue delayed) a message
-  #  for this notication, associated with the given asset, sent to the given recipients
+  #  for this notification, associated with the given asset, sent to the given recipients
   #
   # asset - what the message applies to. An assignment, a discussion, etc.
   # to_list - a list of who to send the message to. the list can contain Users, User ids, or communication channels
@@ -144,6 +162,14 @@ class Notification < ActiveRecord::Base
 
   def self.types_to_show_in_feed
      TYPES_TO_SHOW_IN_FEED
+  end
+
+  def self.categories_to_send_in_sms(root_account)
+    root_account.settings[:allowed_sms_notification_categories] || Setting.get('allowed_sms_notification_categories', ALLOWED_SMS_NOTIFICATION_CATEGORIES.join(',')).split(',')
+  end
+
+  def self.types_to_send_in_sms(root_account)
+    root_account.settings[:allowed_sms_notification_types] || Setting.get('allowed_sms_notification_types', ALLOWED_SMS_NOTIFICATION_TYPES.join(',')).split(',')
   end
 
   def show_in_feed?
@@ -270,6 +296,8 @@ class Notification < ActiveRecord::Base
       FREQ_NEVER
     when 'Blueprint'
       FREQ_NEVER
+    when 'Account Notification'
+      FREQ_IMMEDIATELY
     else
       FREQ_DAILY
     end
@@ -279,8 +307,11 @@ class Notification < ActiveRecord::Base
   # wherever), even if we continue to store the english string in the db
   # (it's actually just the titleized message template filename)
   def names
+    t 'names.manually_created_access_token_created', 'Manually Created Access Token Created'
     t 'names.account_user_notification', 'Account User Notification'
     t 'names.account_user_registration', 'Account User Registration'
+    t 'Annotation Notification'
+    t 'Annotation Teacher Notification'
     t 'names.assignment_changed', 'Assignment Changed'
     t 'names.assignment_created', 'Assignment Created'
     t 'names.assignment_due_date_changed', 'Assignment Due Date Changed'
@@ -352,6 +383,7 @@ class Notification < ActiveRecord::Base
     t 'names.blueprint_sync_complete', 'Blueprint Sync Complete'
     t 'names.blueprint_content_added', 'Blueprint Content Added'
     t 'names.content_link_error', 'Content Link Error'
+    t 'names.account_notification', 'Account Notification'
   end
 
   # TODO: i18n ... show these anywhere we show the category today
@@ -381,6 +413,7 @@ class Notification < ActiveRecord::Base
     t 'categories.recording_ready', 'Recording Ready'
     t 'categories.blueprint', 'Blueprint'
     t 'categories.content_link_error', 'Content Link Error'
+    t 'categories.account_notification', 'Account Notification'
   end
 
   # Translatable display text to use when representing the category to the user.
@@ -442,6 +475,8 @@ class Notification < ActiveRecord::Base
       t(:blueprint_display, 'Blueprint Sync')
     when 'Content Link Error'
       t(:content_link_error_display, 'Content Link Error')
+    when 'Account Notification'
+      t(:account_notification_display, 'Global Announcements')
     else
       t(:missing_display_display, "For %{category} notifications", :category => category)
     end
@@ -477,7 +512,6 @@ EOS
 Includes:
 
 * Assignment/submission grade entered/changed
-* Un-muted assignment grade
 * Grade weight changed
 EOS
     when 'Late Grading'
@@ -557,6 +591,10 @@ BPDESC
 
 Location and content of a failed link that a student has interacted with
 CONTLINK
+    when 'Account Notification'
+      mt(:account_notification_description, <<-EOS)
+Institution-wide announcements (also displayed on Dashboard pages)
+    EOS
     else
       t(:missing_description_description, "For %{category} notifications", :category => category)
     end

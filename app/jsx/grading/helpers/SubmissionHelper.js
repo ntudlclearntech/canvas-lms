@@ -24,9 +24,9 @@ export function isGraded(submission) {
   return (sub.score != null && sub.workflowState === 'graded') || sub.excused
 }
 
-export function isHidden(submission) {
+export function isPostable(submission) {
   const sub = camelize(submission)
-  return isGraded(sub) && !sub.postedAt
+  return !sub.postedAt && (isGraded(sub) || !!sub.hasPostableComments)
 }
 
 // This function returns an object containing plagiarism/originality-related
@@ -125,4 +125,24 @@ function similarityEntryComparator(a, b) {
 
   // Otherwise, just compare by status.
   return orderedStatuses.indexOf(aStatus || 'none') - orderedStatuses.indexOf(bStatus || 'none')
+}
+
+export function similarityIcon(similarityData) {
+  const {status, similarity_score} = similarityData
+
+  let iconClass
+  if (status === 'error') {
+    iconClass = 'icon-warning'
+  } else if (status === 'pending') {
+    iconClass = 'icon-clock'
+  } else if (similarity_score > 60) {
+    iconClass = 'icon-empty icon-Solid'
+  } else if (similarity_score > 20) {
+    iconClass = 'icon-oval-half icon-Solid'
+  } else {
+    iconClass = 'icon-certified icon-Solid'
+  }
+
+  // xsslint safeString.identifier iconClass
+  return `<i class="${iconClass}"></i>`
 }

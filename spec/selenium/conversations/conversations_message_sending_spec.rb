@@ -125,9 +125,7 @@ describe "conversations new" do
     it "should allow admins to message users from their profiles", priority: "2", test_id: 201940 do
       user = account_admin_user
       user_logged_in({:user => user})
-
-      wait_for_new_page_load { get "/accounts/#{Account.default.id}/users" }
-      wait_for_ajaximations
+      get "/accounts/#{Account.default.id}/users"
       fj('[data-automation="users list"] tr a:has([name="IconMessage"])').click
       wait_for_ajaximations
       expect(f('.ac-token')).not_to be_nil
@@ -149,9 +147,7 @@ describe "conversations new" do
     it "should not send the message on shift-enter", priority: "1", test_id: 206019 do
       conversations
       compose course: @course, to: [@s1], subject: 'context-free', body: 'hallo!', send: false
-      driver.action.key_down(:shift).perform
-      message_body_input.send_keys(:enter)
-      driver.action.key_up(:shift).perform
+      message_body_input.send_keys([:shift, :enter])
       expect(fj('#compose-new-message:visible')).not_to be_nil
     end
 
@@ -245,13 +241,7 @@ describe "conversations new" do
       it "can compose a message to a single user", priority: "1", test_id: 117958 do
         conversations
         goto_compose_modal
-        fj('.btn.dropdown-toggle :contains("Select course")').click
-        wait_for_ajaximations
-
-        expect(f('.dropdown-menu.open')).to be_truthy
-
-        fj('.message-header-input .text:contains("Unnamed Course")').click
-        wait_for_ajaximations
+        select_message_course(@course)
 
         # check for auto complete to fill in 'first student'
         f('.ac-input-cell .ac-input').send_keys('first st')
@@ -278,13 +268,7 @@ describe "conversations new" do
 
           conversations
           goto_compose_modal
-          fj('.btn.dropdown-toggle :contains("Select course")').click
-          wait_for_ajaximations
-
-          f('.dropdown-menu.open')
-
-          fj('.message-header-input .text:contains("Unnamed Course")').click
-          wait_for_ajaximations
+          select_message_course(@course)
 
           f('.message-header-input .icon-address-book').click
           wait_for_ajaximations

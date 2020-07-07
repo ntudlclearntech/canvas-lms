@@ -20,12 +20,20 @@ import {oneOf, string} from 'prop-types'
 import I18n from 'i18n!CanvasMediaPlayer'
 import LoadingIndicator from '@instructure/canvas-media/lib/shared/LoadingIndicator'
 import {VideoPlayer} from '@instructure/ui-media-player'
+import {Alert} from '@instructure/ui-alerts'
 import {View} from '@instructure/ui-layout'
 import {asJson, defaultFetchOptions} from '@instructure/js-utils'
 
+const byBitrate = (a, b) => parseInt(a.bitrate, 10) - parseInt(b.bitrate, 10)
+const MAX_ATTEMPTS = 5
+
 export default function CanvasMediaPlayer(props) {
-  const [media_sources, setMedia_sources] = useState(props.media_sources)
+  const sorted_sources = Array.isArray(props.media_sources)
+    ? props.media_sources.sort(byBitrate)
+    : props.media_sources
+  const [media_sources, setMedia_sources] = useState(sorted_sources)
   const [retryTimerId, setRetryTimerId] = useState(0)
+  const [retryAttempt, setRetryAttempt] = useState(0)
   const containerRef = useRef(null)
   const myIframeRef = useRef(null)
 
@@ -36,7 +44,7 @@ export default function CanvasMediaPlayer(props) {
   }, [])
 
   useEffect(() => {
-    if (!props.media_sources.length) {
+    if (!props.media_sources.length && retryAttempt < MAX_ATTEMPTS) {
       fetchSources()
     }
 
@@ -46,7 +54,7 @@ export default function CanvasMediaPlayer(props) {
     // The way this function is setup seems to break things when more exhaustive
     // deps are put in here.  We should investigate more in the future.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [retryTimerId])
+  }, [retryAttempt])
 
   useEffect(() => {
     const player = containerRef.current.querySelector('video')
@@ -71,13 +79,19 @@ export default function CanvasMediaPlayer(props) {
       // if there is a network error, just ignore and retry
     }
     if (resp && resp.media_sources && resp.media_sources.length) {
-      setMedia_sources(resp.media_sources)
+      setMedia_sources(resp.media_sources.sort(byBitrate))
     } else {
-      // if they're not present yet, try again in a little bit
-      await new Promise(resolve => {
-        const tid = setTimeout(resolve, 1000)
-        setRetryTimerId(tid)
-      })
+      // they're not present yet, try again in a little bit
+      let tid = 0
+      const nextAttempt = retryAttempt + 1
+      if (nextAttempt < MAX_ATTEMPTS) {
+        tid = setTimeout(() => {
+          setRetryAttempt(nextAttempt)
+        }, 2 ** retryAttempt * 1000)
+      } else {
+        setRetryAttempt(nextAttempt)
+      }
+      setRetryTimerId(tid)
     }
   }
 
@@ -141,15 +155,32 @@ export default function CanvasMediaPlayer(props) {
 
   const includeFullscreen = document.fullscreenEnabled && props.type === 'video'
 
-  return (
-    <div ref={containerRef}>
-      {media_sources.length ? (
-        <VideoPlayer sources={media_sources} controls={renderControls} />
-      ) : (
+  function renderNoPlayer() {
+    if (retryAttempt < MAX_ATTEMPTS) {
+      return (
         <LoadingIndicator
           translatedTitle={I18n.t('Loading')}
           size={props.type === 'audio' ? 'x-small' : 'large'}
         />
+      )
+    }
+    return (
+      <Alert variant="error" margin="small">
+        {I18n.t('Failed retrieving media source')}
+      </Alert>
+    )
+  }
+
+  return (
+    <div ref={containerRef}>
+      {media_sources.length ? (
+        <VideoPlayer
+          sources={media_sources}
+          tracks={props.media_tracks}
+          controls={renderControls}
+        />
+      ) : (
+        renderNoPlayer()
       )}
     </div>
   )
@@ -176,6 +207,7 @@ export function sizeMediaPlayer(player, type, playerContainer) {
 CanvasMediaPlayer.propTypes = {
   media_id: string.isRequired,
   media_sources: VideoPlayer.propTypes.sources,
+  media_tracks: VideoPlayer.propTypes.tracks,
   type: oneOf(['audio', 'video'])
 }
 

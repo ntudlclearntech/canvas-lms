@@ -41,11 +41,14 @@ class OutcomesController < ApplicationController
            :STATE_STANDARDS_URL => @context.is_a?(Course) ? nil : api_v1_global_redirect_path,
            :COMMON_CORE_GROUP_ID => common_core_group_id,
            :COMMON_CORE_GROUP_URL => common_core_group_url,
+           :RUBRICS_IN_COURSE_NAV => @domain_root_account.feature_enabled?(:rubrics_in_course_navigation),
            :PERMISSIONS => {
              :manage_outcomes => @context.grants_right?(@current_user, session, :manage_outcomes),
              :manage_rubrics => @context.grants_right?(@current_user, session, :manage_rubrics),
              :manage_courses => @context.grants_right?(@current_user, session, :manage_courses)
            })
+
+    set_tutorial_js_env
   end
 
   def show
@@ -267,7 +270,7 @@ class OutcomesController < ApplicationController
     @outcome = @context.created_learning_outcomes.find(params[:id])
 
     respond_to do |format|
-      if @outcome.update_attributes(learning_outcome_params)
+      if @outcome.update(learning_outcome_params)
         flash[:notice] = t :successful_outcome_update, "Outcome successfully updated!"
         format.html { redirect_to named_context_url(@context, :context_outcomes_url) }
         format.json { render :json => @outcome }

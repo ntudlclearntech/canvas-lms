@@ -899,31 +899,28 @@ ActiveRecord::Relation.class_eval do
       table = "#{table_name}_find_in_batches_temp_table_#{sql.hash.abs.to_s(36)}"
       table = table[-63..-1] if table.length > 63
 
-      connection.execute "CREATE TEMPORARY TABLE #{table} AS #{sql}"
+      rows = connection.update("CREATE TEMPORARY TABLE #{table} AS #{sql}")
+
       begin
-        index = "temp_primary_key"
-        case connection.adapter_name
-          when 'PostgreSQL'
-            begin
-              old_proc = connection.raw_connection.set_notice_processor {}
-              if pluck && pluck.any?{|p| p == primary_key.to_s}
-                connection.execute("CREATE INDEX #{connection.quote_local_table_name(index)} ON #{connection.quote_local_table_name(table)}(#{connection.quote_column_name(primary_key)})")
-                index = primary_key.to_s
-              else
-                pluck.unshift(index) if pluck
-                connection.execute "ALTER TABLE #{table}
-                                 ADD temp_primary_key SERIAL PRIMARY KEY"
-              end
-            ensure
-              connection.raw_connection.set_notice_processor(&old_proc) if old_proc
+        if (rows > batch_size)
+          index = "temp_primary_key"
+          begin
+            old_proc = connection.raw_connection.set_notice_processor {}
+            if pluck && pluck.any?{|p| p == primary_key.to_s}
+              connection.execute("CREATE INDEX #{connection.quote_local_table_name(index)} ON #{connection.quote_local_table_name(table)}(#{connection.quote_column_name(primary_key)})")
+              index = primary_key.to_s
+            else
+              pluck.unshift(index) if pluck
+              connection.execute "ALTER TABLE #{table}
+                               ADD temp_primary_key SERIAL PRIMARY KEY"
             end
-          else
-            raise "Temp tables not supported!"
+          ensure
+            connection.raw_connection.set_notice_processor(&old_proc) if old_proc
+          end
         end
 
         includes = includes_values + preload_values
         klass.unscoped do
-
           quoted_plucks = pluck && pluck.map do |column_name|
             # Rails 4.2 is going to try to quote them anyway but unfortunately not to the temp table, so just make it explicit
             column_names.include?(column_name) ?
@@ -931,15 +928,26 @@ ActiveRecord::Relation.class_eval do
           end
 
           if pluck
-            batch = klass.from(table).order(Arel.sql(index)).limit(batch_size).pluck(*quoted_plucks)
+            if index
+              batch = klass.from(table).order(Arel.sql(index)).limit(batch_size).pluck(*quoted_plucks)
+            else
+              batch = klass.from(table).pluck(*quoted_plucks)
+            end
           else
-            sql = "SELECT * FROM #{table} ORDER BY #{index} LIMIT #{batch_size}"
-            batch = klass.find_by_sql(sql)
+            if index
+              sql = "SELECT * FROM #{table} ORDER BY #{index} LIMIT #{batch_size}"
+              batch = klass.find_by_sql(sql)
+            else
+              batch = klass.find_by_sql("SELECT * FROM #{table}")
+            end
           end
-          while !batch.empty?
+
+          while rows > 0
+            rows -= batch.size
+
             ActiveRecord::Associations::Preloader.new.preload(batch, includes) if includes
             yield batch
-            break if batch.size < batch_size
+            break if rows <= 0 || batch.size < batch_size
 
             if pluck
               last_value = pluck.length == 1 ? batch.last : batch.last[pluck.index(index)]
@@ -1644,3 +1652,26 @@ ActiveRecord::Base.prepend(DefeatInspectionFilterMarshalling)
 ActiveRecord::Base.prepend(Canvas::CacheRegister::ActiveRecord::Base)
 ActiveRecord::Base.singleton_class.prepend(Canvas::CacheRegister::ActiveRecord::Base::ClassMethods)
 ActiveRecord::Relation.prepend(Canvas::CacheRegister::ActiveRecord::Relation)
+
+# see https://github.com/rails/rails/issues/37745
+module DontExplicitlyNameColumnsBecauseOfIgnores
+  def build_select(arel)
+    if select_values.any?
+      arel.project(*arel_columns(select_values.uniq))
+    elsif !from_clause.value && klass.ignored_columns.any? && !(klass.ignored_columns & klass.column_names).empty?
+      arel.project(*klass.column_names.map { |field| arel_attribute(field) })
+    else
+      arel.project(table[Arel.star])
+    end
+  end
+end
+ActiveRecord::Relation.prepend(DontExplicitlyNameColumnsBecauseOfIgnores)
+
+module PreserveShardAfterTransaction
+  def after_transaction_commit(&block)
+    shards = Shard.send(:active_shards)
+    shards[:delayed_jobs] = Shard.current.delayed_jobs_shard if ::ActiveRecord::Migration.open_migrations.positive?
+    super { Shard.activate(shards, &block) }
+  end
+end
+ActiveRecord::ConnectionAdapters::Transaction.prepend(PreserveShardAfterTransaction)

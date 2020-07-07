@@ -62,6 +62,7 @@ class AssignmentsController < ApplicationController
         set_js_assignment_data
         set_tutorial_js_env
         hash = {
+          COURSE_ID: @context.id.to_s,
           WEIGHT_FINAL_GRADES: @context.apply_group_weights?,
           POST_TO_SIS_DEFAULT: @context.account.sis_default_grade_export[:value],
           SIS_INTEGRATION_SETTINGS_ENABLED: sis_integration_settings_enabled,
@@ -90,47 +91,50 @@ class AssignmentsController < ApplicationController
     end
   end
 
+  def render_a2_student_view?
+    @assignment.a2_enabled? && !can_do(@context, @current_user, :read_as_admin) &&
+      (!params.key?(:assignments_2) || value_to_boolean(params[:assignments_2]))
+  end
+
+  def render_a2_student_view
+    submission = @assignment.submissions.find_by(user: @current_user)
+    graphql_submisison_id = nil
+    if submission
+      graphql_submisison_id = CanvasSchema.id_from_object(
+        submission,
+        CanvasSchema.resolve_type(submission, nil),
+        nil
+      )
+    end
+
+    assignment_prereqs =
+      if @locked && !@locked[:can_view]
+        context_module_sequence_items_by_asset_id(@assignment.id, "Assignment")
+      else
+        {}
+      end
+
+    js_env({
+      ASSIGNMENT_ID: params[:id],
+      COURSE_ID: @context.id,
+      PREREQS: assignment_prereqs,
+      SUBMISSION_ID: graphql_submisison_id
+    })
+    css_bundle :assignments_2_student
+    js_bundle :assignments_2_show_student
+    render html: '', layout: true
+  end
+
   def show
     Shackles.activate(:slave) do
       @assignment ||= @context.assignments.find(params[:id])
-
-      # TODO: Make sure we aren't stripping out any needed functionality that is
-      #       happening when this controller is hit without A2 enabled. Specifically
-      #       `ensure_assignment_group`, `context_module_action`, and `log_asset_access`.
-      if @assignment.a2_enabled? && (!params.key?(:assignments_2) || value_to_boolean(params[:assignments_2]))
-        unless can_do(@context, @current_user, :read_as_admin)
-          # TODO: Look at how the `@locked` stuff is used bellow, in A1 the pre-reqs are only being
-          #       calculated if needed, but we are doing it every time here.
-          assignment_prereqs = context_module_sequence_items_by_asset_id(@assignment.id, "Assignment")
-          submission = @assignment.submissions.find_by(user: @current_user)
-          graphql_submisison_id = nil
-          if submission
-            graphql_submisison_id = CanvasSchema.id_from_object(
-              submission,
-              CanvasSchema.resolve_type(submission, nil),
-              nil
-            )
-          end
-
-          js_env({
-            ASSIGNMENT_ID: params[:id],
-            COURSE_ID: @context.id,
-            PREREQS: assignment_prereqs,
-            SUBMISSION_ID: graphql_submisison_id
-          })
-          css_bundle :assignments_2_student
-          js_bundle :assignments_2_show_student
-          render html: '', layout: true
-          return
-        end
-      end
-
 
       if @assignment.deleted?
         flash[:notice] = t 'notices.assignment_delete', "This assignment has been deleted"
         redirect_to named_context_url(@context, :context_assignments_url)
         return
       end
+
       if authorized_action(@assignment, @current_user, :read)
         if @current_user && @assignment && !@assignment.visible_to_user?(@current_user)
           flash[:error] = t 'notices.assignment_not_available', "The assignment you requested is not available to your course section."
@@ -165,6 +169,12 @@ class AssignmentsController < ApplicationController
 
         log_asset_access(@assignment, "assignments", @assignment.assignment_group)
 
+        if render_a2_student_view?
+          rce_js_env
+          render_a2_student_view
+          return
+        end
+
         env = js_env({COURSE_ID: @context.id})
         env[:SETTINGS][:filter_speed_grader_by_student_group] = filter_speed_grader_by_student_group?
 
@@ -173,7 +183,7 @@ class AssignmentsController < ApplicationController
           eligible_categories = eligible_categories.where(id: @assignment.group_category) if @assignment.group_category.present?
           env[:group_categories] = group_categories_json(eligible_categories, @current_user, session, {include: ['groups']})
 
-          selected_group_id = @current_user.preferences.dig(:gradebook_settings, @context.id, 'filter_rows_by', 'student_group_id')
+          selected_group_id = @current_user.get_preference(:gradebook_settings, @context.global_id)&.dig('filter_rows_by', 'student_group_id')
           # If this is a group assignment and we had previously filtered by a
           # group that isn't part of this assignment's group set, behave as if
           # no group is selected.
@@ -252,7 +262,8 @@ class AssignmentsController < ApplicationController
           EXTERNAL_TOOLS: external_tools_json(@external_tools, @context, @current_user, session),
           PERMISSIONS: permissions,
           ROOT_OUTCOME_GROUP: outcome_group_json(@context.root_outcome_group, @current_user, session),
-          SIMILARITY_PLEDGE: @similarity_pledge
+          SIMILARITY_PLEDGE: @similarity_pledge,
+          CONFETTI_ENABLED: @domain_root_account&.feature_enabled?(:confetti_for_assignments),
         })
 
         set_master_course_js_env_data(@assignment, @context)
@@ -269,6 +280,7 @@ class AssignmentsController < ApplicationController
         # this will set @user_has_google_drive
         user_has_google_drive
 
+        @can_direct_share = @context.root_account.feature_enabled?(:direct_share) && @assignment.grants_right?(@current_user, session, :update)
         @assignment_menu_tools = external_tools_display_hashes(:assignment_menu)
 
         @mark_done = MarkDonePresenter.new(self, @context, params["module_item_id"], @current_user, @assignment)
@@ -283,7 +295,8 @@ class AssignmentsController < ApplicationController
 
         render locals: {
           eula_url: tool_eula_url,
-          show_moderation_link: @assignment.moderated_grading? && @assignment.permits_moderation?(@current_user)
+          show_moderation_link: @assignment.moderated_grading? && @assignment.permits_moderation?(@current_user),
+          show_confetti: params[:confetti] == "true" && @domain_root_account&.feature_enabled?(:confetti_for_assignments)
         }, stream: can_stream_template?
       end
     end
@@ -582,6 +595,7 @@ class AssignmentsController < ApplicationController
 
       post_to_sis = Assignment.sis_grade_export_enabled?(@context)
       hash = {
+        ROOT_OUTCOME_GROUP: outcome_group_json(@context.root_outcome_group, @current_user, session),
         ASSIGNMENT_GROUPS: json_for_assignment_groups,
         ASSIGNMENT_INDEX_URL: polymorphic_url([@context, :assignments]),
         ASSIGNMENT_OVERRIDES: assignment_overrides_json(
@@ -613,7 +627,7 @@ class AssignmentsController < ApplicationController
         VALID_DATE_RANGE: CourseDateRange.new(@context),
       }
 
-      add_crumb(@assignment.title, polymorphic_url([@context, @assignment]))
+      add_crumb(@assignment.title, polymorphic_url([@context, @assignment])) unless @assignment.new_record?
       hash[:POST_TO_SIS_DEFAULT] = @context.account.sis_default_grade_export[:value] if post_to_sis && @assignment.new_record?
       hash[:ASSIGNMENT] = assignment_json(@assignment, @current_user, session, override_dates: false)
       hash[:ASSIGNMENT][:has_submitted_submissions] = @assignment.has_submitted_submissions?

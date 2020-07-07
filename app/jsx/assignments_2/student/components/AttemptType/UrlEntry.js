@@ -16,8 +16,11 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+import {AlertManagerContext} from '../../../../shared/components/AlertManager'
+import {Assignment} from '../../graphqlData/Assignment'
 import {func} from 'prop-types'
 import I18n from 'i18n!assignments_2_url_entry'
+import MoreOptions from './MoreOptions'
 import React from 'react'
 import {Submission} from '../../graphqlData/Submission'
 
@@ -55,6 +58,7 @@ class UrlEntry extends React.Component {
     if (this.props.submission?.submissionDraft?.url) {
       this.updateInputState()
     }
+    window.addEventListener('message', this.handleLTIURLs)
   }
 
   updateInputState = () => {
@@ -69,11 +73,33 @@ class UrlEntry extends React.Component {
 
   componentWillUnmount() {
     window.removeEventListener('beforeunload', this.beforeunload)
+    window.removeEventListener('message', this.handleLTIURLs)
+  }
+
+  handleLTIURLs = async e => {
+    if (e.data.messageType === 'LtiDeepLinkingResponse') {
+      if (e.data.errormsg) {
+        this.context.setOnFailure(e.data.errormsg)
+        return
+      }
+      if (e.data.content_items.length) {
+        const url = e.data.content_items[0].url
+        this.createSubmissionDraft(url)
+      }
+    }
+
+    // Since LTI 1.0 handles its own message alerting we don't have to
+    if (e.data.messageType === 'A2ExternalContentReady') {
+      if (!e.data.errormsg && e.data.content_items.length) {
+        const url = e.data.content_items[0].url
+        this.createSubmissionDraft(url)
+      }
+    }
   }
 
   // Warn the user if they are attempting to leave the page with an unsubmitted url entry
   beforeunload = e => {
-    if (this.state.value) {
+    if (this.state.url && this.state.url !== this.props.submission?.submissionDraft?.url) {
       e.preventDefault()
       e.returnValue = true
     }
@@ -95,8 +121,8 @@ class UrlEntry extends React.Component {
     const url = e.target.value
 
     this.setState({
-      typingTimeout: setTimeout(() => {
-        this.createSubmissionDraft(url)
+      typingTimeout: setTimeout(async () => {
+        await this.createSubmissionDraft(url)
         this.props.updateEditingDraft(false)
       }, 1000), // set a timeout of 1 second
       url
@@ -116,14 +142,14 @@ class UrlEntry extends React.Component {
 
   renderURLInput = () => {
     const inputStyle = {
-      maxWidth: '600px',
+      maxWidth: '700px',
       marginLeft: 'auto',
       marginRight: 'auto'
     }
 
     return (
       <div style={inputStyle}>
-        <Flex justifyItems="center">
+        <Flex justifyItems="center" alignItems="start">
           <Flex.Item grow>
             <TextInput
               renderLabel={<ScreenReaderContent>{I18n.t('Website url input')}</ScreenReaderContent>}
@@ -147,13 +173,20 @@ class UrlEntry extends React.Component {
               </Button>
             )}
           </Flex.Item>
+          <Flex.Item margin="0 0 0 x-small">
+            <MoreOptions
+              assignmentID={this.props.assignment._id}
+              courseID={this.props.assignment.env.courseId}
+              userID={this.props.assignment.env.currentUser.id}
+            />
+          </Flex.Item>
         </Flex>
       </div>
     )
   }
 
   renderAttempt = () => (
-    <View as="div" borderWidth="small" data-testid="url-entry">
+    <View as="div" borderWidth="small" data-testid="url-entry" margin="0 0 medium 0">
       <Billboard
         heading={I18n.t('Website Url')}
         hero={<IconLinkLine color="brand" />}
@@ -173,7 +206,7 @@ class UrlEntry extends React.Component {
               margin="small"
               onClick={() => window.open(this.props.submission.url)}
             >
-              {this.props.submission.url}
+              <span data-testid="url-submission-text">{this.props.submission.url}</span>
             </Link>
           </Text>
         </Flex.Item>
@@ -191,9 +224,12 @@ class UrlEntry extends React.Component {
 }
 
 UrlEntry.propTypes = {
+  assignment: Assignment.shape,
   createSubmissionDraft: func,
   submission: Submission.shape,
   updateEditingDraft: func
 }
+
+UrlEntry.contextType = AlertManagerContext
 
 export default UrlEntry

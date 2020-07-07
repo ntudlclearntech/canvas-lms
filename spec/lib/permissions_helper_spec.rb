@@ -208,9 +208,9 @@ describe PermissionsHelper do
       root_account = Account.default
       sub_account1 = Account.create!(name: 'Sub-account 1', parent_account: root_account)
       sub_account2 = Account.create!(name: 'Sub-account 2', parent_account: sub_account1)
-      course_with_teacher(account: Account.default)
-      teacher_enrollment_account1 = course_with_teacher(user: @user, account: sub_account1)
-      course_with_teacher(user: @user, account: sub_account2)
+      course_with_teacher(account: Account.default, active_all: true)
+      teacher_enrollment_account1 = course_with_teacher(user: @user, account: sub_account1, active_all: true)
+      course_with_teacher(user: @user, account: sub_account2, active_all: true)
       RoleOverride.create!(permission: 'manage_calendar', enabled: false, role: @teacher_role, account: Account.default)
       RoleOverride.create!(permission: 'manage_calendar', enabled: true, role: @teacher_role, account: sub_account1)
       RoleOverride.create!(permission: 'manage_calendar', enabled: false, role: @teacher_role, account: sub_account2)
@@ -221,8 +221,8 @@ describe PermissionsHelper do
     it 'should handle locked overrides when there are sub-account overrides' do
       root_account = Account.default
       sub_account1 = Account.create!(name: 'Sub-account 1', parent_account: root_account)
-      course_with_teacher(account: Account.default)
-      course_with_teacher(user: @user, account: sub_account1)
+      course_with_teacher(account: Account.default, active_all: true)
+      course_with_teacher(user: @user, account: sub_account1, active_all: true)
       RoleOverride.create!(permission: 'manage_calendar', enabled: false, role: @teacher_role, locked: true, account: Account.default)
       RoleOverride.create!(permission: 'manage_calendar', enabled: true, role: @teacher_role, account: sub_account1)
       enrollments = @user.manageable_enrollments_by_permission(:manage_calendar)
@@ -232,8 +232,8 @@ describe PermissionsHelper do
     it 'should handle role overrides that do not apply to self' do
       root_account = Account.default
       sub_account1 = Account.create!(name: 'Sub-account 1', parent_account: root_account)
-      course_with_teacher(account: Account.default)
-      teacher_enrollment_account1 = course_with_teacher(user: @user, account: sub_account1)
+      course_with_teacher(account: Account.default, active_all: true)
+      teacher_enrollment_account1 = course_with_teacher(user: @user, account: sub_account1, active_all: true)
       RoleOverride.create!(permission: 'manage_calendar', enabled: true, role: @teacher_role,
         applies_to_self: false, applies_to_descendants: true, account: Account.default)
       enrollments = @user.manageable_enrollments_by_permission(:manage_calendar)
@@ -371,7 +371,7 @@ describe PermissionsHelper do
       concluded_teacher_term = Account.default.enrollment_terms.create!(:name => "concluded")
       concluded_teacher_term.set_overrides(Account.default, 'TeacherEnrollment' => { start_at: '2014-12-01', end_at: '2014-12-31' })
       concluded_teacher_enrollment = course_with_teacher(user: @user, active_all: true)
-      @course.update_attributes(:enrollment_term => concluded_teacher_term)
+      @course.update(:enrollment_term => concluded_teacher_term)
 
       expect(@user.precalculate_permissions_for_courses([@course], [:manage_calendar])).to eq({
         concluded_teacher_enrollment.global_course_id => {:manage_calendar => false, :read => true, :read_as_admin => true}
@@ -463,14 +463,14 @@ describe PermissionsHelper do
     it "should work with concluded-available permissions" do
       RoleOverride.create!(permission: 'moderate_forum', enabled: true, role: student_role, account: Account.default)
       concluded_student_enrollment = course_with_student(:active_all => true)
-      @course.update_attributes(:start_at => 1.month.ago, :conclude_at => 2.weeks.ago, :restrict_enrollments_to_course_dates => true)
+      @course.update(:start_at => 1.month.ago, :conclude_at => 2.weeks.ago, :restrict_enrollments_to_course_dates => true)
       expect(concluded_student_enrollment.reload).to be_completed
 
       concluded_teacher_term = Account.default.enrollment_terms.create!(:name => "concluded")
       concluded_teacher_term.set_overrides(Account.default, 'TeacherEnrollment' => { start_at: '2014-12-01', end_at: '2014-12-31' })
 
       concluded_teacher_enrollment = course_with_teacher(:user => @user, :active_all => true)
-      @course.update_attributes(:enrollment_term => concluded_teacher_term)
+      @course.update(:enrollment_term => concluded_teacher_term)
       expect(concluded_teacher_enrollment.reload).to be_completed
 
       active_student_enrollment = course_with_student(:user => @user, :active_all => true)

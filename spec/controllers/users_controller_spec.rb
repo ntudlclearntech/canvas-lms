@@ -79,6 +79,11 @@ describe UsersController do
       expect(tool.label_for(:user_navigation, :en)).to eq 'English Label'
     end
 
+    it "includes the correct context_asset_string" do
+      get :external_tool, params: {id:tool.id, user_id:user.id}
+      expect(controller.js_env[:context_asset_string]).to eq "user_#{user.id}"
+    end
+
     context 'using LTI 1.3 when specified' do
       include_context 'lti_1_3_spec_helper'
 
@@ -281,37 +286,6 @@ describe UsersController do
         # should sort the cross-shard course before the current shard one
         expect(json_parse.map{|c| c['label']}).to eq [@cs_course.name, @course.name]
       end
-    end
-  end
-
-  context "todo items" do
-
-    it "should respect grading permissions" do
-      course_with_student_logged_in(:course_name => "some-course", :active_all => 1)
-      @student = @user
-      course_with_teacher(course: @course, :active_all => 1)
-      @teacher = @user
-      course_with_ta(course: @course, :active_all => 1)
-      @ta = @user
-      assignment = @course.assignments.create!(grading_type: "points", points_possible: 10.0, submission_types: "online_text_entry", workflow_state: "published")
-      assignment.submit_homework(@student, submission_type: "online_text_entry", body: "<p>blah blah blah</p>")
-
-      user_session(@ta)
-
-      get "todo_items"
-      expect(response).to be_successful
-      response_json = json_parse(response.body)
-      expect(response_json.length).to eq 1
-
-      RoleOverride.create!(:context => @course.account,
-                           :permission => 'manage_grades',
-                           :role => ta_role,
-                           :enabled => false)
-
-      get "todo_items"
-      expect(response).to be_successful
-      response_json = json_parse(response.body)
-      expect(response_json.length).to eq 0
     end
   end
 
@@ -926,8 +900,9 @@ describe UsersController do
       before(:each) do
         unposted_assignment = assignment_model(
           course: course, due_at: Time.zone.now,
-          points_possible: 90, muted: true
+          points_possible: 90
         )
+        unposted_assignment.ensure_post_policy(post_manually: true)
         unposted_assignment.grade_student(student, grade: '100%', grader: @teacher)
 
         user_session(@teacher)
@@ -2139,7 +2114,33 @@ describe UsersController do
         groups = assigns[:js_env][:STUDENT_PLANNER_GROUPS]
         expect(groups.map {|g| g[:id]}).to eq [group.id]
       end
+    end
 
+    context "data preloading" do
+      before :each do
+        course_with_student_logged_in(active_all: true)
+        @course1 = @course
+        @course2 = course_with_student(active_all: true, user: @user).course
+        @current_user = @user
+      end
+
+      it "should load favorites" do
+        Account.default.enable_feature!(:unfavorite_course_from_dashboard)
+        @user.favorites.where(:context_type => 'Course', :context_id => @course1).first_or_create!
+        get 'user_dashboard'
+        course_data = assigns[:js_env][:STUDENT_PLANNER_COURSES]
+        expect(course_data.detect{|h| h[:id] == @course1.id}[:isFavorited]).to eq true
+        expect(course_data.detect{|h| h[:id] == @course2.id}[:isFavorited]).to eq false
+      end
+
+      it "should load nicknames" do
+        @user.set_preference(:course_nicknames, @course1.id, "some nickname or whatever")
+        expect_any_instance_of(User).to_not receive(:course_nickname)
+        get 'user_dashboard'
+        course_data = assigns[:js_env][:STUDENT_PLANNER_COURSES]
+        expect(course_data.detect{|h| h[:id] == @course1.id}[:shortName]).to eq "some nickname or whatever"
+        expect(course_data.detect{|h| h[:id] == @course2.id}[:shortName]).to eq @course2.name
+      end
     end
   end
 

@@ -16,6 +16,8 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+import {getByText, queryByText, findByText, waitForElementToBeRemoved} from '@testing-library/dom'
+import fetchMock from 'fetch-mock'
 import Backbone from 'Backbone'
 import Assignment from 'compiled/models/Assignment'
 import Submission from 'compiled/models/Submission'
@@ -124,6 +126,7 @@ const createView = function(model, options) {
   options = {
     canManage: true,
     canReadGrades: false,
+    courseId: '42',
     ...options
   }
   ENV.PERMISSIONS = {
@@ -139,6 +142,7 @@ const createView = function(model, options) {
   ENV.POST_TO_SIS = options.post_to_sis
   ENV.DUPLICATE_ENABLED = options.duplicateEnabled
   ENV.DIRECT_SHARE_ENABLED = options.directShareEnabled
+  ENV.COURSE_ID = options.courseId
 
   const view = new AssignmentListItemView({
     model,
@@ -170,6 +174,10 @@ const genSetup = function(model = assignment1()) {
 const genTeardown = function() {
   fakeENV.teardown()
   $('#fixtures').empty()
+  // cleanup instui dialogs and trays that render in a portal outside of #fixtures
+  $('[role="dialog"]')
+    .closest('span[dir="ltr"]')
+    .remove()
 }
 
 QUnit.module('AssignmentListItemViewSpec', {
@@ -292,12 +300,23 @@ test('does not initialize sis toggle if sis enabled, can manage and is unpublish
   ok(!view.sisButtonView)
 })
 
-test('shows sharing and copying menu items if DIRECT_SHARE_ENABLED', function() {
-  const view = createView(this.model, {
-    directShareEnabled: true
-  })
-  ok(view.$('.send_assignment_to').length)
-  ok(view.$('.copy_assignment_to').length)
+QUnit.skip('Fix in LA-383 - opens and closes the direct share send to user dialog', async function() {
+  const view = createView(this.model, {directShareEnabled: true})
+  $('#fixtures').append('<div id="send-to-mount-point" />')
+  view.$('.send_assignment_to').click()
+  ok(await findByText(document.body, 'Send to:'))
+  getByText(document.body, 'Close').click()
+  await waitForElementToBeRemoved(() => queryByText(document.body, 'Send to:'))
+})
+
+QUnit.skip('Fix in LA-354 - opens and closes the direct share copy to course tray', async function() {
+  const view = createView(this.model, {directShareEnabled: true})
+  $('#fixtures').append('<div id="copy-to-mount-point" />')
+  view.$('.copy_assignment_to').click()
+  fetchMock.mock('/users/self/manageable_courses', [])
+  ok(await findByText(document.body, 'Select a Course'))
+  getByText(document.body, 'Close').click()
+  await waitForElementToBeRemoved(() => queryByText(document.body, 'Select a Course'))
 })
 
 test('does not show sharing and copying menu items if not DIRECT_SHARE_ENABLED', function() {
@@ -1432,4 +1451,62 @@ test('renders assignment icon for other assignments', () => {
   })
   const view = createView(model)
   equal(view.$('i.icon-assignment').length, 1)
+})
+
+QUnit.module('Assignment#quizzesRespondusEnabled', hooks => {
+  hooks.beforeEach(() => {
+    fakeENV.setup({current_user_roles: []})
+  })
+
+  hooks.afterEach(() => {
+    fakeENV.teardown()
+  })
+
+  test('returns false if the assignment is not RLDB enabled', () => {
+    fakeENV.setup({current_user_roles: ['student']})
+    const model = buildAssignment({
+      id: 1,
+      require_lockdown_browser: false,
+      is_quiz_lti_assignment: true
+    })
+    const view = createView(model)
+    const json = view.toJSON()
+    equal(json.quizzesRespondusEnabled, false)
+  })
+
+  test('returns false if the assignment is not a N.Q assignment', () => {
+    fakeENV.setup({current_user_roles: ['student']})
+    const model = buildAssignment({
+      id: 1,
+      require_lockdown_browser: true,
+      is_quiz_lti_assignment: false
+    })
+    const view = createView(model)
+    const json = view.toJSON()
+    equal(json.quizzesRespondusEnabled, false)
+  })
+
+  test('returns false if the user is not a student', () => {
+    fakeENV.setup({current_user_roles: ['teacher']})
+    const model = buildAssignment({
+      id: 1,
+      require_lockdown_browser: true,
+      is_quiz_lti_assignment: true
+    })
+    const view = createView(model)
+    const json = view.toJSON()
+    equal(json.quizzesRespondusEnabled, false)
+  })
+
+  test('returns true if the assignment is a RLDB enabled N.Q', () => {
+    fakeENV.setup({current_user_roles: ['student']})
+    const model = buildAssignment({
+      id: 1,
+      require_lockdown_browser: true,
+      is_quiz_lti_assignment: true
+    })
+    const view = createView(model)
+    const json = view.toJSON()
+    equal(json.quizzesRespondusEnabled, true)
+  })
 })

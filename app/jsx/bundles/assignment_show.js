@@ -29,12 +29,13 @@ import SpeedgraderLinkView from 'compiled/views/assignments/SpeedgraderLinkView'
 import vddTooltip from 'compiled/util/vddTooltip'
 import MarkAsDone from 'compiled/util/markAsDone'
 import CyoeStats from '../conditional_release_stats/index'
-import 'compiled/jquery/ModuleSequenceFooter'
 import 'jquery.instructure_forms'
 import LockManager from '../blueprint_courses/apps/LockManager'
 import AssignmentExternalTools from 'jsx/assignments/AssignmentExternalTools'
 import StudentGroupFilter from '../shared/StudentGroupFilter'
 import SpeedGraderLink from '../shared/SpeedGraderLink'
+import DirectShareUserModal from 'jsx/shared/direct_share/DirectShareUserModal'
+import DirectShareCourseTray from 'jsx/shared/direct_share/DirectShareCourseTray'
 
 const lockManager = new LockManager()
 lockManager.init({itemType: 'assignment', page: 'show'})
@@ -91,6 +92,7 @@ function renderStudentGroupFilter() {
   }
 }
 
+const promiseToGetModuleSequenceFooter = import('compiled/jquery/ModuleSequenceFooter')
 $(() => {
   const $el = $('#assignment_publish_button')
   if ($el.length > 0) {
@@ -111,11 +113,13 @@ $(() => {
   }
 
   // Add module sequence footer
-  $('#sequence_footer').moduleSequenceFooter({
-    courseID: ENV.COURSE_ID,
-    assetType: 'Assignment',
-    assetID: ENV.ASSIGNMENT_ID,
-    location
+  promiseToGetModuleSequenceFooter.then(() => {
+    $('#sequence_footer').moduleSequenceFooter({
+      courseID: ENV.COURSE_ID,
+      assetType: 'Assignment',
+      assetID: ENV.ASSIGNMENT_ID,
+      location: window.location
+    })
   })
 
   return vddTooltip()
@@ -126,6 +130,43 @@ $(() =>
     return MarkAsDone.toggle(this)
   })
 )
+
+function openSendTo(event, open = true) {
+  if (event) event.preventDefault()
+  ReactDOM.render(
+    <DirectShareUserModal
+      open={open}
+      sourceCourseId={ENV.COURSE_ID}
+      contentShare={{content_type: 'assignment', content_id: ENV.ASSIGNMENT_ID}}
+      onDismiss={() => {
+        openSendTo(null, false)
+        $('.al-trigger').focus()
+      }}
+    />,
+    document.getElementById('direct-share-mount-point')
+  )
+}
+
+function openCopyTo(event, open = true) {
+  if (event) event.preventDefault()
+  ReactDOM.render(
+    <DirectShareCourseTray
+      open={open}
+      sourceCourseId={ENV.COURSE_ID}
+      contentSelection={{assignments: [ENV.ASSIGNMENT_ID]}}
+      onDismiss={() => {
+        openCopyTo(null, false)
+        $('.al-trigger').focus()
+      }}
+    />,
+    document.getElementById('direct-share-mount-point')
+  )
+}
+
+$(() => {
+  $('.direct-share-send-to-menu-item').click(openSendTo)
+  $('.direct-share-copy-to-menu-item').click(openCopyTo)
+})
 
 // -- This is all for the _grade_assignment sidebar partial
 $(() => {

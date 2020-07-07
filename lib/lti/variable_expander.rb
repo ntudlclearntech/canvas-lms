@@ -518,6 +518,15 @@ module Lti
                        -> { @context.start_at },
                        COURSE_GUARD
 
+    # returns the current course end date.
+    # @example
+    #   ```
+    #   2018-05-01 00:00:00 -0700
+    #   ```
+    register_expansion 'Canvas.course.endAt', [],
+                       -> { @context.end_at },
+                       COURSE_GUARD
+
     # returns the current course workflow state. Workflow states of "claimed" or "created"
     # indicate an unpublished course.
     # @example
@@ -729,6 +738,15 @@ module Lti
                        USER_GUARD,
                        default_name: 'lis_person_contact_email_primary'
 
+    # Returns pronouns for the current user
+    # @example
+    #   ```
+    #   "She/Her"
+    #   ```
+    register_expansion 'com.instructure.Person.pronouns', [],
+                       -> { @current_user.pronouns },
+                       USER_GUARD,
+                       default_name: 'com_instructure_person_pronouns'
 
     # Returns the institution assigned email of the launching user.
     # @example
@@ -1293,6 +1311,76 @@ module Lti
     register_expansion 'Canvas.file.usageRights.copyrightText', [],
                        -> {@attachment.usage_rights.legal_copyright},
                        USAGE_RIGHTS_GUARD
+
+    # Returns the types of resources that can be imported to the current page, forwarded from the request.
+    # Value is a comma-separated array of one or more values of: ["assignment", "assignment_group", "audio",
+    # "discussion_topic", "document", "image", "module", "quiz", "page", "video"]
+    #
+    # @example
+    #   ```
+    #   "page"
+    #   "module"
+    #   "assignment,discussion_topic,page,quiz,module"
+    #   ```
+    register_expansion 'com.instructure.Course.accept_canvas_resource_types', [],
+                       -> {
+                         val = @request.parameters['com_instructure_course_accept_canvas_resource_types']
+                         val.is_a?(Array) ? val.join(",") : val
+                       },
+                       default_name: 'com_instructure_course_accept_canvas_resource_types'
+
+    # Returns the target resource type for the current page, forwarded from the request.
+    # Value is the largest logical unit of the page. Possible values are: ["assignment", "assignment_group",
+    # "audio", "discussion_topic", "document", "image", "module", "quiz", "page", "video"]
+    #   on Pages Index -> 'page'
+    #   on Modules -> 'module'
+    #   and so on.
+    #
+    # @example
+    #   ```
+    #   page
+    #   ```
+    register_expansion 'com.instructure.Course.canvas_resource_type', [],
+                       -> { @request.parameters['com_instructure_course_canvas_resource_type'] },
+                       default_name: 'com_instructure_course_canvas_resource_type'
+
+    # Returns whether a content can be imported into a specific group on the page, forwarded from the request.
+    # True for Modules page and Assignment Groups page. False for other content index pages.
+    #
+    # @example
+    #   ```
+    #   true
+    #   ```
+    register_expansion 'com.instructure.Course.allow_canvas_resource_selection', [],
+                       -> { @request.parameters['com_instructure_course_allow_canvas_resource_selection'] },
+                       default_name: 'com_instructure_course_allow_canvas_resource_selection'
+
+    # Returns a JSON-encoded list of content groups which can be selected, providing ID and name of each group,
+    # forwarded from the request.
+    # Empty value if com.instructure.Course.allow_canvas_resource_selection is false.
+    #
+    # @example
+    #   ```
+    #   [{"id":"3","name":"First Module"},{"id":"5","name":"Second Module"}]
+    #   ```
+    register_expansion 'com.instructure.Course.available_canvas_resources', [],
+                       -> {
+                         val = @request.parameters['com_instructure_course_available_canvas_resources']
+                         val = val.values if val.is_a?(Hash)
+                         if val&.count == 1 && (course_id = val.first["course_id"])
+                           # replace with the data here because it's too much to pass in via the launch url
+                           case val.first["type"]
+                           when "module"
+                             val = Course.find(course_id).modules_visible_to(@current_user).pluck(:id, :name).
+                               map{|id, name| {"id" => id, "name" => name} }
+                           when "assignment_group"
+                             val = Course.find(course_id).assignment_groups.active.pluck(:id, :name).
+                               map{|id, name| {"id" => id, "name" => name} }
+                           end
+                         end
+                         val&.to_json
+                       },
+                       default_name: 'com_instructure_course_available_canvas_resources'
 
     private
 

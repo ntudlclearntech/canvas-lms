@@ -42,7 +42,8 @@ class ContextModulesController < ApplicationController
     def modules_cache_key
       @modules_cache_key ||= begin
         visible_assignments = @current_user.try(:assignment_and_quiz_visibilities, @context)
-        cache_key_items = [@context.cache_key, @can_edit, @is_student, @can_view_unpublished, 'all_context_modules_draft_10', collection_cache_key(@modules), Time.zone, Digest::MD5.hexdigest(visible_assignments.to_s)]
+        cache_key_items = [@context.cache_key, @can_edit, @is_student, @can_view_unpublished, 'all_context_modules_draft_10',
+          collection_cache_key(@modules), Time.zone, Digest::MD5.hexdigest([visible_assignments, @section_visibility].join("/"))]
         cache_key = cache_key_items.join('/')
         cache_key = add_menu_tools_to_cache_key(cache_key)
         cache_key = add_mastery_paths_to_cache_key(cache_key, @context, @modules, @current_user)
@@ -53,6 +54,7 @@ class ContextModulesController < ApplicationController
       @modules = @context.modules_visible_to(@current_user)
       @modules.each(&:check_for_stale_cache_after_unlocking!)
       @collapsed_modules = ContextModuleProgression.for_user(@current_user).for_modules(@modules).pluck(:context_module_id, :collapsed).select{|cm_id, collapsed| !!collapsed }.map(&:first)
+      @section_visibility = @context.course_section_visibility(@current_user)
 
       @can_edit = can_do(@context, @current_user, :manage_content)
       @can_view_grades = can_do(@context, @current_user, :view_all_grades)
@@ -69,9 +71,15 @@ class ContextModulesController < ApplicationController
 
       @menu_tools = {}
       placements = [:assignment_menu, :discussion_topic_menu, :file_menu, :module_menu, :quiz_menu, :wiki_page_menu]
-      tools = ContextExternalTool.all_tools_for(@context, placements: placements,
-                                        :root_account => @domain_root_account, :current_user => @current_user).to_a
+      tools = Shackles.activate(:slave) do
+        ContextExternalTool.all_tools_for(@context, placements: placements,
+          :root_account => @domain_root_account, :current_user => @current_user).to_a
+      end
       placements.select { |p| @menu_tools[p] = tools.select{|t| t.has_placement? p} }
+
+      favorites_enabled = @domain_root_account&.feature_enabled?(:commons_favorites)
+      @module_index_tools = favorites_enabled ? external_tools_display_hashes(:module_index_menu) : []
+      @module_group_tools = favorites_enabled ? external_tools_display_hashes(:module_group_menu) : []
 
       module_file_details = load_module_file_details if @context.grants_right?(@current_user, session, :manage_content)
       js_env :course_id => @context.id,
@@ -82,7 +90,9 @@ class ContextModulesController < ApplicationController
         :MODULE_FILE_PERMISSIONS => {
            usage_rights_required: @context.usage_rights_required?,
            manage_files: @context.grants_right?(@current_user, session, :manage_files)
-        }
+        },
+        :MODULE_TRAY_TOOLS => {:module_index_menu => @module_index_tools, :module_group_menu => @module_group_tools},
+        :DEFAULT_POST_TO_SIS => @context.account.sis_default_grade_export[:value] && !AssignmentUtil.due_date_required_for_account?(@context.account)
 
       is_master_course = MasterCourses::MasterTemplate.is_master_course?(@context)
       is_child_course = MasterCourses::ChildSubscription.is_child_course?(@context)
@@ -113,6 +123,10 @@ class ContextModulesController < ApplicationController
       end
       add_body_class('padless-content')
       js_bundle :context_modules
+      js_env(
+        CONTEXT_MODULE_ASSIGNMENT_INFO_URL: context_url(@context, :context_context_modules_assignment_info_url),
+        PROCESS_MULTIPLE_CONTENT_ITEMS: Account.site_admin.feature_enabled?(:process_multiple_content_items_modules_index)
+      )
       css_bundle :content_next, :context_modules2
       render stream: can_stream_template?
     end
@@ -190,7 +204,8 @@ class ContextModulesController < ApplicationController
     type_controllers = {
       assignment: 'assignments',
       quiz: 'quizzes/quizzes',
-      discussion_topic: 'discussion_topics'
+      discussion_topic: 'discussion_topics',
+      :'lti-quiz' => 'assignments'
     }
 
     if @tag
@@ -639,7 +654,7 @@ class ContextModulesController < ApplicationController
       elsif params[:unpublish]
         @module.unpublish
       end
-      if @module.update_attributes(context_module_params)
+      if @module.update(context_module_params)
         json = @module.as_json(:include => :content_tags, :methods => :workflow_state, :permissions => {:user => @current_user, :session => session})
         json['context_module']['relock_warning'] = true if @module.relock_warning?
         render :json => json

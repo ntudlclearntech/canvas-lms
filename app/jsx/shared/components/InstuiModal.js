@@ -19,7 +19,7 @@
 import React from 'react'
 import {string} from 'prop-types'
 import {CloseButton} from '@instructure/ui-buttons'
-import {Heading} from '@instructure/ui-elements'
+import {Heading} from '@instructure/ui-heading'
 import I18n from 'i18n!modal'
 import {Modal} from '@instructure/ui-overlays'
 
@@ -73,7 +73,12 @@ export default function CanvasInstUIModal({
       onDismiss={onDismiss}
     >
       <Modal.Header>
-        <CloseButton placement="end" offset="medium" onClick={onDismiss}>
+        <CloseButton
+          data-testid="instui-modal-close"
+          placement="end"
+          offset="medium"
+          onClick={onDismiss}
+        >
           {closeButtonLabel || I18n.t('Close')}
         </CloseButton>
         <Heading>{label}</Heading>

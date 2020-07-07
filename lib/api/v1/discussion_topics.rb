@@ -65,7 +65,7 @@ module Api::V1::DiscussionTopics
       root_topics = get_root_topic_data(topics, opts[:root_topic_fields])
     end
     if opts[:include_sections_user_count] && context
-      opts[:context_user_count] = context.enrollments.not_fake.active_or_pending_by_date_ignoring_access.count
+      opts[:context_user_count] = Shackles.activate(:slave) { context.enrollments.not_fake.active_or_pending_by_date_ignoring_access.count }
     end
     ActiveRecord::Associations::Preloader.new.preload(topics, [:user, :attachment, :root_topic, :context])
     topics.inject([]) do |result, topic|
@@ -122,7 +122,7 @@ module Api::V1::DiscussionTopics
     end
 
     if opts[:include_sections_user_count] && !topic.is_section_specific
-      json[:user_count] = opts[:context_user_count] || context.enrollments.not_fake.active_or_pending_by_date_ignoring_access.count
+      json[:user_count] = opts[:context_user_count] || Shackles.activate(:slave) { context.enrollments.not_fake.active_or_pending_by_date_ignoring_access.count }
     end
 
     if opts[:include_sections] && topic.is_section_specific
@@ -145,8 +145,8 @@ module Api::V1::DiscussionTopics
       end
     end
 
-    if @domain_root_account.settings[:can_add_pronouns] && Account.site_admin.feature_enabled?(:account_pronouns)
-      json[:user_pronoun] = user.account_pronoun&.display_pronoun
+    if user&.pronouns
+      json[:user_pronouns] = user.pronouns
     end
 
     json
@@ -173,14 +173,18 @@ module Api::V1::DiscussionTopics
     fields = { require_initial_post: topic.require_initial_post?,
       user_can_see_posts: topic.user_can_see_posts?(user), podcast_url: url,
       read_state: topic.read_state(user), unread_count: topic.unread_count(user, opts: opts),
-      subscribed: topic.subscribed?(user, opts: opts), topic_children: topic.child_topics.pluck(:id),
-      group_topic_children: topic.child_topics.pluck(:id, :context_id).map{|id, group_id| {id: id, group_id: group_id}},
+      subscribed: topic.subscribed?(user, opts: opts),
       attachments: attachments, published: topic.published?,
       can_unpublish: opts[:user_can_moderate] ? topic.can_unpublish?(opts) : false,
       locked: topic.locked?, can_lock: topic.can_lock?, comments_disabled: topic.comments_disabled?,
       author: user_display_json(topic.user, topic.context),
       html_url: html_url, url: html_url, pinned: !!topic.pinned,
       group_category_id: topic.group_category_id, can_group: topic.can_group?(opts) }
+
+    child_topic_data = topic.root_topic? ? topic.child_topics.active.pluck(:id, :context_id) : []
+    fields[:topic_children] = child_topic_data.map(&:first)
+    fields[:group_topic_children] = child_topic_data.map{|id, group_id| {id: id, group_id: group_id}}
+
     fields.merge!({context_code: topic.context_code}) if opts[:include_context_code]
 
     locked_json(fields, topic, user, 'topic', check_policies: true, deep_check_if_needed: true)

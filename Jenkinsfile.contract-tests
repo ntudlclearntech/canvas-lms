@@ -20,29 +20,33 @@
 
 pipeline {
   agent { label 'canvas-docker' }
-  options {
-    ansiColor('xterm')
-  }
+  options { ansiColor('xterm') }
 
   environment {
     COMPOSE_FILE = 'docker-compose.new-jenkins.yml'
-    // 'refs/changes/63/181863/8' -> '63.181863.8'
-    NAME = "${env.GERRIT_REFSPEC}".minus('refs/changes/').replaceAll('/','.')
-    PATCHSET_TAG = "$DOCKER_REGISTRY_FQDN/jenkins/canvas-lms:$NAME"
     PACT_BROKER = credentials('PACT_BROKER')
   }
 
   stages {
+    stage ('Pre-Cleanup') {
+      steps {
+        timeout(time: 2) {
+          sh 'build/new-jenkins/docker-cleanup.sh'
+        }
+      }
+    }
+
     stage('Start Docker Images') {
       steps {
         timeout(time: 10) {
-          sh 'docker-compose build && docker-compose up -d'
+          sh 'build/new-jenkins/docker-compose-pull.sh'
+          sh 'build/new-jenkins/docker-compose-build-up.sh'
           sh 'build/new-jenkins/docker-compose-create-migrate-database.sh'
         }
       }
     }
 
-    stage ('Contract Tests') {
+    stage ('API Contract Tests') {
       steps {
         timeout(time: 10) {
           sh """
@@ -72,8 +76,27 @@ pipeline {
   }
 
   post {
+    failure {
+      sh 'mkdir -vp spec_results'
+      sh 'docker cp $(docker-compose ps -q web):/usr/src/app/log/spec_failures/. ./spec_results/'
+      script {
+        dir('spec_results') {
+          htmlFiles = findFiles glob: '**/index.html'
+        }
+
+        publishHTML(target: [
+          allowMissing: false,
+          alwaysLinkToLastBuild: false,
+          keepAll: true,
+          reportDir: "spec_results",
+          reportFiles: htmlFiles.join(','),
+          reportName: 'Test Results'
+        ])
+      }
+    }
     cleanup {
-      sh 'build/new-jenkins/docker-cleanup.sh'
+      sh 'rm -vrf spec_results/'
+      sh 'build/new-jenkins/docker-cleanup.sh --allow-failure'
     }
   }
 }
