@@ -1,0 +1,3 @@
+[submodule "gems/plugins/analytics"]
+	path = gems/plugins/analytics
+	url = https://github.com/instructure/analytics.git
