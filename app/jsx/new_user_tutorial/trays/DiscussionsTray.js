@@ -18,33 +18,27 @@
 import React from 'react'
 import I18n from 'i18n!new_user_tutorial'
 import TutorialTrayContent from './TutorialTrayContent'
-import UserGuideContent from './UserGuideContent'
 
 const DiscussionsTray = () => (
   <TutorialTrayContent
     heading={I18n.t('Discussions')}
-    subheading={I18n.t('Facilitate course interaction')}
-    image="/images/tutorial-tray-images/discussions.svg"
-  >
-    <Text as="p">
-      {I18n.t(`The discussion function allows instructors, teaching assistants, and students
+    subheading={I18n.t(`The discussion function allows instructors, teaching assistants, and students
           to interact and discuss with each other. Students can post questions and share their
           reflections on it. Besides, instructors and teaching assistants can set up different themes
           and require students to comment on as graded assignments. Moreover, outstanding works of
           students can be uploaded to discussion posts for the whole class to appreciate.`)}
-    </Text>
-    <UserGuideContent
-      items={[
-        {
-          title: I18n.t('Tutorial Video: Discussion'),
-          url: I18n.t(
-            'tutorial_video_discussion_url',
-            'https://www.youtube.com/watch?v=MjSi2tkkMxk&amp;list=PLKjqFgaBNOo8fv5ZWEIUSlSqzXDVC2SV_&amp;index=14'
-          )
-        }
-      ]}
-    />
-  </TutorialTrayContent>
+    image="/images/tutorial-tray-images/discussions.svg"
+    links={[
+      {
+        label: I18n.t('Tutorial Video: Discussion'),
+        href: I18n.t(
+          'tutorial_video_discussion_url',
+          'https://www.youtube.com/watch?v=MjSi2tkkMxk&amp;list=PLKjqFgaBNOo8fv5ZWEIUSlSqzXDVC2SV_&amp;index=14'
+        )
+      }
+    ]}
+  >
+  </TutorialTrayContent >
 )
 
 export default DiscussionsTray

@@ -19,48 +19,42 @@
 import React from 'react'
 import I18n from 'i18n!new_user_tutorial'
 import TutorialTrayContent from './TutorialTrayContent'
-import UserGuideContent from './UserGuideContent'
 
 const GradesTray = () => (
   <TutorialTrayContent
     heading={I18n.t('Grades')}
-    subheading={I18n.t("Track students' assignment submission status and grades")}
-    image="/images/tutorial-tray-images/grades.svg"
-  >
-    <Text as="p">
-      {I18n.t(`On this page, you can track the assignment submission status and
+    subheading={I18n.t(`On this page, you can track the assignment submission status and
           student's grades. You can also export a CSV file and add new graded
           items such as midterms based on the file format. After you import the file
           to the grade book, it will automatically create a column for the new
           graded item that you add on the file. If you want to change the points,
           groups, and weights of assignments, you need to set them on the
           assignment page.`)}
-    </Text>
-    <UserGuideContent
-      items={[
-        {
-          title: I18n.t('How to manage scores'),
-          url: I18n.t(
-            'how_to_nanage_scores_url',
-            'https://drive.google.com/file/d/19TSuAISnxKnP90Bs2l-007X6p47Mprpm/view?usp=sharing'
-          )
-        },
-        {
-          title: I18n.t('Tutorial Video: Manage scores'),
-          url: I18n.t(
-            'tutorial_video_manage_scores_url',
-            'https://www.youtube.com/watch?v=cg12SK8NISk&list=PLKjqFgaBNOo8fv5ZWEIUSlSqzXDVC2SV_&index=13'
-          )
-        },
-        {
-          title: I18n.t('How do I import and export grades'),
-          url: I18n.t(
-            'how_do_i_import_and_export_grades_url',
-            'https://docs.google.com/document/d/1_pgN6BAVIK4RmJzVy6DUs5HV8e25zTiLoc287QnMgzk/edit#heading=h.hhzohz9fudr'
-          )
-        }
-      ]}
-    />
+    image="/images/tutorial-tray-images/grades.svg"
+    links={[
+      {
+        label: I18n.t('How to manage scores'),
+        href: I18n.t(
+          'how_to_nanage_scores_url',
+          'https://drive.google.com/file/d/19TSuAISnxKnP90Bs2l-007X6p47Mprpm/view?usp=sharing'
+        )
+      },
+      {
+        label: I18n.t('Tutorial Video: Manage scores'),
+        href: I18n.t(
+          'tutorial_video_manage_scores_url',
+          'https://www.youtube.com/watch?v=cg12SK8NISk&list=PLKjqFgaBNOo8fv5ZWEIUSlSqzXDVC2SV_&index=13'
+        )
+      },
+      {
+        label: I18n.t('How do I import and export grades'),
+        href: I18n.t(
+          'how_do_i_import_and_export_grades_url',
+          'https://docs.google.com/document/d/1_pgN6BAVIK4RmJzVy6DUs5HV8e25zTiLoc287QnMgzk/edit#heading=h.hhzohz9fudr'
+        )
+      }
+    ]}
+  >
   </TutorialTrayContent>
 )
 
