@@ -20,59 +20,10 @@
 
 // create grid for main tray layout
 .NewUserTutorialTray {
-  width: 18.75rem;
-  box-sizing: border-box;
-  padding: $ic-sp*4 $ic-sp*1.5 $ic-sp;
-
-  @include breakpoint(tablet) {
-    width: 21rem;
-    padding-#{direction(left)}: $ic-sp*2;
-    padding-#{direction(right)}: $ic-sp*2;
-  }
-}
-
-.NewUserTutorialTray__Subheading {
-  margin: direction-sides(($ic-sp / 2) 0 ($ic-sp * 1.5) 0);
-}
-
-.NewUserTutorialTray__ButtonContainer {
-  position: absolute;
-  #{direction(right)}: $ic-sp * 2;
-  top: $ic-sp + 2;
-}
-
-.NewUserTutorialTray__EndTutorialContainer {
-  display: none;
-  position: absolute;
-  bottom: $ic-sp;
-  #{direction(right)}: $ic-sp;
-}
-
-@keyframes trayImage {
-  to {
-    opacity: 1;
-  }
-}
-
-.NewUserTutorialTray__ImageContainer {
-  margin-top: $ic-sp * 2;
-  opacity: 0;
-  animation-name: trayImage;
-  animation-duration: 1s;
-  animation-delay: 0.3s;
-  animation-fill-mode: forwards;
-}
-
-.NewUserTutorialTray__ImageContainer svg  {
-  fill: $ic-border-light;
-  display: block;
-  margin: 0 auto;
-  width: 10rem;
-  height: auto;
-}
-
-.Modules .NewUserTutorialTray__ImageContainer svg  {
-  width: 5.25rem;
+  min-height: 100vh;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  position: relative;
 }
 
 // create grid so we can center panda images

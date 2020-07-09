@@ -19,31 +19,25 @@
 import React from 'react'
 import I18n from 'i18n!new_user_tutorial'
 import TutorialTrayContent from './TutorialTrayContent'
-import UserGuideContent from './UserGuideContent'
 
 const FilesTray = () => (
   <TutorialTrayContent
     heading={I18n.t('Files')}
-    subheading={I18n.t('Upload Images, and Documents for students to download')}
-    image="/images/tutorial-tray-images/files.svg"
-  >
-    <Text as="p">
-      {I18n.t(`Instructors can upload handouts, supplementary materials, and images to
+    subheading={I18n.t(`Instructors can upload handouts, supplementary materials, and images to
           the Files. It is highly recommended that instructors use the folders to
           distinguish between different file types or weekly schedule. Students can
           easily find and download the files they need in different folders.`)}
-    </Text>
-    <UserGuideContent
-      items={[
-        {
-          title: I18n.t('Tutorial Video: Files'),
-          url: I18n.t(
-            'tutorial_video_files_url',
-            'https://www.youtube.com/watch?v=o7R6n_Yt17A&list=PLKjqFgaBNOo8fv5ZWEIUSlSqzXDVC2SV_&index=9'
-          )
-        }
-      ]}
-    />
+    image="/images/tutorial-tray-images/files.svg"
+    links={[
+      {
+        label: I18n.t('Tutorial Video: Files'),
+        href: I18n.t(
+          'tutorial_video_files_url',
+          'https://www.youtube.com/watch?v=o7R6n_Yt17A&list=PLKjqFgaBNOo8fv5ZWEIUSlSqzXDVC2SV_&index=9'
+        )
+      }
+    ]}
+  >
   </TutorialTrayContent>
 )
 

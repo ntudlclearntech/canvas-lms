@@ -19,32 +19,27 @@
 import React from 'react'
 import I18n from 'i18n!new_user_tutorial'
 import TutorialTrayContent from './TutorialTrayContent'
-import UserGuideContent from './UserGuideContent'
 
 const PagesTray = () => (
   <TutorialTrayContent
     heading={I18n.t('Pages')}
-    subheading={I18n.t('Create and compile educational resources')}
-    image="/images/tutorial-tray-images/page.svg"
-  >
-    <Text as="p">
-      {I18n.t(`Teachers and TAs can build Pages containing content and educational
+    subheading={I18n.t(`Teachers and TAs can build Pages containing content and educational
           resources that help students learn but aren't assignments. Include text,
           multimedia, and links to files and external resources. Students can also
           create content on Pages if they were given the authority by teachers or
           teaching assistants.`)}
-    </Text>
-    <UserGuideContent
-      items={[
-        {
-          title: I18n.t('How do I edit Pages'),
-          url: I18n.t(
-            'how_do_i_edit_pages_url',
-            'https://docs.google.com/document/d/1_pgN6BAVIK4RmJzVy6DUs5HV8e25zTiLoc287QnMgzk/edit#heading=h.kq9xgh62ph56'
-          )
-        }
-      ]}
-    />
+    image="/images/tutorial-tray-images/page.svg"
+    links={[
+      {
+        label: I18n.t('How do I edit Pages'),
+        href: I18n.t(
+          'how_do_i_edit_pages_url',
+          'https://docs.google.com/document/d/1_pgN6BAVIK4RmJzVy6DUs5HV8e25zTiLoc287QnMgzk/edit#heading=h.kq9xgh62ph56'
+        )
+      }
+
+    ]}
+  >
   </TutorialTrayContent>
 )
 
