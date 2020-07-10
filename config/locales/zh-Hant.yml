@@ -7335,7 +7335,8 @@ zh-Hant:
   create_assessments_with_quizzes_next_and_migrate_e_eaaee5e6: "使用 Quizzes.Next 建立評估，並遷移現有的 Canvas 測驗。"
   create_assignment_68532ceb: 建立作業
   create_assignments_on_the_assignments_page_organiz_78ffa840: |-
-      課程作業功能可以用來指派作業、管理所有的計分項目，例如:作業、小考、報告。您可在此區分不同計分項目，並給予相異的權重。
+      課程作業功能可以用來指派作業、管理所有的計分項目（納入總成績計算的項目），例如:作業、小考、報告。
+      您可在此建立不同計分類別、每個類別底下的項目，並且您可以賦予每個類別不同的權重。
   create_assignments_on_the_assignments_page_organiz_8838b18a: |-
       在作業頁面建立作業。組織作業
       分類為功課、課堂作業、論文、討論
@@ -11574,6 +11575,10 @@ zh-Hant:
   hour_s_b6e8d238: 小時
   hours_late_989e9081: （已晚小時數）
   hover_over_me_496521b9: 掛在我上方
+  how_do_i_import_and_export_grades_83409b15: 如何匯入紙本考試、作業分數
+  how_do_i_set_my_home_page_92d4c79: 如何設定首頁
+  how_do_i_edit_pages_189c85cc: 如何編輯頁面
+  how_do_i_change_the_settings_in_a_course_ffb3a088: 如何使用課程設定
   how_do_i_add_a_module_65f5bf13: 我應如何添加單元？
   how_do_i_add_a_rubric_in_a_course_a4c7a40: 我應如何在課程中添加評分標準？
   how_do_i_add_a_rubric_to_an_assignment_46fd097e: 我應如何把評分標準添加至作業？
@@ -12005,9 +12010,9 @@ zh-Hant:
   instructor_sis_id_899dd697: "導師 Sis ID"
   instructors_4b491a07: 導師
   instructors_can_arrange_the_course_resources_in_th_f25ee384: |-
-      課程內容的功能讓老師依照需求安排所有課程會使用到的素材，例如依據週次
-      放上每週學生需要閱讀的課程講義、觀看的影片，或是學生需要完成的作業、
-      討論，除了依據週次之外，老師也能以主題區分不同的單元。
+      課程內容頁面可讓老師依據需求呈現所有課程所需的素材，例如按照週次、
+      單元主題放上每週學生需要取得的講義、文件、影片、作業、討論等，老師
+      可以按照自己的需求將課程素材分類。  
   instructors_can_upload_handouts_supplementary_mate_e3c2f285: |-
       文件功能讓教師上傳課程講義、補充教材、圖片，建議教師用文件的「資料夾
       」功能區分不同的文件類型或是每週所需瀏覽的檔案，學生可以更快速、便利
@@ -22268,11 +22273,10 @@ zh-Hant:
   the_course_status_buttons_unpublished_and_publishe_e2dca595: 「課程狀態」按鈕（未發佈及已發佈）只會在收到學生的提交項目前顯示。如果有學生提交項目，則不能取消發佈課程。
   the_date_is_not_valid_b6285fb5: 日期無效。
   the_discussion_function_allows_instructors_teachin_5606800d: |-
-      討論區是讓老師、助教、學生進行課程互動與討論的功能，學生能自行在討論
-      區貼文發問、分享心得，老師、助教與學生也可互相回覆發文，除了學生自行
-      發文，老師與助教也可以建立不同主題，要求學生回覆並對回覆內容做評分，
-      老師與助教也可在討論區放上優秀學生的作品，讓所有學生觀看，做為作業觀
-      摩。
+      討論區是讓老師、助教、學生進行課程互動與討論的地方，學生能自行在討
+      論區貼文發問、分享心得，老師、助教、其他學生亦可回覆該則貼文。
+      除了學生能自行發文外，老師與助教也可以建立不同的討論主題，讓學生針
+      對該主題進行討論。討論區也供老師放上優秀學生作品，讓所有學生觀摩。
   the_download_process_has_started_this_can_take_awh_7e616db1: |-
       下載程序已經開始。大課
       程可能需要一段時間。 你可
@@ -24337,8 +24341,8 @@ zh-Hant:
   when_hiding_grades_for_anonymous_assignments_grade_1b0ef682: 隱藏匿名作業的成績時，成績將對課程中的每個人隱藏。將重新套用匿名。
   when_people_visit_the_course_this_is_the_page_they_de94acc2: 當人們訪問課程時，這就是他們將看到的頁面。您可以將其設置為顯示一個活動流、課程單元清單、一個課程課程資訊或一個您描寫您自己的自定義頁面。預設顯示為課程活動串流。
   when_people_visit_your_course_this_is_the_first_pa_5093ec45: |-
-      當課程成員進入此門課程時，這是他們看到的第一個畫面。
-      我們已將您的首頁設定為課程內容，您可以自行更改首頁。
+      當課程成員進入此門課程時，這是他們看到的第一個畫面。 
+      我們已將您的首頁設定為課程內容，您可以自行更改首頁。  
   when_people_visit_your_course_this_is_the_first_pa_af36eac3: 當課程成員進入網頁時，這是他們看到的第一個畫面。我們已將您的首頁設定為課程內容，您可以自行更改首頁。
   when_posting_grades_for_anonymous_assignments_grad_b13f3ae6: 公佈匿名作業的成績時，成績將對課程中的每個人公佈。匿名將會移除。
   when_scope_enforcement_is_disabled_tokens_have_acc_6939182f: 當禁用範圍執行時，許可證可以訪問授權使用者可用的所有端點。
