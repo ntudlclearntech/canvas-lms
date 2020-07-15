@@ -27,7 +27,7 @@ module Canvas
     # (which is far less often than the many times per day users are currently being touched)
 
     ALLOWED_TYPES = {
-      'Account' => %w{account_chain role_overrides global_navigation},
+      'Account' => %w{account_chain role_overrides global_navigation feature_flags},
       'Course' => %w{account_associations},
       'User' => %w{enrollments groups account_users todo_list submissions user_services},
       'Assignment' => %w{availability},
@@ -55,6 +55,7 @@ module Canvas
         module ClassMethods
           def base_cache_register_key_for(id_or_record)
             id = ::Shard.global_id_for(id_or_record)
+            raise "invalid argument for cache clearing #{id}" if id && !id.is_a?(Integer) unless ::Rails.env.production?
             id && "cache_register/#{self.model_name.cache_key}/#{id}"
           end
 

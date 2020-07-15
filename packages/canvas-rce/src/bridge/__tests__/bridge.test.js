@@ -74,12 +74,14 @@ describe('Editor/Sidebar bridge', () => {
     beforeEach(() => {
       jest.spyOn(console, 'warn')
       editor = {
+        addAlert: jest.fn(),
         insertLink: jest.fn(),
         insertVideo: jest.fn(),
         insertAudio: jest.fn(),
         insertEmbedCode: jest.fn(),
         removePlaceholders: jest.fn(),
-        addAlert: jest.fn(),
+        insertImagePlaceholder: jest.fn(),
+        existingContentToLink: () => false,
         props: {
           textareaId: 'fake_editor',
           tinymce: {
@@ -100,7 +102,7 @@ describe('Editor/Sidebar bridge', () => {
       it('insertLink with an active editor forwards the link to createLink', () => {
         Bridge.focusEditor(editor)
         Bridge.insertLink(link)
-        expect(editor.insertLink).toHaveBeenCalledWith(link)
+        expect(editor.insertLink).toHaveBeenCalledWith(link, undefined)
       })
 
       it('insertLink with no active editor is a no-op, but warns', () => {
@@ -112,15 +114,18 @@ describe('Editor/Sidebar bridge', () => {
       it('adds selectionDetails to links', () => {
         Bridge.focusEditor(editor)
         Bridge.insertLink({})
-        expect(editor.insertLink).toHaveBeenCalledWith({
-          selectionDetails: {
-            node: 'some-node',
-            range: 'some-range'
-          }
-        })
+        expect(editor.insertLink).toHaveBeenCalledWith(
+          {
+            selectionDetails: {
+              node: 'some-node',
+              range: 'some-range'
+            }
+          },
+          undefined
+        )
       })
 
-      it('calls hideTray when necessary', () => {
+      it('calls hideTray after inserting a link', () => {
         const hideTray = jest.fn()
         Bridge.attachController({hideTray})
         Bridge.focusEditor(editor)
@@ -128,12 +133,17 @@ describe('Editor/Sidebar bridge', () => {
         expect(hideTray).toHaveBeenCalledTimes(1)
       })
 
-      it("does not call hideTray when it shouldn't", () => {
-        const hideTray = jest.fn()
-        Bridge.attachController({hideTray})
+      it('inserts the placeholder when asked', () => {
         Bridge.focusEditor(editor)
-        Bridge.insertLink({}, false)
-        expect(hideTray).not.toHaveBeenCalled()
+        Bridge.insertImagePlaceholder({})
+        expect(Bridge.getEditor().insertImagePlaceholder).toHaveBeenCalled()
+      })
+
+      it('does not insert the placeholder if the user has selected text', () => {
+        editor.existingContentToLink = () => true
+        Bridge.focusEditor(editor)
+        Bridge.insertImagePlaceholder({})
+        expect(Bridge.getEditor().insertImagePlaceholder).not.toHaveBeenCalled()
       })
     })
 

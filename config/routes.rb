@@ -369,7 +369,6 @@ CanvasRails::Application.routes.draw do
 
     post 'quizzes/publish'   => 'quizzes/quizzes#publish'
     post 'quizzes/unpublish' => 'quizzes/quizzes#unpublish'
-    post 'quizzes/:id/toggle_post_to_sis' => "quizzes/quizzes#toggle_post_to_sis"
 
     post 'assignments/publish/quiz'   => 'assignments#publish_quizzes'
     post 'assignments/unpublish/quiz' => 'assignments#unpublish_quizzes'
@@ -771,10 +770,13 @@ CanvasRails::Application.routes.draw do
   get 'login/oauth/callback' => 'login/oauth#create', as: :oauth_login_callback
   # the callback URL for all OAuth2 based SSO
   get 'login/oauth2/callback' => 'login/oauth2#create', as: :oauth2_login_callback
+  # the callback URL for Sign in with Apple
+  post 'login/oauth2/callback' => 'login/oauth2#create'
   # ActionController::TestCase can't deal with aliased controllers when finding
   # routes, so we let this route exist only for tests
   get 'login/oauth2' => 'login/oauth2#new' if Rails.env.test?
 
+  get 'login/apple' => 'login/apple#new', as: :apple_login
   get 'login/clever' => 'login/clever#new', as: :clever_login
   # Clever gets their own callback, cause we have to add additional processing
   # for their Instant Login feature
@@ -837,7 +839,7 @@ CanvasRails::Application.routes.draw do
     get 'teacher_activity/course/:course_id' => 'users#teacher_activity', as: :course_teacher_activity
     get 'teacher_activity/student/:student_id' => 'users#teacher_activity', as: :student_teacher_activity
     get :media_download
-    resources :messages, only: [:index, :create] do
+    resources :messages, only: [:index, :create, :show] do
       get :html_message
     end
   end
@@ -856,6 +858,8 @@ CanvasRails::Application.routes.draw do
       get :observees
     end
   end
+
+  get 'account_notifications' => 'account_notifications#render_past_global_announcements'
 
   scope '/profile' do
     post 'toggle_disable_inbox' => 'profile#toggle_disable_inbox'
@@ -1459,6 +1463,7 @@ CanvasRails::Application.routes.draw do
       get 'accounts/:account_id/courses/:id', controller: :courses, action: :show, as: 'account_course_show'
       get 'accounts/:account_id/permissions', action: :permissions
       delete 'accounts/:account_id/users/:user_id', action: :remove_user
+      put 'accounts/:account_id/users/:user_id/restore', action: :restore_user
     end
 
     scope(controller: :sub_accounts) do
@@ -2016,6 +2021,7 @@ CanvasRails::Application.routes.draw do
       %w(course group).each do |context|
         prefix = "#{context}s/:#{context}_id/conferences"
         get prefix, action: :index, as: "#{context}_conferences"
+        post "#{prefix}", action: :create
         post "#{prefix}/:conference_id/recording_ready", action: :recording_ready, as: "#{context}_conferences_recording_ready"
       end
 
@@ -2392,6 +2398,14 @@ CanvasRails::Application.routes.draw do
     # Public JWK Service
     scope(controller: 'lti/public_jwk') do
       put "/developer_key/update_public_jwk", action: :update, as: :public_jwk_update
+    end
+
+    # Context External Tools Service
+    scope(controller: 'lti/account_external_tools') do
+      post "/accounts/:account_id/external_tools", action: :create, as: :account_external_tools_create
+      get "/accounts/:account_id/external_tools/:external_tool_id", action: :show, as: :account_external_tools_show
+      get "/accounts/:account_id/external_tools", action: :index, as: :account_external_tools_index
+      delete "/accounts/:account_id/external_tools/:external_tool_id", action: :destroy, as: :account_external_tools_destroy
     end
 
     # Data Services Service

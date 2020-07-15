@@ -21,19 +21,21 @@ module Auditors::ActiveRecord
 
     AUDITOR_CLASSES = [ AuthenticationRecord, CourseRecord, GradeChangeRecord ].freeze
 
+    def self.precreate_tables
+      Setting.get('auditors_precreate_tables', 2).to_i
+    end
+
     def self.process
       Shackles.activate(:deploy) do
         AUDITOR_CLASSES.each do |auditor_cls|
-          auditor_cls.transaction do
-            log '*' * 80
-            log '-' * 80
-            partman = CanvasPartman::PartitionManager.create(auditor_cls)
-            partman.ensure_partitions
-            Shard.current.database_server.unshackle do
-              partman.prune_partitions(retention_months)
-            end
-            log '*' * 80
+          log '*' * 80
+          log '-' * 80
+          partman = CanvasPartman::PartitionManager.create(auditor_cls)
+          partman.ensure_partitions(precreate_tables)
+          Shard.current.database_server.unshackle do
+            partman.prune_partitions(retention_months)
           end
+          log '*' * 80
         end
         ActiveRecord::Base.connection_pool.current_pool.disconnect! unless Rails.env.test?
       end

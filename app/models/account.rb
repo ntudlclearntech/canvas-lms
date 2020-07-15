@@ -80,6 +80,24 @@ class Account < ActiveRecord::Base
   has_many :sis_batch_errors, foreign_key: :root_account_id, inverse_of: :root_account
   has_one :outcome_proficiency, dependent: :destroy
 
+  has_many :auditor_authentication_records,
+    class_name: "Auditors::ActiveRecord::AuthenticationRecord",
+    dependent: :destroy,
+    inverse_of: :account
+  has_many :auditor_course_records,
+    class_name: "Auditors::ActiveRecord::CourseRecord",
+    dependent: :destroy,
+    inverse_of: :account
+  has_many :auditor_grade_change_records,
+    class_name: "Auditors::ActiveRecord::GradeChangeRecord",
+    dependent: :destroy,
+    inverse_of: :account
+  has_many :auditor_root_grade_change_records,
+    foreign_key: 'root_account_id',
+    class_name: "Auditors::ActiveRecord::GradeChangeRecord",
+    dependent: :destroy,
+    inverse_of: :root_account
+
   def inherited_assessment_question_banks(include_self = false, *additional_contexts)
     sql, conds = [], []
     contexts = additional_contexts + account_chain
@@ -218,6 +236,7 @@ class Account < ActiveRecord::Base
   add_setting :enable_profiles, :boolean => true, :root_only => true, :default => false
   add_setting :enable_turnitin, :boolean => true, :default => false
   add_setting :mfa_settings, :root_only => true
+  add_setting :mobile_qr_login_is_enabled, :boolean => true, :root_only => true, :default => true
   add_setting :admins_can_change_passwords, :boolean => true, :root_only => true, :default => false
   add_setting :admins_can_view_notifications, :boolean => true, :root_only => true, :default => false
   add_setting :canvadocs_prefer_office_online, :boolean => true, :root_only => true, :default => false
@@ -257,7 +276,7 @@ class Account < ActiveRecord::Base
   add_setting :enable_course_catalog, :boolean => true, :root_only => true, :default => false
   add_setting :usage_rights_required, :boolean => true, :default => false, :inheritable => true
   add_setting :limit_parent_app_web_access, boolean: true, default: false
-
+  add_setting :kill_joy, boolean: true, default: false, root_only: true
 
   def settings=(hash)
     if hash.is_a?(Hash) || hash.is_a?(ActionController::Parameters)
@@ -338,7 +357,7 @@ class Account < ActiveRecord::Base
   def enable_canvas_authentication
     return unless root_account?
     # for migrations creating a new db
-    return unless AuthenticationProvider::Canvas.columns_hash.key?('workflow_state')
+    return unless Account.connection.data_source_exists?("authentication_providers")
     return if authentication_providers.active.where(auth_type: 'canvas').exists?
     authentication_providers.create!(auth_type: 'canvas')
   end
@@ -489,6 +508,10 @@ class Account < ActiveRecord::Base
   def root_account
     return self if root_account?
     super
+  end
+
+  def resolved_root_account_id
+    root_account_id || id
   end
 
   def sub_accounts_as_options(indent = 0, preloaded_accounts = nil)
@@ -1076,7 +1099,7 @@ class Account < ActiveRecord::Base
     raise "must be a root account" unless self.root_account?
     Shard.partition_by_shard(account_chain(include_site_admin: true).uniq) do |accounts|
       next unless user.associated_shards.include?(Shard.current)
-      AccountUser.active.eager_load(:account).where("user_id=? AND (root_account_id IN (?) OR account_id IN (?))", user, accounts, accounts)
+      AccountUser.active.eager_load(:account).where("user_id=? AND (accounts.root_account_id IN (?) OR account_id IN (?))", user, accounts, accounts)
     end
   end
 

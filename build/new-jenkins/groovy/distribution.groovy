@@ -16,6 +16,8 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+import groovy.time.*
+
 def runDatadogMetric(name, extraTags, body) {
   def dd = load('build/new-jenkins/groovy/datadog.groovy')
   dd.runDataDogForMetricWithExtraTags(name,extraTags,body)
@@ -42,11 +44,15 @@ def appendStagesAsBuildNodes(nodes,
     def index = i;
     // we cant use String.format, so... yea
     def stage_name = "$stage_name_prefix ${(index + 1).toString().padLeft(2, '0')}"
+    def timeStart = new Date()
     nodes[stage_name] = {
       node("canvas-$test_label-docker") {
+        def duration = TimeCategory.minus(new Date(), timeStart).toMilliseconds()
         // make sure to unstash
         unstash name: "build-dir"
         unstash name: "build-docker-compose"
+        def splunk = load 'build/new-jenkins/groovy/splunk.groovy'
+        splunk.upload([splunk.eventForNodeWait(stage_name, duration)])
         def extraTags = ["parallelStageName:${stage_name}"]
         runDatadogMetric(test_label,extraTags) {
           stage_block(index)
@@ -75,7 +81,7 @@ def stashBuildScripts() {
  * common helper for adding rspec tests to be ran
  */
 def addRSpecSuites(stages) {
-  def rspec_node_total = load('build/new-jenkins/groovy/rspec.groovy').config().rspec_node_total
+  def rspec_node_total = load('build/new-jenkins/groovy/rspec.groovy').rspecConfig().node_total
   def successes = load('build/new-jenkins/groovy/successes.groovy')
 
   if (successes.hasSuccess('rspec', rspec_node_total)) {
@@ -94,7 +100,7 @@ def addRSpecSuites(stages) {
  * common helper for adding selenium tests to be ran
  */
 def addSeleniumSuites(stages) {
-  def selenium_node_total = load('build/new-jenkins/groovy/rspec.groovy').config().selenium_node_total
+  def selenium_node_total = load('build/new-jenkins/groovy/rspec.groovy').seleniumConfig().node_total
   def successes = load('build/new-jenkins/groovy/successes.groovy')
 
   if (successes.hasSuccess('selenium', selenium_node_total)) {

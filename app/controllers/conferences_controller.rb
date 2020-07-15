@@ -177,7 +177,7 @@ class ConferencesController < ApplicationController
     conferences = @context.grants_right?(@current_user, :manage_content) ?
       @context.web_conferences.active :
       @current_user.web_conferences.active.shard(@context.shard).where(context_type: @context.class.to_s, context_id: @context.id)
-    conferences = conferences.with_config.order("created_at DESC, id DESC")
+    conferences = conferences.with_config_for(context: @context).order("created_at DESC, id DESC")
     api_request? ? api_index(conferences, polymorphic_url([:api_v1, @context, :conferences])) : web_index(conferences)
   end
 
@@ -273,7 +273,7 @@ class ConferencesController < ApplicationController
     log_asset_access([ "conferences", @context ], "conferences", "other")
 
     Shackles.activate(:slave) do
-      @render_alternatives = WebConference.conference_types.all? { |ct| ct[:replace_with_alternatives] }
+      @render_alternatives = WebConference.conference_types(@context).all? { |ct| ct[:replace_with_alternatives] }
       case @context
       when Course
         @users = User.where(:id => @context.current_enrollments.not_fake.active_by_date.where.not(:user_id => @current_user).select(:user_id)).
@@ -292,7 +292,7 @@ class ConferencesController < ApplicationController
       current_conferences: ui_conferences_json(@new_conferences, @context, @current_user, session),
       concluded_conferences: ui_conferences_json(@concluded_conferences, @context, @current_user, session),
       default_conference: default_conference_json(@context, @current_user, session),
-      conference_type_details: conference_types_json(WebConference.conference_types),
+      conference_type_details: conference_types_json(WebConference.conference_types(@context)),
       users: @users.map { |u| {:id => u.id, :name => u.last_name_first} },
       can_create_conferences: @context.grants_right?(@current_user, session, :create_conferences),
       render_alternatives: @render_alternatives
@@ -321,13 +321,10 @@ class ConferencesController < ApplicationController
       @conference = @context.web_conferences.build(conference_params)
       @conference.settings[:default_return_url] = named_context_url(@context, :context_url, :include_host => true)
       @conference.user = @current_user
-      members = get_new_members
       respond_to do |format|
         if @conference.save
           @conference.add_initiator(@current_user)
-          members.uniq.each do |u|
-            @conference.add_invitee(u)
-          end
+          @conference.invite_users_from_context(member_ids)
           @conference.save
           format.html { redirect_to named_context_url(@context, :context_conference_url, @conference.id) }
           format.json { render :json => WebConference.find(@conference.id).as_json(:permissions => {:user => @current_user, :session => session},
@@ -343,15 +340,12 @@ class ConferencesController < ApplicationController
   def update
     if authorized_action(@conference, @current_user, :update)
       @conference.user ||= @current_user
-      members = get_new_members
       respond_to do |format|
         params[:web_conference].try(:delete, :long_running)
         params[:web_conference].try(:delete, :conference_type)
         if @conference.update(conference_params)
           # TODO: ability to dis-invite people
-          members.uniq.each do |u|
-            @conference.add_invitee(u)
-          end
+          @conference.invite_users_from_context(member_ids)
           @conference.save
           format.html { redirect_to named_context_url(@context, :context_conference_url, @conference.id) }
           format.json { render :json => @conference.as_json(:permissions => {:user => @current_user, :session => session},
@@ -387,7 +381,8 @@ class ConferencesController < ApplicationController
       end
     end
   rescue StandardError => e
-    flash[:error] = t(:general_error_with_message, "There was an error joining the conference. Message: '%{message}'", :message => e.message)
+    Canvas::Errors.capture(e)
+    flash[:error] = t("There was an error joining the conference.")
     redirect_to named_context_url(@context, :context_conferences_url)
   end
 
@@ -468,16 +463,16 @@ class ConferencesController < ApplicationController
   protected
 
   def require_config
-    unless WebConference.config
+    unless WebConference.config(context: @context)
       flash[:error] = t('#conferences.disabled_error', "Web conferencing has not been enabled for this Canvas site")
       redirect_to named_context_url(@context, :context_url)
     end
   end
 
-  def get_new_members
-    members = [@current_user]
+  def member_ids
+    ids = [@current_user.id]
     if params[:observers] && params[:observers][:remove] == '1'
-      ids = @context.user_ids - @context.observers.pluck(:id)
+      ids += @context.user_ids - @context.observers.pluck(:id)
     elsif params[:user] && params[:user][:all] != '1'
       ids = []
       params[:user].each do |id, val|
@@ -487,13 +482,7 @@ class ConferencesController < ApplicationController
       ids = @context.user_ids
     end
 
-    if @context.is_a? Course
-      members += @context.participating_users(ids).to_a
-    else
-      members += @context.participating_users_in_context(ids).to_a
-    end
-
-    members - @conference.invitees
+    ids
   end
 
   private
@@ -503,7 +492,7 @@ class ConferencesController < ApplicationController
 
   def conference_params
     params.require(:web_conference).
-      permit(:title, :duration, :description, :conference_type, :user_settings => strong_anything)
+      permit(:title, :duration, :description, :conference_type, user_settings: strong_anything, lti_settings: strong_anything)
   end
 
   def preload_recordings(conferences)

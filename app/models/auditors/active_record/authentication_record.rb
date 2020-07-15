@@ -17,11 +17,16 @@
 #
 module Auditors::ActiveRecord
   class AuthenticationRecord < ActiveRecord::Base
+    include Auditors::ActiveRecord::Attributes
     include CanvasPartman::Concerns::Partitioned
     self.partitioning_strategy = :by_date
     self.partitioning_interval = :months
     self.partitioning_field = 'created_at'
     self.table_name = 'auditor_authentication_records'
+
+    belongs_to :account, inverse_of: :auditor_authentication_records
+    belongs_to :user, inverse_of: :auditor_authentication_records
+    belongs_to :pseudonym, inverse_of: :auditor_authentication_records
 
     class << self
       include Auditors::ActiveRecord::Model
@@ -30,9 +35,9 @@ module Auditors::ActiveRecord
         attrs_hash = record.attributes.except('id')
         attrs_hash['request_id'] ||= "MISSING"
         attrs_hash['uuid'] = record.id
-        attrs_hash['account_id'] = record.pseudonym.account_id
-        attrs_hash['user_id'] = record.pseudonym.user_id
-        attrs_hash['pseudonym_id'] = record.pseudonym.id
+        attrs_hash['account_id'] = Shard.relative_id_for(record.account_id, Shard.current, Shard.current)
+        attrs_hash['user_id'] = Shard.relative_id_for(record.user_id, Shard.current, Shard.current)
+        attrs_hash['pseudonym_id'] = Shard.relative_id_for(record.pseudonym_id, Shard.current, Shard.current)
         attrs_hash
       end
     end

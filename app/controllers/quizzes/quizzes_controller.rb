@@ -45,8 +45,7 @@ class Quizzes::QuizzesController < ApplicationController
     :read_only,
     :managed_quiz_data,
     :submission_versions,
-    :submission_html,
-    :toggle_post_to_sis
+    :submission_html
   ]
   before_action :set_download_submission_dialog_title , only: [:show,:statistics]
   after_action :lock_results, only: [ :show, :submission_html ]
@@ -378,6 +377,7 @@ class Quizzes::QuizzesController < ApplicationController
       quiz_params[:title] ||= t(:default_title, "New Quiz")
       quiz_params[:description] = process_incoming_html_content(quiz_params[:description]) if quiz_params.key?(:description)
       quiz_params.delete(:points_possible) unless quiz_params[:quiz_type] == 'graded_survey'
+      quiz_params[:disable_timer_autosubmission] = false if quiz_params[:time_limit].blank?
       quiz_params[:access_code] = nil if quiz_params[:access_code] == ""
       if quiz_params[:quiz_type] == 'assignment' || quiz_params[:quiz_type] == 'graded_survey'
         quiz_params[:assignment_group_id] ||= @context.assignment_groups.first.id
@@ -438,6 +438,7 @@ class Quizzes::QuizzesController < ApplicationController
       quiz_params[:description] = process_incoming_html_content(quiz_params[:description]) if quiz_params.key?(:description)
 
       quiz_params.delete(:points_possible) unless quiz_params[:quiz_type] == 'graded_survey'
+      quiz_params[:disable_timer_autosubmission] = false if quiz_params[:time_limit].blank?
       quiz_params[:access_code] = nil if quiz_params[:access_code] == ""
       if quiz_params[:quiz_type] == 'assignment' || quiz_params[:quiz_type] == 'graded_survey' #'new' && params[:quiz][:assignment_group_id]
         if (assignment_group_id = quiz_params.delete(:assignment_group_id)) && assignment_group_id.present?
@@ -578,17 +579,6 @@ class Quizzes::QuizzesController < ApplicationController
                            :other => "%{count} quizzes successfully unpublished!" },
                          :count => @quizzes.length)
 
-      respond_to do |format|
-        format.html { redirect_to named_context_url(@context, :context_quizzes_url) }
-        format.json { render :json => {}, :status => :ok }
-      end
-    end
-  end
-
-  def toggle_post_to_sis
-    if authorized_action(@quiz, @current_user, :update)
-      @quiz.post_to_sis = params[:post_to_sis]
-      @quiz.save!
       respond_to do |format|
         format.html { redirect_to named_context_url(@context, :context_quizzes_url) }
         format.json { render :json => {}, :status => :ok }

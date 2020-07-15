@@ -20,7 +20,7 @@ require 'atom'
 require 'anonymity'
 
 class Submission < ActiveRecord::Base
-  self.ignored_columns = %w{has_admin_comment has_rubric_assessment process_attempts}
+  self.ignored_columns = %w{has_admin_comment has_rubric_assessment process_attempts context_code}
 
   include Canvas::GradeValidations
   include CustomValidations
@@ -79,6 +79,7 @@ class Submission < ActiveRecord::Base
 
   belongs_to :attachment # this refers to the screenshot of the submission if it is a url submission
   belongs_to :assignment, inverse_of: :submissions
+  belongs_to :course, inverse_of: :submissions
   belongs_to :user
   alias student user
   belongs_to :grader, :class_name => 'User'
@@ -112,6 +113,11 @@ class Submission < ActiveRecord::Base
 
   has_many :canvadocs_submissions
 
+  has_many :auditor_grade_change_records,
+    class_name: "Auditors::ActiveRecord::GradeChangeRecord",
+    dependent: :destroy,
+    inverse_of: :submission
+
   serialize :turnitin_data, Hash
 
   validates_presence_of :assignment_id, :user_id
@@ -142,8 +148,6 @@ class Submission < ActiveRecord::Base
   scope :submitted_after, lambda { |date| where("submitted_at>?", date) }
   scope :with_point_data, -> { where("submissions.score IS NOT NULL OR submissions.grade IS NOT NULL") }
 
-  scope :for_context_codes, lambda { |context_codes| where(:context_code => context_codes) }
-
   scope :postable, -> {
     all.primary_shard.activate do
       graded.union(with_hidden_comments)
@@ -165,7 +169,7 @@ class Submission < ActiveRecord::Base
     limit(limit)
   }
 
-  scope :for_course, -> (course) { where(assignment: course.assignments.except(:order)) }
+  scope :for_course, -> (course) { where(course_id: course) }
   scope :for_assignment, -> (assignment) { where(assignment: assignment) }
 
   scope :missing, -> do
@@ -548,6 +552,7 @@ class Submission < ActiveRecord::Base
   end
 
   def can_read_submission_user_name?(user, session)
+    return false if self.assignment.anonymize_students?
     !self.assignment.anonymous_peer_reviews? ||
         self.user_id == user.id ||
         self.assignment.context.grants_right?(user, session, :view_all_grades)
@@ -1332,8 +1337,11 @@ class Submission < ActiveRecord::Base
 
   def infer_values
     if assignment
-      self.context_code = assignment.context_code
-      self.course_id = assignment.context_id
+      if assignment.association(:context).loaded?
+        self.course = assignment.context # may as well not reload it
+      else
+        self.course_id = assignment.context_id
+      end
     end
 
     self.seconds_late_override = nil unless late_policy_status == 'late'
@@ -2271,21 +2279,20 @@ class Submission < ActiveRecord::Base
   end
 
   def context
-    self.assignment.context if self.assignment
+    self.course ||= self.assignment&.context
   end
 
   def to_atom(opts={})
     prefix = self.assignment.context_prefix || ""
     author_name = self.assignment.present? && self.assignment.context.present? ? self.assignment.context.name : t('atom_no_author', "No Author")
     Atom::Entry.new do |entry|
-      entry.title     = "#{self.user && self.user.name} -- #{self.assignment && self.assignment.title}#{", " + self.assignment.context.name if opts[:include_context]}"
-      entry.authors  << Atom::Person.new(:name => author_name)
+      entry.title     = "#{self&.user.name} -- #{self&.assignment.title}#{', ' + self.assignment.context.name if opts[:include_context]}"
       entry.updated   = self.updated_at
       entry.published = self.created_at
-      entry.id        = "tag:#{HostUrl.default_host},#{self.created_at.strftime("%Y-%m-%d")}:/submissions/#{self.feed_code}_#{self.updated_at.strftime("%Y-%m-%d")}"
-      entry.links    << Atom::Link.new(:rel => 'alternate',
-                                    :href => "http://#{HostUrl.context_host(self.assignment.context)}/#{prefix}/assignments/#{self.assignment_id}/submissions/#{self.id}")
+      entry.id        = "tag:#{HostUrl.default_host},#{self.created_at.strftime('%Y-%m-%d')}:/submissions/#{self.feed_code}_#{self.updated_at.strftime('%Y-%m-%d')}"
       entry.content   = Atom::Content::Html.new(self.body || "")
+      entry.links << Atom::Link.new(:rel => 'alternate', :href => "#{self.assignment.direct_link}/submissions/#{self.id}")
+      entry.authors << Atom::Person.new(:name => author_name)
       # entry.author    = Atom::Person.new(self.user)
     end
   end
@@ -2667,6 +2674,18 @@ class Submission < ActiveRecord::Base
     else
       nil
     end
+  end
+
+  def root_account_id
+    # TODO this is a substitute for the root_account_id column
+    # and the root_account attribute, which will eventually be added
+    self.assignment&.root_account_id
+  end
+
+  def root_account
+    # TODO this is a substitute for the root_account attribute,
+    # which will eventually be added
+    self.assignment&.root_account
   end
 
   private

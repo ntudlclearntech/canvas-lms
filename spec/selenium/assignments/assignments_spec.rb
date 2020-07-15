@@ -185,13 +185,15 @@ describe "assignments" do
         # create assignment
         wait_for_new_page_load { f(".new_assignment").click }
         f('#assignment_name').send_keys(assignment_name)
-        f('#assignment_points_possible').send_keys('10')
+        replace_content(f('#assignment_points_possible'), "10")
+        click_option('#assignment_submission_type', 'Online')
         ['#assignment_text_entry', '#assignment_online_url', '#assignment_online_upload'].each do |element|
           f(element).click
         end
-        f('.DueDateInput').send_keys(due_at)
+        replace_content(f('.DueDateInput'), due_at)
 
         submit_assignment_form
+        wait_for_ajaximations
         # confirm all our settings were saved and are now displayed
         expect(f('h1.title')).to include_text(assignment_name)
         expect(f('#assignment_show .points_possible')).to include_text('10')
@@ -483,7 +485,7 @@ describe "assignments" do
 
     context "with Responsive fix" do
       before :each do
-        Account.default.enable_feature!('responsive_2020_03')
+        Account.default.enable_feature!('responsive_misc')
       end
 
       it "should reorder assignments with drag and drop", priority: "2", test_id: 647848 do

@@ -134,7 +134,7 @@ class Course < ActiveRecord::Base
   has_many :assignment_groups, -> { order('assignment_groups.position', AssignmentGroup.best_unicode_collation_key('assignment_groups.name')) }, as: :context, inverse_of: :context, dependent: :destroy
   has_many :assignments, -> { order('assignments.created_at') }, as: :context, inverse_of: :context, dependent: :destroy
   has_many :calendar_events, -> { where("calendar_events.workflow_state<>'cancelled'") }, as: :context, inverse_of: :context, dependent: :destroy
-  has_many :submissions, -> { active.order('submissions.updated_at DESC') }, through: :assignments, dependent: :destroy
+  has_many :submissions, -> { active.order('submissions.updated_at DESC') }, inverse_of: :course, dependent: :destroy
   has_many :submission_comments, -> { published }, as: :context, inverse_of: :context
   has_many :discussion_topics, -> { where("discussion_topics.workflow_state<>'deleted'").preload(:user).order('discussion_topics.position DESC, discussion_topics.created_at DESC') }, as: :context, inverse_of: :context, dependent: :destroy
   has_many :active_discussion_topics, -> { where("discussion_topics.workflow_state<>'deleted'").preload(:user) }, as: :context, inverse_of: :context, class_name: 'DiscussionTopic'
@@ -203,6 +203,17 @@ class Course < ActiveRecord::Base
   has_many :post_policies, dependent: :destroy, inverse_of: :course
   has_many :assignment_post_policies, -> { where.not(assignment_id: nil) }, class_name: 'PostPolicy', inverse_of: :course
   has_one :default_post_policy, -> { where(assignment_id: nil) }, class_name: 'PostPolicy', inverse_of: :course
+
+  has_one :course_score_statistic, dependent: :destroy
+  has_many :auditor_course_records,
+    class_name: "Auditors::ActiveRecord::CourseRecord",
+    dependent: :destroy,
+    inverse_of: :course
+  has_many :auditor_grade_change_records,
+    as: :context,
+    inverse_of: :course,
+    class_name: "Auditors::ActiveRecord::GradeChangeRecord",
+    dependent: :destroy
 
   prepend Profile::Association
 
@@ -788,34 +799,36 @@ class Course < ActiveRecord::Base
   end
 
   def instructors_in_charge_of(user_id, require_grade_permissions: true)
-    scope = current_enrollments.
-      where(:course_id => self, :user_id => user_id).
-      where("course_section_id IS NOT NULL")
-    section_ids = scope.distinct.pluck(:course_section_id)
+    Shackles.activate(:slave) do
+      scope = current_enrollments.
+        where(:course_id => self, :user_id => user_id).
+        where("course_section_id IS NOT NULL")
+      section_ids = scope.distinct.pluck(:course_section_id)
 
-    instructor_enrollment_scope = self.instructor_enrollments.active_by_date
-    if section_ids.any?
-      instructor_enrollment_scope = instructor_enrollment_scope.where("enrollments.limit_privileges_to_course_section IS NULL OR
-        enrollments.limit_privileges_to_course_section<>? OR enrollments.course_section_id IN (?)", true, section_ids)
-    end
+      instructor_enrollment_scope = self.instructor_enrollments.active_by_date
+      if section_ids.any?
+        instructor_enrollment_scope = instructor_enrollment_scope.where("enrollments.limit_privileges_to_course_section IS NULL OR
+          enrollments.limit_privileges_to_course_section<>? OR enrollments.course_section_id IN (?)", true, section_ids)
+      end
 
-    if require_grade_permissions
-      # filter to users with view_all_grades or manage_grades permission
-      role_user_ids = instructor_enrollment_scope.pluck(:role_id, :user_id)
-      return [] unless role_user_ids.any?
-      role_ids = role_user_ids.map(&:first).uniq
+      if require_grade_permissions
+        # filter to users with view_all_grades or manage_grades permission
+        role_user_ids = instructor_enrollment_scope.pluck(:role_id, :user_id)
+        return [] unless role_user_ids.any?
+        role_ids = role_user_ids.map(&:first).uniq
 
-      roles = Role.where(:id => role_ids).to_a
-      allowed_role_ids = roles.select{|role|
-        [:view_all_grades, :manage_grades].any?{|permission| RoleOverride.enabled_for?(self, permission, role, self).include?(:self) }
-      }.map(&:id)
-      return [] unless allowed_role_ids.any?
+        roles = Role.where(:id => role_ids).to_a
+        allowed_role_ids = roles.select{|role|
+          [:view_all_grades, :manage_grades].any?{|permission| RoleOverride.enabled_for?(self, permission, role, self).include?(:self) }
+        }.map(&:id)
+        return [] unless allowed_role_ids.any?
 
-      allowed_user_ids = Set.new
-      role_user_ids.each{|role_id, user_id| allowed_user_ids << user_id if allowed_role_ids.include?(role_id)}
-      User.where(:id => allowed_user_ids).to_a
-    else
-      User.where(:id => instructor_enrollment_scope.select(:id)).to_a
+        allowed_user_ids = Set.new
+        role_user_ids.each{|role_id, user_id| allowed_user_ids << user_id if allowed_role_ids.include?(role_id)}
+        User.where(:id => allowed_user_ids).to_a
+      else
+        User.where(:id => instructor_enrollment_scope.select(:id)).to_a
+      end
     end
   end
 
@@ -1187,18 +1200,18 @@ class Course < ActiveRecord::Base
   end
 
   def recompute_student_scores_without_send_later(student_ids = nil, opts = {})
-    if student_ids.present?
+    visible_student_ids = if student_ids.present?
       # We were given student_ids.  Let's see how many of those students can even see this assignment
-      student_ids = admin_visible_student_enrollments.where(user_id: student_ids).pluck(:user_id)
+      admin_visible_student_enrollments.where(user_id: student_ids).pluck(:user_id)
+    else
+      # We were not given any student_ids
+      # Let's get them all!
+      admin_visible_student_enrollments.pluck(:user_id)
     end
 
-    # We were either not given any student_ids or none of those students could see this assignment.
-    # Let's get them all!
-    student_ids = admin_visible_student_enrollments.pluck(:user_id) unless student_ids.present?
-
-    Rails.logger.debug "GRADES: recomputing scores in course=#{global_id} students=#{student_ids.inspect}"
+    Rails.logger.debug "GRADES: recomputing scores in course=#{global_id} students=#{visible_student_ids.inspect}"
     Enrollment.recompute_final_score(
-      student_ids,
+      visible_student_ids,
       self.id,
       grading_period_id: opts[:grading_period_id],
       update_all_grading_period_scores: opts.fetch(:update_all_grading_period_scores, true)
@@ -2645,7 +2658,7 @@ class Course < ActiveRecord::Base
     if account_id.present? && feature_enabled?(:canvas_k6_theme) && super.nil?
       return canvas_k6_tab_configuration.map(&:with_indifferent_access)
     end
-    super.map(&:with_indifferent_access) rescue []
+    super.compact.map(&:with_indifferent_access) rescue []
   end
 
   TAB_HOME = 0
@@ -3001,6 +3014,7 @@ class Course < ActiveRecord::Base
   # so now we pluralize it everywhere except the actual settings hash and
   # course import/export :(
   add_setting :hide_final_grade, :alias => :hide_final_grades, :boolean => true
+  add_setting :hide_sections_on_course_users_page, :boolean => true, default: false
   add_setting :hide_distribution_graphs, :boolean => true
   add_setting :allow_final_grade_override, boolean: false, default: false
   add_setting :allow_student_discussion_topics, :boolean => true, :default => true
@@ -3530,6 +3544,16 @@ class Course < ActiveRecord::Base
 
   def post_policies_enabled?
     PostPolicy.feature_enabled?
+  end
+
+  def sections_hidden_on_roster_page?(current_user:)
+    if root_account.feature_enabled?('hide_course_sections_from_students')
+      course_sections.active.many? &&
+          hide_sections_on_course_users_page? &&
+          current_user.enrollments.active.where(course: self).all?(&:student?)
+    else
+      false
+    end
   end
 
   private

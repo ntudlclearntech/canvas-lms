@@ -37,7 +37,7 @@ import GradeDisplayWarningDialog from '../shared/GradeDisplayWarningDialog'
 import PostGradesFrameDialog from './PostGradesFrameDialog'
 import NumberCompare from '../util/NumberCompare'
 import natcompare from '../util/natcompare'
-import * as ConvertCase from 'convert_case'
+import {camelize, underscore} from 'convert_case'
 import htmlEscape from 'str/htmlEscape'
 import * as EnterGradesAsSetting from 'jsx/gradebook/shared/EnterGradesAsSetting'
 import SetDefaultGradeDialogManager from 'jsx/gradebook/shared/SetDefaultGradeDialogManager'
@@ -47,11 +47,13 @@ import GradebookApi from 'jsx/gradebook/default_gradebook/apis/GradebookApi'
 import SubmissionCommentApi from 'jsx/gradebook/default_gradebook/apis/SubmissionCommentApi'
 import CourseSettings from 'jsx/gradebook/default_gradebook/CourseSettings'
 import DataLoader from 'jsx/gradebook/default_gradebook/DataLoader'
+import OldDataLoader from 'jsx/gradebook/default_gradebook/OldDataLoader'
 import FinalGradeOverrides from 'jsx/gradebook/default_gradebook/FinalGradeOverrides'
 import GradebookGrid from 'jsx/gradebook/default_gradebook/GradebookGrid'
 import studentRowHeaderConstants from 'jsx/gradebook/default_gradebook/constants/studentRowHeaderConstants'
 import AssignmentRowCellPropFactory from 'jsx/gradebook/default_gradebook/GradebookGrid/editors/AssignmentCellEditor/AssignmentRowCellPropFactory'
 import TotalGradeOverrideCellPropFactory from 'jsx/gradebook/default_gradebook/GradebookGrid/editors/TotalGradeOverrideCellEditor/TotalGradeOverrideCellPropFactory'
+import PerformanceControls from 'jsx/gradebook/default_gradebook/PerformanceControls'
 import PostPolicies from 'jsx/gradebook/default_gradebook/PostPolicies'
 import GradebookMenu from 'jsx/gradebook/default_gradebook/components/GradebookMenu'
 import ViewOptionsMenu from 'jsx/gradebook/default_gradebook/components/ViewOptionsMenu'
@@ -81,6 +83,7 @@ import {Button} from '@instructure/ui-buttons'
 import {IconSettingsSolid} from '@instructure/ui-icons'
 import {ScreenReaderContent} from '@instructure/ui-a11y'
 import * as FlashAlert from 'jsx/shared/FlashAlert'
+import {deferPromise} from 'jsx/shared/async'
 import 'jquery.ajaxJSON'
 import 'jquery.instructure_date_and_time'
 import 'jqueryui/dialog'
@@ -138,7 +141,6 @@ export default do ->
 
   getCourseFeaturesFromOptions = (options) ->
     {
-      additionalSortOptionsEnabled: options.additional_sort_options_enabled,
       finalGradeOverrideEnabled: options.final_grade_override_enabled
     }
 
@@ -162,14 +164,14 @@ export default do ->
       gradingPeriodId: null
 
     if settings.filter_columns_by?
-      Object.assign(filterColumnsBy, ConvertCase.camelize(settings.filter_columns_by))
+      Object.assign(filterColumnsBy, camelize(settings.filter_columns_by))
 
     filterRowsBy =
       sectionId: null
       studentGroupId: null
 
     if settings.filter_rows_by?
-      Object.assign(filterRowsBy, ConvertCase.camelize(settings.filter_rows_by))
+      Object.assign(filterRowsBy, camelize(settings.filter_rows_by))
 
     {
       colors
@@ -202,7 +204,10 @@ export default do ->
       assignmentGroupsLoaded: false
       assignmentsLoaded: false
       contextModulesLoaded: false
+      customColumnsLoaded: false
+      gradingPeriodAssignmentsLoaded: false
       overridesColumnUpdating: false
+      studentIdsLoaded: false
       studentsLoaded: false
       submissionsLoaded: false
       teacherNotesColumnUpdating: false
@@ -226,10 +231,10 @@ export default do ->
       contextModules: []
       courseGradingScheme
       defaultGradingScheme
-      gradingSchemes: options.grading_schemes.map(ConvertCase.camelize)
+      gradingSchemes: options.grading_schemes.map(camelize)
       gradingPeriodAssignments: {}
       assignmentStudentVisibility: {}
-      latePolicy: ConvertCase.camelize(options.late_policy) if options.late_policy
+      latePolicy: camelize(options.late_policy) if options.late_policy
     }
 
   getInitialGradebookContent = (options) ->
@@ -278,7 +283,14 @@ export default do ->
         allowFinalGradeOverride: @options.course_settings.allow_final_grade_override
       })
 
-      @dataLoader = new DataLoader(@)
+      # TODO: remove conditional and OldDataLoader with TALLY-831
+      if @options.dataloader_improvements
+        @dataLoader = new DataLoader({
+          gradebook: @,
+          performanceControls: new PerformanceControls(camelize(@options.performance_controls))
+        })
+      else
+        @dataLoader = new OldDataLoader(@)
 
       @gridData = {
         columns: {
@@ -317,6 +329,7 @@ export default do ->
       $.subscribe 'currentGradingPeriod/change',      @updateCurrentGradingPeriod
 
       @gridReady = $.Deferred()
+      @_essentialDataLoaded = deferPromise()
 
       @setInitialState()
       @loadSettings()
@@ -416,6 +429,13 @@ export default do ->
     initialize: ->
       @dataLoader.loadInitialData()
 
+      # Until GradebookGrid is rendered reactively, it will need to be rendered
+      # once and only once. It depends on all essential data from the initial
+      # data load. When all of that data has loaded, this deferred promise will
+      # resolve and render the grid. As a promise, it only resolves once.
+      @_essentialDataLoaded.promise.then () =>
+        @finishRenderingUI()
+
       @gridReady.then () =>
         # Preload the Grade Detail Tray
         AsyncComponents.loadGradeDetailTray()
@@ -479,6 +499,8 @@ export default do ->
       columns.forEach (column) =>
         customColumn = @buildCustomColumn(column)
         @gridData.columns.definitions[customColumn.id] = customColumn
+      @setCustomColumnsLoaded(true)
+      @_updateEssentialDataLoaded()
 
     gotCustomColumnDataChunk: (customColumnId, columnData) =>
       studentIds = []
@@ -498,6 +520,7 @@ export default do ->
       @contentLoadStates.assignmentsLoaded = true
       @renderViewOptionsMenu()
       @updateColumnHeaders()
+      @_updateEssentialDataLoaded()
 
     gotAllAssignmentGroups: (assignmentGroups) =>
       @setAssignmentGroupsLoaded(true)
@@ -515,8 +538,10 @@ export default do ->
 
     updateGradingPeriodAssignments: (gradingPeriodAssignments) =>
       @gotGradingPeriodAssignments({grading_period_assignments: gradingPeriodAssignments})
+      @setGradingPeriodAssignmentsLoaded(true)
       if @_gridHasRendered()
         @updateColumns()
+      @_updateEssentialDataLoaded()
 
     gotGradingPeriodAssignments: ({ grading_period_assignments: gradingPeriodAssignments }) =>
       @courseContent.gradingPeriodAssignments = gradingPeriodAssignments
@@ -609,7 +634,9 @@ export default do ->
     updateStudentIds: (studentIds) =>
       @courseContent.students.setStudentIds(studentIds)
       @assignmentStudentVisibility = {}
+      @setStudentIdsLoaded(true)
       @buildRows()
+      @_updateEssentialDataLoaded()
 
     updateStudentsLoaded: (loaded) =>
       @setStudentsLoaded(loaded)
@@ -1820,7 +1847,7 @@ export default do ->
       data =
         gradebook_settings:
           enter_grades_as: @gridDisplaySettings.enterGradesAs
-          filter_columns_by: ConvertCase.underscore(@gridDisplaySettings.filterColumnsBy)
+          filter_columns_by: underscore(@gridDisplaySettings.filterColumnsBy)
           selected_view_options_filters: selectedViewOptionsFilters
           show_concluded_enrollments: showConcludedEnrollments
           show_inactive_enrollments: showInactiveEnrollments
@@ -1828,7 +1855,7 @@ export default do ->
           show_unpublished_assignments: showUnpublishedAssignments
           student_column_display_as: studentColumnDisplayAs
           student_column_secondary_info: studentColumnSecondaryInfo
-          filter_rows_by: ConvertCase.underscore(@gridDisplaySettings.filterRowsBy)
+          filter_rows_by: underscore(@gridDisplaySettings.filterRowsBy)
           sort_rows_by_column_id: sortRowsBy.columnId
           sort_rows_by_setting_key: sortRowsBy.settingKey
           sort_rows_by_direction: sortRowsBy.direction
@@ -2045,6 +2072,7 @@ export default do ->
       return false if @gradingPeriodSet.displayTotalsForAllGradingPeriods
       not @isFilteringColumnsByGradingPeriod()
 
+    # TODO: remove this method with TALLY-831
     studentsParams: ->
       enrollmentStates = ['invited', 'active']
 
@@ -2260,7 +2288,7 @@ export default do ->
       submissionState = @submissionStateMap.getSubmissionState({ user_id: studentId, assignment_id: assignmentId })
       isGroupWeightZero = @assignmentGroups[assignment.assignment_group_id].group_weight == 0
 
-      assignment: ConvertCase.camelize(assignment)
+      assignment: camelize(assignment)
       colors: @getGridColors()
       comments: comments
       courseId: @options.context_id
@@ -2300,7 +2328,7 @@ export default do ->
         avatarUrl: htmlDecode(student.avatar_url)
         gradesUrl: "#{student.enrollments[0].grades.html_url}#tab-assignments"
         isConcluded: student.isConcluded
-      submission: ConvertCase.camelize(submission)
+      submission: camelize(submission)
       submissionUpdating: @submissionIsUpdating({ assignmentId, userId: studentId })
       updateSubmission: @updateSubmissionAndRenderSubmissionTray
       processing: @getCommentsUpdating()
@@ -2454,6 +2482,18 @@ export default do ->
 
     setAssignmentGroupsLoaded: (loaded) =>
       @contentLoadStates.assignmentGroupsLoaded = loaded
+
+    setContextModulesLoaded: (loaded) =>
+      @contentLoadStates.contextModulesLoaded = loaded
+
+    setCustomColumnsLoaded: (loaded) =>
+      @contentLoadStates.customColumnsLoaded = loaded
+
+    setGradingPeriodAssignmentsLoaded: (loaded) =>
+      @contentLoadStates.gradingPeriodAssignmentsLoaded = loaded
+
+    setStudentIdsLoaded: (loaded) =>
+      @contentLoadStates.studentIdsLoaded = loaded
 
     setStudentsLoaded: (loaded) =>
       @contentLoadStates.studentsLoaded = loaded
@@ -2731,9 +2771,10 @@ export default do ->
 
     updateContextModules: (contextModules) =>
       @setContextModules(contextModules)
-      @contentLoadStates.contextModulesLoaded = true
+      @setContextModulesLoaded(true)
       @renderViewOptionsMenu()
       @renderFilters()
+      @_updateEssentialDataLoaded()
 
     setContextModules: (contextModules) =>
       @courseContent.contextModules = contextModules
@@ -2983,3 +3024,16 @@ export default do ->
 
     _gridHasRendered: () =>
       @gridReady.state() == 'resolved'
+
+    _updateEssentialDataLoaded: =>
+      # TODO: remove this early return with TALLY-831
+      return unless @options.dataloader_improvements
+
+      if (
+        @contentLoadStates.studentIdsLoaded &&
+        @contentLoadStates.contextModulesLoaded &&
+        @contentLoadStates.customColumnsLoaded &&
+        @contentLoadStates.assignmentGroupsLoaded &&
+        (!@gradingPeriodSet || @contentLoadStates.gradingPeriodAssignmentsLoaded)
+      )
+        @_essentialDataLoaded.resolve()
