@@ -2992,6 +2992,33 @@ describe User do
     end
   end
 
+  describe "submittable_attachments" do
+    before(:once) do
+      student_in_course
+      group_model
+      @other_group = @group
+      group_model
+      @group.add_user @student
+      @a1 = attachment_with_context(@student)
+      @a2 = attachment_with_context(@group)
+      @a3 = attachment_with_context(@other_group)
+    end
+
+    it 'matches non-deleted attachments in user or group context' do
+      expect(@student.submittable_attachments.pluck(:id)).to match_array [@a1, @a2].map(&:id)
+    end
+
+    it 'excludes deleted files' do
+      @a1.destroy
+      expect(@student.submittable_attachments.pluck(:id)).to eq [@a2.id]
+    end
+
+    it 'excludes deleted group memberships' do
+      @student.group_memberships.where(group_id: @group.id).take.destroy
+      expect(@student.submittable_attachments.pluck(:id)).to eq [@a1.id]
+    end
+  end
+
   describe "#authenticate_one_time_password" do
     let(:user) { User.create! }
     let(:otp) { user.one_time_passwords.create! }
@@ -3243,6 +3270,16 @@ describe User do
       it "returns true" do
         expect(user.prefers_no_celebrations?).to eq true
       end
+    end
+  end
+
+  describe "with_last_login" do
+    it "should not double the users select if select values are already present" do
+      expect(User.all.order_by_sortable_name.with_last_login.to_sql.scan(".*").count).to eq 1
+    end
+
+    it "should still include it if select values aren't present" do
+      expect(User.all.with_last_login.to_sql.scan(".*").count).to eq 1
     end
   end
 end

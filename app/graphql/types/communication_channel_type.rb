@@ -37,9 +37,11 @@ module Types
 
     field :path_type, String, null: true
 
-    field :notification_policies, [NotificationPolicyType], null: true
-    def notification_policies
-      NotificationPolicy.find_all_for(self.object)
+    field :notification_policies, [NotificationPolicyType], null: true do
+      argument :context_type, NotificationPreferencesContextType, required: true
+    end
+    def notification_policies(context_type: nil)
+      NotificationPolicy.find_all_for(self.object, context_type: context_type)
     end
 
     field :notification_policy_overrides, [NotificationPolicyType], null: true do
@@ -49,7 +51,7 @@ module Types
     end
     def notification_policy_overrides(account_id: nil, course_id: nil, context_type: nil)
       overrides_for = ->(context) do
-        NotificationPolicyOverride.find_all_for(current_user, context, object.id)
+        NotificationPolicyOverride.find_all_for(current_user, context, channel: object)
       end
 
       case context_type

@@ -18,16 +18,27 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+def getRubyPassenger() {
+  load('build/new-jenkins/groovy/configuration.groovy').rubyPassenger()
+}
+
+def getPostgres() {
+  load('build/new-jenkins/groovy/configuration.groovy').postgres()
+}
+
 pipeline {
   agent { label 'canvas-docker' }
   options {
     ansiColor('xterm')
+    timestamps()
   }
 
   environment {
     COMPOSE_FILE = 'docker-compose.new-jenkins.yml:docker-compose.new-jenkins-selenium.yml'
     GERRIT_PORT = '29418'
     GERRIT_URL = "$GERRIT_HOST:$GERRIT_PORT"
+    POSTGRES = getPostgres()
+    RUBY_PASSENGER = getRubyPassenger()
     MAX_FAIL = 5
     PATCHSET_TAG = "$DOCKER_REGISTRY_FQDN/jenkins/canvas-lms:master"
     RERUNS_RETRY = 0 // no reruns
@@ -95,7 +106,7 @@ pipeline {
     stage ('Setup Databases') {
       steps {
         timeout(time: 5) {
-          sh 'build/new-jenkins/docker-compose-create-migrate-database.sh'
+          sh 'build/new-jenkins/docker-compose-setup-databases.sh'
         }
       }
     }
@@ -121,8 +132,8 @@ pipeline {
     unsuccessful {
       // copy spec failures to local
       sh 'mkdir -vp tmp'
-      // [JIRA CCI-168]: need to handle web container never being spun up
-      sh 'docker cp $(docker-compose ps -q web):/usr/src/app/log/spec_failures/ ./tmp'
+      // [JIRA CCI-168]: need to handle canvas container never being spun up
+      sh 'docker cp $(docker ps -q --filter "name=canvas_"):/usr/src/app/log/spec_failures/ ./tmp'
       script {
         def htmlFiles
         // find all results files

@@ -29,7 +29,15 @@ class BigBlueButtonConference < WebConference
     description: ->{ t('recording_setting_enabled_description', 'Enable recording for this conference') },
     type: :boolean,
     default: false,
-    visible: ->{ WebConference.config(BigBlueButtonConference.to_s)[:recording_enabled] },
+    visible: ->{ WebConference.config(class_name: BigBlueButtonConference.to_s)[:recording_enabled] },
+  }
+
+  user_setting_field :scheduled_date, {
+    name: ->{ t('Scheduled Date') },
+    description: ->{ t('Enable recording for this conference') },
+    type: :date,
+    default: false,
+    visible: false
   }
 
   def initiate_conference
@@ -169,7 +177,8 @@ class BigBlueButtonConference < WebConference
 
   def use_fallback_config?
     # use the fallback config (if possible) if it wasn't created with the current config
-    self.settings[:domain] != self.class.config[:domain]
+    self.class.config[:use_fallback] &&
+      self.settings[:domain] != self.class.config[:domain]
   end
 
   private
@@ -190,7 +199,7 @@ class BigBlueButtonConference < WebConference
 
   def join_url(user, type = :user)
     generate_request :join,
-      :fullName => user.name,
+      :fullName => user.short_name,
       :meetingID => conference_key,
       :password => settings[(type == :user ? :user_key : :admin_key)],
       :userID => user.id

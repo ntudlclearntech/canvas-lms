@@ -250,6 +250,51 @@ describe Course do
     end
   end
 
+  describe "#hide_sections_on_course_users_page?" do
+    context "FF is On" do
+      before :once do
+        course_with_student
+        @course.root_account.enable_feature!(:hide_course_sections_from_students)
+      end
+
+      context "Setting is set to On" do
+        before :each do
+          @course.update!(:hide_sections_on_course_users_page => true)
+        end
+
+        it "returns true when there is more than one section" do
+          @course.course_sections.create!
+          expect(@course.sections_hidden_on_roster_page?(current_user: @user)).to be true
+        end
+
+        it "returns false when there is only one section" do
+          expect(@course.sections_hidden_on_roster_page?(current_user: @user)).to be false
+        end
+      end
+
+      context "Setting is set to Off" do
+        before :each do
+          @course.update!(:hide_sections_on_course_users_page => false)
+        end
+
+        it "returns false" do
+          expect(@course.sections_hidden_on_roster_page?(current_user: @user)).to be false
+        end
+      end
+    end
+
+    context "FF is off" do
+      before :once do
+        course_with_student
+        @course.root_account.disable_feature!(:hide_course_sections_from_students)
+      end
+
+      it "returns false" do
+        expect(@course.sections_hidden_on_roster_page?(current_user: @user)).to be false
+      end
+    end
+  end
+
   describe "#filter_speed_grader_by_student_group?" do
     before :once do
       @course = Account.default.courses.create!
@@ -288,10 +333,11 @@ describe Course do
       @course.recompute_student_scores
     end
 
-    it "should not use student ids for deleted enrollments, even if they are explicitly passed" do
+    it "recomputes nothing if no students are visible" do
       @course.save!
       enrollment = course_with_student(course: @course, active_all: true)
       enrollment.destroy
+      3.times{ enrollment_model(workflow_state: 'registered', course: @course, user: user_model) }
       expect(Enrollment).to receive(:recompute_final_score).with([], any_args)
       @course.recompute_student_scores([enrollment.user_id])
     end
@@ -2349,6 +2395,12 @@ describe Course, "tabs_available" do
 
       expect(available_tabs).to        eq (custom_tabs + default_tabs).uniq
       expect(available_tabs.length).to eq default_tabs.length
+    end
+
+    it "should not blow up if somehow nils got in there" do
+      course = Course.new
+      course.tab_configuration = [{'id' => 1}, nil]
+      expect(course.tab_configuration).to eq [{'id' => 1}]
     end
 
     it "should not omit the target attribute for an external tool tab that is part of the tab configuration list" do

@@ -15,13 +15,16 @@
  * You should have received a copy of the GNU Affero General Public License along
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+import {func} from 'prop-types'
 import I18n from 'i18n!notification_preferences'
 import NotificationPreferencesSetting from './NotificationPreferencesSetting'
 import NotificationPreferencesShape from './NotificationPreferencesShape'
 import React from 'react'
 
+import {ScreenReaderContent} from '@instructure/ui-a11y-content'
 import {Table} from '@instructure/ui-table'
 import {Text} from '@instructure/ui-text'
+import {Tooltip} from '@instructure/ui-tooltip'
 import {TruncateText} from '@instructure/ui-truncate-text'
 
 const formattedCategoryNames = {
@@ -94,6 +97,7 @@ const smsNotificationCategoryDeprecated = category => {
 const renderNotificationCategory = (
   notificationPreferences,
   notificationCategory,
+  updatePreferenceCallback,
   renderChannelHeader
 ) => (
   <Table
@@ -106,7 +110,7 @@ const renderNotificationCategory = (
   >
     <Table.Head>
       <Table.Row>
-        <Table.ColHeader id={notificationCategory} width="16rem">
+        <Table.ColHeader id={notificationCategory} data-testid={notificationCategory} width="16rem">
           <Text size="large">{formattedCategoryNames[notificationCategory]}</Text>
         </Table.ColHeader>
         {notificationPreferences.channels.map(channel => (
@@ -116,7 +120,7 @@ const renderNotificationCategory = (
             key={`${notificationCategory}-${channel.path}`}
             width="8rem"
           >
-            {renderChannelHeader && (
+            {renderChannelHeader ? (
               <>
                 <div style={{display: 'block'}}>
                   <Text transform={channel.pathType === 'sms' ? 'uppercase' : 'capitalize'}>
@@ -129,6 +133,11 @@ const renderNotificationCategory = (
                   </TruncateText>
                 </div>
               </>
+            ) : (
+              <ScreenReaderContent>
+                {I18n.t('%{pathType}', {pathType: channel.pathType})}
+                {channel.path}
+              </ScreenReaderContent>
             )}
           </Table.ColHeader>
         ))}
@@ -144,10 +153,25 @@ const renderNotificationCategory = (
         .map(category => (
           <Table.Row key={category} data-testid={formatCategoryKey(category)}>
             <Table.Cell>
-              {
-                notificationPreferences.channels[0].categories[notificationCategory][category]
-                  .notification.categoryDisplayName
-              }
+              <Tooltip
+                renderTip={
+                  <div
+                    dangerouslySetInnerHTML={{
+                      __html:
+                        notificationPreferences.channels[0].categories[notificationCategory][
+                          category
+                        ].notification.categoryDescription
+                    }}
+                    data-testid={`${formatCategoryKey(category)}_description`}
+                  />
+                }
+                placement="end"
+              >
+                {
+                  notificationPreferences.channels[0].categories[notificationCategory][category]
+                    .notification.categoryDisplayName
+                }
+              </Tooltip>
             </Table.Cell>
             {notificationPreferences.channels.map(channel => (
               <Table.Cell textAlign="center" key={category + channel.path}>
@@ -163,6 +187,9 @@ const renderNotificationCategory = (
                       ? ['immediately', 'never']
                       : ['immediately', 'daily', 'weekly', 'never']
                   }
+                  updatePreference={frequency =>
+                    updatePreferenceCallback({channel, category, frequency})
+                  }
                 />
               </Table.Cell>
             ))}
@@ -175,10 +202,13 @@ const renderNotificationCategory = (
 const formatPreferencesData = preferences => {
   preferences.channels.forEach((channel, i) => {
     // copying the notificationCategories object defined above and setting it on each comms channel
-    // so that we can update and mutate the object for each channel without it effecting the others
+    // so that we can update and mutate the object for each channel without it effecting the others.
+    // We are also using the structure defined above because we care about the order that the
+    // preferences are displayed in.
     preferences.channels[i].categories = JSON.parse(JSON.stringify(notificationCategories))
     setNotificationPolicy(channel.notificationPolicies, preferences.channels[i].categories)
     setNotificationPolicy(channel.notificationPolicyOverrides, preferences.channels[i].categories)
+    dropEmptyCategories(preferences.channels[i].categories)
   })
 }
 
@@ -193,13 +223,31 @@ const setNotificationPolicy = (policies, categories) => {
   })
 }
 
+const dropEmptyCategories = categories => {
+  Object.keys(categories).forEach(categoryGroup => {
+    Object.keys(categories[categoryGroup]).forEach(category => {
+      if (Object.keys(categories[categoryGroup][category]).length === 0) {
+        delete categories[categoryGroup][category]
+      }
+    })
+    if (Object.keys(categories[categoryGroup]).length === 0) {
+      delete categories[categoryGroup]
+    }
+  })
+}
+
 const NotificationPreferencesTable = props => {
   if (props.preferences.channels?.length > 0) {
     formatPreferencesData(props.preferences)
     return (
       <>
         {Object.keys(props.preferences.channels[0].categories).map((notificationCategory, i) =>
-          renderNotificationCategory(props.preferences, notificationCategory, i === 0)
+          renderNotificationCategory(
+            props.preferences,
+            notificationCategory,
+            props.updatePreference,
+            i === 0
+          )
         )}
       </>
     )
@@ -207,7 +255,8 @@ const NotificationPreferencesTable = props => {
 }
 
 NotificationPreferencesTable.propTypes = {
-  preferences: NotificationPreferencesShape
+  preferences: NotificationPreferencesShape,
+  updatePreference: func.isRequired
 }
 
 export default NotificationPreferencesTable

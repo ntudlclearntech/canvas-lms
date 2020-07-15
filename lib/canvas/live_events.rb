@@ -273,6 +273,10 @@ module Canvas::LiveEvents
     Assignment.where(:id => assignment_ids).each{|a| assignment_updated(a)}
   end
 
+  def self.submissions_bulk_updated(submissions)
+    Submission.where(id: submissions).preload(:assignment).find_each { |submission| submission_updated(submission) }
+  end
+
   def self.get_assignment_override_data(override)
     data_hash = {
       assignment_override_id: override.id,
@@ -525,7 +529,9 @@ module Canvas::LiveEvents
       grader_id = submission.global_grader_id
     end
 
-    sis_pseudonym = SisPseudonym.for(submission.user, submission.assignment.context, type: :trusted, require_sis: false)
+    sis_pseudonym = Shackles.activate(:slave) do
+      SisPseudonym.for(submission.user, submission.assignment.context, type: :trusted, require_sis: false)
+    end
 
     post_event_stringified('grade_change', {
       submission_id: submission.global_id,

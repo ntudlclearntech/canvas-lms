@@ -19,14 +19,14 @@
 class EventStream::Stream
   include EventStream::AttrConfig
 
-  attr_config :database, :default => nil # only needed if backend_strategy is :cassandra
+  attr_config :database, :default => nil # only needed if backend_strategy evaluates to :cassandra
   attr_config :table, :type => String
   attr_config :id_column, :type => String, :default => 'id'
   attr_config :record_type, :default => EventStream::Record
   attr_config :time_to_live, :type => Integer, :default => 1.year # only honored for cassandra strategy
   attr_config :read_consistency_level, :default => nil # only honored for cassandra strategy
-  attr_config :backend_strategy, default: :cassandra # one of [:cassandra, :active_record]
-  attr_config :active_record_type, default: nil # only needed if backend_strategy is :active_record
+  attr_config :backend_strategy, default: ->{ :cassandra } # one of [:cassandra, :active_record]
+  attr_config :active_record_type, default: nil # only needed if backend_strategy evaluates to :active_record
 
   attr_accessor :raise_on_error
 
@@ -67,30 +67,27 @@ class EventStream::Stream
     add_callback(:error, callback)
   end
 
-  def fetch(ids)
-    rows = []
-    if available? && ids.present?
-      database.execute(fetch_cql, ids, consistency: read_consistency_level).fetch do |row|
-        rows << record_type.from_attributes(row.to_hash)
-      end
-    end
-    rows
+  def fetch(ids, strategy: :batch)
+    current_backend.fetch(ids, strategy: strategy)
+  end
+
+  def current_backend
+    backend_for(backend_strategy)
   end
 
   def add_index(name, &blk)
     index = EventStream::Index.new(self, &blk)
 
     on_insert do |record|
-      if entry = index.entry_proc.call(record)
-        key = index.key_proc ? index.key_proc.call(*entry) : entry
-        index.insert(record, key)
-      end
+      current_backend.index_on_insert(index, record)
     end
 
     singleton_class.send(:define_method, "for_#{name}") do |*args|
-      options = args.extract_options!
-      key = index.key_proc ? index.key_proc.call(*args) : args
-      index.for_key(key, options)
+      current_backend.find_with_index(index, args)
+    end
+
+    singleton_class.send(:define_method, "ids_for_#{name}") do |*args|
+      current_backend.find_ids_with_index(index, args)
     end
 
     singleton_class.send(:define_method, "#{name}_index") do
@@ -116,15 +113,27 @@ class EventStream::Stream
     timestamp.to_i - time_to_live.seconds.ago.to_i
   end
 
-  def fetch_cql
-    "SELECT * FROM #{table} %CONSISTENCY% WHERE #{id_column} IN (?)"
-  end
-
   def run_callbacks(operation, *args)
     callbacks_for(operation).each do |callback|
       instance_exec(*args, &callback)
     end
   end
+
+  # primarily for use in testing
+  # to regenerate state of
+  # backend strategy
+  def reset_backend!
+    @backends = {}
+  end
+
+  # these methods are included to keep the interface with plugins
+  # until they can be updated or removed to no longer
+  # depend no a cassandra-specific implementation.
+  # --- start ---
+  def fetch_cql
+    backend_for(:cassandra).fetch_cql
+  end
+  # --- end ---
 
   private
 

@@ -573,6 +573,7 @@ en:
     manaus: Manaus
     cuiaba: Cuiaba
     eirunepe: Eirunepe
+    puerto_rico: Puerto Rico
   features:
     google_docs_domain_restriction: Google Docs Domain Restriction
     high_contrast: High Contrast UI
@@ -721,6 +722,8 @@ en:
   if_commons_is_installed_allows_importing_favorited_eff368f: If Commons is installed, allows importing favorited content items from within Canvas.
   featured_help_links_d805fe44: Featured Help Links
   allows_help_links_to_be_tagged_as_featured_or_new__ed5742c2: Allows Help Links to be tagged as Featured or New and prominently displays the Featured Help Link in the Help Menu.
+  classic_quizzes_option_for_timed_quizzes_without_s_567b117d: Classic Quizzes Option for Timed Quizzes without Submission
+  presents_the_quiz_setting_to_avoid_automatic_submi_363b91ff: Presents the quiz setting to avoid automatic submission of a timed quiz when the available time has ended.
   quiz_log_auditing_desc: |-
     Enable the tracking of events for a quiz submission, and the ability
           to view a log of those events once a submission is made.
@@ -737,7 +740,9 @@ en:
   microsoft_immersive_reader_free_trial_wiki_pages_f41b29d5: Microsoft Immersive Reader - Free Trial (Wiki Pages)
   makes_a_microsoft_immersive_reader_link_option_sho_4dc2fcfb: Makes a Microsoft Immersive Reader link option show up on wiki pages.
   canvas_elementary_theming_a42fa76f: Canvas Elementary Theming
-  elementary_friendly_theme_font_and_limited_course__4dc48217: Elementary friendly theme font and limited course navigation.
+  elementary_friendly_theme_font_and_limited_course__b8939e48: |-
+    Elementary friendly theme, font, and limited course navigation.
+    The font update only applies to languages that use the Latin Alphabet.
   new_post_policy_icons_da13a62c: New Post Policy Icons
   updates_the_display_of_post_policy_icons_in_the_ne_eb9f3314: Updates the display of Post Policy icons in the New Gradebook assignment column header.
   gradebook_import_reserved_names_bugfix_apg_122_32a77a18: Gradebook Import Reserved Names Bugfix (APG-122)
@@ -746,16 +751,12 @@ en:
   includes_grade_values_in_the_admin_grade_reports_a28200da: Includes grade values in the admin grade reports.
   allow_postable_submission_comments_a301b742: Allow Postable Submission Comments
   for_manually_posted_assignments_the_presence_of_a__8aabf3cc: For manually posted assignments, the presence of a submission comment not by the submission's own user will allow posting the assignment. Previously, this would have required a grade before posting could occur.
-  additional_sort_options_for_new_gradebook_2dc1939: Additional Sort Options for New Gradebook
-  enables_sorting_by_sis_id_integration_id_and_login_6aa901b9: Enables sorting by SIS ID, integration ID and login ID in New Gradebook.
   eportfolio_moderation_feb0ffd3: ePortfolio Moderation
   flags_new_eportfolio_content_matching_specific_key_a66af560: Flags new ePortfolio content matching specific keywords as possible spam, and allows administrators to either confirm flagged ePortfolios or mark them as safe.
   new_analytics_api_access_7eec1ead: New Analytics API Access
   enables_new_api_endpoints_for_the_course_and_user__2ba4afbf: Enables new API endpoints for the course and user data provided by New Analytics.
   gradebook_export_sort_order_bugfix_tally_219_62bfaacb: Gradebook Export Sort Order Bugfix (Tally-219)
   changes_the_sort_order_of_the_gradebook_export_to__41b286fd: Changes the sort order of the gradebook export to more closely match the canvas documentation
-  submissions_re_upload_status_page_6cdbc96d: Submissions Re-Upload Status Page
-  allows_the_user_to_navigate_away_while_submission__276d73b7: Allows the user to navigate away while submission re-uploads are processing
   include_speedgrader_in_assignment_header_menu_69cd8656: Include SpeedGrader in Assignment Header Menu
   includes_a_link_to_speedgrader_in_the_assignment_h_fbe07e2c: Includes a link to SpeedGrader in the assignment header menu in Gradebook.
   prefetch_user_ids_in_gradebook_b96521b0: Prefetch User IDs in Gradebook
@@ -764,16 +765,16 @@ en:
   include_the_datadog_rum_js_agent_in_the_document_h_dab3570d: Include the Datadog RUM JS Agent in the document HEAD.
   grade_calculator_performance_improvements_564af0de: Grade Calculator Performance Improvements
   performance_improvements_for_the_grade_calculation_7d9b0b16: Performance improvements for the grade calculation process.
-  qr_for_mobile_login_1b1560ce: QR for Mobile Login
-  include_a_link_to_show_a_qr_code_to_easy_mobile_lo_f3da1267: Include a link to show a QR code to easy mobile login on the profile page.
+  gradebook_data_loading_performance_improvements_421e1c93: Gradebook Data Loading Performance Improvements
+  performance_improvements_for_loading_data_into_gra_1c3a0c60: Performance improvements for loading data into Gradebook.
+  missing_policy_applicator_emits_live_events_88b47396: Missing Policy Applicator Emits Live Events
+  allows_the_missing_policy_applicator_to_emit_submi_338a9bb7: Allows the missing policy applicator to emit submission_updated live events for each submission marked as missing.
   product_tours_1e19eb95: Product Tours
-  in_product_training_walkthrough_and_tourpoints_for_2e185119: In-product training walkthrough and tourpoints for teachers
-  march_2020_responsiveness_f810a65b: March 2020 Responsiveness
-  collection_of_responsive_improvements_throughout_c_dedfe6dc: Collection of responsive improvements throughout Canvas
-  module_content_import_enhancements_c00b0ea2: Module Content Import Enhancements
+  in_product_training_walkthrough_and_tourpoints_for_35aebb17: In-product training walkthrough and tourpoints for admins, teachers, and students
+  module_file_upload_enhancements_eecd4d37: Module File Upload Enhancements
   drag_and_drop_files_on_modules_and_multi_file_modu_605b469b: Drag and Drop files on modules and multi-file module item uploads
-  april_2020_responsiveness_54028e36: April 2020 Responsiveness
   responsive_admin_settings_4f8670d7: Responsive Admin/Settings
+  collection_of_responsive_improvements_throughout_c_dedfe6dc: Collection of responsive improvements throughout Canvas
   responsive_awareness_226843a: Responsive Awareness
   responsive_misc_dc572cc0: Responsive Misc
   help_for_unpublished_courses_512a08d7: Help for Unpublished Courses
@@ -786,10 +787,6 @@ en:
   allows_users_to_add_conferences_from_the_calendar_f36c5008: Allows users to add conferences from the calendar
   custom_reports_experimental_features_40bbfe7c: 'Custom Reports: Experimental Features'
   use_experimental_features_before_they_are_generall_3dfaddd1: Use experimental features before they are generally enabled in production
-  pronouns_for_users_da46fb5: Pronouns for users
-  allows_users_to_pick_pronouns_that_will_be_display_870b94e0: |-
-    Allows users to pick pronouns that will be displayed after
-    their name when it is shown in the user interface.
   confetti_for_on_time_submissions_394e16ce: Confetti for On-Time Submissions
   displays_confetti_for_users_that_turn_in_an_assign_6899ccef: |-
     Displays confetti for users that turn in an assignment prior
@@ -802,6 +799,8 @@ en:
   disables_sms_notifications_for_all_types_except_an_3d130ca2: |-
     Disables SMS notifications for all types except announcements and
     grade changes.
+  hide_course_sections_from_students_b7850d64: Hide Course Sections from Students
+  allows_teachers_to_hide_course_sections_from_stude_eb69d87b: Allows teachers to hide course sections from students on the People page when there is more than one section in the course.
   mute_notifications_by_course_440e18be: Mute notifications by course
   allows_users_to_mute_notifications_on_a_course_lev_775b0362: Allows users to mute notifications on a course level granularity.
   immediate_notifications_for_global_announcements_682f5a3d: Immediate notifications for global announcements
@@ -813,6 +812,12 @@ en:
   allows_users_to_override_specific_notification_pre_18cf5b9e: |-
     Allows users to override specific notification preferences on a
     course by course basis.
+  show_past_account_level_announcements_to_users_3b8208e2: Show past account level announcements to users
+  show_past_account_level_announcements_to_users_all_6918f8e1: |-
+    Show past account level announcements to users. Allows
+    a user to view announcemnts that have ended or been dismissed.
+  smart_alerts_44db622e: Smart alerts
+  notify_students_in_time_of_assignments_that_requir_332ef10e: Notify students in time of assignments that require their attention.
   rce_auto_save_f004fba9: RCE Auto-Save
   if_rce_enhancements_are_also_enabled_the_rce_will__2fd293c4: |-
     If RCE Enhancements are also enabled,
@@ -831,12 +836,12 @@ en:
   allow_teachers_to_change_the_dates_on_a_set_of_ass_4d48baec: Allow teachers to change the dates on a set of assignments in one step
   bookmarking_for_enrollments_index_api_840be156: Bookmarking for Enrollments Index API
   use_bookmarking_for_api_pagination_in_enrollments__52b9bc28: Use bookmarking for API pagination in Enrollments Index
+  submission_type_lti_placement_b448d5d0: Submission Type LTI Placement
+  if_an_lti_tool_configured_with_the_placement_is_in_41e4244: |-
+    If an LTI tool configured with the placement is installed, will show a new entry in the
+    assignment submission type dropdown to quickly configure the assignment for the tool
   syllabus_course_summary_option_951a8144: Syllabus Course Summary Option
   make_the_course_summary_list_of_assignments_and_ev_f739be33: Make the Course Summary (list of assignments and events) optional in the syllabus
-  rce_initialization_fix_4f176bda: RCE Initialization Fix
-  under_some_conditions_the_legacy_rce_fails_to_init_66d515ab: |-
-    Under some conditions, the legacy RCE fails to initialize because tinymce hasn't added the
-    editor instance to its internal list when the RCE requires it.
   allow_blueprint_publishing_after_association_fae6ba95: Allow Blueprint Publishing After Association
   show_a_checkbox_that_optionally_lets_an_account_ad_209b2aa6: |-
     Show a checkbox that optionally lets an account admin publish courses
@@ -849,6 +854,16 @@ en:
   includes_rubrics_in_the_course_sidebar_navigation_6dd52682: Includes rubrics in the course sidebar navigation
   modify_permissions_for_account_rubrics_6c3aee59: Modify permissions for Account Rubrics
   change_rubrics_visibility_on_accounts_to_depend_on_967b4caa: Change Rubrics visibility on Accounts to depend on the Rubrics permission instead of the Learning Outcomes permission
+  hide_the_import_learning_outcomes_button_based_on__433d6ba7: Hide the Import Learning Outcomes button based on user permissions
+  ensures_that_users_without_the_import_outcomes_per_42dfc56d: Ensures that users without the Import Outcomes permission cannot see the button within the Outcomes tab
+  reduce_outcome_duplication_on_course_import_26431b40: Reduce outcome duplication on course import
+  ensures_that_outcomes_that_have_already_been_impor_c3ca3173: Ensures that outcomes that have already been imported into a course are not duplicated if they are imported again
+  selectable_outcomes_during_course_content_migratio_3f108a1a: Selectable outcomes during course content migration
+  allows_learning_outcomes_to_be_selectable_when_mig_acf15555: Allows learning outcomes to be selectable when migrating course content
+  restricted_view_for_teachers_in_lmgb_52c78a62: Restricted view for teachers in LMGB
+  hides_certain_students_and_sections_in_the_lmgb_if_47097d94: Hides certain students and sections in the LMGB if the teacher only has access to a particular section
+  outcomes_service_alignment_migration_5b4391ad: Outcomes Service Alignment Migration
+  includes_outcomes_service_alignments_when_exportin_6c578a35: Includes Outcomes Service alignments when exporting and importing course content
   system_and_user_generated_events_84bc4c8a: System- and User-Generated Events
   differentiate_between_system_and_user_generated_li_dc466585: |-
     Differentiate between system- and user-generated live events
@@ -884,6 +899,7 @@ en:
   granular_permissions_for_managing_wiki_pages_3ed89a84: Granular permissions for managing wiki pages
   disable_smart_app_banner_on_mobile_devices_bed9bf3b: Disable Smart App Banner on Mobile Devices
   remove_safari_mobile_banner_suggesting_user_downlo_b4251078: Remove Safari mobile banner suggesting user download application from app store.
+  global_announcements_a78912c8: Global Announcements
   announcement_successfully_created_731a707f: Announcement successfully created
   announcement_creation_failed_f7d227f5: Announcement creation failed
   announcement_successfully_updated_7bc5130: Announcement successfully updated
@@ -1158,6 +1174,7 @@ en:
         default_language: Default Language
         default_time_zone: Default Time Zone
         mfa_settings: Multi-Factor Authentication
+        mobile_qr_login_is_enabled: Allow logins to the mobile apps via the use of QR codes
         self_enrollment: Allow Self-Enrollment
         trusted_referers: Trusted HTTP Referers
         prevent_course_renaming_by_teachers: Don't let teachers rename their courses
@@ -1401,7 +1418,7 @@ en:
       account_reports:
         default:
           last_user_access:
-            text: This report shows the last login for active users.
+            text: This report shows the last login for active users. Please note, Last Access At is updated once every 10 minutes. That is our current threshold to determine activity for any given user session.
     lti_report_csv_description:
       account_reports:
         default:
@@ -1614,6 +1631,11 @@ en:
               text: Course SIS ID
           parameters:
             note1: Course ID can be left blank to run the report for all courses in the term.
+    lewisville_course_activity_report_csv_parameters:
+      account_reports:
+        default:
+          parameters:
+            header: Term
     mississippi_sis_csv_parameters:
       account_reports:
         default:
@@ -1787,6 +1809,8 @@ en:
             default:
               users:
                 check_box: Users CSV
+              pseudonyms:
+                check_box: Pseudonyms CSV
               accounts:
                 check_box: Accounts CSV
               terms:
@@ -1956,6 +1980,9 @@ en:
   you_ll_need_to_accept_the_enrollment_invitation_be_441a617b: You'll need to *accept the enrollment invitation* before you can fully participate in this course, starting on %{date}.
   you_ll_need_to_accept_the_enrollment_invitation_be_1e962788: You'll need to *accept the enrollment invitation* before you can fully participate in this course.
   this_course_hasn_t_started_yet_you_will_not_be_abl_c828c423: This course hasn’t started yet. You will not be able to participate in this course until %{date}.
+  lti_launch_error_41eac9a: LTI Launch Error
+  there_was_an_error_launching_to_the_configured_too_f8ed5767: There was an error launching to the configured tool.
+  please_try_re_establishing_the_connection_to_the_t_9e7bec18: Please try re-establishing the connection to the tool by re-selecting the tool in the assignment or module item interface and saving.
   crumbs:
     site_admin: Site Admin
     assignments: Assignments
@@ -2059,6 +2086,18 @@ en:
         user_default: User
         remind_reviewer: Remind %{user} about Assessment
         remind_reviewier_with_last_notification: Remind %{user} about Assessment, last notified %{at}
+    student_assignment_overview:
+      due_at: Due
+      date_time_by: "%{date} by %{time}"
+      no_due_date: No Due Date
+      points: Points
+      no_points: None
+      turnitin_enabled_short: "(Turnitin enabled)"
+      vericite_enabled_short: "(VeriCite enabled)"
+      submitting: Submitting
+      submission_types: File Types
+      attempts: Attempts
+      allowed_attempts: Allowed Attempts
     submission_sidebar:
       titles:
         submission: Submission
@@ -2203,22 +2242,16 @@ en:
         edit: Edit
         add_rubric: Rubric
       manage: Manage
-      due_at: Due
-      date_time_by: "%{date} by %{time}"
-      no_due_date: No Due Date
-      points: Points
-      no_points: None
-      turnitin_enabled_short: "(Turnitin enabled)"
-      vericite_enabled_short: "(VeriCite enabled)"
-      submitting: Submitting
-      submission_types: File Types
-      attempts: Attempts
-      allowed_attempts: Allowed Attempts
       messages:
         locked: This assignment is currently locked.
       defaults:
         no_content: No Content
+      points: Points
+      no_points: None
+      submitting: Submitting
       no_submission: Nothing
+      submission_types: File Types
+      allowed_attempts: Allowed Attempts
       turnitin: Turnitin
       turnitin_enabled: Turnitin has been enabled for this assignment.
       vericite: VeriCite
@@ -2530,7 +2563,6 @@ en:
       due: due
     show:
       page_title_header: Calendar
-      skip_to_calendar: Skip to calendar
       calendars: Calendars
       undated_items: Undated
       calendar_feed: Calendar Feed
@@ -2694,7 +2726,6 @@ en:
     type_disabled_error: This type of conference is no longer enabled for this Canvas site
     general_error: There was an error joining the conference
     inactive_error: That conference is not currently active
-    general_error_with_message: 'There was an error joining the conference. Message: ''%{message}'''
     no_settings_error: The conference does not have an advanced settings page
     disabled_error: Web conferencing has not been enabled for this Canvas site
     index:
@@ -2751,6 +2782,7 @@ en:
       edit: Edit
       delete: Delete
       type: "%{type}"
+  there_was_an_error_joining_the_conference_d2c3e4b0: There was an error joining the conference.
   content_exports:
     errors:
       not_found: Export does not exist
@@ -3358,6 +3390,7 @@ en:
         allow_student_organized_groups: Let students organize their own groups
         hide_final_grades: Hide totals in student grades summary
         hide_distribution_graphs: Hide grade distribution graphs from students
+        hide_sections_on_course_users_page: Hide sections on the People page from students
         lock_all_announcements: Disable comments on announcements
         course_section_name: Add a New Section
         root_account_id: Root Account
@@ -4110,9 +4143,6 @@ en:
   gradebooks:
     notices:
       updated: Assignment submission was successfully updated.
-      uploaded:
-        one: Files and comments created for 1 submission
-        other: Files and comments created for %{count} submissions
     errors:
       submission_failed_default: Submission Failed
       submission_failed: 'Submission was unsuccessful: %{error}'
@@ -4445,6 +4475,7 @@ en:
   no_password_was_given_472222e5: No password was given
   too_many_failed_login_attempts_please_try_again_la_f8e0d7c8: Too many failed login attempts. Please try again later or contact your system administrator.
   that_user_account_has_been_deleted_please_contact__350e0e0: That user account has been deleted.  Please contact your system administrator to have your account re-activated.
+  invalid_username_or_password_trouble_logging_in_ch_7699399c: Invalid username or password. Trouble logging in? *Check out our Login FAQs*.
   invalid_username_or_password_b60aa240: Invalid username or password
   failed_to_validate_cas_ticket_error_31aa4c63: 'Failed to validate CAS ticket: %{error}'
   there_was_a_problem_logging_in_at_institution_5a298155: There was a problem logging in at %{institution}
@@ -4659,9 +4690,6 @@ en:
       settings_updated: Plugin settings successfully updated.
     academic_benchmark_importer:
       description: This enables importing Academic Benchmark standards into Canvas.
-    canvas_webhooks:
-      name: Canvas Webhooks
-      description: Webhooks plugin for Canvas
     catalog_provisioner:
       name: Catalog Provisioner
       description: Catalog Account Provisioner for Canvas
@@ -4673,6 +4701,8 @@ en:
     uuid_provisioner:
       name: UUID provisioner
       description: This enables exporting UUIDs into Quiz.Next services.
+    apple:
+      description: Sign in With Apple
     clever:
       description: Clever Login
     facebook:
@@ -4757,11 +4787,21 @@ en:
         base_url: Base URL
         apps_index_endpoint: Apps Index Endpoint
         app_reviews_endpoint: App Show Endpoint
+    apple_settings:
+      labels:
+        client_id: Service ID
     assignment_freezer_settings:
       description: |-
         This plugin allows admins to check a property on assignments that makes the configured
         properties un-editable once the assignment is copied into another course.
       no_copying_frozen: Don't allow frozen assignments to be copied.
+    big_blue_button_fallback_settings:
+      description: When you have your BigBlueButton Plugin configured to use fallback settings, these are the settings it uses. The fallback is only used to look for recordings of conferences that were not created with the configuration for your BigBlueButton Plugin.
+      labels:
+        domain: Domain
+        secret: Secret
+      domain_description: "**hostname** or **ip address** of your BigBlueButton installation (e.g. bigbluebutton.mycompany.com)"
+      secret_description: This is the %{parameter_name} parameter that can be found in the %{filename} config file.
     big_blue_button_settings:
       description: You will need access to a [BigBlueButton](%{url}) instance.
       labels:
@@ -4770,6 +4810,7 @@ en:
         recording_enabled: Allow conferences to be recorded.
         free_trial: Mark this BigBlueButton instance as a free trial
         replace_with_alternatives: Disable BigBlueButton conferences; show a list of alternatives instead
+        use_fallback: Use BigBlueButton Fallback Plugin settings to look for recordings for conferences that weren't hosted by the currently configured BBB instance.
       domain_description: "**hostname** or **ip address** of your BigBlueButton installation (e.g. bigbluebutton.mycompany.com)"
       secret_description: This is the %{parameter_name} parameter that can be found in the %{filename} config file.
     canvadocs_settings:
@@ -6370,6 +6411,7 @@ en:
     eportfolios: ePortfolios
     observees: Observing
     qr_mobile_login: QR for Mobile Login
+    past_global_announcements: Global Announcements
   end_dates_cannot_be_before_start_dates_d6018daf: End dates cannot be before start dates
   terms:
     errors:
@@ -6734,6 +6776,10 @@ en:
   card_view_eaf73185: Card View
   recent_activity_51239235: Recent Activity
   list_view_430aecce: List View
+  smart_alerts_settings:
+    threshold_12h: 12h
+    threshold_24h: 24h
+    threshold_36h: 36h
   canvas_by_instructure_1490381: Canvas by Instructure
   help_with_content_licensing_a146fb0e: Help with content licensing
   help_with_course_visibilities_6b6e22a4: Help with course visibilities
@@ -6998,6 +7044,7 @@ en:
   group_name_group_people_e9d548c1: "%{group_name} - Group People"
   group_name_group_discussions_8e509286: "%{group_name} - Group Discussions"
   invalid_points_possible: The value of possible points for this assignment must be zero or greater.
+  the_value_of_possible_points_for_this_assignment_c_42396e3: The value of possible points for this assignment cannot exceed 999999999.
   copy_9748f9f: Copy
   the_group_category_can_t_be_changed_because_studen_9d7b1432: The group category can't be changed because students have already submitted on this assignment
   anonymously_graded_assignments_can_t_be_group_assi_ddb00bb2: Anonymously graded assignments can't be group assignments
@@ -7082,6 +7129,7 @@ en:
     upload_error_timeout: 'The request timed out: %{url}'
     upload_error_over_quota: 'file size exceeds quota limits: %{bytes} bytes'
     upload_error_unexpected: An unknown error occurred downloading from %{url}
+  login_with_provider_3fd3998e: Login with %{provider}
   authentication_provider:
     default_login_handle_name: Email
     default_delegated_login_handle_name: Login
@@ -7136,6 +7184,8 @@ en:
   big_blue_button_conference:
     recording_setting: Recording
     recording_setting_enabled_description: Enable recording for this conference
+  scheduled_date_5b0aedb6: Scheduled Date
+  enable_recording_for_this_conference_b8adff6: Enable recording for this conference
   this_conference_may_be_recorded_f76deeeb: This conference may be recorded.
   bookmark_service:
     default_title: No Title
@@ -7571,10 +7621,6 @@ en:
   submission_annotation_user_name_assignment_title_c_39910597: 'Submission Annotation: %{user_name}, %{assignment_title}, %{course_name}'
   someone_just_made_a_new_annotation_on_the_anonymou_cbbe68ca: Someone just made a new annotation on the anonymous submission for Student (%{user_id}) for %{assignment_title}
   author_name_just_made_a_new_annotation_on_the_subm_a1b55e62: "%{author_name} just made a new annotation on the submission for %{user_name} for %{assignment_title}"
-  anonymous_submission_annotation_student_user_id_as_ffca8ce9: 'Anonymous Submission annotation: Student (%{user_id}), %{assignment_title}, %{course_name}'
-  submission_annotation_user_name_assignment_title_c_80c1963e: 'Submission annotation: %{user_name}, %{assignment_title}, %{course_name}'
-  someone_just_made_a_new_comment_on_the_anonymous_s_a2e944fc: Someone just made a new comment on the anonymous submission for Student (%{user_id}) for %{assignment_title}.
-  author_name_just_made_a_new_comment_on_the_submiss_dcfad73: "%{author_name} just made a new comment on the submission for %{user_name} for %{assignment_title}."
   anonymous_submission_comment_student_id_assignment_10ffe8c7: 'Anonymous Submission Comment: Student (%{id}), %{assignment_title}, %{course_name}'
   submission_comment_user_name_assignment_title_cour_d88ba875: 'Submission Comment: %{user_name}, %{assignment_title}, %{course_name}'
   student_author_id_just_made_a_new_comment_on_the_a_115d92e6: Student (%{author_id}) just made a new comment on the anonymous submission for Student (%{user_id}) for %{assignment_title}
@@ -7584,6 +7630,8 @@ en:
   new_anonymous_comment_for_assignment_title_student_d34cb28f: New anonymous comment for %{assignment_title}, Student (%{user_id}), %{course_name}.
   new_comment_by_author_name_for_assignment_title_us_19f3c2a5: New comment by %{author_name} for %{assignment_title}, %{user_name}, %{course_name}.
   anonymous_submission_comment_student_user_id_assig_96b99600: 'Anonymous Submission Comment: Student (%{user_id}), %{assignment_title}, %{course_name}'
+  someone_just_made_a_new_comment_on_the_anonymous_s_a2e944fc: Someone just made a new comment on the anonymous submission for Student (%{user_id}) for %{assignment_title}.
+  author_name_just_made_a_new_comment_on_the_submiss_dcfad73: "%{author_name} just made a new comment on the submission for %{user_name} for %{assignment_title}."
   canvas_alert_anonymous_comment_student_author_id_f_a525b5eb: 'Canvas Alert - Anonymous Comment: Student (%{author_id}) for %{assignment_title}, Student (%{user_id}), %{course_name}.'
   canvas_alert_anonymous_comment_assignment_title_st_e7df7956: 'Canvas Alert - Anonymous Comment: %{assignment_title}, Student (%{user_id}), %{course_name}.'
   canvas_alert_comment_author_name_for_assignment_ti_871fd642: 'Canvas Alert - Comment: %{author_name} for %{assignment_title}, %{user_name}, %{course_name}.'
@@ -8933,14 +8981,11 @@ en:
   get_your_users_error_reports_posted_to_salesforce__76f57839: Get your users error reports posted to Salesforce Service Cloud
   salesforce_ticketing_webtocase_connector_80f75716: Salesforce Ticketing WebToCase Connector
   get_your_users_error_reports_posted_to_salesforce_dfb1a6c2: Get your users error reports posted to Salesforce
-  you_have_reached_the_maximum_webhooks_per_user_lim_2af4b256: You have reached the maximum webhooks per user limit (%{max})
-  you_have_reached_the_maximum_webhooks_per_account__ae9a7f83: You have reached the maximum webhooks per account limit (%{max})
-  permissions:
-    manage_webhooks: Webhooks - manage
-    provision_catalog: Provision a Catalog
   zendesk:
     engine:
       plugin_name: Zendesk
+  permissions:
+    provision_catalog: Provision a Catalog
   catalog_already_enabled_56478a3c: Catalog already enabled
   catalog_users_already_exist_2894b8c4: Catalog users already exist
   host_is_unreachable_or_not_pointing_to_catalog_fb3fc082: Host is unreachable or not pointing to Catalog
@@ -8969,11 +9014,12 @@ en:
   final_letter_grade_80dccec1: Final Letter Grade
   enrollment_state_ac62019b: Enrollment State
   enrollment_role_f5d985a7: Enrollment Role
-  student_submissions_910da1b3: Student Submissions
+  eastern_gateway_student_submissions_ebad06a9: Eastern Gateway Student Submissions
   the_term_to_report_on_5f586e7c: The term to report on
   the_beginning_date_for_submissions_9d890f3b: The beginning date for submissions
   the_end_date_for_submissions_66168efa: The end date for submissions
   include_unsubmitted_and_deleted_submissions_101225c7: Include unsubmitted and deleted submissions
+  student_submissions_910da1b3: Student Submissions
   include_unpublished_assignments_83ebbaec: Include Unpublished Assignments
   teacher_engagement_report_ec03613d: Teacher Engagement Report
   student_engagement_report_bf958028: Student Engagement Report
@@ -8987,6 +9033,11 @@ en:
   the_beginning_date_range_for_the_courses_to_report_82353138: The beginning date range for the courses to report on
   the_ending_date_for_the_courses_to_report_on_1c417d5e: The ending date for the courses to report on
   the_ending_date_range_for_the_courses_to_report_on_99e0ea8f: The ending date range for the courses to report on
+  count_of_submissions_per_day_c1f6ae32: Count of Submissions Per Day
+  the_beginning_date_for_submissions_count_9b9d7a9c: The beginning date for submissions count
+  the_end_date_for_submissions_count_be626211: The end date for submissions count
+  start_time_8c0fbe8b: Start time
+  count_of_submissions_for_day_83a88e68: count of submissions for day
   the_start_date_was_set_to_1_month_ago_778e3d7f: The start date was set to 1 month ago.
   the_start_date_was_set_to_the_beginning_of_last_we_39f49e1d: The start date was set to the beginning of last week.
   term_sis_id_4613e944: term sis id
@@ -9028,12 +9079,7 @@ en:
   created_by_sis_b590894c: Created by SIS;
   always_include_dates_74b3721d: Always Include Dates;
   canvas_group_membership_id_3b8c7607: canvas_group_membership_id
-  canvas_demo_7a005cf3: Canvas Demo
-  time_left_in_your_instant_trial_extend_now_afb9bd2f: "%{time} left in your Instant Trial *(extend now)*"
-  time_left_in_your_instant_trial_5dd0392b: "%{time} left in your Instant Trial"
-  teacher_view_b2047bc6: Teacher View
-  student_view_ac9b672f: Student View
-  admin_view_a2f4cd5c: Admin View
+  template_account_21ac8f4f: Template Account
   rce_contents_replace_display_name: RCE Contents Replace
   rce_contents_replace_description: Enable RCE full text replace from LTI's
   video_conferencing_guides_for_remote_classrooms_ffab4a1b: Video Conferencing Guides for Remote Classrooms
@@ -9151,6 +9197,7 @@ en:
   unable_to_find_clever_district_district_id_61deb1cb: Unable to find Clever District %{district_id}
   multiple_canvas_accounts_are_associated_with_cleve_c1739660: Multiple Canvas accounts are associated with Clever District %{district_id}
   salesforce_account_id_eb5c78ad: Salesforce Account Id
+  org_type_as_reported_by_salesforce_c10f4000: Org Type as Reported by Salesforce
   no_migration_file: File required for content migration.
   qti_img_matching_question: Imported matching question contains images on both sides, which is unsupported
   qti_img_matching_question_distractors: Imported matching question contains images inside the choices, and could not be fixed because it also contains distractors
@@ -10996,6 +11043,8 @@ en:
   syllabus: Course Syllabus
   this_feature_can_t_be_enabled_while_autodetection__a3552fb4: This feature can't be enabled while autodetection of field separators is enabled
   this_feature_can_t_be_enabled_while_semicolons_are_2e0adb54: This feature can't be enabled while semicolons are forced to be field separators
+  enabling_the_elementary_theme_will_change_the_font_c944b619: Enabling the Elementary Theme will change the font in the Canvas interface and simplify the Course Navigation Menu for all users in your course.
+  disabling_the_elementary_theme_will_change_the_fon_d7f31a3b: Disabling the Elementary Theme will change the font in the Canvas interface for all users in your course.
   course_grade_grade_in_course_code_9fa854db: 'Course grade: %{grade}% in %{course_code}'
   email:
     default_from_name: Instructure Canvas
@@ -11052,6 +11101,7 @@ en:
   an_existing_canvas_user_with_the_user_id_has_alrea_aabbea6e: An existing Canvas user with the %{user_id} has already claimed %{other_user_id}'s user_id requested login information, skipping
   could_not_find_the_existing_user_for_login_with_si_6968e3e6: Could not find the existing user for login with SIS ID %{user_id}, skipping
   an_existing_user_does_not_match_existing_user_ids__156c7a52: An existing user does not match existing user ids provided for login with SIS ID %{user_id}, skipping
+  pronoun_does_not_match_account_pronoun_or_pronouns_6907bfa2: Pronoun does not match account pronoun or pronouns are not enabled for this account, %{user_id}, skipping
   cannot_set_the_due_date_to_a_date_within_a_closed__8c88c45d: Cannot set the due date to a date within a closed grading period
   cannot_change_the_due_date_when_due_in_a_closed_gr_965b99cb: Cannot change the due date when due in a closed grading period
   cannot_change_the_due_date_to_a_date_within_a_clos_61eb0951: Cannot change the due date to a date within a closed grading period
@@ -11074,6 +11124,11 @@ en:
   can_destroy_subscription_to_data_service_data_b8dfca27: Can destroy subscription to data service data.
   can_list_categorized_event_types_52596f7: Can list categorized event types.
   can_view_feature_flags_c92e0aa9: Can view feature flags
+  can_create_external_tools_4c293044: Can create external tools.
+  can_destroy_external_tools_cdb0e734: Can destroy external tools.
+  can_list_external_tools_9132ad0f: Can list external tools.
+  can_show_external_tools_bb4988c5: Can show external tools.
+  can_update_external_tools_168c1abe: Can update external tools.
   an_error_occurred_while_attempting_to_contact_turn_b7de17d6: An error occurred while attempting to contact Turnitin.
   there_was_an_error_submitting_to_the_similarity_de_eb6a261: There was an error submitting to the similarity detection service. Please try resubmitting the file before contacting support.
   update_your_notification_settings_ed9564f3: Update your notification settings
@@ -11101,6 +11156,7 @@ en:
   assignment_name_course_name_override_is_now_due_ed5ce1e: "%{assignment_name}, %{course_name} (%{override}) is now due"
   assignment_name_course_name_override_no_longer_has_5a94da2b: "%{assignment_name}, %{course_name} (%{override}) no longer has a due date"
   click_here_to_view_the_submission_24777a69: Click here to view the submission
+  canvas_3962b702: Canvas
   content_link_error_assignment_name_course_name_b8be789a: Content Link Error - %{assignment_name}, %{course_name}
   students_are_attempting_to_access_unpublished_cont_be329862: Students are attempting to access unpublished content, %{bad_link}, in %{asset_link}.
   students_are_clicking_on_bad_link_to_content_that__d9c51d0d: Students are clicking on %{bad_link} to content that has been removed in %{asset_link}.
@@ -11332,6 +11388,8 @@ en:
   students_can_see_originality_score_797fe634: Students can see originality score
   enabled_web_services_f620b2be: Enabled Web Services
   who_can_create_new_courses_7a6c1338: Who Can Create New Courses
+  smart_alerts_43776718: Smart Alerts
+  threshold_in_hours_to_notify_students_within_f33820aa: Threshold (in hours) to notify students within
   add_account_admins_99c03c9e: Add Account Admins
   add_more_e1ffaa65: Add More
   edit_announcement_title_cce0b4e: Edit announcement %{title}
@@ -11456,6 +11514,9 @@ en:
   are_you_sure_26795d3c: Are you sure?
   deleting_6421031e: deleting...
   save_11a80ec3: Save
+  you_will_need_to_create_a_service_id_apple_develop_4e684a7a: |-
+    You will need to create a Service ID [Apple Developer Console](%{apple_url}).
+    Enable Sign in with Apple, and add %{callback_url} as a return URL. Enter the Identifier here.
   self_registration_156392d6: Self Registration
   disabled_3b1b332a: Disabled
   all_account_types_e83c1516: All Account Types
@@ -12003,13 +12064,6 @@ en:
     grading_scheme_currently_set: Currently Set
     buttons:
       save: Save
-  start_date_field_for_styleguide_8a8ab1d6: Start Date field for styleguide
-  due_date_field_for_styleguide_a88e02d6: Due Date field for styleguide
-  available_from_field_for_styleguide_7ced3861: Available From field for styleguide
-  available_until_field_for_styleguide_85d5d65a: Available Until field for styleguide
-  info:
-    styleguide:
-      manage: Manage
   jobs:
     index:
       title: Jobs CP
@@ -12106,7 +12160,6 @@ en:
   need_a_canvas_account_221d18ed: Need a Canvas Account?
   click_here_it_s_free_eeccb9cb: Click Here, It's Free!
   forgot_password_f0c3fbac: Forgot Password?
-  login_with_provider_3fd3998e: Login with %{provider}
   error_logging_in_error_msg_f61efaa3: 'Error logging in: %{error_msg}'
   create_account_263ec6: Create Account
   log_out_379ba28a: Log Out
@@ -12124,6 +12177,7 @@ en:
       new_tab_loaded: This tool was successfully loaded in a new browser window. Reload the page to access the tool again.
   tool_content_e699e813: Tool Content
   message_body_1f782712: Message Body
+  message_for_name_648f5765: Message for %{name}
   provider_icon_5064fa6e: Provider icon
   oauth2_provider:
     confirm_form:
@@ -12259,6 +12313,7 @@ en:
   time_limit_a6f1a51e: Time Limit
   how_many_minutes_ecca5ee7: How many minutes?
   minutes_4aee5a41: Minutes
+  disable_automatic_submission_8e1d8676: Disable Automatic Submission
   keep_submissions_anonymous_5cbaf419: Keep Submissions Anonymous
   allow_multiple_attempts_e67a0a37: Allow Multiple Attempts
   quiz_score_to_keep_d1f7c4b1: Quiz Score to Keep
@@ -12392,7 +12447,6 @@ en:
   site:
     view_privacy_policy: View Privacy Policy
   please_enter_your_label_name_7745272d: 'Please enter your %{label_name}:'
-  login_with_auth_type_a0aaa52a: Login with *%{auth_type}*
   this_course_cannot_be_added_to_the_courses_menu_at_a3fbb11e: This course cannot be added to the courses menu at this time.
   chat_2153c6b7: Chat
   all_terms_cd27b0fb: All Terms
@@ -12594,18 +12648,6 @@ en:
         orgid: Salesforce Org ID
         record_type: Record Type
         ret_val: Return URL
-    recaptcha_settings:
-      instructions: |-
-        Before you can use the ReCAPTCHA plugin you'll need to
-        [sign up for an account on ReCAPTCHA](%{url}). Make sure to set up your
-        domain correctly to handle your site domain(s).  After you've set up an
-        account, enter your public and private keys below.
-
-        **Note:** any changes you make to these settings won't be
-        updated until you restart your server.
-      labels:
-        recaptcha_public_key: ReCAPTCHA Public Key
-        recaptcha_private_key: ReCAPTCHA Private Key
   get_the_following_from_your_salesforce_connected_a_881fc9a3: Get the following from your Salesforce Connected App
   you_ll_need_a_refresh_token_follow_the_steps_at_th_79a3984b: You'll need a refresh token, follow the steps at this link, you may want a technical expert to help
   salesforce_has_a_different_login_host_for_sanbox_a_2d878ae9: Salesforce has a different login host for sanbox accounts than it does for production accounts, so if you're using a Salesforce sanbox account and you don't check this box it won't be able to authenticate (and this works in reverse too, if you have a production account and you DO check this box it won't authenticate)
@@ -12646,18 +12688,21 @@ en:
   update_4d8ee62: Update
   user_id_or_sis_id_sis_id_should_be_prepended_with__980ff02b: User ID or SIS ID (SIS ID should be prepended with sis_user_id:)
   include_deleted_enrollments_1c87684a: Include Deleted Enrollments
-  enrolled_a6a517cd: Enrolled
-  withdrawn_4c838347: Withdrawn
-  all_configured_apps_a14eef0a: All Configured Apps
-  course_implemented_apps_fa658f5a: Course Implemented Apps
-  include_unpublished_courses_7a0e7aab: Include Unpublished Courses
-  course_canvas_id_9e36b24c: Course Canvas ID
   this_is_a_report_of_all_students_enrolled_in_a_cou_d0137d3c: |-
     This is a report of all students enrolled in a course in a given term that
     have submitted an assignment. This report contains one row per student
       submission.
   submission_records_will_be_filtered_by_date_using__b3990a1: Submission records will be filtered by date using the "submitted_at" timestamp if it is available. When "submitted_at" is not available, the "graded_at" field will be used. If neither field is populated the submisssion record will never be included in the report when filtering by date.
   include_unsubmitted_deleted_submissions_99fc2aad: Include Unsubmitted & Deleted Submissions
+  enrolled_a6a517cd: Enrolled
+  withdrawn_4c838347: Withdrawn
+  current_terms_bcf31fb2: Current Terms
+  course_start_date_on_before_a3a32883: Course Start Date On/Before
+  course_end_date_on_after_a6bbb0b7: Course End Date On/After
+  all_configured_apps_a14eef0a: All Configured Apps
+  course_implemented_apps_fa658f5a: Course Implemented Apps
+  include_unpublished_courses_7a0e7aab: Include Unpublished Courses
+  course_canvas_id_9e36b24c: Course Canvas ID
   course_sis_id_sis_id_or_canvas_id_4d323f5c: 'Course SIS ID (SIS_ID:####) OR Canvas ID: (###)'
   start_dates_8f1c22a8: 'Start Dates:'
   start_date_from_20503757: 'Start Date From:'
@@ -12675,91 +12720,15 @@ en:
   sis_del_alumno_716babc5: SIS del Alumno
   this_report_displays_teacher_engagement_activity_f_5888d45b: This report displays teacher engagement activity for each teacher enrollment.
   this_report_gets_recent_big_blue_button_conference_5d7dcddb: This report gets recent Big blue button conferences for an account.
+  this_report_gets_a_count_of_submissions_that_were__207a3d59: This report gets a count of submissions that were submitted on a given day. Submission counts could change over time because this is checking the submitted_at attribute in the database. If a user re-submits an older assignment, the record would be updated to the new submitted_at date. Counts are done from the beginning of the day to the end of the day in the set timezone of the account running the report.
   this_report_shows_all_the_activity_from_users_enro_8f8e0ca1: 'This report shows all the activity from users enrolled in all courses in a given term. The resulting csv file will have one row per student activity and will have the following headers: section id, section sis id, section name, course id, course sis id, course name, term id, term sis id, term name, user id, user sis id, user name, content type, content, times viewed, times participated, last viewed. The times viewed and times participated are counters from the beginning of time until the time the report was generated. A maximum of one month''s data will be retrieved. By default, it will return data from the beginning of the previous week.'
   content_name_4607507c: content name
   models_to_include_9fb154ca: Models to include
   additional_options_7cefee79: Additional Options
   always_include_dates_1ae2935e: Always Include Dates
   the_default_report_only_includes_course_section_da_729092f0: The default report only includes Course/Section dates if Enrollment restrictions are enabled
-  demos:
-    demos_add:
-      labels:
-        master_template: Master template
-        school_name: School Name
-        username: Email Address
-    register:
-      sign_up_to_canvas: Sign up to try Canvas
-      personalize_demo: Personalize Your Demo
-      labels:
-        organization_type: Organization Type
-        school_position: Title
-        school_name: School / Organization
-        name: Name
-        phone: Phone Number
-        username: Email
-        location: Location
-        type_what_you_see: Type what you see
-        type_what_you_hear: Type what you hear
-      choose: Choose One
-      higher_education: Higher Ed
-      higher_education_for_profit: Higher Ed For-Profit
-      k12: K12
-      k12_for_profit: K12 For-Profit
-      corporate: Corporate
-      government: Government
-      cio: CIO
-      dean: Dean
-      director: Director
-      instructional_designer: Instructional Designer
-      lms_administrator: LMS Administrator
-      provost: Provost
-      school_administrator: School Administrator
-      student: Student
-      support: Support
-      teacher_instructor: Teacher/Instructor
-      technologist: Technologist
-      vp: VP
-      assistant_superintendent: Assistant Superintendent
-      bus_finance_purchasing_director: Bus/Finance/Purchasing Dir
-      e_rate_administrator: ERate Administrator
-      instructional_media_svcs_dir: Instructional Media Svcs Dir
-      library_media_specialist: Library/Media Specialist
-      network_system_administrator: Network System Administrator
-      principal: Principal
-      school_technology_coordinator: School Technology Coordinator
-      superintendent: Superintendent
-      technology_computer_coord: Technology/Computer Coord
-      technology_education_director: Technology Education Director
-      c_level: C-Level
-      employee: Employee
-      manager: Manager
-      executive_officer: Executive Officer
-      gs_1_7: GS 1-7
-      gs_8_10: GS 8-10
-      gs_11_15: GS 11-15
-      other: Other
-      united_states_and_canada: United States and Canada
-      europe_uk: Europe - UK
-      europe_other: Europe - Other
-      africa: Africa
-      asia_and_middle_east: Asia and Middle East
-      australia_new_zealand_and_oceania: Australia, New Zealand, and Oceania
-      south_america_central_america_and_caribbean: South America, Central America, and Caribbean
-      subscribe: I want to receive news, tips and info from Instructure
-      agree_to_terms: I agree to the *terms of use* and acknowledge the **privacy policy**.
-      incorrect: Incorrect. Try again.
-      begin_trial: Begin Trial
-    _register:
-      add_site: Add Site
-      invalid_email: Invalid email address
-      specify_location: Please specify your geographic location
-      you_must_agree_to_terms: You must agree to the terms of use
-      personalizing: Personalizing...
-      ready: Ready!
-      registered_successfully: Registered successfully!
-      try_again: Try Again
-  recaptcha_not_configured_3a6ef9ee: Recaptcha not configured
-  demo_sites_require_recaptcha_settings_to_be_config_8bf9c7e3: Demo sites require Recaptcha settings to be configured. Please see your site admin for this instance of Canvas.
+  this_report_gets_the_submissions_for_courses_d83bb449: This report gets the submissions for courses.
+  course_submission_report_data_example_95971ae4: Course Submission Report Data Example
   canvas_cloud_information_fdd404f2: Canvas Cloud Information
   created_by_b39b9c8b: Created By
   delete_domain_domain_c5b68f5: Delete domain %{domain}
@@ -13594,6 +13563,8 @@ en:
       loading_failed: Loading Failed
   url_is_required_4689ed84: URL is required
   page_name_is_required_d8c2736e: Page Name is required
+  a_file_named_name_already_exists_in_this_folder_do_e39de0b2: A file named "%{name}" already exists in this folder. Do you want to replace the existing file?
+  a_locked_file_named_name_already_exists_in_this_fo_33ca9a0c: A locked file named "%{name}" already exists in this folder. Please enter a new name.
   sis_import:
     headers:
       import_errors: Errors that prevent importing
@@ -13717,6 +13688,7 @@ en:
       resubmitting: Resubmitting...
   download_assignment_submissions_41e50ee7: Download Assignment Submissions
   click_here_to_download_size_of_file_74443988: Click here to download %{size_of_file}
+  no_submissions_to_zip_please_try_again_after_stude_7e0f478: No submissions to zip. Please try again after student submissions.
   something_went_wrong_downloading_submissions_pleas_6d069a09: Something went wrong downloading submissions. Please try again later.
   q_what_goes_black_white_black_white_a_a_panda_roll_c682ee13: 'Q: What goes black, white, black, white?  A: A panda rolling down a hill.'
   submit_assignment:
@@ -14390,6 +14362,7 @@ en:
       one: 1 pt
       other: "%{count} pts"
     cant_unpublish_when_students_submit: Can't unpublish if there are student submissions
+  points_pts_e5596bf7: "%{points} pts"
   modelsSection:
     overrides:
       everyone: Everyone
@@ -14520,8 +14493,6 @@ en:
   available_from_date_must_precede_available_until_c9f9e533: '"Available From" date must precede "Available Until"'
   an_unknown_server_error_occurred_please_try_again_f517eaf3: An unknown server error occurred.  Please try again.
   please_enter_a_search_term_with_three_or_more_char_53fd5ed8: Please enter a search term with three or more characters
-  filename_progress_percent_uploaded_1f465e66: "%{fileName} - %{progress} percent uploaded"
-  filename_uploaded_successfully_edd8e825: "%{fileName} uploaded successfully!"
   usage_rights_have_been_set_d1b433c7: Usage rights have been set.
   are_you_sure_you_want_to_delete_these_count_items_148e98ba:
     one: Are you sure you want to delete %{name}?
@@ -15110,7 +15081,6 @@ en:
   teacher_count_teachers_a92f7199: "%{teacher_count} teachers"
   no_courses_found_12d68a74: No courses found
   show_courses_from_8a087f63: Show courses from
-  loading_more_terms_4053e31f: Loading more terms...
   search_courses_by_teacher_e9760a48: Search courses by teacher...
   search_courses_591bc900: Search courses...
   filter_by_term_cfe778b2: Filter by term
@@ -15130,10 +15100,6 @@ en:
   no_users_found_64a043ff: No users found
   user_results_updated_9ce38dce: User results updated.
   course_results_updated_df9d1c95: Course results updated.
-  no_results_f36777ee: No results
-  no_matches_to_your_search_16d3d3b1: No matches to your search
-  enter_text_to_search_792cd5a1: Enter text to search
-  begin_typing_to_search_7daa7b1: Begin typing to search
   email_22a7d52d: Email
   click_to_sort_by_email_ascending_cb789ec4: Click to sort by email ascending
   click_to_sort_by_email_descending_72801b54: Click to sort by email descending
@@ -15372,25 +15338,53 @@ en:
   unlimited_ff19e96d: Unlimited
   limited_322546c5: Limited
   number_of_attempts_b0994c2f: Number of Attempts
-  percent_af88d1b1: "%{percent}%"
-  saving_assignment_dates_progress_9856153d: Saving assignment dates progress
-  saving_assignment_dates_progress_percent_a5ea89a1: 'Saving assignment dates progress: %{percent}%'
   assignment_dates_saved_successfully_78e0f355: Assignment dates saved successfully.
   there_was_an_error_retrieving_assignment_dates_39320c15: There was an error retrieving assignment dates.
   error_starting_save_operation_81bcb99: 'Error starting save operation:'
-  there_were_errors_saving_the_assignment_dates_3b39571b: 'There were errors saving the assignment dates:'
+  error_saving_assignment_dates_2af5e800: 'Error saving assignment dates: '
+  invalid_dates_were_found_please_correct_them_and_t_4140b318: Invalid dates were found. Please correct them and try again.
   loading_assignments_b3b248be: Loading assignments
   assignments_loaded_72ee472c: Assignments loaded
+  the_end_date_must_be_after_the_start_date_2a273107: The end date must be after the start date
+  select_by_date_range_c3af0101: Select by date range
+  selection_start_date_2e4a4dca: Selection start date
+  selection_end_date_10fcc8c6: Selection end date
+  apply_date_range_selection_cc4351ed: Apply date range selection
+  apply_781a2546: Apply
+  percent_af88d1b1: "%{percent}%"
+  saving_assignment_dates_progress_9856153d: Saving assignment dates progress
+  saving_assignment_dates_progress_percent_a5ea89a1: 'Saving assignment dates progress: %{percent}%'
+  count_assignments_selected_b03891ea:
+    one: "%{count} assignment selected"
+    other: "%{count} assignments selected"
+  batch_edit_6d41d0d7: Batch Edit
   default_dates_a0a2ae26: default dates
   due_at_5d7d2fa: Due At
   available_from_587ce92f: Available From
   available_until_f3b9c4ed: Available Until
+  this_assignment_has_too_many_dates_to_display_262f555f: This assignment has too many dates to display.
   this_assignment_has_no_default_dates_ae314295: This assignment has no default dates.
+  select_assignment_title_4571ffcb: 'Select assignment: %{title}'
+  revert_date_changes_5105ce5: Revert date changes
   in_closed_grading_period_dc717846: In closed grading period
   only_the_moderator_can_edit_this_assignment_a162b20d: Only the moderator can edit this assignment
   you_do_not_have_permission_to_edit_this_assignment_59b53274: You do not have permission to edit this assignment
+  parent_assignment_is_selected_6a2fbca8: parent assignment is selected
+  parent_assignment_is_not_selected_9efb4ac1: parent assignment is not selected
+  select_all_assignments_bd07b919: Select all assignments
+  selected_274ce24f: Selected
   assignment_dates_dccc98de: Assignment Dates
   notes_c42e0fd5: Notes
+  ok_ff1b646a: Ok
+  select_dates_to_remove_be55b14c: Select dates to remove
+  due_dates_520a6c08: Due Dates
+  availability_dates_438d71e0: Availability Dates
+  batch_edit_dates_f1ec3df2: Batch Edit Dates
+  select_an_edit_operation_ec1467d: Select an edit operation
+  shift_dates_b5a7b7a1: Shift Dates
+  shift_due_dates_and_assignment_availability_dates__c5ad272: Shift due dates and assignment availability dates forward by a number of days.
+  remove_dates_9b9ba2f6: Remove Dates
+  remove_due_dates_and_assignment_availability_dates_608cd97b: Remove due dates and assignment availability dates.
   there_was_an_error_retrieving_job_progress_266523f9: There was an error retrieving job progress
   there_was_an_error_starting_the_save_assignment_da_22ffb6a8: There was an error starting the save assignment dates job
   select_group_to_grade_6df28d80: Select Group to Grade
@@ -15522,7 +15516,6 @@ en:
     one: "-1 Point"
     other: "-%{count} Points"
   assignment_locked_a6233228: Assignment Locked
-  availability_dates_438d71e0: Availability Dates
   attempt_1_7ba3c30f: Attempt 1
   submission_locked_image_93aced38: Submission Locked Image
   submission_locked_a6074f8b: Submission Locked
@@ -15777,6 +15770,7 @@ en:
   unselected_all_courses_99a9d35c: Unselected all courses
   course_selection_245808bf: Course Selection
   toggle_select_course_name_310fdee4: Toggle select course %{name}
+  no_results_f36777ee: No results
   select_all_count_courses_4fc63811:
     one: Select (%{count}) Course
     other: Select All (%{count}) Courses
@@ -15839,7 +15833,6 @@ en:
   settings_changed_exceptions_e5247936: 'Settings changed exceptions:'
   deleted_content_exceptions_237e809d: 'Deleted content exceptions:'
   content_1440204b: Content
-  due_dates_520a6c08: Due Dates
   course_catalog_4cc7c8ce: Course Catalog
   recent_announcements_8becc59c: Recent Announcements
   please_upload_files_as_a_zip_5a2c799f: Please upload files as a .zip
@@ -15911,12 +15904,10 @@ en:
   divide_into_equal_time_slots_in_minutes_234312fa: Divide into equal time slots (in minutes
   divide_into_equal_slots_value_is_in_minutes_13fe14d2: Divide into equal slots (value is in minutes)
   create_slots_71dbb2f8: Create Slots
-  points_pts_e5596bf7: "%{points} pts"
   assignment_path_selected_e80191d1: Assignment Path Selected
   choose_assignment_path_8ea55f3a: Choose Assignment Path
   select_one_of_the_options_c8b0c6e4: 'Select one of the options:'
   option_index_6308524d: Option %{index}
-  selected_274ce24f: Selected
   select_d70f31da: Select
   edit_collaboration_b014c18b: Edit Collaboration
   delete_collaboration_23035eaf: Delete Collaboration
@@ -15943,6 +15934,21 @@ en:
   not_submitted_7d05fdb4: Not Submitted
   submitted_submitdate_bdd3bf09: 'Submitted: %{submitDate}'
   select_student_name_caaff244: Select student %{name}
+  no_valid_lti_resource_was_returned_11f7f91f: No valid LTI resource was returned
+  add_toolname_4e17dc90: Add %{toolName}
+  add_conference_7bcc625b: Add Conference
+  no_conferencing_options_enabled_fc00e371: No conferencing options enabled
+  add_name_db699e72: Add %{name}
+  add_conferencing_9f4ccded: Add Conferencing
+  use_arrow_keys_to_select_a_conference_provider_c5b456a6: Use arrow keys to select a conference provider
+  select_conference_provider_58c7f7fe: Select Conference Provider
+  unknown_conference_c4f13ad0: Unknown Conference
+  name_conference_8e042dd2: "%{name} Conference"
+  creating_conference_95b59116: Creating conference
+  conference_has_been_updated_title_2bacc5fa: 'Conference has been updated: %{title}'
+  conference_has_been_removed_f771cb11: Conference has been removed
+  remove_conference_title_207d32c0: 'Remove conference: %{title}'
+  conference_36b50fda: Conference
   zoom_f3e54d69: Zoom
   paste_zoom_into_calendar_events_announcements_disc_d873358e: Paste Zoom into Calendar Events, Announcements, Discussions, and anywhere you use the Rich Content Editor (RCE).
   visit_zoom_14636084: Visit Zoom
@@ -16006,6 +16012,11 @@ en:
   select_the_file_you_want_to_associate_or_add_a_fil_eedd8dc4: Select the file you want to associate, or add a file by selecting "New File".
   new_file_s_8876bba1: "[ New File(s) ]"
   new_file_135ae520: "[ New File ]"
+  unable_to_set_up_drag_and_drop_for_modules_4d339f1d: Unable to set up drag and drop for modules
+  drop_files_here_to_add_to_module_236304f5: Drop files here to add to module
+  or_choose_files_b795006d: or choose files
+  a_file_named_name_already_exists_do_you_want_to_re_6536980: A file named "%{name}" already exists. Do you want to replace the existing file?
+  a_locked_file_named_name_already_exists_please_ent_3b2e65a: A locked file named "%{name}" already exists. Please enter a new name.
   restart_link_validation_b61286fc: Restart Link Validation
   start_link_validation_dc0ac99c: Start Link Validation
   link_validation_is_running_caf08ced: Link validation is running
@@ -16149,7 +16160,7 @@ en:
   actions_for_course_312ff446: Actions for %{course}
   no_courses_to_display_700f94c4: No courses to display
   published_courses_count_e7e82f3b: Published Courses (%{count})
-  unpublished_drafts_count_86e16f17: Unpublished Drafts (%{count})
+  unpublished_courses_count_d35672f0: Unpublished Courses (%{count})
   color_a363e1b0: Color
   dashboard_card_movement_menu_b65b98f5: Dashboard Card Movement Menu
   move_to_top_e0d7d66e: Move to top
@@ -16224,13 +16235,13 @@ en:
   field_cannot_be_blank_afb5b332: Field cannot be blank.
   missing_required_fields_please_fill_in_all_require_1e10b2e9: Missing required fields. Please fill in all required fields.
   public_jwk_json_is_not_valid_please_submit_properl_31ea2004: Public JWK json is not valid. Please submit properly formatted json.
+  public_jwk_url_b5564c1d: Public JWK URL
   required_values_1eb5841f: Required Values
   title_f8e03596: "* Title"
   description_61f4296: "* Description"
   target_link_uri_bbed67d1: "* Target Link URI"
   openid_connect_initiation_url_d9037d30: "* OpenID Connect Initiation Url"
   jwk_method_6d5d0c84: "* JWK Method"
-  public_jwk_url_b5564c1d: Public JWK URL
   lti_advantage_services_c1746cb4: LTI Advantage Services
   services_must_be_supported_by_the_tool_in_order_to_1f194a36: Services must be supported by the tool in order to work. Check with your Tool Vendor to ensure service capabilities.
   check_services_to_enable_8877c451: Check Services to enable
@@ -16486,6 +16497,7 @@ en:
   sync_grades_a16622ca: Sync Grades
   quiz_menu_4fcd5e61: Quiz Menu
   quizzes_index_menu_1ce11b54: Quizzes Index Menu
+  submission_type_selection_72ce19f: Submission Type Selection
   user_navigation_a097be0f: User Navigation
   page_menu_2f8bee0: Page Menu
   pages_index_menu_f391bf04: Pages Index Menu
@@ -16549,7 +16561,6 @@ en:
   replace_e61834a7: Replace
   skip_bcb86160: Skip
   drop_files_here_to_upload_ce0f50f9: Drop files here to upload
-  or_choose_files_b795006d: or choose files
   show_and_hide_courses_menu_9e09d1d0: Show and hide courses menu
   folder_browsing_tree_1f00a3ae: Folder Browsing Tree
   file_list_350d08df: File List
@@ -16587,6 +16598,8 @@ en:
   search_for_files_7541fb28: Search for files
   upload_drop_zone:
     drop_to_upload: Drop items to upload
+  filename_progress_percent_uploaded_1f465e66: "%{fileName} - %{progress} percent uploaded"
+  filename_uploaded_successfully_edd8e825: "%{fileName} uploaded successfully!"
   error_uploading_file_e2d31b56: Error uploading file.
   retry_ebd5f8ba: Retry
   items_items_selected_5b55e566: "%{items} items selected"
@@ -16618,7 +16631,6 @@ en:
     upload: Upload It
   an_error_occurred_please_try_again_95361e05: An error occurred. Please try again.
   arrange_by_a121617c: Arrange By
-  apply_781a2546: Apply
   apply_filters_note_clicking_this_button_will_cause_753f04: 'Apply filters. Note: clicking this button will cause the page to reload.'
   grade_changes_cb5a57a8: Grade Changes
   type_a_few_letters_to_start_searching_3334657b: Type a few letters to start searching
@@ -17142,7 +17154,7 @@ en:
     other: "%{count} unread shares."
   count_unread_cff5855: "%{count} unread."
   published_courses_294ef14c: Published Courses
-  unpublished_drafts_bb352243: Unpublished Drafts
+  unpublished_courses_4299148e: Unpublished Courses
   welcome_to_your_courses_to_customize_the_list_of_c_f95e4b2: Welcome to your courses! To customize the list of courses,  click on the "All Courses" link and star the courses to display.
   user_profile_picture_46bffbc7: User profile picture
   end_course_set_up_tutorial_f358b85d: End Course Set-up Tutorial
@@ -17383,7 +17395,7 @@ en:
   game_over_104baa: GAME OVER
   press_space_to_start_over_d4b8a2da: Press 'space' to start over
   contexttype_notification_settings_d72acd58: "%{contextType} Notification Settings"
-  enable_notifications_10a4bf44: Enable Notifications
+  enable_notifications_for_contextname_b5b4440e: Enable Notifications for %{contextName}
   you_are_currently_receiving_notifications_for_this_4f542bb2: You are currently receiving notifications for this %{contextType}. To disable %{contextType} notifications, use the toggle above.
   you_will_not_receive_any_contexttype_notifications_da7a58f1: You will not receive any %{contextType} notifications at this time. To enable %{contextType} notifications, use the toggle above.
   granular_contexttype_notification_settings_will_be_c5dfc901: Granular %{contextType} notification settings will be configurable here in the future.
@@ -17448,6 +17460,10 @@ en:
   please_wait_as_we_upload_and_process_your_file_73c4b5a8: Please wait as we upload and process your file.
   an_outcome_import_is_currently_in_progress_11e6cb38: An outcome import is currently in progress.
   it_s_ok_to_leave_this_page_we_ll_email_you_when_th_2dbed7fa: It's ok to leave this page, we'll email you when the import is done.
+  no_announcements_to_display_fbf9ed1e: No announcements to display
+  you_can_view_dismissed_announcements_by_going_to_a_7f6f4f08: |-
+    You can view dismissed announcements by going to Account and selecting Global
+                Announcements from the menu.
   count_permissions_found_1a926f7d:
     one: One permission found
     other: "%{count} permissions found"
@@ -17485,7 +17501,6 @@ en:
   expand_permission_b45bf097: Expand %{permission}
   shrink_permission_74b01aed: Shrink %{permission}
   cannot_change_role_name_to_label_already_in_use_c8126e4e: 'Cannot change role name to %{label}: already in use'
-  ok_ff1b646a: Ok
   warning_if_there_are_any_users_with_this_role_they_1a7c1fef: 'Warning: If there are any users with this role, they will keep the current permissions but you will not be able to create new users with this role.'
   click_ok_to_continue_deleting_this_role_baa9d9e2: Click "ok" to continue deleting this role.
   warning_all_permissions_will_change_to_match_the_s_e3c9819f: 'Warning: All permissions will change to match the selected base role.'
@@ -17617,7 +17632,6 @@ en:
   allows_user_to_configure_alerts_in_course_settings_38675b12: Allows user to configure alerts in course settings. Alerts are a seldom-used feature designed to send an alert to students, teachers or admins for specific triggers (e.g., no student-teacher interaction for 7 days). They are checked every day, and notifications will be sent to the student and/or the teacher until the triggering problem is resolved.
   allows_user_to_view_the_announcements_link_in_cour_f6b03e9a: Allows user to view the Announcements link in Course Navigation. Allows user to view course announcements.
   to_view_recent_announcements_on_the_home_page_cour_ffc52530: To view recent announcements on the home page, Course content - view must be enabled, and the Show recent announcements on Course home page checkbox must be selected in Course Settings. To manage course announcements, Discussions - moderate ​must also be enabled.
-  global_announcements_a78912c8: Global Announcements
   this_permission_only_affects_course_announcements__6bc2b0a5: This permission only affects course announcements; to manage global announcements, Global Announcements - add / edit / delete​ must be enabled.
   allows_user_to_access_the_announcements_link_in_co_2783579a: Allows user to access the Announcements link in Course Navigation. Allows user to view course announcements. Allows user to view recent announcements on the course home page.
   to_add_announcements_discussions_moderate_must_als_2496cbd7: To add announcements, Discussions - moderate must also be enabled. To view recent announcements on the home page, the Show recent announcements on Course home page checkbox must be selected in Course Settings.
@@ -17675,11 +17689,10 @@ en:
   allows_user_to_add_events_to_list_view_dashboard_v_1339e29e: 'Allows user to add events to List View Dashboard via the Add to Student To-Do checkbox. '
   to_publish_and_unpublish_module_content_courses_ad_ae996413: To publish and unpublish module content, Courses - add / edit / delete and Course Content - view must also be enabled.
   allows_user_to_view_published_and_unpublished_cour_25a5dcc0: Allows user to view published and unpublished course content.
-  new_gradebook_297f7e2d: New Gradebook
-  allows_user_to_view_the_new_gradebook_50f53ef0: Allows user to view the New Gradebook.
   admin_tools_undelete_courses_d9bd8631: Admin Tools (Undelete Courses)
-  regardless_of_whether_this_permission_is_enabled_o_437ee269: Regardless of whether this permission is enabled or disabled, the user will still be able to manage events on their personal calendar.
+  if_courses_add_edit_delete_and_courses_undelete_ar_2949051: If Courses - add / edit / delete and Courses - undelete are also enabled, an account-level user will be able to restore deleted courses in Admin Tools.
   if_disabled_user_will_still_have_access_to_course__d78fddc4: If disabled, user will still have access to Course Settings. User cannot manage individual course content without the appropriate permission for that content item. If course visibility is limited to users enrolled in the course, this permission allows the user to view course content without being enrolled in the course.
+  to_view_the_gradebook_grades_view_all_grades_must__7ead435: To view the Gradebook, Grades - view all grades must also be enabled.
   allows_user_to_edit_blueprint_lock_settings_on_the_9f51663c: Allows user to edit blueprint lock settings on the Files page in a Blueprint master course.
   allows_user_to_add_edit_and_delete_course_files_an_5adadbf5: Allows user to add, edit, and delete course files and folders. Allows user to download files into a zip file, import a zip file, and lock and unlock files.
   allows_user_to_access_the_files_tab_in_the_content_a5187929: Allows user to access the Files tab in the Content Selector.
@@ -17689,17 +17702,17 @@ en:
   blueprint_courses_must_be_enabled_for_an_account_b_ffb3ac4b: Blueprint courses must be enabled for an account by an admin. Course roles can only manage content in Blueprint Courses if they are added to the Blueprint Course as a teacher, TA, or designer role.
   course_settings_sections_tab_4ae03a9a: Course Settings (Sections tab)
   allows_user_to_add_edit_and_delete_course_sections_92715d3: Allows user to add, edit, and delete course sections. Allows user to cross-list sections.
-  to_cross_list_sections_course_add_edit_delete_must_a024d5b9: To cross-list sections, Course - add / edit / delete must also be enabled.
+  to_cross_list_sections_courses_add_edit_delete_mus_f395401f: To cross-list sections, Courses - add / edit / delete must also be enabled.
   the_user_must_also_be_enrolled_as_an_instructor_in_e7e22eea: The user must also be enrolled as an instructor in the courses they are trying to cross-list.
-  determines_whether_a_publish_course_option_is_incl_9bf770e9: Determines whether a Publish Course option is included on the Course Home Page.
-  affects_viewing_the_publish_course_and_conclude_co_6589f97e: Affects viewing the Publish Course and Conclude Course buttons.
-  for_course_level_users_deleting_a_course_is_part_o_d134dea2: 'For course-level users, deleting a course is part of the Course State - manage permission. However, for an account-level user, deleting a course requires this permission and Course - add / edit / delete. '
+  determines_whether_the_publish_course_and_unpublis_432a4bbc: Determines whether the Publish Course and Unpublish Course buttons display in the Course Home Page.
+  affects_viewing_the_delete_this_course_and_conclud_1ac257e: Affects viewing the Delete this Course and Conclude Course buttons.
+  determines_whether_a_publish_button_is_included_in_f7ad9b56: Determines whether a Publish button is included in a course card for an unpublished course (Card View Dashboard).
+  affects_viewing_the_conclude_course_and_permanentl_d943656e: "Affects viewing the Conclude Course and Permanently Delete this Course buttons. The Permanently Delete this Course button only appears for manually created courses.\n        For course-level users, deleting a course is part of the Course State - manage permission. However, for an account-level user, deleting a course requires this permission and Courses - add / edit / delete. "
   to_see_the_course_setup_checklist_option_on_the_co_6c485483: To see the Course Setup Checklist option on the Course Home Page, Manage - add / edit / delete courses must also be enabled.
   the_course_state_manage_permission_allows_the_user_1d9da094: The Course State - manage permission allows the user to publish courses that do not contain modules. To publish and unpublish module content, Course Content - add / edit / delete must be enabled.
-  allows_user_to_publish_conclude_and_delete_courses_336cf352: Allows user to publish, conclude, and delete courses.
   course_setup_checklist_course_home_page_f8baa04a: Course Setup Checklist, Course Home Page
   determines_whether_a_publish_course_option_is_incl_ac5eed8f: Determines whether a Publish Course option is included in the Course Setup Checklist and in the Course Home Page.
-  affects_viewing_the_publish_course_conclude_course_96953d6a: Affects viewing the Publish Course, Conclude Course, and Permanently Delete this Course buttons. The Permanently Delete this Course button only appears for manually created courses.
+  affects_viewing_the_conclude_course_and_permanentl_8216fcc2: Affects viewing the Conclude Course and Permanently Delete this Course buttons. The Permanently Delete this Course button only appears for manually created courses.
   the_course_state_manage_permission_allows_users_to_a4fe62af: The Course State - manage permission allows users to publish courses that do not contain modules. To publish and unpublish module content, Course Content - add / edit / delete must be enabled.
   reports_1b9ab7a7: Reports
   allows_user_to_view_and_configure_reports_in_accou_e8c6f9a1: Allows user to view and configure reports in Account Settings. Allows user to view Access Reports. Allows user to view last activity and total activity information on the People page.
@@ -17724,7 +17737,7 @@ en:
   to_view_discussions_in_a_course_discussions_view_m_545cbe9b: To view discussions in a course, Discussions - view must also be enabled. To manage discussions, Discussions - moderate must be enabled.
   allows_user_to_edit_blueprint_content_lock_setting_25128c82: Allows user to edit blueprint content lock settings on individual discussions.
   allows_user_to_view_the_discussions_link_in_course_eb30f2d0: Allows user to view the Discussions link in Course Navigation. Allows user to view course discussions.
-  blueprint_courses_are_an_account_level_feature_opt_e1f9ec2d: 'Blueprint Courses are an account-level feature option. To edit blueprint lock settings from the Discussions index page, Course - add / edit / delete and Discussions - moderate must also be enabled. '
+  to_edit_blueprint_lock_settings_from_the_discussio_cf8c75a5: 'To edit blueprint lock settings from the Discussions index page, Courses - add / edit / delete and Discussions - moderate must also be enabled. '
   to_share_a_discussion_to_commons_course_content_ad_962c5e53: To share a discussion to Commons, Course Content - add / edit / delete must also be enabled.
   to_manage_discussions_discussions_post_and_discuss_a27d31c4: To manage discussions, Discussions - post and Discussions - moderate must also be enabled. To reply to a discussion, Discussions - post must also be enabled.
   allows_user_to_edit_blueprint_content_lock_setting_fd580fab: Allows user to edit blueprint content lock settings on individual settings If the user is enrolled in a Blueprint master course.
@@ -17770,20 +17783,23 @@ en:
   allows_user_to_search_by_assignment_id_in_grade_ch_308afd80: Allows user to search by assignment ID in grade change logs. (Not available at the subaccount level.)
   assignments_speedgrader_2fbd6df4: Assignments, SpeedGrader
   allows_user_to_view_a_link_to_speedgrader_from_ass_8ed9b342: Allows user to view a link to SpeedGrader from assignments.
-  allows_user_to_view_gradebook_allows_user_to_expor_e6b24e2c: Allows user to view Gradebook. Allows user to export the Gradebook to a comma separated values (CSV) file. Allows user to access the Learning Mastery Gradebook (if enabled).
+  allows_user_to_export_the_gradebook_to_a_comma_sep_1c6fefef: Allows user to export the Gradebook to a comma separated values (CSV) file. Allows user to access the Learning Mastery Gradebook (if enabled).
   allows_user_to_view_student_grades_pages_e0091b20: Allows user to view student Grades pages.
   allows_user_to_access_the_student_progress_page_aca95197: Allows user to access the Student Progress page.
-  adds_analytics_link_on_the_user_settings_menu_3a048816: Adds analytics link on the user settings menu.
+  allows_user_to_view_analytics_link_in_the_user_set_56867782: Allows user to view analytics link in the user settings menu.
   allows_user_to_view_student_results_view_quiz_stat_7d77640a: Allows user to view student results, view quiz statistics, and access a quiz in SpeedGrader.
   rubrics_speedgrader_a6ebec57: Rubrics, SpeedGrader
   allows_user_to_view_grader_comments_on_a_rubric_in_2ac9f890: Allows user to view grader comments on a rubric in SpeedGrader.
   adds_analytics_to_a_student_s_context_card_d4c1e3a3: Adds analytics to a student’s context card.
   admin_tools_grade_change_logs_d804833f: Admin Tools (Grade Change Logs)
   to_view_student_analytics_analytics_view_must_also_a735c0b4: To view student analytics, Analytics - view must also be enabled.
-  if_both_grades_edit_and_grades_view_all_grades_are_ed522d43: If both Grades - edit and Grades - view all grades are disabled, Gradebook will be hidden from Course Navigation.
+  to_view_the_gradebook_course_content_view_must_als_676f3e8: To view the Gradebook, Course Content - view must also be enabled. If both Grades - edit and Grades - view all grades are disabled, Gradebook will be hidden from Course Navigation.
   to_post_or_hide_grades_grades_edit_must_also_be_en_c58f5efe: To post or hide grades, Grades - edit must also be enabled.
   to_view_module_progression_grades_view_all_grades__1acc0880: To view module progression, Grades - view all grades must also be enabled.
   allows_user_to_access_speedgrader_from_an_assignme_3b908f7: Allows user to access SpeedGrader from an assignment.
+  allows_user_to_view_gradebook_allows_user_to_expor_e6b24e2c: Allows user to view Gradebook. Allows user to export the Gradebook to a comma separated values (CSV) file. Allows user to access the Learning Mastery Gradebook (if enabled).
+  adds_analytics_link_on_the_user_settings_menu_3a048816: Adds analytics link on the user settings menu.
+  if_both_grades_edit_and_grades_view_all_grades_are_ed522d43: If both Grades - edit and Grades - view all grades are disabled, Gradebook will be hidden from Course Navigation.
   account_groups_2f301732: Account Groups
   allows_user_to_create_edit_and_delete_account_grou_abc8c12: Allows user to create, edit, and delete account groups.
   course_groups_e8239a1e: Course Groups
@@ -17806,6 +17822,7 @@ en:
   determines_visibility_and_management_of_outcomes_i_e3ab94dc: Determines visibility and management of Outcomes in Account Navigation. Allows user to create, edit, and delete outcomes and outcome groups at the account and course levels.
   to_allow_the_outcomes_page_as_read_only_this_permi_f3c580bd: To allow the Outcomes page as read-only, this permission can be disabled but Course Content - view must be enabled. To import learning outcomes, Learning Outcomes - import must also be enabled.
   allows_user_to_create_edit_and_delete_outcomes_and_1cf52c38: Allows user to create, edit, and delete outcomes and outcome groups at the course level.
+  to_import_learning_outcomes_learning_outcomes_impo_5abbd2fb: To import learning outcomes, Learning Outcomes - import must also be enabled.
   allows_user_to_import_account_learning_outcomes_f6f6d0b9: Allows user to import account learning outcomes.
   allows_user_to_import_course_learning_outcomes_2ca3f18f: Allows user to import course learning outcomes.
   allows_user_to_edit_blueprint_lock_settings_on_the_371aeb2a: Allows user to edit blueprint lock settings on the Pages index page in a Blueprint master course.
@@ -17824,7 +17841,8 @@ en:
   the_quiz_log_auditing_feature_option_must_be_enabl_77bf321e: The Quiz Log Auditing feature option must be enabled in Course Settings.
   determines_visibility_and_management_of_the_rubric_55b55b25: Determines visibility and management of the Rubrics link in Account Navigation. Allows user to create, edit, and delete rubrics.
   users_can_access_and_create_but_not_edit_individua_72b88c41: Users can access and create (but not edit) individual assignment rubrics through Assignments when Course Content - view and Assignments and Quizzes - add / edit / delete are enabled.
-  allows_user_to_view_the_rubrics_link_in_course_nav_fc5fabff: Allows user to view the Rubrics link in Course Navigation. Allows user to create, edit, and delete course rubrics.
+  determines_visibility_and_management_of_rubrics_li_83a26d8e: Determines visibility and management of Rubrics link in Account Navigation. Allows user to view the Rubrics link in Course Navigation. Allows user to create, edit, and delete course rubrics.
+  users_can_access_and_create_but_not_edit_individua_c8a62c74: Users can access and create (but not edit) individual assignment rubrics through Assignments when Assignments and Quizzes - add / edit / delete is enabled.
   governs_account_related_sis_ids_i_e_subaccount_sis_b7dd0954: Governs account-related SIS IDs (i.e., subaccount SIS ID).
   allows_user_to_view_a_course_s_sis_id_5c4a4c50: Allows user to view a course’s SIS ID.
   allows_user_to_view_the_sis_id_in_a_user_s_login_d_71e0922b: Allows user to view the SIS ID in a user’s login details.
@@ -17900,12 +17918,20 @@ en:
   pair_with_observer_b1541895: Pair with Observer
   generating_pairing_code_d480ccf4: Generating pairing code
   generating_pairing_code_251b7fc8: Generating pairing code...
+  confirm_qr_code_display_49664fa3: Confirm QR code display
+  qr_code_display_was_canceled_96234bf2: QR code display was canceled
+  waiting_for_confirmation_to_display_qr_code_6f904d63: Waiting for confirmation to display QR code
   qr_code_image_2b3a89b5: QR Code Image
   waiting_for_your_qr_code_to_load_809299e5: Waiting for your QR Code to load
+  to_log_in_to_your_canvas_account_when_you_re_on_th_63ac63b1: To log in to your Canvas account when you’re on the go, scan this QR code from any Canvas mobile app.
   this_code_expires_in_timefromnow_ec7ccef4: This code expires in %{timeFromNow}.
   this_code_has_expired_41f76642: This code has expired.
   an_error_occurred_while_retrieving_your_qr_code_5392e2da: An error occurred while retrieving your QR Code
-  to_log_in_to_your_canvas_account_when_you_re_on_th_63ac63b1: To log in to your Canvas account when you’re on the go, scan this QR code from any Canvas mobile app.
+  qr_for_mobile_login_1b1560ce: QR for Mobile Login
+  sharing_a_qr_code_can_give_others_immediate_access_79575158: Sharing a QR code can give others immediate access to your account through the %{canvas} mobile applications.
+  please_make_sure_no_one_is_able_to_capture_the_ima_3d6498e7: Please make sure no one is able to capture the image on your screen from your surroundings or from a screen sharing service.
+  click_proceed_to_continue_b6eeffc6: Click "Proceed" to continue.
+  click_cancel_if_you_don_t_want_the_code_displayed_ff7b1846: Click "Cancel" if you donʼt want the code displayed.
   learn_more_about_the_differences_a1217479: Learn more about the differences.
   new_quizzes_dbda7e0a: New Quizzes
   classic_quizzes_dee3c7b7: Classic Quizzes
@@ -18131,6 +18157,7 @@ en:
   no_results_3cda4e72: No Results
   enter_at_least_count_characters_1c7a0b36: Enter at least %{count} characters
   send_to_a879095e: 'Send to:'
+  begin_typing_to_search_7daa7b1: Begin typing to search
   filter_conversations_by_type_1ce8c064: Filter conversations by type
   username_saved_successfully_they_should_receive_an_877e31e: "*%{userName}* saved successfully! They should receive an email confirmation shortly."
   username_saved_successfully_9303974f: "*%{userName}* saved successfully!"
@@ -18157,6 +18184,9 @@ en:
   immersive_reader_failed_to_load_bc8d4dd4: Immersive Reader Failed to Load
   immersive_reader_7b87538: Immersive Reader
   page_page_59070cd8: Page %{page}
+  no_matches_to_your_search_16d3d3b1: No matches to your search
+  list_collapsed_381ef1b6: 'List collapsed. '
+  type_to_search_use_arrow_keys_to_navigate_options_5d538c0: Type to search, use arrow keys to navigate options.
   common_timezones_2b00baba: Common Timezones
   all_timezones_5e8afa7b: All Timezones
   unreadcount_unread_replies_509e167f: "%{unreadCount} unread replies"
@@ -18476,21 +18506,20 @@ en:
   take_a_snapshot_now_5b622d85: Take a Snapshot Now
   previous_snapshots_d8cd4820: Previous Snapshots
   click_on_a_snapshot_to_revert_back_to_your_trial_a_39250fdb: 'Click on a snapshot to revert back to your trial as it was when the snapshot was taken. Note: You will lose any work you have done since the snapshot was taken and it cannot be undone!'
-  switch_to_ea940b5b: 'Switch to:'
   snapshots_6e1806b4: Snapshots
   which_canvas_account_would_you_like_to_use_to_log__c3718dc6: Which Canvas account would you like to use to log in?
   choose_canvas_account_ec2f0279: Choose Canvas Account…
   go_30af2a7b: Go
+  to_join_the_canvas_community_you_must_first_have_a_6fe1b7d8: To join the Canvas Community, you must first have a Canvas Account.
   already_have_a_canvas_account_c4368ac9: Already have a Canvas Account?
   log_in_5c66644d: Log In
   try_out_canvas_for_free_e2265d30: Try out Canvas for Free!
   sign_up_dafdee18: Sign Up
-  to_join_the_canvas_community_you_must_first_have_a_6fe1b7d8: To join the Canvas Community, you must first have a Canvas Account.
   sorry_but_we_couldn_t_automatically_log_you_into_p_e1518750: Sorry, but we couldnʼt automatically log you into %{provider}.
   sorry_but_we_couldn_t_automatically_log_you_into_t_9e77ce17: Sorry, but we couldnʼt automatically log you into the Community.
   confused_panda_questioning_what_to_do_next_42941484: Confused Panda questioning what to do next
   powered_by_instructure_504d676d: Powered By Instructure
-  having_trouble_logging_in_if_you_have_a_canvas_acc_f9578b47: Having trouble logging in? If you have a %{canvas} account with a specific institution, we can help.
+  if_you_have_a_canvas_account_with_a_specific_insti_daa9696e: If you have a %{canvas} account with a specific institution, we can help.
   click_here_to_find_it_5ad1543b: Click here to find it.
   find_your_canvas_institution_45af99af: Find your %{canvas} institution
   an_error_occurred_while_searching_for_your_institu_16a1ace4: An error occurred while searching for your institution
@@ -18730,6 +18759,7 @@ en:
   event_date_f05219e7: 'Event Date:'
   event_start_time_441b491f: Event Start Time
   event_end_time_ef830e66: Event End Time
+  conferencing_b69e2537: 'Conferencing:'
   event_date_c9459fe3: Event Date
   every_665d821e: Every
   week_s_cb1492ee: Week(s)
@@ -18741,6 +18771,7 @@ en:
   to_do_time_a7e17623: To Do Time
   details_a6f427c3: 'Details:'
   n_contextscount_more_2f708db4: "+ %{n_contextsCount} more"
+  conferencing_6a6d9b55: Conferencing
   remove_attendee_name_55165070: Remove attendee %{name}
   group_details_e51122f1: Group Details
   not_all_sections_will_be_assigned_this_item_4e2b8eaa: Not all sections will be assigned this item.
@@ -18752,7 +18783,6 @@ en:
       update_assignment_points: Change assignment points to match rubric?
     prompts:
       update_assignment_points: Leaving the assignment's total points at %{assignmentPoints} and the rubric's total points at %{rubricPoints} will result in a maximum possible score of %{toPercentage_pointRatio} for student submissions graded with the rubric.
-  remove_all_group_observer_members_af5675f3: Remove All Group Observer Members
   remove_all_course_observer_members_4622c70d: Remove All Course Observer Members
   pick_the_date_and_time_for_the_following_conferenc_e9f91edd: 'Pick the date and time for the following conference setting:'
   content_import_files_cannot_be_downloaded_after_en_7e3a2099: Content import files cannot be downloaded after %{ENV.CONTENT_MIGRATIONS_EXPIRE_DA} days.

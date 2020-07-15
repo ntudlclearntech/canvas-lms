@@ -100,9 +100,11 @@ class User < ActiveRecord::Base
   has_many :current_groups, :through => :current_group_memberships, :source => :group
   has_many :user_account_associations
   has_many :associated_accounts, -> { order("user_account_associations.depth") }, source: :account, through: :user_account_associations
-  has_many :associated_root_accounts, -> { order("user_account_associations.depth").where(accounts: { parent_account_id: nil }) }, source: :account, through: :user_account_associations
+  has_many :associated_root_accounts, -> { order("user_account_associations.depth").
+    where(accounts: { parent_account_id: nil }) }, source: :account, through: :user_account_associations
   has_many :developer_keys
-  has_many :access_tokens, -> { where(:workflow_state => "active").preload(:developer_key) }
+  has_many :access_tokens, -> { where(:workflow_state => "active").preload(:developer_key) }, inverse_of: :user
+  has_many :masquerade_tokens, -> { where(:workflow_state => "active").preload(:developer_key) }, class_name: 'AccessToken', inverse_of: :real_user
   has_many :notification_endpoints, :through => :access_tokens
   has_many :context_external_tools, -> { order(:name) }, as: :context, inverse_of: :context, dependent: :destroy
   has_many :lti_results, inverse_of: :user, class_name: 'Lti::Result', dependent: :destroy
@@ -176,16 +178,39 @@ class User < ActiveRecord::Base
   has_many :past_lti_ids, class_name: 'UserPastLtiId', inverse_of: :user
   has_many :user_preference_values, inverse_of: :user
 
+  has_many :auditor_authentication_records,
+    class_name: "Auditors::ActiveRecord::AuthenticationRecord",
+    dependent: :destroy,
+    inverse_of: :user
+  has_many :auditor_course_records,
+    class_name: "Auditors::ActiveRecord::CourseRecord",
+    dependent: :destroy,
+    inverse_of: :user
+  has_many :auditor_student_grade_change_records,
+    foreign_key: 'student_id',
+    class_name: "Auditors::ActiveRecord::GradeChangeRecord",
+    dependent: :destroy,
+    inverse_of: :student
+  has_many :auditor_grader_grade_change_records,
+    foreign_key: 'grader_id',
+    class_name: "Auditors::ActiveRecord::GradeChangeRecord",
+    dependent: :destroy,
+    inverse_of: :grader
+
   belongs_to :otp_communication_channel, :class_name => 'CommunicationChannel'
 
   include StickySisFields
-  are_sis_sticky :name, :sortable_name, :short_name
+  are_sis_sticky :name, :sortable_name, :short_name, :pronouns
 
   include FeatureFlags
 
   def conversations
     # i.e. exclude any where the user has deleted all the messages
     all_conversations.visible.order("last_message_at DESC, conversation_id DESC")
+  end
+
+  def starred_conversations
+    all_conversations.order("updated_at DESC, conversation_id DESC").starred
   end
 
   def page_views(options={})
@@ -308,14 +333,27 @@ class User < ActiveRecord::Base
   end
 
   scope :with_last_login, lambda {
-    select("users.*, MAX(current_login_at) as last_login").
+    select_clause = "MAX(current_login_at) as last_login"
+    select_clause = "users.*, #{select_clause}" if select_values.blank?
+    select(select_clause).
       joins("LEFT OUTER JOIN #{Pseudonym.quoted_table_name} ON pseudonyms.user_id = users.id").
       group("users.id")
   }
 
+  attr_accessor :last_login
+  def self.preload_last_login(users, account_id)
+    maxes = Pseudonym.active.where(user_id: users).group(:user_id).where(account_id: account_id).
+      maximum(:current_login_at)
+    users.each do |u|
+      u.last_login = maxes[u.id]
+    end
+  end
+
   scope :for_course_with_last_login, lambda { |course, root_account_id, enrollment_type|
     # add a field to each user that is the aggregated max from current_login_at and last_login_at from their pseudonyms
-    scope = select("users.*, MAX(current_login_at) as last_login").
+    select_clause = "MAX(current_login_at) as last_login"
+    select_clause = "users.*, #{select_clause}" if select_values.blank?
+    scope = select(select_clause).
       # left outer join ensures we get the user even if they don't have a pseudonym
       joins(sanitize_sql([<<-SQL, root_account_id])).where(:enrollments => { :course_id => course })
         LEFT OUTER JOIN #{Pseudonym.quoted_table_name} ON pseudonyms.user_id = users.id AND pseudonyms.account_id = ?
@@ -1930,22 +1968,24 @@ class User < ActiveRecord::Base
     end
   end
 
-  def submissions_for_context_codes(context_codes, start_at: nil, limit: 20)
-    return [] unless context_codes.present?
+  def submissions_for_course_ids(course_ids, start_at: nil, limit: 20)
+    return [] unless course_ids.present?
 
     shard.activate do
-      Rails.cache.fetch([self, 'submissions_for_context_codes', context_codes, start_at, limit].cache_key, expires_in: 15.minutes) do
+      ids_hash = Digest::MD5.hexdigest(course_ids.sort.join(","))
+      Rails.cache.fetch_with_batched_keys(['submissions_for_course_ids', ids_hash, start_at, limit].cache_key, expires_in: 1.day, batch_object: self, batched_keys: :submissions) do
         start_at ||= 4.weeks.ago
 
         Shackles.activate(:slave) do
           submissions = []
           submissions += self.submissions.posted.where("GREATEST(submissions.submitted_at, submissions.created_at) > ?", start_at).
-            for_context_codes(context_codes).eager_load(:assignment).
+            where(:course_id => course_ids).eager_load(:assignment).
             where("submissions.score IS NOT NULL AND assignments.workflow_state=?", 'published').
             order('submissions.created_at DESC').
             limit(limit).to_a
 
-          submissions += Submission.active.posted.where(user_id: self).for_context_codes(context_codes).
+          submissions += Submission.active.posted.where(user_id: self).
+            where(:course_id => course_ids).
             joins(:assignment).
             where(assignments: {workflow_state: 'published'}).
             where('last_comment_at > ?', start_at).
@@ -1964,16 +2004,16 @@ class User < ActiveRecord::Base
 
   # This is only feedback for student contexts (unless specific contexts are passed in)
   def recent_feedback(
-    context_codes: nil,
+    course_ids: nil,
     contexts: nil,
-    **opts # forwarded to submissions_for_context_codes
+    **opts # forwarded to submissions_for_course_ids
   )
-    context_codes ||= if contexts
-        setup_context_lookups(contexts)
+    course_ids ||= if contexts
+        contexts.select{|c| c.is_a?(Course)}.map(&:id)
       else
-        self.participating_student_course_ids.map { |id| "course_#{id}" }
+        self.participating_student_course_ids
       end
-    submissions_for_context_codes(context_codes, **opts)
+    submissions_for_course_ids(course_ids, **opts)
   end
 
   def visible_stream_item_instances(opts={})
@@ -2880,6 +2920,15 @@ class User < ActiveRecord::Base
         end
       end
     end
+  end
+
+  def submittable_attachments
+    self.attachments.active.or(
+      Attachment.active.where(
+        context_type: 'Group',
+        context_id: self.current_group_memberships.active.select(:group_id)
+      )
+    )
   end
 
   def authenticate_one_time_password(code)

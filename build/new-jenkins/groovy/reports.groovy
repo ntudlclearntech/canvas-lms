@@ -22,8 +22,19 @@ def stashSpecCoverage(prefix, index) {
   }
 }
 
-def publishSpecCoverageToS3(prefix, ci_node_total, coverage_type) {
+def cleanupCoverage(prefix) {
   sh 'rm -vrf ./coverage_nodes'
+  sh 'rm -vrf ./coverage'
+  sh "rm -vrf coverage_nodes ${prefix}_coverage_nodes"
+  sh "rm -vrf coverage ${prefix}_coverage"
+}
+
+def publishSpecCoverageToS3(prefix, ci_node_total, coverage_type) {
+  echo "publishing coverage for $coverage_type: $ci_node_total for $prefix"
+
+  cleanupCoverage(prefix)
+
+  // get all the data for the report
   dir('coverage_nodes') {
     for(int index = 0; index < ci_node_total; index++) {
       dir("node_${index}") {
@@ -32,43 +43,54 @@ def publishSpecCoverageToS3(prefix, ci_node_total, coverage_type) {
     }
   }
 
+  // build the report
   sh './build/new-jenkins/rspec-coverage-report.sh'
 
-  archiveArtifacts(artifacts: 'coverage_nodes/**')
-  archiveArtifacts(artifacts: 'coverage/**')
+  // upload to s3
   uploadCoverage([
       uploadSource: "/coverage",
       uploadDest: "$coverage_type/coverage"
   ])
-  sh 'rm -vrf ./coverage_nodes'
-  sh 'rm -vrf ./coverage'
+
+  // archive for debugging
+  sh "mv coverage_nodes ${prefix}_coverage_nodes"
+  sh "mv coverage ${prefix}_coverage"
+  archiveArtifacts(artifacts: "${prefix}_coverage_nodes/**")
+  archiveArtifacts(artifacts: "${prefix}_coverage/**")
+  
+  cleanupCoverage(prefix)
 }
 
 def appendFailMessageReport(message, link) {
+  if (!env.GERRIT_CHANGE_NUMBER || !env.GERRIT_PATCHSET_NUMBER) {
+    echo "build not associated with a PS... not sending message"
+  }
   dir ("_buildmeta") {
-    if (!fileExists("failure_messages.txt")) {
-      sh "echo 'failure links:' >> failure_messages.txt"
+    def message_file = "failure-messages-${BUILD_NUMBER}.txt"
+    if (!fileExists(message_file)) {
+      sh "echo 'failure links:' >> $message_file"
     }
-    sh "echo '$message' >> failure_messages.txt"
-    sh "echo '$link' >> failure_messages.txt"
+    sh "echo '$message' >> $message_file"
+    sh "echo '$link' >> $message_file"
   }
   archiveArtifacts(artifacts: '_buildmeta/*')
 }
 
 def sendFailureMessageIfPresent() {
-  if (fileExists("_buildmeta/failure_messages.txt")) {
+  def message_file = "_buildmeta/failure-messages-${BUILD_NUMBER}.txt"
+  if (fileExists(message_file)) {
     echo "sending failure message"
-    sh "cat _buildmeta/failure_messages.txt"
+    sh "cat $message_file"
     if (!env.GERRIT_CHANGE_NUMBER || !env.GERRIT_PATCHSET_NUMBER) {
       echo "build not associated with a PS... not sending message"
     }
     else {
       load('build/new-jenkins/groovy/credentials.groovy').withGerritCredentials({
-        sh '''
-          gerrit_message=`cat _buildmeta/failure_messages.txt`
-          ssh -i "$SSH_KEY_PATH" -l "$SSH_USERNAME" -p $GERRIT_PORT \
-            $GERRIT_HOST gerrit review -m "'$gerrit_message'" $GERRIT_CHANGE_NUMBER,$GERRIT_PATCHSET_NUMBER
-        '''
+        sh """
+          gerrit_message=`cat $message_file`
+          ssh -i "\$SSH_KEY_PATH" -l "\$SSH_USERNAME" -p \$GERRIT_PORT \
+            \$GERRIT_HOST gerrit review -m "'\$gerrit_message'" \$GERRIT_CHANGE_NUMBER,\$GERRIT_PATCHSET_NUMBER
+        """
       })
     }
   }
@@ -86,6 +108,8 @@ def stashSpecFailures(prefix, index) {
 }
 
 def publishSpecFailuresAsHTML(prefix, ci_node_total, report_title) {
+  def htmlFiles
+  def failureCategories
   def working_dir = "${prefix}_compiled_failures"
   sh "rm -vrf ./$working_dir"
   sh "mkdir $working_dir"
@@ -100,15 +124,15 @@ def publishSpecFailuresAsHTML(prefix, ci_node_total, report_title) {
         }
       }
     }
-    buildIndexPage();
+    htmlFiles = findFiles glob: '**/index.html'
+    failureCategories = buildFailureCategories(htmlFiles)
+    buildIndexPage(failureCategories)
     htmlFiles = findFiles glob: '**/index.html'
   }
+  uploadSplunkFailures(failureCategories)
 
   def report_name = "spec-failure-$prefix"
-  if (htmlFiles.size() > 1) {
-    def url_name = java.net.URLEncoder.encode(report_name, "UTF-8")
-    appendFailMessageReport("$report_title:", "${BUILD_URL}${url_name}")
-  }
+  def report_url = "${BUILD_URL}${report_name}"
   archiveArtifacts(artifacts: "$working_dir/**")
   publishHTML target: [
     allowMissing: false,
@@ -120,35 +144,50 @@ def publishSpecFailuresAsHTML(prefix, ci_node_total, report_title) {
     reportTitles: report_title
   ]
   sh "rm -vrf ./$working_dir"
+  return report_url
 }
 
-def buildIndexPage() {
+def buildFailureCategories(htmlFiles) {
+  Map<String, List<String>> failureCategories = [:]
+  if (htmlFiles.size() > 0) {
+    htmlFiles.each { file ->
+      def category = file.getPath().split("/")[3]
+      if (!failureCategories.containsKey(category)) {
+        failureCategories[category] = []
+      }
+      failureCategories[category] += file
+    }
+  }
+  return failureCategories
+}
+
+def buildIndexPage(failureCategories) {
   def indexHtml = "<body style=\"font-family:sans-serif;line-height:1.25;font-size:14px\">"
-  def htmlFiles;
-  htmlFiles = findFiles glob: '**/index.html'
-  if (htmlFiles.size()<1) {
+  if (failureCategories.size() < 1) {
     indexHtml += "\\o/ yay good job, no failures"
   } else {
-      Map<String, List<String>> failureCategory = [:]
-      htmlFiles.each { file ->
-        def category = file.getPath().split("/")[3]
-        if (failureCategory.containsKey("${category}")) {
-          failureCategory.get("${category}").add("${file}")
-        } else {
-          failureCategory.put("${category}", [])
-          failureCategory.get("${category}").add("${file}")
-        }
+    failureCategories.each {category, failures ->
+      indexHtml += "<h1>${category} Failures</h1>"
+      failures.each { failure ->
+        def spec = (failure =~ /.*spec_failures\/(.*)\/index/)[0][1]
+        indexHtml += "<a href=\"${failure}\">${spec}</a><br>"
       }
-      failureCategory.each {category, failures ->
-        indexHtml += "<h1>${category} Failures</h1>"
-        failures.each { failure ->
-          def spec = (failure =~ /.*spec_failures\/(.*)\/index/)[0][1]
-          indexHtml += "<a href=\"${failure}\">${spec}</a><br>"
-        }
-      }
+    }
   }
   indexHtml += "</body>"
   writeFile file: "index.html", text: indexHtml
+}
+
+def uploadSplunkFailures(failureCategories) {
+  def splunk = load 'build/new-jenkins/groovy/splunk.groovy'
+  def splunkFailureEvents = []
+  failureCategories.each {category, failures ->
+    failures.each { failure ->
+      def spec = (failure =~ /.*spec_failures\/(.*)\/index/)[0][1]
+      splunkFailureEvents.add(splunk.eventForTestFailure(spec, category))
+    }
+  }
+  splunk.upload(splunkFailureEvents)
 }
 
 def snykCheckDependencies(projectImage, projectDirectory) {

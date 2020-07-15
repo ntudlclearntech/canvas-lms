@@ -40,6 +40,18 @@ def getImageTagVersion() {
   flags.getImageTagVersion()
 }
 
+def getPublishableTagSuffix() {
+  load('build/new-jenkins/groovy/configuration.groovy').publishableTagSuffix()
+}
+
+def getRubyPassenger() {
+  load('build/new-jenkins/groovy/configuration.groovy').rubyPassenger()
+}
+
+def getPostgres() {
+  load('build/new-jenkins/groovy/configuration.groovy').postgres()
+}
+
 def runDatadogMetric(name, body) {
   def dd = load('build/new-jenkins/groovy/datadog.groovy')
   dd.runDataDogForMetric(name,body)
@@ -52,9 +64,9 @@ def skipIfPreviouslySuccessful(name, block) {
   }
 }
 
-def wrapBuildExecution(jobName, parameters, urlExtra) {
+def wrapBuildExecution(jobName, parameters, propagate, urlExtra) {
   try {
-    build(job: jobName, parameters: parameters)
+    build(job: jobName, parameters: parameters, propagate: propagate)
   }
   catch(FlowInterruptedException ex) {
     // if its this type, then that means its a build failure.
@@ -69,11 +81,36 @@ def wrapBuildExecution(jobName, parameters, urlExtra) {
   }
 }
 
+// if the build never starts or gets into a node block, then we
+// can never load a file. and a very noisy/confusing error is thrown.
+def ignoreBuildNeverStartedError(block) {
+  try {
+    block()
+  }
+  catch (org.jenkinsci.plugins.workflow.steps.MissingContextVariableException ex) {
+    if (!ex.message.startsWith('Required context class hudson.FilePath is missing')) {
+      throw ex
+    }
+    else {
+      echo "ignored MissingContextVariableException: \n${ex.message}"
+    }
+    // we can ignore this very noisy error
+  }
+}
+
+def buildRegistryFQDN() {
+  load('build/new-jenkins/groovy/configuration.groovy').buildRegistryFQDN()
+}
+
 // ignore builds where the current patchset tag doesn't match the
 // mainline publishable tag. i.e. ignore ruby-passenger-2.6/pg-12
 // upgrade builds
 def isPatchsetPublishable() {
   env.PATCHSET_TAG == env.PUBLISHABLE_TAG
+}
+
+def isPatchsetSlackableOnFailure() {
+  env.SLACK_MESSAGE_ON_FAILURE == 'true' && env.GERRIT_EVENT_TYPE == 'change-merged'
 }
 
 // WARNING! total hack, being removed after covid...
@@ -84,22 +121,32 @@ def isCovid() {
 
 pipeline {
   agent { label 'canvas-docker' }
-  options { ansiColor('xterm') }
+  options {
+    ansiColor('xterm')
+    timestamps()
+  }
 
   environment {
     GERRIT_PORT = '29418'
     GERRIT_URL = "$GERRIT_HOST:$GERRIT_PORT"
     NAME = getImageTagVersion()
     CANVAS_LMS_IMAGE = "$DOCKER_REGISTRY_FQDN/jenkins/canvas-lms"
+    BUILD_REGISTRY_FQDN = buildRegistryFQDN()
+    BUILD_IMAGE = "$BUILD_REGISTRY_FQDN/jenkins/canvas-lms"
+    POSTGRES = getPostgres()
+    RUBY_PASSENGER = getRubyPassenger()
 
-    // e.g. postgres-9.5-ruby-passenger-2.4-xenial
+    // e.g. postgres-9.5-ruby-passenger-2.6
     TAG_SUFFIX = "postgres-$POSTGRES-ruby-passenger-$RUBY_PASSENGER"
 
-    // e.g. canvas-lms:01.123456.78-postgres-12-ruby-passenger-2.6
-    PATCHSET_TAG = "$CANVAS_LMS_IMAGE:$NAME-$TAG_SUFFIX"
+    // this is found in the PUBLISHABLE_TAG_SUFFIX config file on jenkins
+    PUBLISHABLE_TAG_SUFFIX = getPublishableTagSuffix()
 
-    // e.g. canvas-lms:01.123456.78-postgres-9.5-ruby-passenger-2.4-xenial
-    PUBLISHABLE_TAG = "$CANVAS_LMS_IMAGE:$NAME-postgres-9.5-ruby-passenger-2.4-xenial"
+    // e.g. canvas-lms:01.123456.78-postgres-12-ruby-passenger-2.6
+    PATCHSET_TAG = "$BUILD_IMAGE:$NAME-$TAG_SUFFIX"
+
+    // e.g. canvas-lms:01.123456.78-postgres-9.5-ruby-passenger-2.6
+    PUBLISHABLE_TAG = "$BUILD_IMAGE:$NAME-$PUBLISHABLE_TAG_SUFFIX"
 
     // e.g. canvas-lms:master when not on another branch
     MERGE_TAG = "$CANVAS_LMS_IMAGE:$GERRIT_BRANCH"
@@ -168,7 +215,6 @@ pipeline {
                   // end of hack (covid)
                 }
               }
-              credentials.fetchFromGerrit('gergich_user_config', '.')
               credentials.fetchFromGerrit('qti_migration_tool', 'vendor', 'QTIMigrationTool')
 
               sh 'mv -v gerrit_builder/canvas-lms/config/* config/'
@@ -177,13 +223,13 @@ pipeline {
               sh 'rm -v config/database.yml'
               sh 'rm -v config/security.yml'
               sh 'rm -v config/selenium.yml'
+              sh 'rm -v config/file_store.yml'
               sh 'cp -v docker-compose/config/selenium.yml config/'
               sh 'cp -vR docker-compose/config/new-jenkins/* config/'
               sh 'cp -v config/delayed_jobs.yml.example config/delayed_jobs.yml'
               sh 'cp -v config/domain.yml.example config/domain.yml'
               sh 'cp -v config/external_migration.yml.example config/external_migration.yml'
               sh 'cp -v config/outgoing_mail.yml.example config/outgoing_mail.yml'
-              sh 'cp -v ./gergich_user_config/gergich_user_config.yml ./gems/dr_diff/config/gergich_user_config.yml'
             }
           }
         }
@@ -272,9 +318,11 @@ pipeline {
             echo 'adding Linters'
             stages['Linters'] = {
               skipIfPreviouslySuccessful("linters") {
-                sh 'build/new-jenkins/linters/run-gergich.sh'
+                def credentials = load 'build/new-jenkins/groovy/credentials.groovy'
+                credentials.withGerritCredentials {
+                  sh 'build/new-jenkins/linters/run-gergich.sh'
+                }
                 if (env.MASTER_BOUNCER_RUN == '1' && env.GERRIT_EVENT_TYPE == 'patchset-created') {
-                  def credentials = load 'build/new-jenkins/groovy/credentials.groovy'
                   credentials.withMasterBouncerCredentials {
                     sh 'build/new-jenkins/linters/run-master-bouncer.sh'
                   }
@@ -283,24 +331,31 @@ pipeline {
             }
           }
 
+          echo 'adding Consumer Smoke Test'
+          stages['Consumer Smoke Test'] = {
+            skipIfPreviouslySuccessful("consumer-smoke-test") {
+              sh 'build/new-jenkins/consumer-smoke-test.sh'
+            }
+          }
+
           echo 'adding Vendored Gems'
           stages['Vendored Gems'] = {
             skipIfPreviouslySuccessful("vendored-gems") {
-              wrapBuildExecution('test-suites/vendored-gems', buildParameters, "")
+              wrapBuildExecution('/Canvas/test-suites/vendored-gems', buildParameters, true, "")
             }
           }
 
           echo 'adding Javascript'
           stages['Javascript'] = {
             skipIfPreviouslySuccessful("javascript") {
-              wrapBuildExecution('test-suites/JS', buildParameters, "testReport")
+              wrapBuildExecution('/Canvas/test-suites/JS', buildParameters, true, "testReport")
             }
           }
 
           echo 'adding Contract Tests'
           stages['Contract Tests'] = {
             skipIfPreviouslySuccessful("contract-tests") {
-              wrapBuildExecution('test-suites/contract-tests', buildParameters, "")
+              wrapBuildExecution('/Canvas/test-suites/contract-tests', buildParameters, true, "")
             }
           }
 
@@ -308,7 +363,9 @@ pipeline {
             echo 'adding Flakey Spec Catcher'
             stages['Flakey Spec Catcher'] = {
               skipIfPreviouslySuccessful("flakey-spec-catcher") {
-                wrapBuildExecution('test-suites/flakey-spec-catcher', buildParameters, "")
+                def propagate = load('build/new-jenkins/groovy/configuration.groovy').fscPropagate()
+                echo "fsc propagation: $propagate"
+                wrapBuildExecution('/Canvas/test-suites/flakey-spec-catcher', buildParameters, propagate, "")
               }
             }
           }
@@ -317,7 +374,7 @@ pipeline {
           // // and you have no other way to test it except by running a test build.
           // stages['Test Subbuild'] = {
           //   skipIfPreviouslySuccessful("test-subbuild") {
-          //     build(job: 'test-suites/test-subbuild', parameters: buildParameters)
+          //     build(job: '/Cavnas/test-suites/test-subbuild', parameters: buildParameters)
           //   }
           // }
 
@@ -325,7 +382,7 @@ pipeline {
           // // Uncomment stage to run when developing.
           // stages['Xbrowser'] = {
           //   skipIfPreviouslySuccessful("xbrowser") {
-          //     build(job: 'test-suites/xbrowser', propagate: false, parameters: buildParameters)
+          //     build(job: '/Canvas/test-suites/xbrowser', propagate: false, parameters: buildParameters)
           //   }
           // }
 
@@ -395,7 +452,7 @@ pipeline {
   post {
     failure {
       script {
-        if (isPatchsetPublishable() && env.GERRIT_EVENT_TYPE == 'change-merged') {
+        if (isPatchsetSlackableOnFailure()) {
           def branchSegment = env.GERRIT_BRANCH ? "[$env.GERRIT_BRANCH]" : ''
           def authorSegment = env.GERRIT_EVENT_ACCOUNT_NAME ? "Patchset by ${env.GERRIT_EVENT_ACCOUNT_NAME}. " : ''
           slackSend(
@@ -408,14 +465,20 @@ pipeline {
     }
     always {
       script {
-        def rspec = load 'build/new-jenkins/groovy/rspec.groovy'
-        rspec.uploadSeleniumFailures()
-        rspec.uploadRSpecFailures()
-        load('build/new-jenkins/groovy/reports.groovy').sendFailureMessageIfPresent()
+        ignoreBuildNeverStartedError {
+          def rspec = load 'build/new-jenkins/groovy/rspec.groovy'
+          rspec.uploadSeleniumFailures()
+          rspec.uploadRSpecFailures()
+          load('build/new-jenkins/groovy/reports.groovy').sendFailureMessageIfPresent()
+          def splunk = load 'build/new-jenkins/groovy/splunk.groovy'
+          splunk.upload([splunk.eventForBuildDuration(currentBuild.duration)])
+        }
       }
     }
     cleanup {
-      sh 'build/new-jenkins/docker-cleanup.sh --allow-failure'
+      ignoreBuildNeverStartedError {
+        sh 'build/new-jenkins/docker-cleanup.sh --allow-failure'
+      }
     }
   }
 }

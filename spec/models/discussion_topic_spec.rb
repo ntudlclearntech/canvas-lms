@@ -1503,7 +1503,7 @@ describe DiscussionTopic do
 
       entry_time = 1.minute.ago
       DiscussionEntry.where(:id => entry.id).update_all(:created_at => entry_time)
-      @assignment = assignment_model(:course => @course, :lock_at => 1.day.ago)
+      @assignment = assignment_model(:course => @course, :lock_at => 1.day.ago, :due_at => 2.days.ago)
       @topic.assignment = @assignment
       @topic.save
       @student.reload
@@ -1534,7 +1534,7 @@ describe DiscussionTopic do
       @student.reload
       expect(@student.submissions).to be_empty
 
-      @assignment = assignment_model(:course => @course, :lock_at => 1.day.ago)
+      @assignment = assignment_model(:course => @course, :lock_at => 1.day.ago, :due_at => 2.days.ago)
       @topic.assignment = @assignment
       @topic.save
       @student.reload
@@ -1555,7 +1555,7 @@ describe DiscussionTopic do
 
       entry_time = 1.minute.ago
       DiscussionEntry.where(:id => entry.id).update_all(:created_at => entry_time)
-      @assignment = assignment_model(:course => @course, :lock_at => 1.day.ago)
+      @assignment = assignment_model(:course => @course, :lock_at => 1.day.ago, :due_at => 2.days.ago)
       @topic.assignment = @assignment
       @topic.save
       @student.reload
@@ -2593,6 +2593,21 @@ describe DiscussionTopic do
       topic.save!
       users = topic.users_with_permissions(@all_users)
       expect(users.map(&:id).to_set).to eq([@teacher.id, @student2.id].to_set)
+    end
+  end
+
+  context "only_graders_can_rate" do
+    it "should check permissions on the course level for group level discussions" do
+      group = @course.groups.create!
+      topic = group.discussion_topics.create!(:allow_rating => true, :only_graders_can_rate => true)
+      expect(topic.grants_right?(@teacher, :rate)).to eq true
+    end
+  end
+
+  describe 'create' do
+    it 'sets the root_account_id using context' do
+      discussion_topic_model(context: @course)
+      expect(@topic.root_account_id).to eq @course.root_account_id
     end
   end
 end
