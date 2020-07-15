@@ -31,6 +31,31 @@ GIT
       thrift (~> 0.9.0)
 
 PATH
+  remote: gems/canvas_cassandra
+  specs:
+    canvas_cassandra (0.0.1)
+      cassandra-cql (~> 1.2.2)
+
+PATH
+  remote: gems/i18n_extraction
+  specs:
+    i18n_extraction (0.0.1)
+      activesupport (>= 3.2)
+      i18nliner (~> 0.1)
+      ruby_parser (~> 3.7)
+      sexp_processor (~> 4.14, >= 4.14.1)
+
+PATH
+  remote: gems/i18n_tasks
+  specs:
+    i18n_tasks (0.0.1)
+      activesupport (>= 3.2)
+      i18n (>= 0.7, < 2)
+      i18n_extraction
+      ruby_parser (~> 3.7)
+      utf8_cleaner
+
+PATH
   remote: gems/plugins/academic_benchmark
   specs:
     academic_benchmark (1.1.0)
@@ -78,45 +103,11 @@ PATH
       rails (>= 3.2)
 
 PATH
-  remote: gems/canvas_cassandra
-  specs:
-    canvas_cassandra (0.0.1)
-      cassandra-cql (~> 1.2.2)
-
-PATH
-  remote: gems/i18n_extraction
-  specs:
-    i18n_extraction (0.0.1)
-      activesupport (>= 3.2)
-      i18nliner (~> 0.1)
-      ruby_parser (~> 3.7)
-      sexp_processor (~> 4.14, >= 4.14.1)
-
-PATH
-  remote: gems/i18n_tasks
-  specs:
-    i18n_tasks (0.0.1)
-      activesupport (>= 3.2)
-      i18n (>= 0.7, < 2)
-      i18n_extraction
-      ruby_parser (~> 3.7)
-      utf8_cleaner
-
-PATH
   remote: gems/rubocop-canvas
   specs:
     rubocop-canvas (1.0.0)
       jira_ref_parser (= 1.0.1)
       rubocop (~> 0.52.0)
-
-PATH
-  remote: gems/selinimum
-  specs:
-    selinimum (0.0.1)
-      activerecord (>= 3.2)
-      activesupport (>= 3.2)
-      aws-sdk-s3 (= 1.60.2)
-      globby (>= 0.1.2)
 
 PATH
   remote: gems
@@ -245,45 +236,45 @@ GEM
     academic_benchmarks (0.0.11)
       activesupport (>= 3.2.22, < 6.1)
       httparty (~> 0.13)
-    actioncable (5.2.3)
-      actionpack (= 5.2.3)
+    actioncable (5.2.4.3)
+      actionpack (= 5.2.4.3)
       nio4r (~> 2.0)
       websocket-driver (>= 0.6.1)
-    actionmailer (5.2.3)
-      actionpack (= 5.2.3)
-      actionview (= 5.2.3)
-      activejob (= 5.2.3)
+    actionmailer (5.2.4.3)
+      actionpack (= 5.2.4.3)
+      actionview (= 5.2.4.3)
+      activejob (= 5.2.4.3)
       mail (~> 2.5, >= 2.5.4)
       rails-dom-testing (~> 2.0)
-    actionpack (5.2.3)
-      actionview (= 5.2.3)
-      activesupport (= 5.2.3)
-      rack (~> 2.0)
+    actionpack (5.2.4.3)
+      actionview (= 5.2.4.3)
+      activesupport (= 5.2.4.3)
+      rack (~> 2.0, >= 2.0.8)
       rack-test (>= 0.6.3)
       rails-dom-testing (~> 2.0)
       rails-html-sanitizer (~> 1.0, >= 1.0.2)
-    actionview (5.2.3)
-      activesupport (= 5.2.3)
+    actionview (5.2.4.3)
+      activesupport (= 5.2.4.3)
       builder (~> 3.1)
       erubi (~> 1.4)
       rails-dom-testing (~> 2.0)
       rails-html-sanitizer (~> 1.0, >= 1.0.3)
     active_model-better_errors (1.6.7)
       activemodel (>= 3.0)
-    activejob (5.2.3)
-      activesupport (= 5.2.3)
+    activejob (5.2.4.3)
+      activesupport (= 5.2.4.3)
       globalid (>= 0.3.6)
-    activemodel (5.2.3)
-      activesupport (= 5.2.3)
-    activerecord (5.2.3)
-      activemodel (= 5.2.3)
-      activesupport (= 5.2.3)
+    activemodel (5.2.4.3)
+      activesupport (= 5.2.4.3)
+    activerecord (5.2.4.3)
+      activemodel (= 5.2.4.3)
+      activesupport (= 5.2.4.3)
       arel (>= 9.0)
-    activestorage (5.2.3)
-      actionpack (= 5.2.3)
-      activerecord (= 5.2.3)
+    activestorage (5.2.4.3)
+      actionpack (= 5.2.4.3)
+      activerecord (= 5.2.4.3)
       marcel (~> 0.3.1)
-    activesupport (5.2.3)
+    activesupport (5.2.4.3)
       concurrent-ruby (~> 1.0, >= 1.0.2)
       i18n (>= 0.7, < 2)
       minitest (~> 5.1)
@@ -387,13 +378,15 @@ GEM
       redcarpet
     ecma-re-validator (0.2.1)
       regexp_parser (~> 1.2)
-    encrypted_cookie_store-instructure (1.2.9)
+    encrypted_cookie_store-instructure (1.2.10)
       actionpack (>= 4.2, < 6.1)
     erubi (1.9.0)
     escape_code (0.2)
     et-orbi (1.2.2)
       tzinfo
     extlib (0.9.16)
+    factory_bot (5.2.0)
+      activesupport (>= 4.2.0)
     faraday (0.15.4)
       multipart-post (>= 1.2, < 3)
     faraday_middleware (0.14.0)
@@ -472,7 +465,7 @@ GEM
       faraday_middleware (~> 0.8)
       json-jwt (~> 1.7)
       simple_oauth (~> 0.3.1)
-    inst-jobs (0.15.20)
+    inst-jobs (0.15.21)
       activerecord (>= 4.2)
       activesupport (>= 4.2)
       after_transaction_commit (>= 1.0, < 3)
@@ -621,18 +614,18 @@ GEM
     rack (2.2.2)
     rack-test (1.1.0)
       rack (>= 1.0, < 3)
-    rails (5.2.3)
-      actioncable (= 5.2.3)
-      actionmailer (= 5.2.3)
-      actionpack (= 5.2.3)
-      actionview (= 5.2.3)
-      activejob (= 5.2.3)
-      activemodel (= 5.2.3)
-      activerecord (= 5.2.3)
-      activestorage (= 5.2.3)
-      activesupport (= 5.2.3)
+    rails (5.2.4.3)
+      actioncable (= 5.2.4.3)
+      actionmailer (= 5.2.4.3)
+      actionpack (= 5.2.4.3)
+      actionview (= 5.2.4.3)
+      activejob (= 5.2.4.3)
+      activemodel (= 5.2.4.3)
+      activerecord (= 5.2.4.3)
+      activestorage (= 5.2.4.3)
+      activesupport (= 5.2.4.3)
       bundler (>= 1.3.0)
-      railties (= 5.2.3)
+      railties (= 5.2.4.3)
       sprockets-rails (>= 2.0.0)
     rails-controller-testing (1.0.4)
       actionpack (>= 5.0.1.x)
@@ -645,9 +638,9 @@ GEM
       loofah (~> 2.3)
     rails-observers (0.1.5)
       activemodel (>= 4.0)
-    railties (5.2.3)
-      actionpack (= 5.2.3)
-      activesupport (= 5.2.3)
+    railties (5.2.4.3)
+      actionpack (= 5.2.4.3)
+      activesupport (= 5.2.4.3)
       method_source
       rake (>= 0.8.7)
       thor (>= 0.19.0, < 2.0)
@@ -776,15 +769,15 @@ GEM
       sprockets (>= 3.0.0)
     sqlite3 (1.4.2)
     statsd-ruby (1.4.0)
-    switchman (1.14.10)
-      activerecord (>= 5.0, < 6.1)
+    switchman (1.15.1)
+      activerecord (>= 5.1, < 6.1)
       open4 (~> 1.3.0)
-      railties (>= 5.0, < 6.1)
+      railties (>= 5.1, < 6.1)
       shackles (~> 1.4.2)
-    switchman-inst-jobs (1.4.1)
+    switchman-inst-jobs (1.4.2)
       inst-jobs (>= 0.15, < 0.16)
       railties (>= 5.2, < 6.1)
-      switchman (>= 1.14, < 1.15)
+      switchman (>= 1.14, < 1.16)
     sync (0.5.0)
     table_print (1.5.7)
     term-ansicolor (1.7.1)
@@ -915,10 +908,11 @@ DEPENDENCIES
   dogstatsd-ruby (= 4.7.0)
   dotenv (= 2.7.5)
   dress_code (= 1.2.0)
-  encrypted_cookie_store-instructure (= 1.2.9)
+  encrypted_cookie_store-instructure (= 1.2.10)
   escape_code (= 0.2)
   et-orbi (= 1.2.2)
   event_stream!
+  factory_bot (= 5.2.0)
   ffi (= 1.12.2)
   ffi-icu (= 0.2.0)
   flakey_spec_catcher
@@ -942,7 +936,7 @@ DEPENDENCIES
   imperium (= 0.5.2)
   ims-lti (= 2.3.0)
   incoming_mail_processor!
-  inst-jobs (= 0.15.20)
+  inst-jobs (= 0.15.21)
   inst-jobs-autoscaling (= 1.0.5)
   inst-jobs-statsd (= 1.4.0)
   inst_statsd (= 2.1.6)
@@ -990,7 +984,7 @@ DEPENDENCIES
   qti_exporter!
   rack (= 2.2.2)
   rack-test (= 1.1.0)
-  rails (= 5.2.3)
+  rails (= 5.2.4.3)
   rails-controller-testing (= 1.0.4)
   rails-dom-testing (= 2.0.3)
   rails-observers (= 0.1.5)
@@ -1028,7 +1022,6 @@ DEPENDENCIES
   sauce_whisk (= 0.2.2)
   scrypt (= 3.0.7)
   selenium-webdriver (= 3.142.7)
-  selinimum (= 0.0.1)!
   sentry-raven (= 2.13.0)
   shackles (= 1.4.2)
   shoulda-matchers (= 4.3.0)
@@ -1043,8 +1036,8 @@ DEPENDENCIES
   sqlite3 (= 1.4.2)
   statsd-ruby (= 1.4.0)
   stringify_ids!
-  switchman (= 1.14.10)
-  switchman-inst-jobs (= 1.4.1)
+  switchman (= 1.15.1)
+  switchman-inst-jobs (= 1.4.2)
   test-queue!
   testingbot
   testrailtagging (= 0.3.8.7)
