@@ -23,12 +23,8 @@ import TutorialTrayContent from './TutorialTrayContent'
 const PagesTray = () => (
   <TutorialTrayContent
     heading={I18n.t('Pages')}
-    subheading={I18n.t(`Teachers and TAs can build Pages containing content and educational
-          resources that help students learn but aren't assignments. Include text,
-          multimedia, and links to files and external resources. Students can also
-          create content on Pages if they were given the authority by teachers or
-          teaching assistants.`)}
-    image="/images/tutorial-tray-images/page.svg"
+    subheading={I18n.t('Create and compile educational resources')}
+    image="/images/tutorial-tray-images/Panda_Pages.svg"
     links={[
       {
         label: I18n.t('How do I edit Pages'),
@@ -40,6 +36,11 @@ const PagesTray = () => (
 
     ]}
   >
+    {I18n.t(`Teachers and TAs can build Pages containing content and educational
+          resources that help students learn but aren't assignments. Include text,
+          multimedia, and links to files and external resources. Students can also
+          create content on Pages if they were given the authority by teachers or
+          teaching assistants.`)}
   </TutorialTrayContent>
 )
 

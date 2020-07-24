@@ -23,12 +23,8 @@ import TutorialTrayContent from './TutorialTrayContent'
 const PeopleTray = () => (
   <TutorialTrayContent
     heading={I18n.t('People')}
-    subheading={I18n.t(`NTU COOL will automatically synchronize the student list with the NTU
-          Course Selection System. Therefore, enrolled students including NTU
-          and NTU System (NTUST and NTNU) students will be added to NTU COOL
-          automatically. You can add members such as auditors or manage student
-          groups on this page.`)}
-    image="/images/tutorial-tray-images/people.svg"
+    subheading={I18n.t('Add Auditors, TAs, and Teachers to your course')}
+    image="/images/tutorial-tray-images/Panda_People.svg"
     links={[
       {
         label: I18n.t('How to send emails to students'),
@@ -60,6 +56,11 @@ const PeopleTray = () => (
       }
     ]}
   >
+    {I18n.t(`NTU COOL will automatically synchronize the student list with the NTU
+          Course Selection System. Therefore, enrolled students including NTU
+          and NTU System (NTUST and NTNU) students will be added to NTU COOL
+          automatically. You can add members such as auditors or manage student
+          groups on this page.`)}
   </TutorialTrayContent>
 )
 

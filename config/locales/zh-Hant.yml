@@ -2800,6 +2800,7 @@ zh-Hant:
   as_you_type_in_this_field_the_list_of_results_will_c1a1a3e4: 在您鍵入內容時，搜索結果清單會自動更新。
   ask_your_instructor_a_question_a61ca5e9: 向您的導師提問一個問題
   assess_and_survey_your_students_ce8172a9: 評估和調查您的學生
+  assess_students_learning_efficacy_71ff6d96: 了解學生的學習成效與狀況
   assess_student_understanding_1e0b8d7f: 評估學生掌握程度
   assessment_audit_d4a76709: 評估稽核
   assessment_audit_events_for_creatorname_56e84e8: "%{creatorName} 的評估稽核活動"
@@ -23504,6 +23505,7 @@ zh-Hant:
     quiz_regrade: 
       got_it: 好的，知道了
   track_individual_student_and_class_progress_c13cf2d1: 跟蹤個別學生和班級進展
+  track_students_assignment_submission_status_and_gr_5982cbf7: 檢視整體學生作業繳交狀況與分數
   track_student_performance_and_activity_a92a2a8b: 追蹤學生表現及活動
   treat_ungraded_as_0_d38c2b41: "將未評分視為 0"
   tree_browser: 
@@ -23785,6 +23787,7 @@ zh-Hant:
   upload_file_fd2361b8: 上傳文件
   upload_files_submitted_with_assignments_to_a_speci_5b4d2df8: 將作業所需的繳交文件上傳至一個特殊的唯讀提交文件夾
   upload_gradebook_386a46c8: 上傳成績冊
+  upload_images_and_documents_for_students_to_downlo_db130568: 上傳與分類圖片、檔案，供學生下載
   upload_image_6120b609: 上傳影像
   upload_media_ce31135a: 上傳媒體
   upload_not_available_for_this_folder_8f8623c6: 此資料夾無法使用上載功能。

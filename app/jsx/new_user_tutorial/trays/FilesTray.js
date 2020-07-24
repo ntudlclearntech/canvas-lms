@@ -23,11 +23,8 @@ import TutorialTrayContent from './TutorialTrayContent'
 const FilesTray = () => (
   <TutorialTrayContent
     heading={I18n.t('Files')}
-    subheading={I18n.t(`Instructors can upload handouts, supplementary materials, and images to
-          the Files. It is highly recommended that instructors use the folders to
-          distinguish between different file types or weekly schedule. Students can
-          easily find and download the files they need in different folders.`)}
-    image="/images/tutorial-tray-images/files.svg"
+    subheading={I18n.t('Upload Images, and Documents for students to download')}
+    image="/images/tutorial-tray-images/Panda_Files.svg"
     links={[
       {
         label: I18n.t('Tutorial Video: Files'),
@@ -38,6 +35,10 @@ const FilesTray = () => (
       }
     ]}
   >
+    {I18n.t(`Instructors can upload handouts, supplementary materials, and images to
+          the Files. It is highly recommended that instructors use the folders to
+          distinguish between different file types or weekly schedule. Students can
+          easily find and download the files they need in different folders.`)}
   </TutorialTrayContent>
 )
 

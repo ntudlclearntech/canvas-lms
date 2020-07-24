@@ -24,9 +24,7 @@ const ModulesTray = () => (
   <TutorialTrayContent
     name="Modules"
     heading={I18n.t('Modules')}
-    subheading={I18n.t(`Instructors can arrange the course resources in the Modules section.
-          For instance, instructors can upload weekly handouts, videos, assignments, and discussions in Modules.
-          Aside from sorting by weeks, instructors can arrange modules by topics.`)}
+    subheading={I18n.t('Organize your course content')}
     image="/images/tutorial-tray-images/Panda_Modules.svg"
     imageWidth="9rem"
     links={[
@@ -53,6 +51,9 @@ const ModulesTray = () => (
       }
     ]}
   >
+    {I18n.t(`Instructors can arrange the course resources in the Modules section.
+          For instance, instructors can upload weekly handouts, videos, assignments, and discussions in Modules.
+          Aside from sorting by weeks, instructors can arrange modules by topics.`)}
   </TutorialTrayContent>
 )
 

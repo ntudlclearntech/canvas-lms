@@ -23,10 +23,8 @@ import TutorialTrayContent from './TutorialTrayContent'
 const AssignmentsTray = () => (
   <TutorialTrayContent
     heading={I18n.t('Assignments')}
-    subheading={I18n.t(`Create assignments on the Assignments page. Organize assignments
-                into groups like Homework, Presentation, Discussions
-                and Quizzes. Assignment groups can be weighted.`)}
-    image="/images/tutorial-tray-images/assignments.svg"
+    subheading={I18n.t('Create various types of graded assignments')}
+    image="/images/tutorial-tray-images/Panda_Assignments.svg"
     links={[
       {
         label: I18n.t('How to assign assignments'),
@@ -58,6 +56,9 @@ const AssignmentsTray = () => (
       }
     ]}
   >
+    {I18n.t(`Create assignments on the Assignments page. Organize assignments
+                into groups like Homework, Presentation, Discussions
+                and Quizzes. Assignment groups can be weighted.`)}
   </TutorialTrayContent >
 )
 

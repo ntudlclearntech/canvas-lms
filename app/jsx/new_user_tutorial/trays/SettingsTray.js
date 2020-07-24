@@ -23,10 +23,8 @@ import TutorialTrayContent from './TutorialTrayContent'
 const AssignmentsTray = () => (
   <TutorialTrayContent
     heading={I18n.t('Settings')}
-    subheading={I18n.t(`On the setting page, you can change the course language, hide
-          unnecessary functions from the navigation bar, or set the start and end
-          date of the course.`)}
-    image="/images/tutorial-tray-images/settings.svg"
+    subheading={I18n.t('Change basic settings such as course languages, and the navigation bar')}
+    image="/images/tutorial-tray-images/Panda_Map.svg"
     links={[
       {
         label: I18n.t('How do I change the Settings in a course'),
@@ -38,6 +36,9 @@ const AssignmentsTray = () => (
 
     ]}
   >
+    {I18n.t(`On the setting page, you can change the course language, hide
+          unnecessary functions from the navigation bar, or set the start and end
+          date of the course.`)}
   </TutorialTrayContent>
 )
 
