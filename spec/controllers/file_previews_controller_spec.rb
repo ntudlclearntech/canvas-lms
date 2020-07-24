@@ -74,7 +74,16 @@ describe FilePreviewsController do
     attachment_model content_type: 'application/msword'
     get :show, params: {course_id: @course.id, file_id: @attachment.id}
     expect(response).to be_redirect
-    expect(response.location).to match %r{\A//#{Rails.configuration.predoc[viewer_url]}/viewer}
+    expect(response.location).to match %r{\A//docs.google.com/viewer}
+  end
+
+  it "should redirect to a predoc preview if available and attachment content type is pdf" do
+    allow_any_instance_of(Attachment).to receive(:crocodoc_url).and_return(nil)
+    allow_any_instance_of(Attachment).to receive(:canvadoc_url).and_return(nil)
+    attachment_model content_type: 'application/pdf'
+    get :show, params: {course_id: @course.id, file_id: @attachment.id}
+    expect(response).to be_redirect
+    expect(response.location).to match %r{\A//#{Rails.configuration.predoc['viewer_url']}/viewer}
   end
 
   it "should redirect to file if it's html" do
