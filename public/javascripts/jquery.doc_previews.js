@@ -145,14 +145,24 @@ $.fn.loadDocPreview = function(options) {
       // else if it's something google docs preview can handle and we can get a public url to this document.
       const loadGooglePreview = function() {
         // this handles both ssl and plain http.
-        const googleDocPreviewUrl =
-          '//' +
-          ENV.DOC_VIEWER_URL +
-          '/viewer?' +
-          $.param({
-            embedded: true,
-            url: opts.public_url
-          })
+        let googleDocPreviewUrl;
+        if (opts.mimetype === 'application/pdf') {
+          googleDocPreviewUrl =
+            '//' +
+            ENV.DOC_VIEWER_URL +
+            '/viewer?' +
+            $.param({
+              embedded: true,
+              url: opts.public_url
+            })
+        } else {
+          googleDocPreviewUrl =
+            '//docs.google.com/viewer?' +
+            $.param({
+              embedded: true,
+              url: opts.public_url
+            })
+        }
         if (!opts.ajax_valid || opts.ajax_valid()) {
           $(
             '<iframe src="' +
