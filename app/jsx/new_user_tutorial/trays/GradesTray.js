@@ -23,14 +23,8 @@ import TutorialTrayContent from './TutorialTrayContent'
 const GradesTray = () => (
   <TutorialTrayContent
     heading={I18n.t('Grades')}
-    subheading={I18n.t(`On this page, you can track the assignment submission status and
-          student's grades. You can also export a CSV file and add new graded
-          items such as midterms based on the file format. After you import the file
-          to the grade book, it will automatically create a column for the new
-          graded item that you add on the file. If you want to change the points,
-          groups, and weights of assignments, you need to set them on the
-          assignment page.`)}
-    image="/images/tutorial-tray-images/grades.svg"
+    subheading={I18n.t("Track students' assignment submission status and grades")}
+    image="/images/tutorial-tray-images/Panda_Grades.svg"
     links={[
       {
         label: I18n.t('How to manage scores'),
@@ -55,6 +49,13 @@ const GradesTray = () => (
       }
     ]}
   >
+    {I18n.t(`On this page, you can track the assignment submission status and
+          student's grades. You can also export a CSV file and add new graded
+          items such as midterms based on the file format. After you import the file
+          to the grade book, it will automatically create a column for the new
+          graded item that you add on the file. If you want to change the points,
+          groups, and weights of assignments, you need to set them on the
+          assignment page.`)}
   </TutorialTrayContent>
 )
 

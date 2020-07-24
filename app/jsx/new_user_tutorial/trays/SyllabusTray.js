@@ -23,11 +23,8 @@ import TutorialTrayContent from './TutorialTrayContent'
 const SyllabusTray = () => (
   <TutorialTrayContent
     heading={I18n.t('Syllabus')}
-    subheading={I18n.t(`You can use the editor to build or paste a table about the information such as
-          course objectives, schedules, and the grading policy. Also, the system will
-          automatically generate a list of all graded assignments on this page.
-          The list can't be edited.`)}
-    image="/images/tutorial-tray-images/syllabus.svg"
+    subheading={I18n.t('Announce course basic information, schedules, and the grading policy')}
+    image="/images/tutorial-tray-images/Panda_Syllabus.svg"
     links={[
       {
         label: I18n.t('How to create a course syllabus'),
@@ -45,6 +42,10 @@ const SyllabusTray = () => (
       }
     ]}
   >
+    {I18n.t(`You can use the editor to build or paste a table about the information such as
+          course objectives, schedules, and the grading policy. Also, the system will
+          automatically generate a list of all graded assignments on this page.
+          The list can't be edited.`)}
   </TutorialTrayContent>
 )
 

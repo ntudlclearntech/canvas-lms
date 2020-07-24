@@ -22,12 +22,8 @@ import TutorialTrayContent from './TutorialTrayContent'
 const DiscussionsTray = () => (
   <TutorialTrayContent
     heading={I18n.t('Discussions')}
-    subheading={I18n.t(`The discussion function allows instructors, teaching assistants, and students
-          to interact and discuss with each other. Students can post questions and share their
-          reflections on it. Besides, instructors and teaching assistants can set up different themes
-          and require students to comment on as graded assignments. Moreover, outstanding works of
-          students can be uploaded to discussion posts for the whole class to appreciate.`)}
-    image="/images/tutorial-tray-images/discussions.svg"
+    subheading={I18n.t('Facilitate course interaction')}
+    image="/images/tutorial-tray-images/Panda_Discussions.svg"
     links={[
       {
         label: I18n.t('Tutorial Video: Discussion'),
@@ -38,6 +34,11 @@ const DiscussionsTray = () => (
       }
     ]}
   >
+    {I18n.t(`The discussion function allows instructors, teaching assistants, and students
+          to interact and discuss with each other. Students can post questions and share their
+          reflections on it. Besides, instructors and teaching assistants can set up different themes
+          and require students to comment on as graded assignments. Moreover, outstanding works of
+          students can be uploaded to discussion posts for the whole class to appreciate.`)}
   </TutorialTrayContent >
 )
 

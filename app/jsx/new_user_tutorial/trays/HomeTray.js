@@ -24,11 +24,7 @@ const HomeTray = () => (
   <TutorialTrayContent
     name="Home"
     heading={I18n.t('Home')}
-    subheading={I18n.t(`When people visit your course, this is the first page they'll see.
-          We've set your homepage to Modules, but you have the option to change it.`)
-      + I18n.t(`Until the course is published, only instructors and TAs will be able to
-       access it. The course is published by default, and students can access it
-       after they login to NTU COOL.`)}
+    subheading={I18n.t('This is your course landing page')}
     image="/images/tutorial-tray-images/Panda_Home.svg"
     links={[
       {
@@ -40,6 +36,11 @@ const HomeTray = () => (
       }
     ]}
   >
+    {I18n.t(`When people visit your course, this is the first page they'll see.
+          We've set your homepage to Modules, but you have the option to change it.`)
+      + I18n.t(`Until the course is published, only instructors and TAs will be able to
+       access it. The course is published by default, and students can access it
+       after they login to NTU COOL.`)}
   </TutorialTrayContent>
 )
 

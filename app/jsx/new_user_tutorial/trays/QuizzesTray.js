@@ -23,13 +23,8 @@ import TutorialTrayContent from './TutorialTrayContent'
 const QuizzesTray = () => (
   <TutorialTrayContent
     heading={I18n.t('Quizzes')}
-    subheading={I18n.t(`There are two main functions in NTU COOL quizzes: creating quizzes and
-          managing quiz results. In creating quizzes, you can do the basic settings,
-          such as quiz instructions, points, published date, and whom to assign. The
-          system supports various question types including multiple choices and
-          true or false questions. You can also view the quiz results instantly and
-          download files with detailed results.`)}
-    image="/images/tutorial-tray-images/quiz.svg"
+    subheading={I18n.t("Assess students' learning efficacy")}
+    image="/images/tutorial-tray-images/Panda_Quizzes.svg"
     links={[
       {
         label: I18n.t('How to create quizzes'),
@@ -54,6 +49,12 @@ const QuizzesTray = () => (
       }
     ]}
   >
+    {I18n.t(`There are two main functions in NTU COOL quizzes: creating quizzes and
+          managing quiz results. In creating quizzes, you can do the basic settings,
+          such as quiz instructions, points, published date, and whom to assign. The
+          system supports various question types including multiple choices and
+          true or false questions. You can also view the quiz results instantly and
+          download files with detailed results.`)}
   </TutorialTrayContent>
 )
 

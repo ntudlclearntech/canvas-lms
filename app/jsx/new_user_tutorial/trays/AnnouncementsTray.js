@@ -23,8 +23,7 @@ import TutorialTrayContent from './TutorialTrayContent'
 const AnnouncementsTray = () => (
   <TutorialTrayContent
     heading={I18n.t('Announcements')}
-    subheading={I18n.t(`Share important information with all users in your course.
-          When the announcement was posted, NTU COOL will automatically send a notification to users' emails.`)}
+    subheading={I18n.t('Share important updates with users')}
     image="/images/tutorial-tray-images/Panda_Announcements.svg"
     links={[
       {
@@ -43,6 +42,8 @@ const AnnouncementsTray = () => (
       }
     ]}
   >
+    {I18n.t(`Share important information with all users in your course.
+          When the announcement was posted, NTU COOL will automatically send a notification to users' emails.`)}
   </TutorialTrayContent>
 )
 
