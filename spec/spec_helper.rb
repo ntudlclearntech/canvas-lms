@@ -148,6 +148,16 @@ module RSpec::Rails
       !!Nokogiri::HTML(actual).at_css(expected)
     end
   end
+
+  RSpec::Matchers.define :be_checked do
+    match do |node|
+      if node.is_a?(Nokogiri::XML::Element)
+        node.attr('checked') == 'checked'
+      elsif node.respond_to?(:checked?)
+        node.checked?
+      end
+    end
+  end
 end
 
 module RenderWithHelpers
@@ -282,6 +292,8 @@ RSpec::Matchers.define :and_fragment do |expected|
   end
 end
 
+RSpec::Matchers.define_negated_matcher :not_change, :change
+
 module RSpec::Matchers::Helpers
   # allows for matchers to use symbols and literals even though URIs are always strings.
   # i.e. `and_query({assignment_id: @assignment.id})`
@@ -327,6 +339,8 @@ end
 
 RSpec::Expectations.configuration.on_potential_false_positives = :raise
 
+require 'rspec_junit_formatter'
+
 RSpec.configure do |config|
   config.example_status_persistence_file_path = Rails.root.join('tmp', 'rspec')
   config.use_transactional_fixtures = true
@@ -346,6 +360,12 @@ RSpec.configure do |config|
   config.include Onceler::BasicHelpers
   config.include PGCollkeyHelper
   config.project_source_dirs << "gems" # so that failures here are reported properly
+
+  # DOCKER_PROCESSES is only used on Jenkins and we only care to have RspecJunitFormatter on Jenkins.
+  if ENV['DOCKER_PROCESSES']
+    # if file already exists this is a rerun of a failed spec, don't generate new xml.
+    config.add_formatter "RspecJunitFormatter", "log/results.xml" unless File.file?("log/results.xml")
+  end
 
   if ENV['RAILS_LOAD_ALL_LOCALES'] && RSpec.configuration.filter.rules[:i18n]
     config.around :each do |example|
@@ -875,12 +895,9 @@ RSpec.configure do |config|
       '2.4.6',
       '2.4.9',
       '2.5.1',
-      '2.5.3',
-      '2.6.0',
-      '2.6.2',
-      '2.6.5'
+      '2.5.3'
     ]
-    skip("stubbing prepended class methods is broken in this version of ruby") if versions.include?(RUBY_VERSION)
+    skip("stubbing prepended class methods is broken in this version of ruby") if versions.include?(RUBY_VERSION) || RUBY_VERSION >= "2.6"
   end
 end
 

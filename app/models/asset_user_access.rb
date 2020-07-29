@@ -20,15 +20,24 @@
 # asset_group_code is for the group
 # so, for example, the asset could be an assignment, the group would be the assignment_group
 class AssetUserAccess < ActiveRecord::Base
+  extend RootAccountResolver
+
   belongs_to :context, polymorphic: [:account, :course, :group, :user], polymorphic_prefix: true
   belongs_to :user
   has_many :page_views
   before_save :infer_defaults
 
+  resolves_root_account through: ->(instance){ instance.infer_root_account_id }
+
   scope :for_context, lambda { |context| where(:context_id => context, :context_type => context.class.to_s) }
   scope :for_user, lambda { |user| where(:user_id => user) }
   scope :participations, -> { where(:action_level => 'participate') }
   scope :most_recent, -> { order('updated_at DESC') }
+
+  def infer_root_account_id
+    return nil if context_type == 'User'
+    context&.resolved_root_account_id
+  end
 
   def category
     self.asset_category
@@ -40,66 +49,6 @@ class AssetUserAccess < ActiveRecord::Base
 
   def category=(val)
     self.asset_category = val
-  end
-
-  def self.by_category(list, old_list=[])
-    res = {}.with_indifferent_access
-    res[:categories] = {}
-    res[:totals] = {}
-    res[:prior_totals] = {}
-    Rails.cache.fetch(['access_by_category', list.first, list.last, list.length].cache_key) do
-      list.each{|a|
-        a.category ||= 'unknown'
-        cat = res[:categories][a.category] || {}
-        cat[:view_tally] ||= 0
-        cat[:view_tally] += a.view_score || 0
-        cat[:participate_tally] ||= 0
-        cat[:participate_tally] += a.participate_score || 0
-        cat[:interaction_seconds] = (cat[:interaction_seconds] || 0) + ((a.interaction_seconds || 30) * a.view_score)
-        cat[:user_ids] ||= {}
-        cat[:user_ids][a.user_id] = (cat[:user_ids][a.user_id] || 0) + 1
-        cat[:membership_types] ||= {}
-        cat[:membership_types][a.membership_type || "Other"] = (cat[:membership_types][a.membership_type || "Other"] || 0) + (a.view_score || 0)
-        cat[:assets] ||= {}
-        cat[:assets][a.asset_code] ||= {}
-        cat[:assets][a.asset_code][:view_tally] ||= 0
-        cat[:assets][a.asset_code][:view_tally] += a.view_score || 0
-        cat[:assets][a.asset_code][:participate_tally] ||= 0
-        cat[:assets][a.asset_code][:participate_tally] += a.participate_score || 0
-        cat[:assets][a.asset_code][:display_name] ||= a.display_name
-        res[:categories][a.category] = cat
-        res[:totals][:view_tally] ||= 0
-        res[:totals][:view_tally] += a.view_score || 0
-        res[:totals][:participate_tally] ||= 0
-        res[:totals][:participate_tally] += a.participate_score || 0
-      }
-      (old_list || []).each{|a|
-        a.category ||= 'unknown'
-        cat = res[:categories][a.category] || {}
-        cat[:prior_view_tally] ||= 0
-        cat[:prior_view_tally] += a.view_score || 0
-        cat[:participate_tally] ||= 0
-        cat[:participate_tally] += a.participate_score || 0
-        cat[:prior_assets] ||= {}
-        cat[:prior_assets][a.asset_code] ||= {}
-        cat[:prior_assets][a.asset_code][:view_tally] ||= 0
-        cat[:prior_assets][a.asset_code][:view_tally] += a.view_score || 0
-        cat[:prior_assets][a.asset_code][:participate_tally] ||= 0
-        cat[:prior_assets][a.asset_code][:participate_tally] += a.participate_score || 0
-        cat[:prior_assets][a.asset_code][:display_name] ||= a.display_name
-        res[:categories][a.category] = cat
-        res[:prior_totals][:view_tally] ||= 0
-        res[:prior_totals][:view_tally] += a.view_score || 0
-        res[:prior_totals][:participate_tally] ||= 0
-        res[:prior_totals][:participate_tally] += a.participate_score || 0
-      }
-      res[:categories].each{|key, val|
-        res[:categories][key][:participate_average] = (res[:categories][key][:participate_tally].to_f / res[:totals][:participate_tally].to_f * 100).round / 100.0 rescue 0
-        res[:categories][key][:view_average] = (res[:categories][key][:view_tally].to_f / res[:totals][:view_tally].to_f * 100).round rescue 0
-        res[:categories][key][:interaction_seconds_average] = (res[:categories][key][:interaction_seconds].to_f / res[:categories][key][:view_tally].to_f * 100).round / 100.0 rescue 0
-      }
-      res
-    end
   end
 
   def display_name

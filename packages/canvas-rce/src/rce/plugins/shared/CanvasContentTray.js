@@ -20,7 +20,8 @@ import React, {Suspense, useCallback, useEffect, useState} from 'react'
 import {bool, func, instanceOf, shape, string} from 'prop-types'
 import {Tray} from '@instructure/ui-overlays'
 import {CloseButton} from '@instructure/ui-buttons'
-import {Heading, Spinner} from '@instructure/ui-elements'
+import {Heading} from '@instructure/ui-elements'
+import {Spinner} from '@instructure/ui-spinner'
 import {Flex} from '@instructure/ui-layout'
 
 import ErrorBoundary from './ErrorBoundary'
@@ -159,12 +160,13 @@ export default function CanvasContentTray(props) {
 
   const [filterSettings, setFilterSettings] = useFilterSettings()
 
-  const onTrayClosing = props.onTrayClosing
+  const {bridge, editor, onTrayClosing} = {...props}
 
   const handleDismissTray = useCallback(() => {
+    bridge.focusEditor(editor)
     onTrayClosing && onTrayClosing(true) // tell RCEWrapper we're closing
     setIsOpen(false)
-  }, [onTrayClosing])
+  }, [editor, bridge, onTrayClosing])
 
   useEffect(() => {
     const controller = {
@@ -177,25 +179,27 @@ export default function CanvasContentTray(props) {
       }
     }
 
-    props.bridge.attachController(controller)
+    bridge.attachController(controller, editor.id)
 
     return () => {
-      props.bridge.detachController()
+      bridge.detachController(editor.id)
     }
-  }, [props.bridge, handleDismissTray, setFilterSettings])
+    // it's OK the setFilterSettings is not a dependency
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editor.id, bridge, handleDismissTray])
 
   function handleExitTray() {
-    props.onTrayClosing && props.onTrayClosing(true) // tell RCEWrapper we're closing
+    onTrayClosing && onTrayClosing(true) // tell RCEWrapper we're closing
   }
 
   function handleCloseTray() {
-    props.bridge.focusActiveEditor(false)
+    bridge.focusActiveEditor(false)
     // increment a counter that's used a the key when rendering
     // this gets us a new instance everytime, which is necessary
     // to get the queries run so we have up to date data.
     setOpenCount(openCount + 1)
     setHasOpened(false)
-    props.onTrayClosing && props.onTrayClosing(false) // tell RCEWrapper we're closed
+    onTrayClosing && onTrayClosing(false) // tell RCEWrapper we're closed
   }
 
   function handleFilterChange(newFilter, onChangeContext) {
@@ -205,9 +209,9 @@ export default function CanvasContentTray(props) {
     }
     setFilterSettings(newFilterSettings)
 
-    if (newFilter.contentType) {
+    if (newFilterSettings.contentType) {
       let contextType, contextId
-      switch (newFilter.contentType) {
+      switch (newFilterSettings.contentType) {
         case 'user_files':
           contextType = 'user'
           contextId = props.containingContext.userId
@@ -237,7 +241,10 @@ export default function CanvasContentTray(props) {
           onDismiss={handleDismissTray}
           onClose={handleCloseTray}
           onExit={handleExitTray}
-          onOpen={() => setHasOpened(true)}
+          onOpen={() => {
+            bridge.focusEditor(editor)
+            setHasOpened(true)
+          }}
         >
           {isOpen && hasOpened ? (
             <Flex direction="column" display="block" height="100vh" overflowY="hidden">
@@ -307,6 +314,7 @@ export const trayProps = shape(trayPropsMap)
 
 CanvasContentTray.propTypes = {
   bridge: instanceOf(Bridge).isRequired,
+  editor: shape({id: string}).isRequired,
   onTrayClosing: func, // called with true when the tray starts closing, false once closed
   ...trayPropsMap
 }

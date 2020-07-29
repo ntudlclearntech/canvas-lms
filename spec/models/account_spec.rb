@@ -547,8 +547,17 @@ describe Account do
     # site admin has access to everything everywhere
     hash.each do |k, v|
       account = v[:account]
-      expect(account.check_policy(hash[:site_admin][:admin]) - conditional_access).to match_array full_access + (k == :site_admin ? [:read_global_outcomes] : [])
-      expect(account.check_policy(hash[:site_admin][:user]) - conditional_access).to match_array limited_access + (k == :site_admin ? [:read_global_outcomes] : [])
+
+      common_siteadmin_privileges = []
+      common_siteadmin_privileges += [:read_global_outcomes] if k == :site_admin
+
+      admin_privileges = full_access + common_siteadmin_privileges
+      admin_privileges += [:manage_privacy_settings] if k == :root
+
+      user_privileges = limited_access + common_siteadmin_privileges
+
+      expect(account.check_policy(hash[:site_admin][:admin]) - conditional_access).to match_array admin_privileges
+      expect(account.check_policy(hash[:site_admin][:user]) - conditional_access).to match_array user_privileges
     end
 
     # root admin has access to everything except site admin
@@ -589,10 +598,12 @@ describe Account do
     AdheresToPolicy::Cache.clear
     hash.each do |k, v|
       account = v[:account]
-      admin_array = full_access + (k == :site_admin ? [:read_global_outcomes] : [])
+      admin_privileges = full_access.clone
+      admin_privileges += [:read_global_outcomes] if k == :site_admin
+      admin_privileges += [:manage_privacy_settings] if k == :root
       user_array = some_access + [:reset_any_mfa] +
         (k == :site_admin ? [:read_global_outcomes] : [])
-      expect(account.check_policy(hash[:site_admin][:admin]) - conditional_access).to match_array admin_array
+      expect(account.check_policy(hash[:site_admin][:admin]) - conditional_access).to match_array admin_privileges
       expect(account.check_policy(hash[:site_admin][:user])).to match_array user_array
     end
 
@@ -1900,6 +1911,39 @@ describe Account do
       @account.update_attribute(:settings, [{ is_new: true, is_featured: true }]) # skips validation
       @account.name = 'foo'
       expect(@account.valid?).to be true
+    end
+  end
+
+  describe "#allow_disable_post_to_sis_when_grading_period_closed?" do
+    let(:root_account) { Account.create!(root_account: nil) }
+    let(:subaccount) { Account.create!(root_account: root_account) }
+
+    it "returns false if the account is not a root account" do
+      Account.site_admin.enable_feature!(:new_sis_integrations)
+      root_account.enable_feature!(:disable_post_to_sis_when_grading_period_closed)
+
+      expect(subaccount).not_to be_allow_disable_post_to_sis_when_grading_period_closed
+    end
+
+    context "for a root account" do
+      it "returns false if the site admin account does not enable new_sis_integrations" do
+        root_account.enable_feature!(:disable_post_to_sis_when_grading_period_closed)
+
+        expect(root_account).not_to be_allow_disable_post_to_sis_when_grading_period_closed
+      end
+
+      it "returns false if this account does not enable the relevant feature flag" do
+        Account.site_admin.enable_feature!(:new_sis_integrations)
+
+        expect(root_account).not_to be_allow_disable_post_to_sis_when_grading_period_closed
+      end
+
+      it "returns true when the relevant feature flags are enabled" do
+        Account.site_admin.enable_feature!(:new_sis_integrations)
+        root_account.enable_feature!(:disable_post_to_sis_when_grading_period_closed)
+
+        expect(root_account).to be_allow_disable_post_to_sis_when_grading_period_closed
+      end
     end
   end
 end

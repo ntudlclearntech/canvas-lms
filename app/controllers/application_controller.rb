@@ -44,6 +44,7 @@ class ApplicationController < ActionController::Base
   around_action :enable_request_cache
   around_action :batch_statsd
   around_action :report_to_datadog
+  around_action :compute_http_cost
 
   helper :all
 
@@ -208,10 +209,10 @@ class ApplicationController < ActionController::Base
 
   # put feature checks on Account.site_admin and @domain_root_account that we're loading for every page in here
   # so altogether we can get them faster the vast majority of the time
-  JS_ENV_SITE_ADMIN_FEATURES = [:cc_in_rce_video_tray, :featured_help_links].freeze
+  JS_ENV_SITE_ADMIN_FEATURES = [:cc_in_rce_video_tray, :featured_help_links, :rce_lti_favorites].freeze
   JS_ENV_ROOT_ACCOUNT_FEATURES = [
     :direct_share, :assignment_bulk_edit, :responsive_admin_settings, :responsive_awareness,
-    :responsive_misc, :product_tours, :module_dnd, :files_dnd, :unpublished_courses
+    :responsive_misc, :product_tours, :module_dnd, :files_dnd, :unpublished_courses, :bulk_delete_pages
   ].freeze
   JS_ENV_FEATURES_HASH = Digest::MD5.hexdigest([JS_ENV_SITE_ADMIN_FEATURES + JS_ENV_ROOT_ACCOUNT_FEATURES].sort.join(",")).freeze
   def cached_js_env_account_features
@@ -548,6 +549,16 @@ class ApplicationController < ActionController::Base
 
   def batch_statsd(&block)
     InstStatsd::Statsd.batch(&block)
+  end
+
+  def compute_http_cost(&block)
+    CanvasHttp.reset_cost!
+    yield
+  ensure
+    if CanvasHttp.cost > 0
+      cost_weight = Setting.get('canvas_http_cost_weight', '1.0').to_f
+      increment_request_cost(CanvasHttp.cost * cost_weight)
+    end
   end
 
   def report_to_datadog(&block)
@@ -1367,7 +1378,7 @@ class ApplicationController < ActionController::Base
   end
 
   def log_page_view
-    return true if !page_views_enabled?
+    return true unless page_views_enabled?
 
     shard = (@accessed_asset && @accessed_asset[:shard]) || Shard.current
     shard.activate do
@@ -1381,7 +1392,6 @@ class ApplicationController < ActionController::Base
         else
           @page_view.destroy if @page_view && !@page_view.new_record?
         end
-
       rescue StandardError, CassandraCQL::Error::InvalidRequestException => e
         Canvas::Errors.capture_exception(:page_view, e)
         logger.error "Pageview error!"
@@ -1393,19 +1403,22 @@ class ApplicationController < ActionController::Base
 
   def add_interaction_seconds
     updated_fields = params.slice(:interaction_seconds)
-    if request.xhr? && params[:page_view_token] && !updated_fields.empty? && !(@page_view && @page_view.generated_by_hand)
-      RequestContextGenerator.store_interaction_seconds_update(params[:page_view_token], updated_fields[:interaction_seconds])
+    return unless (request.xhr? || request.put?) && params[:page_view_token] && !updated_fields.empty?
 
-      page_view_info = PageView.decode_token(params[:page_view_token])
-      @page_view = PageView.find_for_update(page_view_info[:request_id])
-      if @page_view
-        if @page_view.id
-          response.headers["X-Canvas-Page-View-Update-Url"] = page_view_path(
-            @page_view.id, page_view_token: @page_view.token)
-        end
-        @page_view.do_update(updated_fields)
-        @page_view_update = true
+    RequestContextGenerator.store_interaction_seconds_update(
+      params[:page_view_token],
+      updated_fields[:interaction_seconds]
+    )
+    page_view_info = PageView.decode_token(params[:page_view_token])
+    @page_view = PageView.find_for_update(page_view_info[:request_id])
+    if @page_view
+      if @page_view.id
+        response.headers["X-Canvas-Page-View-Update-Url"] = page_view_path(
+          @page_view.id, page_view_token: @page_view.token
+        )
       end
+      @page_view.do_update(updated_fields)
+      @page_view_update = true
     end
   end
 
@@ -1679,7 +1692,7 @@ class ApplicationController < ActionController::Base
   end
 
   def content_tag_redirect(context, tag, error_redirect_symbol, tag_type=nil)
-    url_params = { :module_item_id => tag.id }
+    url_params = tag.tag_type == 'context_module' ? { :module_item_id => tag.id } : {}
     if tag.content_type == 'Assignment'
       redirect_to named_context_url(context, :context_assignment_url, tag.content_id, url_params)
     elsif tag.content_type == 'WikiPage'
@@ -2260,11 +2273,29 @@ class ApplicationController < ActionController::Base
   def js_bundle(*args)
     opts = (args.last.is_a?(Hash) ? args.pop : {})
     Array(args).flatten.each do |bundle|
-      js_bundles << [bundle, opts[:plugin]] unless js_bundles.include? [bundle, opts[:plugin]]
+      js_bundles << [bundle, opts[:plugin], false] unless js_bundles.include? [bundle, opts[:plugin], false]
     end
     nil
   end
   helper_method :js_bundle
+
+  # Like #js_bundle but delay the execution (not necessarily the loading) of the
+  # JS until the DOM is ready. Equivalent to doing:
+  #
+  #     $(document).ready(() => { import('path/to/bundles/profile.js') })
+  #
+  # This is useful when you suspect that the rendering of ERB/HTML can take a
+  # long enough time for the JS to execute before it's done. For example, when
+  # a page would contain a ton of DOM elements to represent DB records without
+  # pagination as seen in USERS-369.
+  def deferred_js_bundle(*args)
+    opts = (args.last.is_a?(Hash) ? args.pop : {})
+    Array(args).flatten.each do |bundle|
+      js_bundles << [bundle, opts[:plugin], true] unless js_bundles.include? [bundle, opts[:plugin], true]
+    end
+    nil
+  end
+  helper_method :deferred_js_bundle
 
   def add_body_class(*args)
     @body_classes ||= []

@@ -16,7 +16,7 @@
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-require File.expand_path(File.dirname(__FILE__) + '/../../spec_helper.rb')
+require 'spec_helper.rb'
 
 describe Canvas::LiveEvents do
   # The only methods tested in here are ones that have any sort of logic happening.
@@ -573,6 +573,16 @@ describe Canvas::LiveEvents do
           ))
         Canvas::LiveEvents.submission_created(submission)
       end
+
+      it 'should include the associated_integration_id if the assignment has an assignment configuration tool lookup' do
+        submission.assignment.assignment_configuration_tool_lookups.create!(tool_product_code: 'turnitin-lti',
+          tool_vendor_code: 'turnitin.com', tool_type: 'Lti::MessageHandler')
+        expect_event('submission_created',
+          hash_including(
+            associated_integration_id: "turnitin.com-turnitin-lti"
+          ))
+        Canvas::LiveEvents.submission_created(submission)
+      end
     end
 
     describe ".submission_updated" do
@@ -604,6 +614,16 @@ describe Canvas::LiveEvents do
           hash_including(
             late: false,
             missing: true
+          ))
+        Canvas::LiveEvents.submission_updated(submission)
+      end
+
+      it 'should include the associated_integration_id if the assignment has an assignment configuration tool lookup' do
+        submission.assignment.assignment_configuration_tool_lookups.create!(tool_product_code: 'turnitin-lti',
+          tool_vendor_code: 'turnitin.com', tool_type: 'Lti::MessageHandler')
+        expect_event('submission_updated',
+          hash_including(
+            associated_integration_id: "turnitin.com-turnitin-lti"
           ))
         Canvas::LiveEvents.submission_updated(submission)
       end
@@ -685,6 +705,16 @@ describe Canvas::LiveEvents do
         expect_event('plagiarism_resubmit',
           hash_including(
             group_id: group.id.to_s
+          ))
+        Canvas::LiveEvents.plagiarism_resubmit(submission)
+      end
+
+      it 'should include the associated_integration_id if the assignment has an assignment configuration tool lookup' do
+        submission.assignment.assignment_configuration_tool_lookups.create!(tool_product_code: 'turnitin-lti',
+          tool_vendor_code: 'turnitin.com', tool_type: 'Lti::MessageHandler')
+        expect_event('plagiarism_resubmit',
+          hash_including(
+            associated_integration_id: "turnitin.com-turnitin-lti"
           ))
         Canvas::LiveEvents.plagiarism_resubmit(submission)
       end
@@ -804,58 +834,82 @@ describe Canvas::LiveEvents do
   end
 
   describe '.assignment_created' do
-    it 'triggers a live event with assignment details' do
+    before :each do
       course_with_student_submissions
-      assignment = @course.assignments.first
+      @assignment = @course.assignments.first
+    end
 
+    it 'triggers a live event with assignment details' do
       expect_event('assignment_created',
         hash_including({
-          assignment_id: assignment.global_id.to_s,
+          assignment_id: @assignment.global_id.to_s,
           context_id: @course.global_id.to_s,
           context_uuid: @course.uuid,
           context_type: 'Course',
-          workflow_state: assignment.workflow_state,
-          title: assignment.title,
-          description: assignment.description,
-          due_at: assignment.due_at,
-          unlock_at: assignment.unlock_at,
-          lock_at: assignment.lock_at,
-          points_possible: assignment.points_possible,
-          lti_assignment_id: assignment.lti_context_id,
-          lti_resource_link_id: assignment.lti_resource_link_id,
-          lti_resource_link_id_duplicated_from: assignment.duplicate_of&.lti_resource_link_id,
-          submission_types: assignment.submission_types
+          workflow_state: @assignment.workflow_state,
+          title: @assignment.title,
+          description: @assignment.description,
+          due_at: @assignment.due_at,
+          unlock_at: @assignment.unlock_at,
+          lock_at: @assignment.lock_at,
+          points_possible: @assignment.points_possible,
+          lti_assignment_id: @assignment.lti_context_id,
+          lti_resource_link_id: @assignment.lti_resource_link_id,
+          lti_resource_link_id_duplicated_from: @assignment.duplicate_of&.lti_resource_link_id,
+          submission_types: @assignment.submission_types
         }.compact!)).once
 
-      Canvas::LiveEvents.assignment_created(assignment)
+      Canvas::LiveEvents.assignment_created(@assignment)
+    end
+
+    it 'should include the associated_integration_id if the assignment has an assignment configuration tool lookup' do
+      @assignment.assignment_configuration_tool_lookups.create!(tool_product_code: 'turnitin-lti',
+        tool_vendor_code: 'turnitin.com', tool_type: 'Lti::MessageHandler')
+      expect_event('assignment_created',
+        hash_including(
+          associated_integration_id: "turnitin.com-turnitin-lti"
+        ))
+      Canvas::LiveEvents.assignment_created(@assignment)
     end
   end
 
   describe '.assignment_updated' do
-    it 'triggers a live event with assignment details' do
+    before :each do
       course_with_student_submissions
-      assignment = @course.assignments.first
+      @assignment = @course.assignments.first
+    end
 
+    it 'triggers a live event with assignment details' do
       expect_event('assignment_updated',
         hash_including({
-          assignment_id: assignment.global_id.to_s,
+          assignment_id: @assignment.global_id.to_s,
           context_id: @course.global_id.to_s,
           context_uuid: @course.uuid,
           context_type: 'Course',
-          workflow_state: assignment.workflow_state,
-          title: assignment.title,
-          description: assignment.description,
-          due_at: assignment.due_at,
-          unlock_at: assignment.unlock_at,
-          lock_at: assignment.lock_at,
-          points_possible: assignment.points_possible,
-          lti_assignment_id: assignment.lti_context_id,
-          lti_resource_link_id: assignment.lti_resource_link_id,
-          lti_resource_link_id_duplicated_from: assignment.duplicate_of&.lti_resource_link_id,
-          submission_types: assignment.submission_types
+          workflow_state: @assignment.workflow_state,
+          title: @assignment.title,
+          description: @assignment.description,
+          due_at: @assignment.due_at,
+          unlock_at: @assignment.unlock_at,
+          lock_at: @assignment.lock_at,
+          points_possible: @assignment.points_possible,
+          lti_assignment_id: @assignment.lti_context_id,
+          lti_resource_link_id: @assignment.lti_resource_link_id,
+          lti_resource_link_id_duplicated_from: @assignment.duplicate_of&.lti_resource_link_id,
+          submission_types: @assignment.submission_types
         }.compact!)).once
 
-      Canvas::LiveEvents.assignment_updated(assignment)
+      Canvas::LiveEvents.assignment_updated(@assignment)
+    end
+
+    it 'should include the associated_integration_id if the assignment has an assignment configuration tool lookup' do
+      @assignment.assignment_configuration_tool_lookups.create!(tool_product_code: 'turnitin-lti',
+        tool_vendor_code: 'turnitin.com', tool_type: 'Lti::MessageHandler')
+      expect_event('assignment_updated',
+        hash_including(
+          associated_integration_id: "turnitin.com-turnitin-lti"
+        ))
+      Canvas::LiveEvents.assignment_updated(@assignment)
     end
   end
 
@@ -1213,7 +1267,7 @@ describe Canvas::LiveEvents do
 
   describe '.course_completed' do
     it 'should trigger a course completed live event' do
-      course = course_model
+      course = course_model(sis_source_id: "abc123")
       user = user_model
       context_module = course.context_modules.create!
       context_module_progression = context_module.context_module_progressions.create!(user_id: user.id, workflow_state: 'completed')
@@ -1221,7 +1275,8 @@ describe Canvas::LiveEvents do
       expected_event_body = {
         progress: CourseProgress.new(course, user, read_only: true).to_json,
         user: { id: user.id.to_s, name: user.name, email: user.email },
-        course: { id: course.id.to_s, name: course.name }
+        course: { id: course.id.to_s, name: course.name,
+                  account_id: course.account_id.to_s, sis_source_id: "abc123" }
       }
 
       expect_event('course_completed', expected_event_body).once
@@ -1232,7 +1287,7 @@ describe Canvas::LiveEvents do
 
   describe '.course_progress' do
     it 'should trigger a course progress live event' do
-      course = course_model
+      course = course_model(sis_source_id: "abc123")
       user = user_model
       context_module = course.context_modules.create!
       # context_module_progression = context_module.context_module_progressions.create!(user_id: user.id, workflow_state: 'completed')
@@ -1241,7 +1296,8 @@ describe Canvas::LiveEvents do
       expected_event_body = {
         progress: CourseProgress.new(course, user, read_only: true).to_json,
         user: { id: user.id.to_s, name: user.name, email: user.email },
-        course: { id: course.id.to_s, name: course.name }
+        course: { id: course.id.to_s, name: course.name,
+                  account_id: course.account_id.to_s, sis_source_id: "abc123" }
       }
 
       expect_event('course_progress', expected_event_body).once

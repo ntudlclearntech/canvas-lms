@@ -50,11 +50,11 @@
     "alt_text_611fb322": {
         "message": "Alt テキスト"
     },
+    "an_error_occured_reading_the_file_ff48558b": {
+        "message": "ファイルを読み取る際にエラーが発生しました"
+    },
     "an_error_occurred_attempting_to_dismiss_the_opport_f86e0667": {
         "message": "案件を却下しようとした際にエラーが発生しました。"
-    },
-    "an_error_occurred_generating_the_file_preview_cf259955": {
-        "message": "ファイルプレビューの作成中にエラーが発生しました"
     },
     "an_error_occurred_making_a_network_request_d1bda348": {
         "message": "ネットワーク要求の作成中にエラーが発生しました"
@@ -161,9 +161,6 @@
     "clear_selected_file_filename_2fe8a58e": {
         "message": "選択されたファイルを削除：{ filename }"
     },
-    "click_any_page_to_insert_a_link_to_that_page_ac920c02": {
-        "message": "ページをクリックして、そのページにリンクを挿入します。"
-    },
     "click_to_embed_imagename_c41ea8df": {
         "message": "クリックして{ imageName }を埋め込みます"
     },
@@ -265,6 +262,9 @@
     },
     "date_time_d9fbf2d7": {
         "message": "日付 & 時間:"
+    },
+    "decorative_image_3c28aa7d": {
+        "message": "装飾的なイメージ"
     },
     "decrease_indent_de6343ab": {
         "message": "インデントを戻す"
@@ -470,6 +470,9 @@
     "finish_bc343002": {
         "message": "フィニッシュ"
     },
+    "focus_element_options_toolbar_18d993e": {
+        "message": "フォーカス要素オプションツールバー"
+    },
     "folder_tree_fbab0726": {
         "message": "フォルダツリー"
     },
@@ -581,12 +584,6 @@
     "link_options_a16b758b": {
         "message": "リンクオプション"
     },
-    "link_to_other_content_in_the_course_879163b5": {
-        "message": "コース内の他のコンテンツにリンクします。"
-    },
-    "link_to_other_content_in_the_group_3fe25379": {
-        "message": "グループ内の他のコンテンツにリンクします。"
-    },
     "links_14b70841": {
         "message": "リンク"
     },
@@ -683,6 +680,9 @@
     "my_grades_98834476": {
         "message": "私の成績"
     },
+    "my_media_82bade11": {
+        "message": "マイメディア"
+    },
     "navigate_through_the_menu_or_toolbar_415a4e50": {
         "message": "メニューまたはツールバーを移動する"
     },
@@ -703,9 +703,6 @@
     },
     "next_page_d2a39853": {
         "message": "次のページ"
-    },
-    "no_alt_text_decorative_image_f318fc0e": {
-        "message": "別のテキストはありません (装飾画像)"
     },
     "no_due_dates_assigned_e8f5bac8": {
         "message": "期日指定なし"
@@ -1174,6 +1171,9 @@
     },
     "you_have_media_feedback_f5f9aba8": {
         "message": "メディアフィードバックがあります。"
+    },
+    "you_may_not_upload_an_empty_file_11c31eb2": {
+        "message": "空のファイルをアップロードすることはできません。"
     },
     "you_must_provide_a_date_and_time_a86839d2": {
         "message": "日時を指定する必要があります。"

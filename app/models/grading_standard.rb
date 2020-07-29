@@ -53,6 +53,7 @@ class GradingStandard < ActiveRecord::Base
   before_save :trim_whitespace, if: :will_save_change_to_data?
   before_save :update_usage_count
   attr_accessor :default_standard
+  before_create :set_root_account_id
 
   workflow do
     state :active
@@ -281,5 +282,9 @@ class GradingStandard < ActiveRecord::Base
       "C-" => 0.60,
       "F" => 0.00
     }
+  end
+
+  def set_root_account_id
+    self.root_account_id ||= context.is_a?(Account) ? context.resolved_root_account_id : context.root_account_id
   end
 end

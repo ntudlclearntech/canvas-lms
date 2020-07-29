@@ -861,6 +861,8 @@ CanvasRails::Application.routes.draw do
 
   get 'account_notifications' => 'account_notifications#render_past_global_announcements'
 
+  resource :trophy_case, controller: :user_trophies, only: [:show]
+
   scope '/profile' do
     post 'toggle_disable_inbox' => 'profile#toggle_disable_inbox'
     get 'profile_pictures' => 'profile#profile_pics', as: :profile_pics
@@ -919,6 +921,7 @@ CanvasRails::Application.routes.draw do
 
   get 'health_check' => 'info#health_check'
   get 'health_prognosis' => 'info#health_prognosis'
+  get 'web-app-manifest/manifest.json' => 'info#mobile_manifest'
 
   get 'browserconfig.xml', to: 'info#browserconfig', defaults: { format: 'xml' }
 
@@ -2259,6 +2262,20 @@ CanvasRails::Application.routes.draw do
       put 'media_objects/:media_object_id/media_tracks', action: 'update', as: :update_media_tracks
     end
 
+    scope(controller: 'conditional_release/rules') do
+      # TODO: can rearrange so assignment is in path if desired once we're no longer maintaining backwards compat
+      get 'courses/:course_id/mastery_paths/rules', action: 'index'
+      get 'courses/:course_id/mastery_paths/rules/:id', action: 'show'
+      post 'courses/:course_id/mastery_paths/rules', action: 'create'
+      put 'courses/:course_id/mastery_paths/rules/:id', action: 'update'
+      delete 'courses/:course_id/mastery_paths/rules/:id', action: 'destroy'
+    end
+
+    scope(controller: 'conditional_release/stats') do
+      # TODO: can rearrange so assignment is in path if desired once we're no longer maintaining backwards compat
+      get 'courses/:course_id/mastery_paths/stats/students_per_range', action: 'students_per_range'
+      get 'courses/:course_id/mastery_paths/stats/student_details', action: 'student_details'
+    end
   end
 
     # this is not a "normal" api endpoint in the sense that it is not documented or

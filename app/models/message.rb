@@ -638,9 +638,14 @@ class Message < ActiveRecord::Base
   def enqueue_to_sqs
     targets = notification_targets
     if targets.empty?
+      # Log no_targets_specified error to DataDog
+      InstStatsd::Statsd.increment("message.no_targets_specified",
+                                   short_stat: 'message.no_targets_specified',
+                                   tags: {path_type: path_type})
+
       self.transmission_errors = "No notification targets specified"
       self.set_transmission_error
-    else
+  else
       targets.each do |target|
         Services::NotificationService.process(
           notification_service_id,
@@ -931,7 +936,7 @@ class Message < ActiveRecord::Base
   def deliver_via_sms
     if to =~ /^\+[0-9]+$/
       begin
-        unless Account.site_admin.feature_enabled?(:international_sms)
+        unless user.account.feature_enabled?(:international_sms)
           raise "International SMS is currently disabled for this user's account"
         end
         if Canvas::Twilio.enabled?

@@ -91,6 +91,31 @@ describe Types::UserType do
     end
   end
 
+  context "sisId" do
+    before(:once) do
+      @student.pseudonyms.create!(
+        account: @course.account,
+        unique_id: "alex@columbia.edu",
+        workflow_state: 'active',
+        sis_user_id: "a.ham"
+      )
+    end
+
+    let(:admin) { account_admin_user }
+    let(:user_type_as_admin) do
+      GraphQLTypeTester.new(@student, current_user: admin, domain_root_account: @course.account.root_account,
+        request: ActionDispatch::TestRequest.create)
+    end
+
+    it "returns the sis user id if the user has permissions to read it" do
+      expect(user_type_as_admin.resolve("sisId")).to eq "a.ham"
+    end
+
+    it "returns null if the user does not have permission to read the sis user id" do
+      expect(user_type.resolve("sisId")).to be_nil
+    end
+  end
+
 
   context "enrollments" do
     before(:once) do
@@ -171,6 +196,47 @@ describe Types::UserType do
       expect(
         user_type.resolve('groups { _id }', current_user: @teacher)
       ).to be_nil
+    end
+  end
+
+  context 'trophies' do
+    it 'returns empty values for the trophies the user has not unlocked' do
+      response = user_type.resolve('trophies { displayName }', current_user: @student)
+      expect(response[0]).to be_nil
+    end
+
+    it 'returns values for the trophies the user has unlocked' do
+      @student.trophies.create!(name: 'balloon')
+      response = user_type.resolve('trophies { displayName }', current_user: @student)
+      expect(response.include?('Balloon')).to be true
+    end
+  end
+
+  context 'notificationPreferences' do
+    it 'returns the users notification preferences' do
+      Notification.delete_all
+      @student.communication_channels.create!(path: 'test@test.com').confirm!
+      notification_model(:name => 'test', :category => 'Announcement')
+
+      expect(
+        user_type.resolve('notificationPreferences { channels { notificationPolicies(contextType: Course) { notification { name } } } }')[0][0]
+      ).to eq 'test'
+    end
+
+    it 'only returns active communication channels' do
+      Notification.delete_all
+      communication_channel = @student.communication_channels.create!(path: 'test@test.com')
+      communication_channel.confirm!
+      notification_model(:name => 'test', :category => 'Announcement')
+
+      expect(
+        user_type.resolve('notificationPreferences { channels { notificationPolicies(contextType: Course) { notification { name } } } }')[0][0]
+      ).to eq 'test'
+
+      communication_channel.destroy
+      expect(
+        user_type.resolve('notificationPreferences { channels { notificationPolicies(contextType: Course) { notification { name } } } }').count
+      ).to eq 0
     end
   end
 end

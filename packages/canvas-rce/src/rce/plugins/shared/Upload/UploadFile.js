@@ -21,7 +21,8 @@ import ReactDOM from 'react-dom'
 import {arrayOf, func, object, oneOf, oneOfType, string} from 'prop-types'
 import {Modal} from '@instructure/ui-overlays'
 import {Button, CloseButton} from '@instructure/ui-buttons'
-import {Heading, Spinner} from '@instructure/ui-elements'
+import {Heading} from '@instructure/ui-elements'
+import {Spinner} from '@instructure/ui-spinner'
 import {Tabs} from '@instructure/ui-tabs'
 import {px} from '@instructure/ui-utils'
 import formatMessage from '../../../../format-message'
@@ -96,10 +97,13 @@ export const handleSubmit = (
   afterInsert()
 }
 
-function shouldBeDisabled({fileUrl, theFile, unsplashData}, selectedPanel) {
+function shouldBeDisabled({fileUrl, theFile, unsplashData, error}, selectedPanel) {
+  if (error) {
+    return true
+  }
   switch (selectedPanel) {
     case 'COMPUTER':
-      return !theFile
+      return !theFile || theFile.error
     case 'UNSPLASH':
       return !unsplashData.id || !unsplashData.url
     case 'URL':
@@ -119,7 +123,7 @@ export function UploadFile({
   onSubmit = handleSubmit
 }) {
   const [theFile, setFile] = useState(null)
-  const [hasUploadedFile, setHasUploadedFile] = useState(false)
+  const [error, setError] = useState(null)
   const [fileUrl, setFileUrl] = useState('')
   const [selectedPanel, setSelectedPanel] = useState(panels[0])
   const [unsplashData, setUnsplashData] = useState({id: null, url: null})
@@ -174,8 +178,7 @@ export function UploadFile({
                   editor={editor}
                   theFile={theFile}
                   setFile={setFile}
-                  hasUploadedFile={hasUploadedFile}
-                  setHasUploadedFile={setHasUploadedFile}
+                  setError={setError}
                   label={label}
                   accept={accept}
                   bounds={{width: modalBodyWidth, height: modalBodyHeight}}
@@ -222,7 +225,7 @@ export function UploadFile({
     })
   }
 
-  const disabledSubmit = shouldBeDisabled({fileUrl, theFile, unsplashData}, selectedPanel)
+  const disabledSubmit = shouldBeDisabled({fileUrl, theFile, unsplashData, error}, selectedPanel)
 
   return (
     <StoreProvider {...trayProps}>

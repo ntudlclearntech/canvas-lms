@@ -970,6 +970,13 @@ class AccountsController < ApplicationController
           end
         end
 
+        # privacy settings
+        unless @account.grants_right?(@current_user, :manage_privacy_settings)
+          %w{enable_fullstory enable_google_analytics}.each do |setting|
+            params[:account][:settings].try(:delete, setting)
+          end
+        end
+
         # don't accidentally turn the default help link name into a custom one and thereby break i18n
         help_link_name = params.dig(:account, :settings, :help_link_name)
         params[:account][:settings][:help_link_name] = nil if help_link_name == default_help_link_name
@@ -1521,6 +1528,7 @@ class AccountsController < ApplicationController
                                    :default_storage_quota, :default_storage_quota_mb,
                                    :default_group_storage_quota, :default_group_storage_quota_mb,
                                    :default_user_storage_quota, :default_user_storage_quota_mb, :default_time_zone,
+                                   :disable_post_to_sis_when_grading_period_closed,
                                    :edit_institution_email, :enable_alerts, :enable_eportfolios, :enable_course_catalog,
                                    :limit_parent_app_web_access,
                                    {:enable_offline_web_export => [:value]}.freeze,
@@ -1548,7 +1556,8 @@ class AccountsController < ApplicationController
                                    :sub_account_includes, :teachers_can_create_courses, :trusted_referers,
                                    :turnitin_host, :turnitin_account_id, :users_can_edit_name,
                                    {:usage_rights_required => [:value, :locked] }.freeze,
-                                   :app_center_access_token, :default_dashboard_view, :force_default_dashboard_view].freeze
+                                   :app_center_access_token, :default_dashboard_view, :force_default_dashboard_view,
+                                   :smart_alerts_threshold, :enable_fullstory, :enable_google_analytics].freeze
 
   def permitted_account_attributes
     [:name, :turnitin_account_id, :turnitin_shared_secret, :include_crosslisted_courses,

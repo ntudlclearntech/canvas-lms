@@ -66,7 +66,7 @@ describe Message do
     it "should have a sane body" do
       @au = AccountUser.create(:account => account_model)
       msg = generate_message(:account_user_notification, :email, @au)
-      expect(msg.html_body.scan(/<html>/).length).to eq 1
+      expect(msg.html_body.scan(/<html dir="ltr" lang="en">/).length).to eq 1
       expect(msg.html_body.index('<!DOCTYPE')).to eq 0
     end
 
@@ -149,7 +149,8 @@ describe Message do
     it "displays a custom logo when configured" do
       account = account_model
       account.settings[:email_logo] = 'awesomelogo.jpg'
-      @au = AccountUser.create(:account => account)
+      account.save!
+      @au = AccountUser.create!(:account => account, user: user_model)
       msg = generate_message(:account_user_notification, :email, @au)
       expect(msg.html_body).to include('awesomelogo.jpg')
     end
@@ -351,7 +352,7 @@ describe Message do
     context 'SMS' do
       before :once do
         user_model
-        Account.site_admin.enable_feature!(:international_sms)
+        @user.account.enable_feature!(:international_sms)
       end
 
       before do

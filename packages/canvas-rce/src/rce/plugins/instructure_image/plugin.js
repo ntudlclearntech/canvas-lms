@@ -34,7 +34,7 @@ tinymce.create('tinymce.plugins.InstructureImagePlugin', {
     // Register commands
     editor.addCommand('mceInstructureImage', clickCallback.bind(this, editor, document))
     editor.addCommand('instructureTrayForImages', (ui, plugin_key) => {
-      bridge.showTrayForPlugin(plugin_key)
+      bridge.showTrayForPlugin(plugin_key, editor.id)
     })
 
     // Register menu items
@@ -116,7 +116,7 @@ tinymce.create('tinymce.plugins.InstructureImagePlugin', {
         trayController.showTrayForEditor(editor)
       },
 
-      text: formatMessage('Options'),
+      text: formatMessage('Image Options'),
       tooltip: buttonAriaLabel
     })
 

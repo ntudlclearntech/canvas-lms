@@ -18,46 +18,32 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-def runCoverage() {
-  def flags = load 'build/new-jenkins/groovy/commit-flags.groovy'
-  return env.RUN_COVERAGE == '1' || flags.forceRunCoverage() ? '1' : ''
-}
+library "canvas-builds-library"
 
-def isForceFailure() {
-  def flags = load 'build/new-jenkins/groovy/commit-flags.groovy'
-  return flags.isForceFailureJS() ? "1" : ''
-}
-
-def getImageTagVersion() {
-  def flags = load 'build/new-jenkins/groovy/commit-flags.groovy'
-  // total hack, we shouldnt do it like this. but until there is a better
-  // way of passing info across builds, this is path of least resistance..
-  // also, it didnt seem to work with multiple return statements, so i'll
-  // just go ahead and leave this monstrosity here.
-  return env.RUN_COVERAGE == '1' ? 'master' : flags.getImageTagVersion()
-}
+def DEFAULT_NODE_COUNT = 1
+def JSG_NODE_COUNT = 3
 
 def copyFiles(dockerName, dockerPath, hostPath) {
   sh "mkdir -vp ./$hostPath"
   sh "docker cp \$(docker ps -qa -f name=$dockerName):/usr/src/app/$dockerPath ./$hostPath"
 }
 
-def withSentry(block) {
-  def credentials = load 'build/new-jenkins/groovy/credentials.groovy'
-  credentials.withSentryCredentials(block)
-}
-
-def runInSeriesOrParallel(isSeries, stagesMap) {
-  if (isSeries) {
-    echo "running tests in series: ${stagesMap.keys}"
-    stagesMap.each { name, block ->
-      stage(name) {
-        block()
+def makeKarmaStage(group, ciNode, ciTotal) {
+  return {
+    withEnv([
+      "CI_NODE_INDEX=${ciNode}",
+      "CI_NODE_TOTAL=${ciTotal}",
+      "CONTAINER_NAME=tests-karma-${group}-${ciNode}",
+      "JSPEC_GROUP=${group}"
+    ]) {
+      try {
+        credentials.withSentryCredentials {
+          sh 'build/new-jenkins/js/tests-karma.sh'
+        }
+      } finally {
+        copyFiles(env.CONTAINER_NAME, 'coverage-js', "./tmp/${env.CONTAINER_NAME}")
       }
     }
-  } else {
-    echo "running tests in parallel: ${stagesMap.keys}"
-    parallel(stagesMap)
   }
 }
 
@@ -67,8 +53,7 @@ pipeline {
 
   environment {
     COMPOSE_FILE = 'docker-compose.new-jenkins.canvas.yml:docker-compose.new-jenkins-karma.yml'
-    COVERAGE = runCoverage()
-    FORCE_FAILURE = isForceFailure()
+    FORCE_FAILURE = configuration.forceFailureJS()
     SENTRY_URL="https://sentry.insops.net"
     SENTRY_ORG="instructure"
     SENTRY_PROJECT="master-javascript-build"
@@ -77,11 +62,10 @@ pipeline {
   stages {
     stage('Setup') {
       steps {
+        cleanAndSetup()
         timeout(time: 10) {
-          sh 'build/new-jenkins/print-env-excluding-secrets.sh'
-          sh 'build/new-jenkins/docker-cleanup.sh'
           sh 'rm -vrf ./tmp/*'
-          sh 'build/new-jenkins/docker-compose-pull.sh'
+          sh './build/new-jenkins/docker-with-flakey-network-protection.sh pull $PATCHSET_TAG'
           sh 'docker-compose build'
         }
       }
@@ -93,41 +77,12 @@ pipeline {
           script {
             def tests = [:]
 
-            tests['Jest'] = {
-              withEnv(['CONTAINER_NAME=tests-jest']) {
-                try {
-                  withSentry { sh 'build/new-jenkins/js/tests-jest.sh'
-                  }
-                  if (env.COVERAGE == '1') {
-                    copyFiles(env.CONTAINER_NAME, 'coverage-jest', "./tmp/${env.CONTAINER_NAME}-coverage")
-                  }
-                } finally {
-                  copyFiles(env.CONTAINER_NAME, 'coverage-js', "./tmp/${env.CONTAINER_NAME}")
-                }
-              }
-            }
-
-            tests['Packages'] = {
-              withEnv(['CONTAINER_NAME=tests-packages']) {
-                try {
-                  withSentry { sh 'build/new-jenkins/js/tests-packages.sh' }
-                } finally {
-                  copyFiles(env.CONTAINER_NAME, 'packages', "./tmp/${env.CONTAINER_NAME}")
-                }
-              }
-            }
-
-            tests['canvas_quizzes'] = {
-              sh 'build/new-jenkins/js/tests-quizzes.sh'
-            }
-
-            ['coffee', 'jsa', 'jsg', 'jsh'].each { group ->
-              tests["Karma - Spec Group - ${group}"] = {
-                withEnv(["CONTAINER_NAME=tests-karma-${group}", "JSPEC_GROUP=${group}"]) {
+            if(env.TEST_SUITE == 'jest') {
+              tests['Jest'] = {
+                withEnv(['CONTAINER_NAME=tests-jest']) {
                   try {
-                    withSentry { sh 'build/new-jenkins/js/tests-karma.sh' }
-                    if (env.COVERAGE == '1') {
-                      copyFiles(env.CONTAINER_NAME, 'coverage-karma', "./tmp/${env.CONTAINER_NAME}-coverage")
+                    credentials.withSentryCredentials {
+                      sh 'build/new-jenkins/js/tests-jest.sh'
                     }
                   } finally {
                     copyFiles(env.CONTAINER_NAME, 'coverage-js', "./tmp/${env.CONTAINER_NAME}")
@@ -136,23 +91,34 @@ pipeline {
               }
             }
 
-            runInSeriesOrParallel(env.COVERAGE == '1', tests)
+            if(env.TEST_SUITE == 'karma') {
+              tests['Packages'] = {
+                withEnv(['CONTAINER_NAME=tests-packages']) {
+                  try {
+                    credentials.withSentryCredentials {
+                      sh 'build/new-jenkins/js/tests-packages.sh'
+                    }
+                  } finally {
+                    copyFiles(env.CONTAINER_NAME, 'packages', "./tmp/${env.CONTAINER_NAME}")
+                  }
+                }
+              }
+
+              tests['canvas_quizzes'] = {
+                sh 'build/new-jenkins/js/tests-quizzes.sh'
+              }
+
+              for(int i = 0; i < JSG_NODE_COUNT; i++) {
+                tests["Karma - Spec Group - jsg${i}"] = makeKarmaStage('jsg', i, JSG_NODE_COUNT)
+              }
+
+              ['coffee', 'jsa', 'jsh'].each { group ->
+                tests["Karma - Spec Group - ${group}"] = makeKarmaStage(group, 0, DEFAULT_NODE_COUNT)
+              }
+            }
+
+            parallel(tests)
           }
-        }
-      }
-    }
-
-
-    stage('Upload Coverage') {
-      when { expression { env.COVERAGE == '1' } }
-      steps {
-        timeout(time: 10) {
-          sh 'build/new-jenkins/js/coverage-report.sh'
-          archiveArtifacts(artifacts: 'coverage-report-js/**/*')
-          uploadCoverage([
-              uploadSource: "/coverage-report-js/report-html",
-              uploadDest: "canvas-lms-js/coverage"
-          ])
         }
       }
     }
@@ -161,12 +127,13 @@ pipeline {
   post {
     always {
       script {
+        archiveArtifacts artifacts: 'tmp/**/*.xml'
         junit allowEmptyResults: true, testResults: 'tmp/**/*.xml'
         sh 'find ./tmp -path "*.xml"'
       }
     }
     cleanup {
-      sh 'build/new-jenkins/docker-cleanup.sh --allow-failure'
+      execute 'bash/docker-cleanup.sh --allow-failure'
     }
   }
 }
