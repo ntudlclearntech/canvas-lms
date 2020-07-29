@@ -10840,9 +10840,9 @@ grunt-sass@^2.1.0:
     node-sass "^4.7.2"
     object-assign "^4.0.1"
 
-"grunt-template-jasmine-requirejs@git://github.com/amireh/grunt-template-jasmine-requirejs.git#0.2.0":
+"grunt-template-jasmine-requirejs@https://github.com/amireh/grunt-template-jasmine-requirejs.git#0.2.0":
   version "0.2.0"
-  resolved "git://github.com/amireh/grunt-template-jasmine-requirejs.git#87ff8c5f607431f00f65fafdc71df67fac88773f"
+  resolved "https://github.com/amireh/grunt-template-jasmine-requirejs.git#87ff8c5f607431f00f65fafdc71df67fac88773f"
 
 grunt@0.4.5:
   version "0.4.5"
@@ -15079,6 +15079,11 @@ nanoid@^2.1.0, nanoid@^2.1.3:
   version "2.1.11"
   resolved "https://registry.yarnpkg.com/nanoid/-/nanoid-2.1.11.tgz#ec24b8a758d591561531b4176a01e3ab4f0f0280"
   integrity sha512-s/snB+WGm6uwi0WjsZdaVcuf3KJXlfGl2LcxgwkEwJF0D/BWzVWAZW/XY4bFaiR7s0Jk3FPvlnepg1H1b1UwlA==
+
+nanoid@^3.1.10:
+  version "3.1.10"
+  resolved "https://registry.yarnpkg.com/nanoid/-/nanoid-3.1.10.tgz#69a8a52b77892de0d11cede96bc9762852145bc4"
+  integrity sha512-iZFMXKeXWkxzlfmMfM91gw7YhN2sdJtixY+eZh9V6QWJWTOiurhpKhBMgr82pfzgSqglQgqYSCowEYsz8D++6w==
 
 nanomatch@^1.2.9:
   version "1.2.13"
@@ -20410,9 +20415,9 @@ tinymce@^4.5.7:
   integrity sha512-ZRoTGG4GAsOI73QPSNkabO7nkoYw9H6cglRB44W2mMkxSiqxYi8WJlgkUphk0fDqo6ZD6r3E+NSP4UHxF2lySg==
 
 tinymce@^5:
-  version "5.0.6"
-  resolved "https://registry.yarnpkg.com/tinymce/-/tinymce-5.0.6.tgz#a31972acf3fe4c4440229d3223b17b965a302258"
-  integrity sha512-9/pcrO8awssCrbfSeNzlt2talFO4ZBCxiwWFLTrSOy5kJI4gXKGKHsZzstoyt7cbwbT1cUjLlUiDqW8IgmL6JA==
+  version "5.3.1"
+  resolved "https://registry.yarnpkg.com/tinymce/-/tinymce-5.3.1.tgz#e7f32d276272db0bfe53971116c5cb074bd1b224"
+  integrity sha512-pIo0yb9oncUXjB+aA06v/hmUTbY7MU5K2qvpP0XPo3ng2sAFR4DnX1QzDKBi0nEomjNKwYs/82cyBXO1KA9HNw==
 
 title-case@^2.1.0:
   version "2.1.1"

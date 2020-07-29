@@ -236,7 +236,7 @@ module ApplicationHelper
     @rendered_js_bundles += new_js_bundles
 
     @rendered_preload_chunks ||= []
-    preload_chunks = new_js_bundles.map do |(bundle, plugin)|
+    preload_chunks = new_js_bundles.map do |(bundle, plugin, *)|
       key = "#{plugin ? "#{plugin}-" : ''}#{bundle}"
       Canvas::Cdn::RevManifest.all_webpack_chunks_for(key)
     end.flatten.uniq - @script_chunks - @rendered_preload_chunks # subtract out the ones we already preloaded in the <head>
@@ -250,8 +250,12 @@ module ApplicationHelper
       # to load that "js_bundle". And by the time that runs, the browser will have already
       # started downloading those script urls because of those preload tags above,
       # so it will not cause a new request to be made.
-      concat javascript_tag new_js_bundles.map { |(bundle, plugin)|
-        "(window.bundles || (window.bundles = [])).push('#{plugin ? "#{plugin}-" : ''}#{bundle}');"
+      #
+      # preloading works similarily for window.deferredBundles only that their
+      # execution is delayed until the DOM is ready.
+      concat javascript_tag new_js_bundles.map { |(bundle, plugin, defer)|
+        container = defer ? 'window.deferredBundles' : 'window.bundles'
+        "(#{container} || (#{container} = [])).push('#{plugin ? "#{plugin}-" : ''}#{bundle}');"
       }.join("\n") if new_js_bundles.present?
     end
   end
@@ -1224,6 +1228,18 @@ module ApplicationHelper
       root_account: file_access_root_account,
       oauth_host: file_access_oauth_host
     )
+  end
+
+  def file_location_mode?
+    in_app? && request.headers["X-Canvas-File-Location"] == "True"
+  end
+
+  def render_file_location(location)
+    headers["X-Canvas-File-Location"] = "True"
+    render json: {
+      location: location,
+      token: file_authenticator.instfs_bearer_token
+    }
   end
 
   def authenticated_download_url(attachment)

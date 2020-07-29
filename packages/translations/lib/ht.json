@@ -50,11 +50,11 @@
     "alt_text_611fb322": {
         "message": "Tèks Altèn"
     },
+    "an_error_occured_reading_the_file_ff48558b": {
+        "message": "Gen yon erè ki fèt pandan lekti fichye a"
+    },
     "an_error_occurred_attempting_to_dismiss_the_opport_f86e0667": {
         "message": "Gen yon erè ki fèt pandan tantativ pou rejte opòtinite a."
-    },
-    "an_error_occurred_generating_the_file_preview_cf259955": {
-        "message": "Gen yon erè ki fèt pandan apèsi fichye a ap fèt"
     },
     "an_error_occurred_making_a_network_request_d1bda348": {
         "message": "Gen yon erè ki fèt pandan demann rezo a"
@@ -161,9 +161,6 @@
     "clear_selected_file_filename_2fe8a58e": {
         "message": "Efase fichye seleksyone: { filename }"
     },
-    "click_any_page_to_insert_a_link_to_that_page_ac920c02": {
-        "message": "Klike sou nenpòt paj pou ensere yon lyen nan paj sa a."
-    },
     "click_to_embed_imagename_c41ea8df": {
         "message": "Klike pou entegre { imageName }"
     },
@@ -265,6 +262,9 @@
     },
     "date_time_d9fbf2d7": {
         "message": "Dat ak Lè:"
+    },
+    "decorative_image_3c28aa7d": {
+        "message": "Imaj Dekoratif"
     },
     "decrease_indent_de6343ab": {
         "message": "Diminye endantasyon"
@@ -470,6 +470,9 @@
     "finish_bc343002": {
         "message": "Fini"
     },
+    "focus_element_options_toolbar_18d993e": {
+        "message": "Ba zouti opsyon eleman fokalizasyon"
+    },
     "folder_tree_fbab0726": {
         "message": "Yerachi Dosye"
     },
@@ -581,12 +584,6 @@
     "link_options_a16b758b": {
         "message": "Opsyon Lyen"
     },
-    "link_to_other_content_in_the_course_879163b5": {
-        "message": "Lye a lòt kontni nan kou a."
-    },
-    "link_to_other_content_in_the_group_3fe25379": {
-        "message": "Lye a lòt kontni nan gwoup la."
-    },
     "links_14b70841": {
         "message": "Lyen"
     },
@@ -683,6 +680,9 @@
     "my_grades_98834476": {
         "message": "Nòt Mwen"
     },
+    "my_media_82bade11": {
+        "message": "Medya Mwen"
+    },
     "navigate_through_the_menu_or_toolbar_415a4e50": {
         "message": "Navige atravè meni oswa ba zouti a"
     },
@@ -703,9 +703,6 @@
     },
     "next_page_d2a39853": {
         "message": "Pwochen Paj"
-    },
-    "no_alt_text_decorative_image_f318fc0e": {
-        "message": "Pa gen Tèks Altèn (Imaj Dekoratif)"
     },
     "no_due_dates_assigned_e8f5bac8": {
         "message": "Pa gen Delè"
@@ -1174,6 +1171,9 @@
     },
     "you_have_media_feedback_f5f9aba8": {
         "message": "Ou gen kòmantè miltimedya."
+    },
+    "you_may_not_upload_an_empty_file_11c31eb2": {
+        "message": "Ou pa dwe soumèt yon fichye vid."
     },
     "you_must_provide_a_date_and_time_a86839d2": {
         "message": "Ou dwe bay yon lè e yon dat."

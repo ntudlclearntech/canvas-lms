@@ -33,7 +33,7 @@ tinymce.create('tinymce.plugins.InstructureRecord', {
 
     ed.addCommand('instructureRecord', clickCallback.bind(this, ed, document))
     ed.addCommand('instructureTrayForMedia', (ui, plugin_key) => {
-      bridge.showTrayForPlugin(plugin_key)
+      bridge.showTrayForPlugin(plugin_key, ed.id)
     })
 
     // Register menu items
@@ -118,7 +118,7 @@ tinymce.create('tinymce.plugins.InstructureRecord', {
         trayController.showTrayForEditor(ed)
       },
 
-      text: formatMessage('Options'),
+      text: formatMessage('Video Options'),
       tooltip: buttonAriaLabel
     })
 

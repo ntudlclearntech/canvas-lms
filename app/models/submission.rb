@@ -80,12 +80,14 @@ class Submission < ActiveRecord::Base
   belongs_to :attachment # this refers to the screenshot of the submission if it is a url submission
   belongs_to :assignment, inverse_of: :submissions
   belongs_to :course, inverse_of: :submissions
+  has_many :observer_alerts, as: :context, inverse_of: :context, dependent: :destroy
   belongs_to :user
   alias student user
   belongs_to :grader, :class_name => 'User'
   belongs_to :grading_period
   belongs_to :group
   belongs_to :media_object
+  belongs_to :root_account, :class_name => 'Account'
 
   belongs_to :quiz_submission, :class_name => 'Quizzes::QuizSubmission'
   has_many :all_submission_comments, -> { order(:created_at) }, class_name: 'SubmissionComment', dependent: :destroy
@@ -320,6 +322,7 @@ class Submission < ActiveRecord::Base
   before_save :prep_for_submitting_to_plagiarism
   before_save :check_url_changed
   before_save :check_reset_graded_anonymously
+  before_save :set_root_account_id
   after_save :touch_user
   after_save :clear_user_submissions_cache
   after_save :touch_graders
@@ -1887,6 +1890,27 @@ class Submission < ActiveRecord::Base
     end
     self.class.connection.after_transaction_commit do
       Auditors::GradeChange.record(skip_insert: skip_insert, submission: self)
+      queue_conditional_release_grade_change_handler if newly_graded || grade_changed
+    end
+  end
+
+  def queue_conditional_release_grade_change_handler
+    self.shard.activate do
+      return unless self.graded? && self.posted?
+      # use request caches to handle n+1's when updating a lot of submissions in the same course in one request
+      return unless RequestCache.cache('conditional_release_native', self.root_account_id) do
+        ConditionalRelease::Service.natively_enabled_for_account?(self.root_account)
+      end
+      return unless RequestCache.cache('conditional_release_feature_enabled', self.course_id) do
+        self.course.feature_enabled?(:conditional_release)
+      end
+      if ConditionalRelease::Rule.is_trigger_assignment?(self.assignment)
+        ConditionalRelease::OverrideHandler.send_later_if_production_enqueue_args(
+          :handle_grade_change,
+          {:priority => Delayed::LOW_PRIORITY, :strand => "conditional_release_grade_change:#{self.global_assignment_id}"},
+          self
+        )
+      end
     end
   end
 
@@ -2676,19 +2700,11 @@ class Submission < ActiveRecord::Base
     end
   end
 
-  def root_account_id
-    # TODO this is a substitute for the root_account_id column
-    # and the root_account attribute, which will eventually be added
-    self.assignment&.root_account_id
-  end
-
-  def root_account
-    # TODO this is a substitute for the root_account attribute,
-    # which will eventually be added
-    self.assignment&.root_account
-  end
-
   private
+
+  def set_root_account_id
+    self.root_account_id ||= assignment&.course&.root_account_id
+  end
 
   def set_anonymous_id
     self.anonymous_id = Anonymity.generate_id(existing_ids: Submission.anonymous_ids_for(assignment))

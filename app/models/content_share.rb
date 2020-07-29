@@ -20,8 +20,13 @@ class ContentShare < ActiveRecord::Base
 
   belongs_to :user
   belongs_to :content_export
+  has_one :course, through: :content_export, source: :context, source_type: 'Course'
+  has_one :group, through: :content_export, source: :context, source_type: 'Group'
+  has_one :context_user, through: :content_export, source: :context, source_type: 'User'
 
   validates :read_state, inclusion: { in: %w(read unread) }
+
+  before_create :set_root_account_id
 
   scope :by_date, -> { order(created_at: :desc) }
   scope :with_content, -> { joins(:content_export) }
@@ -33,5 +38,7 @@ class ContentShare < ActiveRecord::Base
                                              read_state: 'unread')
   end
 
-
+  def set_root_account_id
+    self.root_account_id = self.content_export&.context&.root_account_id if self.content_export&.context.respond_to?(:root_account_id)
+  end
 end

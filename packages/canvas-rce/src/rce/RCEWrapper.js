@@ -25,13 +25,13 @@ import themeable from '@instructure/ui-themeable'
 import {IconKeyboardShortcutsLine} from '@instructure/ui-icons'
 import {ScreenReaderContent} from '@instructure/ui-a11y'
 import {Alert} from '@instructure/ui-alerts'
-import {Spinner} from '@instructure/ui-elements'
+import {Spinner} from '@instructure/ui-spinner'
 
 import formatMessage from '../format-message'
 import * as contentInsertion from './contentInsertion'
 import indicatorRegion from './indicatorRegion'
 import indicate from '../common/indicate'
-import Bridge from '../bridge'
+import bridge from '../bridge'
 import CanvasContentTray, {trayProps} from './plugins/shared/CanvasContentTray'
 import StatusBar from './StatusBar'
 import ShowOnFocusButton from './ShowOnFocusButton'
@@ -41,7 +41,6 @@ import KeyboardShortcutModal from './KeyboardShortcutModal'
 import AlertMessageArea from './AlertMessageArea'
 import alertHandler from './alertHandler'
 import {isFileLink, isImageEmbed} from './plugins/shared/ContentSelection'
-import {defaultImageSize} from './plugins/instructure_image/ImageEmbedOptions'
 import {
   VIDEO_SIZE_DEFAULT,
   AUDIO_PLAYER_SIZE
@@ -172,6 +171,7 @@ class RCEWrapper extends React.Component {
     defaultContent: PropTypes.string,
     editorOptions: PropTypes.object,
     handleUnmount: PropTypes.func,
+    id: PropTypes.string,
     language: PropTypes.string,
     onFocus: PropTypes.func,
     onBlur: PropTypes.func,
@@ -223,10 +223,13 @@ class RCEWrapper extends React.Component {
       messages: [],
       announcement: null,
       confirmAutoSave: false,
-      autoSavedContent: ''
+      autoSavedContent: '',
+      id: this.props.id || this.props.textareaId || `${Date.now()}`
     }
 
     alertHandler.alertFunc = this.addAlert
+
+    this.handleContentTrayClosing = this.handleContentTrayClosing.bind(this)
   }
 
   // getCode and setCode naming comes from tinyMCE
@@ -379,12 +382,11 @@ class RCEWrapper extends React.Component {
       image.src = fileMetaProps.domObject.preview
       width = image.width
       height = image.height
-      if (width > defaultImageSize && image.width > image.height) {
-        width = defaultImageSize
-        height = (image.height * width) / image.width
-      } else if (height > defaultImageSize) {
-        height = defaultImageSize
-        width = (image.width * height) / image.height
+      // we constrain the <img> to max-width: 100%, so scale the size down if necessary
+      const maxWidth = this.iframe.contentDocument.body.clientWidth
+      if (width > maxWidth) {
+        height = Math.round((maxWidth / width) * height)
+        width = maxWidth
       }
       width = `${width}px`
       height = `${height}px`
@@ -428,9 +430,9 @@ class RCEWrapper extends React.Component {
     }
   }
 
-  insertLink(link, isNew) {
+  insertLink(link) {
     const editor = this.mceInstance()
-    const element = contentInsertion.insertLink(editor, link, isNew)
+    const element = contentInsertion.insertLink(editor, link)
     this.contentInserted(element)
   }
 
@@ -470,7 +472,7 @@ class RCEWrapper extends React.Component {
   }
 
   onRemove = () => {
-    Bridge.detachEditor(this)
+    bridge.detachEditor(this)
     this.props.onRemove && this.props.onRemove(this)
   }
 
@@ -480,6 +482,10 @@ class RCEWrapper extends React.Component {
 
   textareaValue() {
     return this.getTextarea().value
+  }
+
+  get id() {
+    return this.state.id
   }
 
   toggle = () => {
@@ -526,7 +532,7 @@ class RCEWrapper extends React.Component {
   handleFocus(_event) {
     if (!this.state.focused) {
       this.setState({focused: true})
-      Bridge.focusEditor(this)
+      bridge.focusEditor(this)
       this._forceCloseFloatingToolbar()
       this.props.onFocus && this.props.onFocus(this)
     }
@@ -534,7 +540,7 @@ class RCEWrapper extends React.Component {
 
   contentTrayClosing = false
 
-  handleContentTrayClosing = isClosing => {
+  handleContentTrayClosing(isClosing) {
     this.contentTrayClosing = isClosing
   }
 
@@ -776,6 +782,7 @@ class RCEWrapper extends React.Component {
         }
       } catch (ex) {
         // log and ignore
+        // eslint-disable-next-line no-console
         console.error('Failed initializing rce autosave', ex)
       }
     }
@@ -959,12 +966,16 @@ class RCEWrapper extends React.Component {
     this._elementRef.removeEventListener('keyup', this.handleShortcutKeyShortcut, true)
   }
 
+  // Get top 2 favorited LTI Tools
+  ltiToolFavorites =
+    window.INST?.editorButtons
+      .filter(e => e.favorite)
+      .map(e => `instructure_external_button_${e.id}`)
+      .slice(0, 2) || []
+
   wrapOptions(options = {}) {
     const setupCallback = options.setup
-    options.toolbar = options.toolbar || []
-    const lti_tool_dropdown = options.toolbar.some(str => str.includes('lti_tool_dropdown'))
-      ? 'lti_tool_dropdown'
-      : ''
+
     return {
       ...options,
 
@@ -983,8 +994,8 @@ class RCEWrapper extends React.Component {
           brandColor: this.theme.canvasBrandColor,
           ...this.props.trayProps
         }
-        Bridge.trayProps.set(editor, trayPropsWithColor)
-        Bridge.languages = this.props.languages
+        bridge.trayProps.set(editor, trayPropsWithColor)
+        bridge.languages = this.props.languages
         if (typeof setupCallback === 'function') {
           setupCallback(editor)
         }
@@ -1009,13 +1020,13 @@ class RCEWrapper extends React.Component {
             'underline',
             'forecolor',
             'backcolor',
-            'superscript',
-            'subscript'
+            'inst_subscript',
+            'inst_superscript'
           ]
         },
         {
           name: formatMessage('Alignment and Indentation'),
-          items: ['align', 'bullist', 'outdent', 'indent', 'directionality']
+          items: ['align', 'bullist', 'inst_indent', 'inst_outdent', 'directionality']
         },
         {
           name: formatMessage('Canvas Plugins'),
@@ -1023,17 +1034,19 @@ class RCEWrapper extends React.Component {
             'instructure_links',
             'instructure_image',
             'instructure_record',
-            'instructure_documents'
+            'instructure_documents',
+            ...this.ltiToolFavorites
           ]
         },
         {
           name: formatMessage('Miscellaneous and Apps'),
-          items: ['removeformat', 'table', 'instructure_equation', `${lti_tool_dropdown}`]
+          items: ['removeformat', 'table', 'instructure_equation', 'lti_tool_dropdown']
         }
       ],
       contextmenu: '', // show the browser's native context menu
 
       toolbar_drawer: 'floating',
+      toolbar_sticky: true,
 
       // tiny's external link create/edit dialog config
       target_list: false, // don't show the target list when creating/editing links
@@ -1080,6 +1093,11 @@ class RCEWrapper extends React.Component {
     this._elementRef.addEventListener('keyup', this.handleShortcutKeyShortcut, true)
     // give the textarea its initial size
     this.onResize(null, {deltaY: 0})
+    // Preload the LTI Tools modal
+    // This helps with loading the favorited external tools
+    if (this.ltiToolFavorites.length > 0) {
+      import('./plugins/instructure_external_tools/components/LtiToolsModal')
+    }
   }
 
   componentDidUpdate(_prevProps, prevState) {
@@ -1131,6 +1149,7 @@ class RCEWrapper extends React.Component {
 
     return (
       <div
+        key={this.id}
         className={`${styles.root} rce-wrapper`}
         ref={el => (this._elementRef = el)}
         onFocus={this.handleFocusRCE}
@@ -1176,7 +1195,9 @@ class RCEWrapper extends React.Component {
           onA11yChecker={this.onA11yChecker}
         />
         <CanvasContentTray
-          bridge={Bridge}
+          key={this.id}
+          bridge={bridge}
+          editor={this}
           onTrayClosing={this.handleContentTrayClosing}
           {...trayProps}
         />
