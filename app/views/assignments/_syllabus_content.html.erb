@@ -29,11 +29,19 @@
   <% end %>
   </div>
   <div class="ic-Action-header__Secondary">
+  <!--
   <% if @context.syllabus_course_summary? || !Account.site_admin.feature_enabled?(:syllabus_course_summary_option) %>
     <a href="#" class="jump_to_today_link"><%= t 'links.jump_to_today', "Jump to Today" %></a>
   <% end %>
+  -->
   <% if can_do(@context, @current_user, :manage_content) %>
+  <!--
     <a href="#" class="edit_syllabus_link btn button-sidebar-wide"><i class="icon-edit"></i> <%= t 'links.edit_syllabus_description', "Edit" %></a>
+  -->
+  <div style="max-width:600px; color:red;">
+    <div><%= t('instructions.edit_warning1', "From 2020/09, the course syllabus will synchronize with official course data.") %></div> 
+    <div><%= t('instructions.edit_warning2', 'Before this function goes live, you are suggested to edit your course syllabus through %{href} , or use the "Page" to flexibly create course syllabus.', href: link_to(t('instructions.edit_warning_link', "CEIBA"), 'https://ceiba.ntu.edu.tw/teacher/index.php')) %></div>
+  </div>
   <% end %>
   </div>
 </div>
