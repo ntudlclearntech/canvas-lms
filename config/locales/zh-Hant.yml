@@ -3594,7 +3594,10 @@ zh-Hant:
       headers: 
         date: 日期
         details: 詳細資料
-      instructions: 
+      instructions:
+        edit_warning1: 預計109/09起，課程資訊將與課程網、CEIBA同步，並提供編輯功能
+        edit_warning2: 功能上線前，建議您至%{href}編輯課程資訊，或使用「頁面」功能建立課程資訊
+        edit_warning_link: CEIBA 
         syllabus: |-
             課程資訊頁面以表格形式顯示課程表，以及課程分級的基準。
             您可以新增您對課程結構、課程政策或其他任何東西的任
