@@ -35,13 +35,10 @@
   <% end %>
   -->
   <% if can_do(@context, @current_user, :manage_content) %>
+    <a href="#" id="custom_edit_syllabus_btn" class="btn button-sidebar-wide"><i class="icon-edit"></i> <%= t 'links.edit_syllabus_description', "Edit" %></a>
   <!--
     <a href="#" class="edit_syllabus_link btn button-sidebar-wide"><i class="icon-edit"></i> <%= t 'links.edit_syllabus_description', "Edit" %></a>
   -->
-  <div style="max-width:600px; color:red;">
-    <div><%= t('instructions.edit_warning1', "From 2020/09, the course syllabus will synchronize with official course data.") %></div> 
-    <div><%= t('instructions.edit_warning2', 'Before this function goes live, you are suggested to edit your course syllabus through %{href} , or use the "Page" to flexibly create course syllabus.', href: link_to(t('instructions.edit_warning_link', "CEIBA"), 'https://ceiba.ntu.edu.tw/teacher/index.php')) %></div>
-  </div>
   <% end %>
   </div>
 </div>
@@ -59,6 +56,7 @@ To add some comments, click the "Edit" link at the top.
 DOC
       %>
 </div>
+<!-- 
 <%= form_for @context.class.to_s.underscore.to_sym, :url => context_url(@context, :context_url), :html => {:id => 'edit_course_syllabus_form', :style => 'display: none; margin-bottom: 10px;', :method => :put} do |f| %>
   <% unless @context.feature_enabled?(:rce_enhancements) %>
     <div style="float: <%= direction('right') %>;">
@@ -81,7 +79,9 @@ DOC
     <button type="submit" class='btn btn-primary'><%= t 'buttons.update_syllabus', "Update Syllabus" %></button>
   </div>
 <% end %>
+-->
 
+<!-- 
 <% if @context.syllabus_course_summary? || !Account.site_admin.feature_enabled?(:syllabus_course_summary_option) %>
 
 <h2><%= before_label :assignments_summary, "Course Summary" %></h2>
@@ -109,3 +109,4 @@ DOC
 </div>
 
 <% end %>
+-->
