@@ -8643,6 +8643,7 @@ zh-Hant:
   drag_to_rearrange_sections_637efee3: 拖放以重新排列部分
   drag_up_or_down_to_reorder_382126ff: 向上或向下拖曳以重新排序
   drop_files_here_to_add_to_module_236304f5: 將檔案拖放到此處以添加至單元
+  drop_files_here_to_add_videos_are_suggested_to_be__43c07002: 拖拽即可添加檔案，影片建議使用MP4格式並由外部工具上傳，才能使用影片教學功能。
   drop_files_here_to_upload_ce0f50f9: 將檔案拖放到此處以上載
   drop_image_62a2a071: 拖放影像
   dropdown_changed_state_to_expanded_517689c2: "下拉將狀態變更為 %{expanded}。"
