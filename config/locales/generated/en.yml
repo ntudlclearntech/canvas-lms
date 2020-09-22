@@ -16125,7 +16125,7 @@ en:
   new_file_135ae520: "[ New File ]"
   unable_to_set_up_drag_and_drop_for_modules_4d339f1d: Unable to set up drag and drop for modules
   drop_files_here_to_add_to_module_236304f5: Drop files here to add to module
-  drop_files_here_to_add_videos_are_suggested_to_be__43c07002: Drop files here to add, videos are suggested to be uploaded on (.mp4) format and by external tool
+  drop_files_here_to_add_videos_are_suggested_to_be__43c07002: Drop files here to add to module. Videos files are recommended to be .mp4 format and added by the External Tool.
   or_choose_files_b795006d: or choose files
   a_file_named_name_already_exists_do_you_want_to_re_6536980: A file named "%{name}" already exists. Do you want to replace the existing file?
   a_locked_file_named_name_already_exists_please_ent_3b2e65a: A locked file named "%{name}" already exists. Please enter a new name.
