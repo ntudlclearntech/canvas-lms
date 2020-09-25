@@ -157,7 +157,7 @@ export default class ModuleFileDrop extends React.Component {
     const {folder} = this.state
     return (
       <Billboard
-        heading={folder ? I18n.t('Drop files here to add, videos are suggested to be uploaded on (.mp4) format and by external tool') : I18n.t('Loading...')}
+        heading={folder ? I18n.t('Drop files here to add to module. Videos files are recommended to be .mp4 format and added by the External Tool.') : I18n.t('Loading...')}
         headingLevel="h4"
         hero={size => this.renderHero(size)}
         message={
