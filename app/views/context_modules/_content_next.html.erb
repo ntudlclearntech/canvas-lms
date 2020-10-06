@@ -158,7 +158,7 @@
           <td>
             <label class="screenreader-only" for="content_tag_indent_select"><%= t('Select indentation') %></label>
             <select name="content_tag[indent]" id="content_tag_indent_select">
-              <% 0.upto(3) do |i| %>
+              <% 0.upto(5) do |i| %>
                 <option value="<%= i %>"><%= t('indent.n', { :zero => %{Don't Indent}, :one => %{Indent 1 Level}, :other => %{Indent %{count} Levels} }, :count => i) %></option>
               <% end %>
             </select>
