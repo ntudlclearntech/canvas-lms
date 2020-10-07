@@ -303,7 +303,7 @@
       <div class="context_module_content">
         <%= before_label :indentation, "Indentation" %>
         <select name="content_tag[indent]" id="content_tag_indent" aria-label="<%= before_label :indentation, "Indentation" %>">
-          <% (0..3).each do |level| %>
+          <% (0..5).each do |level| %>
             <%= t(:indent_level, { :zero => "*Don't Indent*", :one => "*Indent 1 Level*", :other => "*Indent %{count} levels*" }, :count => level, :wrapper => "<option value=\"#{level}\">\\1</option>") %>
           <% end %>
         </select>
