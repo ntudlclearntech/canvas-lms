@@ -2136,6 +2136,16 @@ class ApplicationController < ActionController::Base
   end
   helper_method :public_user_content
 
+  # Prevent image cache problem #73
+  def prevent_image_cache(description)
+    return "" unless description
+
+    no_cache_description = description.gsub(/(img src="\/(courses|users)\/\d+\/files\/\d+\/preview)(\??)(.*?")/, '\1?random=' + "#{Random.new_seed}" + '&\4')
+
+    description.replace(no_cache_description)
+  end
+  helper_method :prevent_image_cache
+
   def find_bank(id, check_context_chain=true)
     bank = @context.assessment_question_banks.active.where(id: id).first || @current_user.assessment_question_banks.active.where(id: id).first
     if bank
