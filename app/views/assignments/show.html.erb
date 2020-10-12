@@ -118,10 +118,7 @@
 
   <div class="clear"></div>
 
-  <% description = !@assignment.description.blank? ? public_user_content(@assignment.description) : t('defaults.no_content', "No Content") %>
-  <%# Prevent image cache problem while teacher/ta is editing, previewing or impersonating as fake student  #73  %>
-  <% no_cache_description = description.gsub(/(img src="\/courses\/\d+\/files\/\d+\/preview)/, '\1?random=' + "#{Random.new_seed}") %>
-  <% description.replace(no_cache_description) %>
+  <% description = !@assignment.description.blank? ? prevent_image_cache(public_user_content(@assignment.description)) : t('defaults.no_content', "No Content") %>
   <div class="description user_content <%= can_do(@context, @current_user, :read_as_admin) ? "teacher-version" : "student-version" %>"><%= description %></div>
 
   <% if can_do(@context, @current_user, :read_as_admin) %>
