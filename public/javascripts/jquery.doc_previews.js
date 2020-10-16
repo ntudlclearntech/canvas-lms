@@ -146,7 +146,11 @@ $.fn.loadDocPreview = function(options) {
       const loadGooglePreview = function() {
         // this handles both ssl and plain http.
         let googleDocPreviewUrl;
-        if (opts.mimetype === 'application/pdf') {
+        /* opts.mimetype for Modules
+           opts.mimeType for SpeedGrader
+           issue: #82 */
+        const optsMimeType = opts.mimetype || opts.mimeType;
+        if (optsMimeType === 'application/pdf') {
           googleDocPreviewUrl =
             '//' +
             ENV.DOC_VIEWER_URL +
