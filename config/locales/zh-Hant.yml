@@ -5792,6 +5792,7 @@ zh-Hant:
         view_prior_enrollments: 查看之前的註冊
         view_services: 檢視所註冊的服務
         view_user_groups: 查看使用者群組
+        view_student_list: 檢視學生名單
     roster_user: 
       completed_enrollment: "已完成 *%{completed_at}*"
       confirm: 
