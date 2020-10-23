@@ -32,16 +32,16 @@ import {View} from '@instructure/ui-view'
 const NotificationPreferences = props => {
   const [enabled, setEnabled] = useState(props.enabled)
   const capitalizedContextType = props.contextType[0].toUpperCase() + props.contextType.slice(1)
+  const notificationTitle = props.contextType === 'course'? I18n.t('Course Notification Settings') : I18n.t('Notification Preferences')
 
   return (
     <Flex direction="column">
       <Flex.Item overflowY="visible">
         <Heading level="h2" as="h1">
-          {I18n.t('%{contextType} Notification Settings', {
-            contextType: capitalizedContextType
-          })}
+          {notificationTitle}
         </Heading>
       </Flex.Item>
+      {/*
       {props.contextType === 'course' && (
         <>
           <Flex.Item margin="large 0 small 0" padding="xx-small">
@@ -74,6 +74,7 @@ const NotificationPreferences = props => {
           </Flex.Item>
         </>
       )}
+      */}
       {props.contextType === 'account' ||
       ENV.NOTIFICATION_PREFERENCES_OPTIONS?.granular_course_preferences_enabled ? (
         <Flex.Item>

@@ -31,8 +31,8 @@ export default class NotificationGroupMappings {
         'due_date',
         'grading_policies',
         'course_content',
-        //'files',
-        'announcement',
+        // 'files',
+        // 'announcement',
         'announcement_created_by_you',
         'announcement_reply',
         'grading',
@@ -43,17 +43,21 @@ export default class NotificationGroupMappings {
         'blueprint'
       ],
       Discussions: ['discussion', 'discussion_entry'],
-      Communication: ['added_to_conversation', 'conversation_message', 'conversation_created'],
+      Communication: [
+        'added_to_conversation', 
+        // 'conversation_message', 
+        'conversation_created'
+      ],
       Scheduling: [
-        //'student_appointment_signups',
-        //'appointment_signups',
-        //'appointment_cancelations',
-        //'appointment_availability',
+        // 'student_appointment_signups',
+        // 'appointment_signups',
+        // 'appointment_cancelations',
+        // 'appointment_availability',
         'calendar'
       ],
       Parent: [],
       Groups: ['membership_update'],
-      //Conferences: ['recording_ready'],
+      // Conferences: ['recording_ready'],
       Alerts: ['other', 'content_link_error', 'account_notification']
     }
   }
