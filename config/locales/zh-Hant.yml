@@ -16135,7 +16135,7 @@ zh-Hant:
       parent: 家長電子郵件
       scheduling: 排程
     weekly_notification_range: "您的每週通知將在每週末發送。"
-  notification_preferences_cf47083d: 通知偏好設定
+  notification_preferences_cf47083d: 通知設定
   notifications_cbfa7704: 通知
   notifications_off_80da021c: 關閉通知
   notifications_search_results_80a0b06f: 通知搜尋結果
@@ -17523,10 +17523,10 @@ zh-Hant:
       selecting_image: 正在選擇影像…
     communication: 
       confirm_email_instructions: "您需要透過按一下我們發送給您的電子郵件中的連結，以驗證您的電郵地址 (%{email})，才能接收通知。如果您沒有看到該電子郵件，*按一下『重新發送電子郵件』*，並請務必檢查您的垃圾郵件箱。"
-      crumb_notification_preferences: 通知偏好設定
+      crumb_notification_preferences: 通知設定
       headers: 
-        notification_preferences: 通知偏好設定
-      page_title: 通知偏好設定
+        notification_preferences: 通知設定
+      page_title: 通知設定
       weekly_notification_range: "您的每週通知將在 %{weekday} 的 %{start_time} 和 %{end_time} 之間發送。"
     confirming_contact: 正在確認…
     confirms: 
@@ -17535,7 +17535,7 @@ zh-Hant:
       regenerate_token: 您是否確定要重新生成此令牌？使用該令牌的任何事項均將會被更新。
       unregister_service: 您是否確定要取消此服務註冊？
     content_shares: 
-      page_title: 通知偏好設定
+      page_title: 通知設定
     crumb: "%{user} 的設定"
     crumbs: 
       mobile_qr_login: "流動登入 QR 碼"
