@@ -44,7 +44,7 @@ const notificationCategories = {
     'Course Content': {},
     // Files: {},
     // Announcement: {},
-    // 'Announcement Created By You': {},
+    'Announcement Created By You': {},
     Grading: {},
     Invitation: {},
     'All Submissions': {},
@@ -58,7 +58,7 @@ const notificationCategories = {
   },
   conversations: {
     'Added To Conversation': {},
-    'Conversation Message': {},
+    // 'Conversation Message': {},
     'Conversation Created': {}
   },
   scheduling: {

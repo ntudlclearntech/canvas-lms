@@ -297,7 +297,7 @@ class Notification < ActiveRecord::Base
     when 'Invitation'
       FREQ_DAILY
     when 'Late Grading'
-      FREQ_DAILY
+      FREQ_NEVER
     when 'Membership Update'
       FREQ_NEVER
     when 'Other'
