@@ -24143,13 +24143,13 @@ zh-Hant:
   user_name_has_just_turned_in_a_submission_for_assi_3e82d569: "%{user_name} 剛剛繳交了課程 %{course_name} 之 %{assignment_title} 的提交項目"
   user_name_just_added_you_to_a_conversation_in_canv_7b278b51: "%{user_name} 剛把您添加至 NTU COOL 中的交談。如需檢視交談，請按一下以下連結： %{link}。"
   user_name_just_sent_you_a_message_in_canvas_9e911af7: "%{user_name} 剛剛在 NTU COOL 中給您發送了訊息"
-  user_name_just_sent_you_a_message_in_canvas_a2cb3bf4: "%{user_name}剛剛在 NTU COOL 中給您發送了訊息。"
+  user_name_just_sent_you_a_message_in_canvas_a2cb3bf4: "%{user_name}剛剛在 NTU COOL 中傳送了訊息給您。"
   user_name_just_sent_you_a_message_in_canvas_do_not_16b13cf2: "%{user_name}剛剛在 NTU COOL 中給您發送了訊息 - 不要回覆"
   user_name_just_turned_in_their_assignment_again_as_a2a0d25a: "%{user_name} 剛剛（再次）繳交了其作業，%{assignment_title}"
   user_name_just_turned_in_their_assignment_assignme_7105fb96: "%{user_name} 剛剛繳交了其作業，%{assignment_title}"
   user_name_just_turned_in_their_assignment_late_ass_a54b128a: "%{user_name} 剛剛（逾期）繳交了其作業 %{assignment_name}"
   user_name_successfully_added_79af8365: "%{user_name} 已成功新增！"
-  user_name_you_just_sent_a_message_in_canvas_b1fd4598: "%{user_name}，您剛剛在 NTU COOL 發送了一條訊息。"
+  user_name_you_just_sent_a_message_in_canvas_b1fd4598: "%{user_name}，您剛剛在 NTU COOL 傳送了一則訊息。"
   user_name_you_just_sent_a_message_in_canvas_do_not_7c7bc1c6: "%{user_name}，您剛剛在 NTU COOL 發送了一條訊息 - 不要回覆"
   user_name_you_ll_need_to_log_in_before_you_can_vie_164c8e30: "%{user_name}，瀏覽本頁內容前請先 *登入*。"
   user_navigation_a097be0f: 使用者導航
@@ -24593,6 +24593,8 @@ zh-Hant:
   view_submission_ff3da5d: 檢視提交項目
   view_the_assignment_e61ca4fc: 檢視作業
   view_this_message_in_conversations_5a16bc9f: 在交談中檢視此訊息
+  view_this_message_in_ntu_cool_e897e8c5: 在 NTU COOL 中檢視此訊息
+  this_mail_is_automatically_sent_by_ntu_cool_please_d26821b6: 請注意：此郵件是系統自動傳送，請勿直接回覆！
   view_toolname_placements_4a5724d1: "檢視 %{toolName} 配置"
   view_uploads_status_4c836211: 檢視上傳狀態
   view_user_groups_538f22b4: 檢視使用者小組
