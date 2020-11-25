@@ -313,7 +313,7 @@ class ActionMenu extends React.Component {
             this.handleImport()
           }}
         >
-          <span data-menu-id="import">{I18n.t('Import')}</span>
+          <span data-menu-id="import">{I18n.t('Import CSV')}</span>
         </Menu.Item>
 
         <Menu.Item
@@ -323,7 +323,7 @@ class ActionMenu extends React.Component {
           }}
         >
           <span data-menu-id="export">
-            {this.exportInProgress() ? I18n.t('Export in progress') : I18n.t('Export')}
+            {this.exportInProgress() ? I18n.t('Export in progress') : I18n.t('Export CSV')}
           </span>
         </Menu.Item>
 

@@ -2022,8 +2022,8 @@ zh-Hant:
   allow_course_images_to_be_assigned_to_a_course_and_82fb7bdd: 允許課程影像分配到某個課程，並應用於控制面板卡。
   allow_course_images_to_be_assigned_to_a_course_and_adb906f4: 允許課程影像被分配給課程並應用於儀表板。
   allow_dashboard_cards_to_be_reordered_for_each_use_81f989d7: 允許每個使用者重新排列計分卡。
-  allow_final_grade_override_8cf4336b: 允許最終評分重寫
-  allow_final_grade_override_a21a79ee: 允許最終評分重寫
+  allow_final_grade_override_8cf4336b: 開啟手動調分
+  allow_final_grade_override_a21a79ee: 開啟手動調分
   allow_importing_of_qti_and_common_cartridge_into_n_4380a7a2: "允許將 QTI 和 Common Cartridge 匯入 New Quizzes 中。"
   allow_importing_of_qti_and_common_cartridge_into_q_81b657cd: "允許將 QTI 和 Common Cartridge 匯入至 Quizzes.Next。"
   allow_importing_of_third_party_packages_into_new_q_f6b8b1c7: 允許將第三方軟件包匯入至新測驗中
@@ -9482,6 +9482,7 @@ zh-Hant:
   export_an_existing_quiz_to_new_quizzes_2_format_8fd08a23: "將現有測驗導出為新的測驗 2 格式"
   export_course_content_f4774b74: 匯出課程內容
   export_de71cd8e: 匯出
+  export_csv_62f9db35: 匯出成績檔
   export_failed_5d615d6d: 匯出失敗
   export_in_progress_70db262a: 正在匯出
   export_pairing_codes_5749f6f1: 匯出配對代碼
@@ -12005,6 +12006,7 @@ zh-Hant:
   immersive_reader_7b87538: "Immersive Reader"
   immersive_reader_failed_to_load_bc8d4dd4: "Immersive Reader 載入失敗"
   import_1b31507: 匯入
+  import_csv_9e923c85: 匯入成績檔
   import_a_set_of_outcomes_6b782192: 匯入一組學習成果
   import_commons_favorites_e68fce81: 匯入公用區最愛項目
   import_content_b2fd6620: 匯入內容
@@ -16630,7 +16632,7 @@ zh-Hant:
   outcomes_service_alignment_migration_5b4391ad: 學習成果服務校準項目遷移
   outcomes_tutorial_tray_ebfce995: 學習成果教程列表
   over_time_bee1a733: 超時
-  override_3de65b2c: 重寫
+  override_3de65b2c: 手動調分
   override_grade_385adf30: 重寫評分
   override_score_53994655: 重寫分數
   overrides: 
