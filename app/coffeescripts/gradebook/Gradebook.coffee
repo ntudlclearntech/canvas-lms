@@ -1397,6 +1397,7 @@ export default do ->
     renderActionMenu: =>
       mountPoint = document.querySelector("[data-component='ActionMenu']")
       props = @getActionMenuProps()
+      props.variant = mountPoint.getAttribute('data-variant')
       renderComponent(ActionMenu, mountPoint, props)
 
     renderFilters: =>

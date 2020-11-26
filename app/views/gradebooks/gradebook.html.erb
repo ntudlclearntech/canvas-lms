@@ -43,7 +43,11 @@
       <div class="gradebook-menus">
         <span data-component="GradebookMenu" data-variant="DefaultGradebook"></span>
         <span data-component="ViewOptionsMenu"></span>
-        <span data-component="ActionMenu"></span>
+        <% if @context.sis_source_id != nil %>
+          <span data-component="ActionMenu" data-variant="OfficialCourse"></span>
+        <% else %>
+          <span data-component="ActionMenu" data-variant="NonOfficialCourse"></span>
+        <% end %>
       </div>
 
       <div id="gradebook-actions">
