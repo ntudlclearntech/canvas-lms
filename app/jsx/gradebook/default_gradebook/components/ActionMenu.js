@@ -39,7 +39,8 @@ class ActionMenu extends React.Component {
     postGradesLtis: [],
     publishGradesToSis: {
       publishToSisUrl: undefined
-    }
+    },
+    variant: 'NonOfficialCourse'
   }
 
   static propTypes = {
@@ -80,7 +81,9 @@ class ActionMenu extends React.Component {
       publishToSisUrl: string
     }),
 
-    gradingPeriodId: string.isRequired
+    gradingPeriodId: string.isRequired,
+
+    variant: oneOf(['OfficialCourse', 'NonOfficialCourse']).isRequired
   }
 
   static gotoUrl(url) {
@@ -328,6 +331,14 @@ class ActionMenu extends React.Component {
         </Menu.Item>
 
         {[...this.renderPreviousExports()]}
+
+        <Menu.Separator />
+
+        <Menu.Item disabled={this.props.variant !== 'OfficialCourse'}>
+          <span id="send-to-the-online-grading-system" href="#">
+            {I18n.t('Send to the Online Grading System')}
+          </span>
+        </Menu.Item>
       </Menu>
     )
   }
