@@ -10610,7 +10610,7 @@ zh-Hant:
         high: 高分
         low: 低分
         mean: 平均分
-        only_graded: 計算僅以已評分的作業為基礎
+        only_graded: 未評分項目不計入總成績
         total: 總計
         your_score: 您的分數
       learning_outcomes: 學習精通水平

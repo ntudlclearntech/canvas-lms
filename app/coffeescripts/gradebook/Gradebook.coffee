@@ -1023,12 +1023,12 @@ export default do ->
 
         for assignmentGroupId, group of @assignmentGroups
           grade = grades.assignmentGroups[assignmentGroupId]
-          grade = grade?['current'] || { score: 0, possible: 0, submissions: [] }
+          grade = grade?['final'] || { score: 0, possible: 0, submissions: [] }
 
           student["assignment_group_#{assignmentGroupId}"] = grade
           for submissionData in grade.submissions
             submissionData.submission.drop = submissionData.drop
-        student['total_grade'] = grades['current']
+        student['total_grade'] = grades['final']
 
     ## Grid Styling Methods
 
