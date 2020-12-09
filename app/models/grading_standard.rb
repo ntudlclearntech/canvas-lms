@@ -106,6 +106,18 @@ class GradingStandard < ActiveRecord::Base
     end
 
     idx = place_in_scheme(grade)
+    excpetion_course = ['course_3100', 'course_3398', 'course_3399', 'course_3984']
+    if !excpetion_course.include?(self.context_code)
+      if idx == 0
+        return ((100 + (ordered_scheme[0].last * 100.0)) / 2.0).round
+      elsif idx
+        return ((ordered_scheme[idx].last + ordered_scheme[idx - 1].last).abs * 100.0 / 2.0).round
+      else
+        return nil
+      end
+    end
+
+    # The following is the default standard of Canvas
     if idx == 0
       100.0
     # if there's room to step down at least one whole number, do that. this
@@ -124,13 +136,25 @@ class GradingStandard < ActiveRecord::Base
 
   def default_score_from_grade(grade)
     idx = place_in_scheme(grade)
-    if idx == 0
+    if idx == 0 && grade == 'A+'
       95.0
-    elsif idx && !(['B-', 'C-', 'F'].include? grade)
-      bias = ((ordered_scheme[idx].last - ordered_scheme[idx - 1].last).abs * 100.0 / 2.0).round
-      ordered_scheme[idx - 1].last * 100.0 - bias
+    # elsif idx && !(['B-', 'C-', 'F'].include? grade)
+    #   bias = ((ordered_scheme[idx].last - ordered_scheme[idx - 1].last).abs * 100.0 / 2.0).round
+    #   ordered_scheme[idx - 1].last * 100.0 - bias
+    elsif idx && grade == 'A'
+      87.0
+    elsif idx && grade == 'A-'
+      82.0
+    elsif idx && grade == 'B+'
+      78.0
+    elsif idx && grade == 'B'
+      75.0
     elsif idx && grade == 'B-'
       70.0
+    elsif idx && grade == 'C+'
+      68.0
+    elsif idx && grade == 'C'
+      65.0
     elsif idx && grade == 'C-'
       60.0
     elsif idx && grade == 'F'
