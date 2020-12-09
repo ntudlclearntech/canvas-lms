@@ -20969,6 +20969,9 @@ zh-Hant:
       grading_standard_name_table_summary: 只有一個可編輯儲存格的表格包含您的評分配置的名稱。
       grading_standard_summary: 包含您的評分配置的表格。值的名稱和範圍在頂部。每行包含一個最小和最大百分比值。
       insert_here: 在此處插入
+      grading_scheme_instruction_1: 1. 預設評分方案依據%{href}，無法新增與修改等第名稱。
+      grading_scheme_instruction_2: 2. 等第轉換百分制預設規則亦依據%{href}，若為自訂評分方案，轉換規則為取其區間的中位數。
+      national_taiwan_university_students_grading_policy: 《國立臺灣大學學生成績評量辦法》
       labels: 
         name: 名稱
         range: 範圍

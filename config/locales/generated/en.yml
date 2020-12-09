@@ -8449,6 +8449,9 @@ en:
       range_of_numbers: "%{lower_number} to %{higher_number}"
       range_lower: Lower limit of range
       insert_here: insert here
+      grading_scheme_instruction_1: 1. Default grading scheme is based on the %{href}, so users can’t add or edit the letter grades.
+      grading_scheme_instruction_2: 2. Default grade to score converting rule is also based on the %{href}. If users customize the grading scheme, the converting score will be the median of the percentage scale.
+      national_taiwan_university_students_grading_policy: "National Taiwan University Students Grading Policy"
       managing_grading_standards: manage grading schemes
       buttons:
         done: Done
