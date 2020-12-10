@@ -753,7 +753,7 @@ class CoursesController < ApplicationController
     if authorized_action(@account, @current_user, [:manage_courses, :create_courses])
       params[:course] ||= {}
       params_for_create = course_params
-
+      params_for_create[:grading_standard_id] = 0
       if params_for_create.has_key?(:syllabus_body)
         params_for_create[:syllabus_body] = process_incoming_html_content(params_for_create[:syllabus_body])
       end
