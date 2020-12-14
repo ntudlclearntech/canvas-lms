@@ -18,10 +18,11 @@
 <div style="float: left;">
   <% if can_do(@context, @current_user, :manage_admin_users, :manage_students, :read_prior_roster) %>
     <a class="btn btn-primary" href="#" id="external_lti_student_list_btn">
-      <i class="icon-group"></i><%= t 'links.view_student_list', "View Student List" %>
+      <i class="icon-group" style="padding-right: 5px;"></i><%= t 'links.view_student_list', "View Student List" %>
     </a>
   <% end %>
 </div>
+&nbsp;
 <div id="people-options" class="al-dropdown__container" style="position: relative;">
   <button type="button" class="al-trigger Button">
     <i class="icon-more" aria-hidden="true"></i>
