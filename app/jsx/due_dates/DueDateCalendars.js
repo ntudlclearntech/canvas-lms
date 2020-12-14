@@ -76,7 +76,7 @@ class DueDateCalendars extends React.Component {
               I18n.t('Due'),
               this.props.disabled,
               this.props.dueDatesReadonly,
-              I18n.t('ntu-cool.jsx.due_dates.DueDateCalendars.Due', 'Submissions after the due date will be marked as late in the gradebook')
+              I18n.t('Custom.Due', 'Submissions after the due date will be marked as late in the gradebook')
             )}
           </div>
         </div>
@@ -97,7 +97,7 @@ class DueDateCalendars extends React.Component {
                   I18n.t('Until'),
                   this.props.disabled,
                   this.props.availabilityDatesReadonly,
-                  I18n.t('ntu-cool.jsx.due_dates.DueDateCalendars.Until', 'Students can no longer submit after this date')
+                  I18n.t('Custom.Until', 'Students can no longer submit after this date')
                 )}
               </div>
             </div>

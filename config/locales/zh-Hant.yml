@@ -3342,12 +3342,6 @@ zh-Hant:
         one: "%{count} 個測驗已成功取消發佈！"
         other: "%{count} 個測驗已成功取消發佈！"
       updated: 作業已成功更新。
-    ntu-cool:
-      jsx:
-        due_dates:
-          DueDateCalendars:
-            Due: "超過此時間，視為遲交"
-            Until: "超過此時間無法繳交"
     number_of_assignments: 
       one: "%{count} 個作業"
       other: "%{count} 個作業"
@@ -25247,3 +25241,8 @@ zh-Hant:
           視像會議，只需在 Canvas 課程、課程通告、
           單元或透過行事曆新增 Zoom 連結。
   zoom_tutorial_tray_5dcb7fc: "Zoom 教程列表"
+  # NTU-COOL Custom Locale
+  DueDateCalendars:
+    Custom:
+      Due: "超過此時間，視為遲交"
+      Until: "超過此時間無法繳交"
