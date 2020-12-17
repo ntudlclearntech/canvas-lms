@@ -143,7 +143,7 @@ class ActionMenu extends React.Component {
         const updatedAt = new Date(resolution.updatedAt)
 
         const previousExport = {
-          label: `${I18n.t('New Export')} (${DateHelper.formatDatetimeForDisplay(updatedAt)})`,
+          label: `${I18n.t('Custom.PreviousExport', 'Previous Export')} (${DateHelper.formatDatetimeForDisplay(updatedAt)})`,
           attachmentUrl
         }
 
@@ -197,7 +197,7 @@ class ActionMenu extends React.Component {
     const updatedAt = tz.parse(attachment.updatedAt)
 
     return {
-      label: `${I18n.t('Previous Export')} (${DateHelper.formatDatetimeForDisplay(updatedAt)})`,
+      label: `${I18n.t('Custom.PreviousExport', 'Previous Export')} (${DateHelper.formatDatetimeForDisplay(updatedAt)})`,
       attachmentUrl: attachment.downloadUrl
     }
   }
@@ -301,7 +301,7 @@ class ActionMenu extends React.Component {
         trigger={
           <Button variant="link">
             <Text {...buttonTypographyProps}>
-              {I18n.t('Actions')}
+              {I18n.t('Custom.ImportAndExport', 'Import and Export')}
               <IconMiniArrowDownSolid />
             </Text>
           </Button>
