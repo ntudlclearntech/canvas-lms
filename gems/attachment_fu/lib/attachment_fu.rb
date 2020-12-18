@@ -335,6 +335,14 @@ module AttachmentFu # :nodoc:
     #
     # TODO: Allow it to work with Merb tempfiles too.
     def uploaded_data=(file_data)
+      begin
+        # Monitor log
+        Rails.logger.debug "__DEBUG: uploaded_data: file_data #{file_data.inspect}"
+        Rails.logger.debug "__DEBUG: uploaded_data: file_data.respond_to #{file_data.respond_to?(:size)}"
+        Rails.logger.debug "__DEBUG: uploaded_data: file_data.size #{file_data.size}"
+      rescue Exception => e
+        Rails.logger.debug "__DEBUG: uploaded_data: rescue #{e}"
+      end
       if self.is_a?(Attachment)
         return nil if file_data.nil? || (file_data.respond_to?(:size) && file_data.size == 0)
         # glean information from the file handle

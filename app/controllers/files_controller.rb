@@ -834,6 +834,10 @@ class FilesController < ApplicationController
     @context = @attachment.context
     @attachment.workflow_state = nil
     @attachment.uploaded_data = params[:file] || params[:attachment] && params[:attachment][:uploaded_data]
+    # Monitor log
+    Rails.logger.debug "__DEBUG: api_create: params[:file]: #{params[:file].inspect}"
+    Rails.logger.debug "__DEBUG: api_create: params[:attachment]: #{params[:attachment].inspect}"
+    Rails.logger.debug "__DEBUG: api_create: @attachment: #{@attachment.inspect}"
     if @attachment.save
       # for consistency with the s3 upload client flow, we redirect to the success url here to finish up
       includes = Array(params[:success_include])
