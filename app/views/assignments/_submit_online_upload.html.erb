@@ -67,6 +67,11 @@
       <% end %>
       <%= render partial: 'assignments/eula_checkbox', locals: { eula_url: eula_url } %>
       <tr>
+        <td colspan="2">
+          <%= t 'ntu_cool_custom.check_success', 'Please download the file to check if it is successfully uploaded.' %>
+        </td>
+      </tr>
+      <tr>
         <td colspan="2" class='button-container'>
           <button type="button" class='cancel_button btn'><%= t '#buttons.cancel', "Cancel" %></button>
           <button type="submit" class="btn btn-primary" id="submit_file_button"><%= t 'buttons.submit_assignment', "Submit Assignment" %></button>

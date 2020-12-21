@@ -3480,6 +3480,8 @@ zh-Hant:
       messages: 
         no_comments: 無評論
         submission_late_timestamp: "%{submitted_at}（逾期）"
+      ntu_cool_custom:
+        check_success: 請自行下載檔案檢查是否繳交成功
       titles: 
         assigned_peer_reviews: 指派的同儕互評
         comments: 評論：
@@ -3578,6 +3580,8 @@ zh-Hant:
         find_file: 按一下此處，以找到已上傳的檔案
       messages: 
         submitting: 正在提交...
+      ntu_cool_custom:
+        check_success: "請自行下載檔案檢查是否繳交成功"
       no_files: 無檔案
       upload_or_choose_file: 上傳檔案，或者選擇已上傳的檔案。
     syllabus: 
