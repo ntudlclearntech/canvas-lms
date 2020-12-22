@@ -159,6 +159,8 @@ class GradingStandard < ActiveRecord::Base
       60.0
     elsif idx && grade == 'F'
       50.0
+    elsif idx && grade == 'X'
+      0.0
     else
       nil
     end
@@ -304,7 +306,8 @@ class GradingStandard < ActiveRecord::Base
       "C+" => 0.665,
       "C" => 0.625,
       "C-" => 0.595,
-      "F" => 0.00
+      "F" => 0.0001,
+      "X" => 0.00
     }
   end
 
