@@ -20632,7 +20632,6 @@ zh-Hant:
   send_to_a879095e: 發送至：
   send_to_b940900a: 傳送到...
   send_to_ce05b460: 發送至
-  send_to_the_online_grading_system_827de832: 送學期成績至登分系統
   sending_bf324366: 正在發送...
   sending_message_8ac5bc90: 正在發送郵件...
   sending_message_failed_please_try_again_b53cc904: 發送郵件失敗，請再試一次
@@ -25254,3 +25253,4 @@ zh-Hant:
     Custom:
       PreviousExport: "上次匯出"
       ImportAndExport: "匯入成績與登分"
+      SubmitToTheGradingSystem: "匯入登分系統"

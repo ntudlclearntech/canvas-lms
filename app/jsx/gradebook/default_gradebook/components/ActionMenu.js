@@ -337,7 +337,7 @@ class ActionMenu extends React.Component {
         {/* goToCoolGradebook() is defined in custom js */}
         <Menu.Item disabled={this.props.variant !== 'OfficialCourse'} onClick={() => goToCoolGradebook()}>
           <span id="send-to-the-online-grading-system">
-            {I18n.t('Send to the Online Grading System')}
+            {I18n.t('Custom.SubmitToTheGradingSystem', 'Submit to the Grading System')}
           </span>
         </Menu.Item>
       </Menu>
