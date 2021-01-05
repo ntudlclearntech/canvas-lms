@@ -21,10 +21,20 @@ import MigrationView from './MigrationView'
 export default class CopyCourseView extends MigrationView
   template: template
 
+  # For templates jst/content_migrations/CopyCourse
+  @optionProperty 'isAdmin'
+
   @child 'courseFindSelect', '.courseFindSelect'
   @child 'dateShift', '.dateShift'
   @child 'selectContent', '.selectContent'
   @child 'importQuizzesNext', '.importQuizzesNext'
+
+  afterRender: ->
+    if !@isAdmin
+      @dateShift.$dateAdjustCheckbox.click()
+      @dateShift.toggleContent()
+      SelectSpecificContentCheckbox = @selectContent.$el.find("input[name=selective_import][value='true']")
+      SelectSpecificContentCheckbox.click()
 
   initialize: ->
     super
