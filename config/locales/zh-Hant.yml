@@ -25254,3 +25254,10 @@ zh-Hant:
       PreviousExport: "上次匯出"
       ImportAndExport: "匯入成績與登分"
       SubmitToTheGradingSystem: "匯入登分系統"
+  gradebook:
+    Custom:
+      TotalGradePopoverText1: 若有尚未評分的作業、考試，系統會將該項成績視為零分並納入學期成績計算。
+      TotalGradePopoverText2: 百分成績轉換為等第制的方式依
+      TotalGradePopoverText3: 為原則，如百分成績有小數，預設將小數點第一位四捨五入至整數。
+      TotalGradePopoverLinkText: 《國立臺灣大學學生成績評量辦法》
+      TotalGradePopoverLinkURL: https://gra103.aca.ntu.edu.tw/gra2007/gra/tienn/law63.pdf

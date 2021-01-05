@@ -18,12 +18,13 @@
 
 import React from 'react'
 import {bool, func, shape, string} from 'prop-types'
-import {IconMoreSolid} from '@instructure/ui-icons'
-import {Button} from '@instructure/ui-buttons'
+import {IconMoreSolid, IconQuestionLine} from '@instructure/ui-icons'
+import {Button, IconButton} from '@instructure/ui-buttons'
 import {View, Grid} from '@instructure/ui-layout'
 
 import {Menu} from '@instructure/ui-menu'
 import {Text} from '@instructure/ui-elements'
+import {Popover} from '@instructure/ui-popover'
 import I18n from 'i18n!gradebook'
 import {ScreenReaderContent} from '@instructure/ui-a11y'
 import ColumnHeader from './ColumnHeader'
@@ -66,6 +67,14 @@ export default class TotalGradeColumnHeader extends ColumnHeader {
   static defaultProps = {
     grabFocus: false,
     ...ColumnHeader.defaultProps
+  }
+
+  constructor(props) {
+    super(props)
+    this.state = {
+      ...this.state,
+      isShowingContent: false
+    }
   }
 
   switchGradeDisplay = () => {
@@ -113,6 +122,65 @@ export default class TotalGradeColumnHeader extends ColumnHeader {
                     {I18n.t('Total')}
                   </Text>
                 </View>
+              </Grid.Col>
+
+              <Grid.Col textAlign="center" width="auto">
+                <Popover
+                  renderTrigger={
+                    <IconButton
+                      renderIcon={IconQuestionLine}
+                      withBackground={false}
+                      withBorder={false}
+                      size="small"
+                      screenReaderLabel="Toggle Tooltip"
+                    />
+                  }
+                  isShowingContent={this.state.isShowingContent}
+                  onShowContent={e => {
+                    this.setState({isShowingContent: true})
+                  }}
+                  onHideContent={e => {
+                    this.setState({isShowingContent: false})
+                  }}
+                  on={['focus', 'click']}
+                  color="primary-inverse"
+                  placement="top center"
+                  mountNode={() => document.getElementById('main')}
+                >
+                  <View padding="small" display="block" maxWidth="500px">
+                    <Text fontStyle="normal" size="x-small" weight="bold">
+                      <ol>
+                        <li>
+                          {I18n.t(
+                            'Custom.TotalGradePopoverText1',
+                            'Ungraded assignment items such as homework, and quizzes will be treated as zero points, and counted toward the final grade. Please ensure students receive grades on all graded assignment items.'
+                          )}
+                        </li>
+                        <li>
+                          {I18n.t(
+                            'Custom.TotalGradePopoverText2',
+                            'The default rule for score to grade conversion is based on the '
+                          )}
+                          <a
+                            href={I18n.t(
+                              'Custom.TotalGradePopoverLinkURL',
+                              'https://gra103.aca.ntu.edu.tw/gra2007/gra/hamson/Grading%20Policy.pdf'
+                            )}
+                          >
+                            {I18n.t(
+                              'Custom.TotalGradePopoverLinkText',
+                              '"National Taiwan University Students Grading Policy"'
+                            )}
+                          </a>
+                          {I18n.t(
+                            'Custom.TotalGradePopoverText3',
+                            ' When the score is a number with decimals, it will be rounded to the nearest whole number.'
+                          )}
+                        </li>
+                      </ol>
+                    </Text>
+                  </View>
+                </Popover>
               </Grid.Col>
 
               <Grid.Col textAlign="center" width="auto">
