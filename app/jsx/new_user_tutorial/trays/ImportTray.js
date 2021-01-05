@@ -22,35 +22,31 @@ import TutorialTrayContent from './TutorialTrayContent'
 
 const ImportTray = () => (
   <TutorialTrayContent
-    heading={I18n.t('Import')}
-    subheading={I18n.t('Bring existing content into your course')}
+    heading={I18n.t('ntu_cool_custom.import_content_title', 'Import contents')}
+    subheading={I18n.t(
+      'ntu_cool_custom.import_content_subtitle',
+      'Bring existing content into your course'
+    )}
     image="/images/tutorial-tray-images/Panda_Map.svg"
-    seeAllLink={{
-      label: I18n.t('See more in Canvas Guides'),
-      href: `https://community.canvaslms.com/docs/DOC-10460-canvas-instructor-
-      guide-table-of-contents#jive_content_id_Course_Import_Tool`
-    }}
     links={[
       {
-        label: I18n.t('How do I copy a Canvas course into a new course shell?'),
-        href: 'https://community.canvaslms.com/docs/DOC-13035-4152239683'
-      },
-      {
-        label: I18n.t('How do I import a Canvas course export package?'),
-        href: 'https://community.canvaslms.com/docs/DOC-12783-415241324'
-      },
-      {
-        label: I18n.t('How do I select specific content as part of a course import?'),
-        href: 'https://community.canvaslms.com/docs/DOC-13101-4152497985'
-      },
-      {
-        label: I18n.t('How do I adjust events and due dates in a course import?'),
-        href: 'https://community.canvaslms.com/docs/DOC-13099-4152497986'
+        label: I18n.t(
+          'ntu_cool_custom.how_to_use_import_content',
+          'How to import existing course contents and videos?'
+        ),
+        href: I18n.t(
+          'ntu_cool_custom.how_to_use_import_content_url',
+          'https://drive.google.com/file/d/1rHHRf6Qle1u4M5HCvUuzmMSBKhUJe2wj/view?usp=sharing'
+        )
       }
     ]}
   >
-    {I18n.t(`Easily import or copy content from another Canvas course into
-        your course, or import content from other formats, such as Moodle or QTI.`)}
+    {I18n.t(
+      'ntu_cool_custom.tutorial_import_content',
+      `You can use this function to import the content of the previous course into this course,
+     including: files,assignments, quizzes, etc. If you need to import videos, please import the video links through this function first,
+     and then go to the Video Manager to import existing course videos. Symphony does not currently support the import function.`
+    )}
   </TutorialTrayContent>
 )
 

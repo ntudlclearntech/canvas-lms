@@ -5629,6 +5629,8 @@ zh-Hant:
       cancel_btn: 取消
       select_content_btn: 選擇內容
       select_content_label: 選擇內容，請使用向上和向下方向鍵來巡覽整個樹狀結構。按向右鍵擴大，按向左鍵收回。
+      ntu_cool_custom:
+        hint: 若您想要匯入先前課程的影片，請先選擇包含影片連結的「單元」，複製完成後，再到「影片管理」中，選擇「匯入既有影片」功能，匯入想要加入的影片。Symphony暫不支援匯入功能。
     select_course: 選擇課程
     show_issues: 顯示問題
     subviews: 
@@ -15691,6 +15693,12 @@ zh-Hant:
     how_do_i_change_the_settings_in_a_course_url: https://docs.google.com/document/d/1Of-ygpxE1_AdoBEYtkhDUfU5bZ44sigWak_clXKVPXs/edit#heading=h.g0su42kmhjw0
     how_to_create_a_course_syllabus_url: https://drive.google.com/file/d/17TtxIOCk6lPp_839mroC_p03BKe9QaPR/view?usp=sharing
     tutorial_video_syllabus_url: https://www.youtube.com/watch?v=jWpTqlDMZqY&list=PLKjqFgaBNOo8fv5ZWEIUSlSqzXDVC2SV_&index=8
+    ntu_cool_custom:
+      how_to_use_import_content: 如何匯入課程內容與影片
+      how_to_use_import_content_url: https://drive.google.com/file/d/1fBVmSAkhtT78GK-bcTVgk4bVz2GdEb4E/view?usp=sharing
+      import_content_subtitle: 將既有課程內容匯入本課程中
+      import_content_title: 匯入課程內容
+      tutorial_import_content: 您可以透過此功能，將先前課程的內容匯入本課當中，包括：講義、作業、測驗等；但若您需要匯入影片，請先透過此功能匯入影片連結，再到影片管理區中，匯入既有課程影片。Symphony目前暫不支援匯入功能。
   new_user_tutorial_cdd3a446: 新使用者教程
   new_zealand_64_f126cf2e: "紐西蘭  (+64)"
   new_zealand_ef5d7b74: 紐西蘭
@@ -25249,6 +25257,7 @@ zh-Hant:
     Custom:
       Due: "超過此時間，視為遲交"
       Until: "超過此時間無法繳交"
+  ntucool_course_copy_file_description: "複製COOL課程"
   gradebookActionMenu:
     Custom:
       PreviousExport: "上次匯出"

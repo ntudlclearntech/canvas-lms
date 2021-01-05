@@ -811,7 +811,7 @@ class UsersController < ApplicationController
     cancel_cache_buster
     expires_in 30.minutes
     render :json => @courses.map { |c|
-      { :label => c.name, :id => c.id, :term => c.enrollment_term.name,
+      { :label => c.course_code, :id => c.id, :term => c.enrollment_term.name,
         :enrollment_start => c.enrollment_term.start_at,
         :account_name => c.enrollment_term.root_account.name,
         :account_id => c.enrollment_term.root_account.id,

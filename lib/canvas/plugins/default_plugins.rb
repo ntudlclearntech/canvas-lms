@@ -202,7 +202,7 @@ Canvas::Plugin.register 'course_copy_importer', :export_system, {
         :author_website => 'http://www.instructure.com',
         :description => lambda { I18n.t :course_copy_description, 'Migration plugin for copying canvas courses' },
         :version => '1.0.0',
-        :select_text => lambda { I18n.t :course_copy_file_description, "Copy a Canvas Course" },
+        :select_text => lambda { I18n.t :ntucool_course_copy_file_description, "Copy a COOL Course" },
         :sort_order => 0,
         :settings => {
                 :worker => 'CourseCopyWorker',
