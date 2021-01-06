@@ -142,9 +142,12 @@ export default class TotalGradeColumnHeader extends ColumnHeader {
                   onHideContent={e => {
                     this.setState({isShowingContent: false})
                   }}
-                  on={['focus', 'click']}
+                  on={['click']}
+                  shouldContainFocus
+                  shouldReturnFocus
+                  shouldCloseOnDocumentClick
                   color="primary-inverse"
-                  placement="top center"
+                  placement="bottom center"
                   mountNode={() => document.getElementById('main')}
                 >
                   <View padding="small" display="block" maxWidth="500px">
