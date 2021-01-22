@@ -191,8 +191,8 @@ EOF
 create_file_store_config_file() {
   cat << EOF > "${FILE_STORE_FILE}"
 production:
-  storage: "<%= ENV.fetch('FILE_STORAGE_STORAGE', 'local') %>"
-  path_prefix: "<%= ENV.fetch('FILE_STORAGE_PATH_PREFIX', 'tmp/files') %>"
+  storage: "<%= ENV.fetch('FILE_STORE_STORAGE', 'local') %>"
+  path_prefix: "<%= ENV.fetch('FILE_STORE_PATH_PREFIX', 'tmp/files') %>"
 EOF
 }
 
