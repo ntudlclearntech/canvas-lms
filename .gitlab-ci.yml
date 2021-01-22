@@ -2,8 +2,10 @@ image: docker:19.03.7
 stages:
   - build
   - test
+  - sonarqube
   - push
   - deploy
+
 variables:
   GIT_SUBMODULE_STRATEGY: recursive
   CANVAS_LMS_DEPLOY_PORT: $TESTING_DEPLOY_PORT
@@ -88,6 +90,16 @@ test:
     - dlc-master
     - dev
 
+sonarqube:
+  image: sonarsource/sonar-scanner-cli:latest
+  stage: sonarqube
+  script:
+    - sonar-scanner -Dsonar.projectKey=ntu-cool:canvas-lms -Dsonar.login=$SONARQUBE_TOKEN -Dsonar.qualitygate.wait=true
+  allow_failure: false
+  when: manual
+  only:
+    - /^releases/.*$/@ntu-cool/canvas-lms
+
 push-image:
   stage: push
   script:
@@ -97,6 +109,8 @@ push-image:
     - docker push $CI_REGISTRY_IMAGE/deployer:$IMAGE_TAG
   needs:
     - job: build
+      artifacts: true
+    - job: sonarqube
       artifacts: true
   when: manual
   only:
