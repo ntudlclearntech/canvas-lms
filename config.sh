@@ -7,7 +7,7 @@ DATABASE_FILE="${DIR}/config/database.yml"
 DELAYED_JOBS_FILE="${DIR}/config/delayed_jobs.yml"
 DOMAIN_FILE="${DIR}/config/domain.yml"
 DYNAMIC_SETTINGS_FILE="${DIR}/config/dynamic_settings.yml"
-FILE_STORAGE_FILE="${DIR}/config/file_storage.yml"
+FILE_STORE_FILE="${DIR}/config/file_store.yml"
 OUTGOING_MAIL_FILE="${DIR}/config/outgoing_mail.yml"
 PREDOC_FILE="${DIR}/config/predoc.yml"
 REDIS_FILE="${DIR}/config/redis.yml"
@@ -84,6 +84,7 @@ create_domain_config_file() {
   cat << EOF > "${DOMAIN_FILE}"
 production:
   domain: "<%= ENV.fetch('DOMAIN_DOMAIN', 'cool.ntu.edu.tw') %>"
+  ssl: "<%= ENV.fetch('DOMAIN_SSL', 'true') %>"
 EOF
 }
 
@@ -187,8 +188,8 @@ production:
 EOF
 }
 
-create_file_storage_config_file() {
-  cat << EOF > "${FILE_STORAGE_FILE}"
+create_file_store_config_file() {
+  cat << EOF > "${FILE_STORE_FILE}"
 production:
   storage: "<%= ENV.fetch('FILE_STORAGE_STORAGE', 'local') %>"
   path_prefix: "<%= ENV.fetch('FILE_STORAGE_PATH_PREFIX', 'tmp/files') %>"
@@ -310,7 +311,7 @@ create_database_config_file
 create_delayed_jobs_config_file
 create_domain_config_file
 create_dynamic_settings_config_file
-create_file_storage_config_file
+create_file_store_config_file
 create_outgoing_mail_config_file
 create_predoc_config_file
 create_redis_config_file

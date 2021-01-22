@@ -1,7 +1,7 @@
 FROM ubuntu:18.04
 
 # 0. Set up image environment
-WORKDIR /usr/workspace
+WORKDIR /var/canvas
 RUN adduser --disabled-password --gecos canvas --uid 1001 canvasuser 
 ENV RAILS_ENV=production
 # 0-1. Set up locales
@@ -46,7 +46,8 @@ RUN apt-get update && apt-get install -y git \
   public/javascripts/client_apps \
   public/plugins \
   && ln -sf ./gems/plugins/analytics/public ./public/plugins/analytics \
-  && chmod +x /usr/workspace/vendor/QTIMigrationTool/migrate.py
+  && chmod +x /var/canvas/vendor/QTIMigrationTool/migrate.py \
+  && chmod +x /var/canvas/config.sh
 
 # 2. Generate Assets
 RUN mkdir -p log tmp/pids public/assets app/stylesheets/brandable_css_brands \
@@ -85,8 +86,11 @@ RUN apt-get update && apt-get install -y apt-utils tzdata \
 RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 561F9B9CAC40B2F7 \
   && apt-get install -y apt-transport-https \
   && sh -c 'echo deb https://oss-binaries.phusionpassenger.com/apt/passenger bionic main > /etc/apt/sources.list.d/passenger.list' \
-  && apt-get update && apt-get install -y passenger libapache2-mod-passenger libnginx-mod-http-passenger \
+  && apt-get update && apt-get install -y passenger=1:5.3.7-1~bionic1 libapache2-mod-passenger=1:5.3.7-1~bionic1 libnginx-mod-http-passenger=1:5.3.7-1~bionic1 \
   # Optimizing File Downloads
   && apt-get install -y libapache2-mod-xsendfile
 
-CMD RAILS_ENV=production bundle exec rake css:compile && bundle exec passenger start
+CMD ./config.sh \
+  && chown -R canvasuser:canvasuser config/ \
+  && RAILS_ENV=production bundle exec rake css:compile \
+  && bundle exec passenger start
