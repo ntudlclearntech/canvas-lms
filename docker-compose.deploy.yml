@@ -53,6 +53,7 @@ x-default:
     - ${CANVAS_LMS_EXTERNAL_TMP_DIRECTORY}:/var/canvas/tmp
     - ${CANVAS_LMS_EXTERNAL_LOG_DIRECTORY}:/var/canvas/log
     - ${CANVAS_LMS_EXTERNAL_SAML_DIRECTORY}:/var/canvas/config/saml
+    - ${CANVAS_LMS_EXTERNAL_CSS_DIRECTORY}:/var/canvas/public/dist/brandable_css
     - /etc/timezone:/etc/timezone:ro
     - /etc/localtime:/etc/localtime:ro
   restart: always
