@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #
 # Copyright (C) 2011 - present Instructure, Inc.
 #
@@ -26,6 +28,11 @@ class UserProfile < ActiveRecord::Base
   validates :title,
             length: {
               maximum: maximum_string_length, too_long: '%{count} characters is the maximum allowed'
+            },
+            allow_blank: true
+  validates :bio,
+            length: {
+              maximum: maximum_text_length, too_long: '%{count} characters is the maximum allowed'
             },
             allow_blank: true
 

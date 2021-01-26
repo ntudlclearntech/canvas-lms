@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #
 # Copyright (C) 2018 - present Instructure, Inc.
 #
@@ -220,8 +222,6 @@ module Types
     field :allowed_extensions, [String],
       "permitted uploaded file extensions (e.g. ['doc', 'xls', 'txt'])",
       null: true
-
-    field :muted, Boolean, method: :muted?, null: false
 
     field :state, AssignmentStateType, method: :workflow_state, null: false
 

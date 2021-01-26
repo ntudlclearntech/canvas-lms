@@ -116,13 +116,14 @@
 #           "type": "string"
 #         },
 #         "state": {
-#           "description": "The policy for the feature at this context.  can be 'off', 'allowed', or 'on'.",
+#           "description": "The policy for the feature at this context.  can be 'off', 'allowed', 'allowed_on', or 'on'.",
 #           "example": "allowed",
 #           "type": "string",
 #           "allowableValues": {
 #             "values": [
 #               "off",
 #               "allowed",
+#               "allowed_on",
 #               "on"
 #             ]
 #           }
@@ -162,9 +163,13 @@ class FeatureFlagsController < ApplicationController
       flags = features.map { |fd|
         @context.lookup_feature_flag(fd.feature,
           override_hidden: Account.site_admin.grants_right?(@current_user, session, :read),
-          skip_cache: skip_cache
+          skip_cache: skip_cache,
+          # Hide flags that are forced ON at a higher level
+          # Undocumented flag for frontend use only
+          hide_inherited_enabled: params[:hide_inherited_enabled]
         )
       }.compact
+
       render json: flags.map { |flag| feature_with_flag_json(flag, @context, @current_user, session) }
     end
   end

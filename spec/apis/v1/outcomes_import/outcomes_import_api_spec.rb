@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #
 # Copyright (C) 2012 Instructure, Inc.
 #
@@ -35,7 +37,7 @@ describe "Outcomes Import API", type: :request do
   def available_json(expected_status: 200)
     api_call(:get, "/api/v1/global/outcomes_import/available",
       {
-        controller: 'outcomes_import_api',
+        controller: 'outcomes_academic_benchmark_import_api',
         action: 'available',
         account_id: @account.id.to_s,
         format: 'json',
@@ -51,7 +53,7 @@ describe "Outcomes Import API", type: :request do
   def create_json(guid:, expected_status: 200)
     api_call(:post, "/api/v1/global/outcomes_import",
       {
-        controller: 'outcomes_import_api',
+        controller: 'outcomes_academic_benchmark_import_api',
         action: 'create',
         account_id: @account.id.to_s,
         format: 'json',
@@ -69,7 +71,7 @@ describe "Outcomes Import API", type: :request do
   def create_full_json(json:, expected_status: 200)
     api_call(:post, "/api/v1/global/outcomes_import",
       {
-        controller: 'outcomes_import_api',
+        controller: 'outcomes_academic_benchmark_import_api',
         action: 'create',
         account_id: @account.id.to_s,
         format: 'json',
@@ -85,7 +87,7 @@ describe "Outcomes Import API", type: :request do
   def status_json(migration_id:, expected_status: 200)
     api_call(:get, "/api/v1/global/outcomes_import/migration_status/#{migration_id}",
       {
-        controller: 'outcomes_import_api',
+        controller: 'outcomes_academic_benchmark_import_api',
         action: 'migration_status',
         account_id: @account.id.to_s,
         format: 'json',

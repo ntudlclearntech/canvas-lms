@@ -64,27 +64,109 @@
 import formatMessage from '../../../format-message'
 import clickCallback from './clickCallback'
 import bridge from '../../../bridge'
-import {isFileLink, asLink} from '../shared/ContentSelection'
 import {getAnchorElement, isOKToLink} from '../../contentInsertionUtils'
 import LinkOptionsTrayController from './components/LinkOptionsTray/LinkOptionsTrayController'
 import {CREATE_LINK, EDIT_LINK} from './components/LinkOptionsDialog/LinkOptionsDialogController'
 
 const trayController = new LinkOptionsTrayController()
 
-const PLUGIN_KEY = 'links'
+const COURSE_PLUGIN_KEY = 'course_links'
+const GROUP_PLUGIN_KEY = 'group_links'
+
+function selectedAnchorCount(ed) {
+  return ed.selection
+    .getRng()
+    .cloneContents()
+    .querySelectorAll('a').length
+}
+function getMenuItems(ed) {
+  const contextType = ed.settings.canvas_rce_user_context.type
+  const sel_anchors = ed.selection.isCollapsed() ? 0 : selectedAnchorCount(ed)
+  let items
+  if (getAnchorElement(ed, ed.selection.getNode())) {
+    // cursor is on an anchor, edit or remove it
+    items = [
+      {
+        text: formatMessage('Edit Link'),
+        value: 'instructureTrayToEditLink'
+      },
+      {
+        text: formatMessage('Remove Link'),
+        value: 'instructureUnlink'
+      }
+    ]
+  } else {
+    items = [
+      {
+        text: formatMessage('External Links'),
+        value: 'instructureLinkCreate'
+      }
+    ]
+    if (contextType === 'course') {
+      items.push({
+        text: formatMessage('Course Links'),
+        value: 'instructure_course_links'
+      })
+    } else if (contextType === 'group') {
+      items.push({
+        text: formatMessage('Group Links'),
+        value: 'instructure_group_links'
+      })
+    }
+    if (sel_anchors > 0) {
+      // selection contains anchor(s), so the user can remove them
+      items.push({
+        text: formatMessage.plural(sel_anchors, {
+          one: 'Remove Link',
+          other: 'Remove Links'
+        }),
+        value: 'instructureUnlinkAll'
+      })
+    }
+  }
+  return items
+}
+
+function doMenuItem(ed, value) {
+  switch (value) {
+    case 'instructureTrayToEditLink':
+    case 'instructureLinkCreate':
+      ed.execCommand(value)
+      break
+    case 'instructureUnlink':
+      {
+        const selectedElm = ed.selection.getNode()
+        const anchorElm = getAnchorElement(ed, selectedElm)
+        ed.selection.select(anchorElm)
+        ed.undoManager.add()
+        ed.execCommand('unlink')
+      }
+      break
+    case 'instructureUnlinkAll':
+      ed.undoManager.add()
+      ed.execCommand('unlink')
+      break
+    case 'instructure_course_links':
+      ed.focus(true) // activate the editor without changing focus
+      ed.execCommand('instructureTrayForLinks', false, COURSE_PLUGIN_KEY)
+      break
+    case 'instructure_group_links':
+      ed.focus(true) // activate the editor without changing focus
+      ed.execCommand('instructureTrayForLinks', false, GROUP_PLUGIN_KEY)
+      break
+  }
+}
 
 tinymce.create('tinymce.plugins.InstructureLinksPlugin', {
   init(ed) {
-    const contextType = ed.settings.canvas_rce_user_context.type
-
     // Register commands
     ed.addCommand('instructureLinkCreate', clickCallback.bind(this, ed, CREATE_LINK))
     ed.addCommand('instructureLinkEdit', clickCallback.bind(this, ed, EDIT_LINK))
     ed.addCommand('instructureTrayForLinks', (ui, plugin_key) => {
       bridge.showTrayForPlugin(plugin_key, ed.id)
     })
-    ed.addCommand('instructureTrayToEditLink', (ui, editor) => {
-      trayController.showTrayForEditor(editor)
+    ed.addCommand('instructureTrayToEditLink', _ui => {
+      trayController.showTrayForEditor(ed)
     })
 
     // Register shortcuts
@@ -94,90 +176,93 @@ tinymce.create('tinymce.plugins.InstructureLinksPlugin', {
     ed.ui.registry.addNestedMenuItem('instructure_links', {
       text: formatMessage('Link'),
       icon: 'link',
-      getSubmenuItems: () => ['instructure_external_link', 'instructure_course_link']
+      getSubmenuItems: () =>
+        getMenuItems(ed).map(item => {
+          return {
+            type: 'menuitem',
+            text: item.text,
+            onAction: () => doMenuItem(ed, item.value),
+            onSetup: api => {
+              api.setDisabled(!isOKToLink(ed.selection.getContent()))
+              return () => {}
+            }
+          }
+        })
     })
-    ed.ui.registry.addMenuItem('instructure_external_link', {
-      text: formatMessage('External Links'),
-      shortcut: 'Meta+K',
-      onAction: () => ed.execCommand('instructureLinkCreate')
-    })
-    if (contextType === 'course') {
-      ed.ui.registry.addMenuItem('instructure_course_link', {
-        text: formatMessage('Course Links'),
-        onAction: () => {
-          ed.focus(true) // activate the editor without changing focus
-          ed.execCommand('instructureTrayForLinks', false, PLUGIN_KEY)
-        }
-      })
-    }
 
     // Register toolbar button
-    ed.ui.registry.addMenuButton('instructure_links', {
+    ed.ui.registry.addSplitButton('instructure_links', {
       tooltip: formatMessage('Links'),
       icon: 'link',
       fetch(callback) {
-        let items
-        const linkContents = asLink(ed.selection.getNode(), ed)
-        if (linkContents) {
-          items = [
-            {
-              type: 'menuitem',
-              text: formatMessage('Edit Link'),
-              onAction: () => {
-                ed.execCommand('instructureTrayToEditLink', false, ed)
-              }
-            },
-            {
-              type: 'menuitem',
-              text: formatMessage('Remove Link'),
-              onAction() {
-                const selectedElm = ed.selection.getNode()
-                const anchorElm = getAnchorElement(ed, selectedElm)
-                ed.selection.select(anchorElm)
-                ed.execCommand('unlink')
-              }
-            }
-          ]
-        } else {
-          items = [
-            {
-              type: 'menuitem',
-              text: formatMessage('External Links'),
-              onAction: () => {
-                ed.execCommand('instructureLinkCreate')
-              }
-            }
-          ]
-
-          if (contextType === 'course') {
-            items.splice(1, 0, {
-              type: 'menuitem',
-              text: formatMessage('Course Links'),
-              onAction() {
-                ed.focus(true) // activate the editor without changing focus
-                ed.execCommand('instructureTrayForLinks', false, PLUGIN_KEY)
-              }
-            })
+        const items = getMenuItems(ed).map(item => {
+          return {
+            type: 'choiceitem',
+            text: item.text,
+            value: item.value
           }
-        }
+        })
         callback(items)
       },
+      onAction(api) {
+        if (!api.isDisabled()) {
+          if (getAnchorElement(ed, ed.selection.getNode())) {
+            doMenuItem(ed, 'instructureTrayToEditLink')
+          } else {
+            doMenuItem(ed, 'instructureLinkCreate')
+          }
+        }
+      },
+      onItemAction: (splitButtonApi, value) => doMenuItem(ed, value),
       onSetup(api) {
         function handleNodeChange(e) {
-          api.setActive(!!getAnchorElement(ed, e.element))
+          if (e !== null) {
+            api.setActive(!!getAnchorElement(ed, e.element))
+          }
           api.setDisabled(!isOKToLink(ed.selection.getContent()))
         }
 
+        // if the user selects all the content w/in a link and deletes it via the keyboard
+        // make sure the surrounding <a> gets deleted too.
+        function deleteEmptyLink() {
+          let node
+          if (ed.selection.getNode().tagName === 'A') {
+            node = ed.selection.getNode()
+          } else {
+            const rng = ed.selection.getRng()
+            if (
+              rng.commonAncestorContainer === rng.endContainer &&
+              rng.endContainer.nextSibling?.tagName === 'A'
+            ) {
+              node = rng.endContainer.nextSibling
+            } else if (rng.nextSibling?.tagName === 'A') {
+              node = rng.nextSibling
+            }
+          }
+          if (node) {
+            if (node.firstElementChild) {
+              return
+            }
+            const txt = node.textContent?.trim()
+            if (txt.length === 0) {
+              ed.execCommand('Unlink')
+            }
+          }
+        }
+
+        setTimeout(handleNodeChange, 0, null)
+
         ed.on('NodeChange', handleNodeChange)
+        ed.on('Change', deleteEmptyLink)
 
         return () => {
           ed.off('NodeChange', handleNodeChange)
+          ed.off('Change', deleteEmptyLink)
         }
       }
     })
 
-    // the context toolbar button
-    const buttonAriaLabel = formatMessage('Show link options')
+    // the context toolbar buttons
     ed.ui.registry.addButton('instructure-link-options', {
       onAction(/* buttonApi */) {
         // show the tray
@@ -185,13 +270,23 @@ tinymce.create('tinymce.plugins.InstructureLinksPlugin', {
       },
 
       text: formatMessage('Link Options'),
-      tooltip: buttonAriaLabel
+      tooltip: formatMessage('Show link options')
+    })
+    const remButtonLabel = formatMessage('Remove Link')
+    ed.ui.registry.addButton('instructureUnlink', {
+      onAction(/* buttonApi */) {
+        // show the tray
+        ed.undoManager.add()
+        ed.execCommand('Unlink')
+      },
+
+      text: remButtonLabel
     })
 
     ed.ui.registry.addContextToolbar('instructure-link-toolbar', {
-      items: 'instructure-link-options',
+      items: 'instructure-link-options instructureUnlink',
       position: 'node',
-      predicate: elem => isFileLink(elem, ed),
+      predicate: elem => !!getAnchorElement(ed, elem),
       scope: 'node'
     })
   }

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #
 # Copyright (C) 2015 - present Instructure, Inc.
 #
@@ -72,7 +74,7 @@ module SeleniumDriverSetup
 
   # prevents subsequent specs from failing because tooltips are showing etc.
   def move_mouse_to_known_position
-    driver.action.move_to(f("body"), 0, 0).perform if driver.ready_for_interaction
+    driver.action.move_to_location(0, 0).perform if driver.ready_for_interaction
   end
 
   class ServerStartupError < RuntimeError; end
@@ -274,9 +276,9 @@ module SeleniumDriverSetup
     def ruby_chrome_driver
       puts "Thread: provisioning local chrome driver"
       # in your selenium.yml you can define a different chromedriver version
-      # by adding 'chromedriver_version: <version>' for the version you want.
+      # by modifying 'chromedriver_version: <version>' for the version you want.
       # otherwise this will use the default version matching what is used in docker.
-      Webdrivers::Chromedriver.required_version = (CONFIG[:chromedriver_version] || "83.0.4103.39")
+      Webdrivers::Chromedriver.required_version = CONFIG[:chromedriver_version]
       chrome_options = Selenium::WebDriver::Chrome::Options.new
       # put `auto_open_devtools: true` in your selenium.yml if you want to have
       # the chrome dev tools open by default by selenium
@@ -312,7 +314,7 @@ module SeleniumDriverSetup
     def desired_capabilities
       case browser
       when :firefox
-        # TODO: options for firefox driver
+        caps = Selenium::WebDriver::Remote::Capabilities.firefox
       when :chrome
         caps = Selenium::WebDriver::Remote::Capabilities.chrome
         caps['goog:chromeOptions'] = {

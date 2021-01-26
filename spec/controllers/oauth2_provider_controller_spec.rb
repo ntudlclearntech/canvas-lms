@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #
 # Copyright (C) 2015 - present Instructure, Inc.
 #
@@ -633,6 +635,30 @@ describe Oauth2ProviderController do
             end
           end
         end
+
+        context "with symmetric client identification" do
+          let(:client_credentials_params) do
+            {
+              client_id: client_id,
+              client_secret: client_secret,
+              redirect_uri: 'https://example.com',
+              scope: TokenScopes::USER_INFO_SCOPE[:scope]
+            }
+          end
+
+          it 'rejects by default' do
+            is_expected.to redirect_to('https://example.com?error=invalid_request&error_description=assertion+method+not+supported+for+this+grant_type')
+          end
+
+          context "with external audience key" do
+            before do
+              key.client_credentials_audience = "external"
+              key.save!
+            end
+
+            it { is_expected.to have_http_status 200 }
+          end
+        end
       end
     end
   end
@@ -676,6 +702,10 @@ describe Oauth2ProviderController do
       expect(response).to redirect_to(oauth2_auth_url(:code => 'code', :state => '1234567890'))
     end
 
+    it "gracefully errors if the session has been destroyed" do
+      post :accept, session: {}
+      expect(response.code.to_i).to eq(400)
+    end
   end
 
   describe 'GET deny' do
@@ -693,6 +723,11 @@ describe Oauth2ProviderController do
       get 'deny', session: session_hash
       expect(response).to be_redirect
       expect(response.location).not_to match(/state=/)
+    end
+
+    it "doesn't error on an empty session" do
+      get 'deny', session: {}
+      expect(response).to be_bad_request
     end
   end
 
@@ -739,4 +774,24 @@ describe Oauth2ProviderController do
     end
   end
 
+  describe 'GET jwks' do
+    before :each do
+      allow(Canvas::Oauth::KeyStorage).to receive(:retrieve_keys).and_return({
+        Canvas::Security::KeyStorage::PAST => Canvas::Security::RSAKeyPair.new.to_jwk,
+        Canvas::Security::KeyStorage::PRESENT => Canvas::Security::RSAKeyPair.new.to_jwk,
+        Canvas::Security::KeyStorage::FUTURE => Canvas::Security::RSAKeyPair.new.to_jwk
+      })
+      get 'jwks'
+    end
+
+    it "provides the current jwk set" do
+      expect(response).to have_http_status :ok
+      json = JSON.parse(response.body)
+      expected_keys = %w(kid kty alg e n use)
+      expect(json['keys']).not_to be_empty
+      json['keys'].each do |key|
+        expect(key.keys - expected_keys).to be_empty
+      end
+    end
+  end
 end

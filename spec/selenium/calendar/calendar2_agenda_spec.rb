@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #
 # Copyright (C) 2017 - present Instructure, Inc.
 #
@@ -21,6 +23,10 @@ require_relative "../helpers/calendar2_common"
 describe "calendar2" do
   include_context "in-process server selenium tests"
   include Calendar2Common
+
+  before(:once) do
+    Account.find_or_create_by!(id: 0).update_attributes(name: 'Dummy Root Account', workflow_state: 'deleted', root_account_id: nil)
+  end
 
   before(:each) do
     # or some stuff we need to click is "below the fold"

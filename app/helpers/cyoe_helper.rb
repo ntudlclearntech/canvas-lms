@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #
 # Copyright (C) 2017 - present Instructure, Inc.
 #
@@ -57,7 +59,7 @@ module CyoeHelper
     result = conditional_release_rule_for_module_item(content_tag, opts)
     return if result.blank?
     result[:assignment_sets].each do |as|
-      associations = as[:assignments] || as[:assignment_set_associations]
+      associations = as[:assignment_set_associations]
       next if associations.blank?
       associations.each do |a|
         a[:model] = assignment_json(a[:model], user, nil) if a[:model]
@@ -77,12 +79,8 @@ module CyoeHelper
 
   def check_if_processing(data)
     if !data[:awaiting_choice] && data[:assignment_sets].length == 1
-      vis_assignments = RequestCache.cache('visible_assignment_ids_in_course', @current_user, @context) do
-        AssignmentStudentVisibility.visible_assignment_ids_for_user(@current_user.id, @context.id) || []
-      end
       set = data[:assignment_sets][0]
-      selected_set_assignment_ids = (set[:assignments] || set[:assignment_set_associations]).map{ |a| a[:assignment_id].to_i } || []
-      data[:still_processing] = (selected_set_assignment_ids - vis_assignments).present?
+      data[:still_processing] = !ConditionalRelease::AssignmentSetAction.where(:assignment_set_id => set[:id], :student_id => @current_user.id).exists?
     end
   end
 

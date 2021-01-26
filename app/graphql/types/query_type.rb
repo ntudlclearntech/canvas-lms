@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #
 # Copyright (C) 2018 - present Instructure, Inc.
 #
@@ -119,6 +121,33 @@ module Types
     field :audit_logs, Types::AuditLogsType, null: true
     def audit_logs
       Canvas::DynamoDB::DatabaseBuilder.from_config(:auditors)
+    end
+
+    field :outcome_calculation_method, Types::OutcomeCalculationMethodType, null: true do
+      description "OutcomeCalculationMethod"
+      argument :id, ID, "a graphql or legacy id", required: true,
+        prepare: GraphQLHelpers.relay_or_legacy_id_prepare_func("OutcomeCalculationMethod")
+    end
+    def outcome_calculation_method(id:)
+      GraphQLNodeLoader.load("OutcomeCalculationMethod", id, context)
+    end
+
+    field :outcome_proficiency, Types::OutcomeProficiencyType, null: true do
+      description "OutcomeProficiency"
+      argument :id, ID, "a graphql or legacy id", required: true,
+        prepare: GraphQLHelpers.relay_or_legacy_id_prepare_func("OutcomeProficiency")
+    end
+    def outcome_proficiency(id:)
+      GraphQLNodeLoader.load("OutcomeProficiency", id, context)
+    end
+
+    field :learning_outcome_group, Types::LearningOutcomeGroupType, null: true do
+      description "LearningOutcomeGroup"
+      argument :id, ID, "a graphql or legacy id", required: true,
+        prepare: GraphQLHelpers.relay_or_legacy_id_prepare_func("LearningOutcomeGroup")
+    end
+    def learning_outcome_group(id:)
+      GraphQLNodeLoader.load("LearningOutcomeGroup", id, context)
     end
   end
 end

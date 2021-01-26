@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #
 # Copyright (C) 2013 Instructure, Inc.
 #
@@ -293,10 +295,12 @@ describe "Module Items API", type: :request do
       end
 
       it "should find module items" do
-        api_call(:get, "/api/v1/courses/#{@course.id}/modules/#{@module1.id}/items/#{@assignment_tag.id}",
+        json = api_call(:get, "/api/v1/courses/#{@course.id}/modules/#{@module1.id}/items/#{@assignment_tag.id}",
           :controller => "context_module_items_api", :action => "show", :format => "json",
           :course_id => "#{@course.id}", :module_id => "#{@module1.id}",
           :id => "#{@assignment_tag.id}")
+        expect(json['id']).to eq(@assignment_tag.id)
+        expect(json['title']).to eq(@assignment_tag.title)
       end
 
       it "should not find module items when hidden" do
@@ -498,32 +502,49 @@ describe "Module Items API", type: :request do
         expect(tags.map(&:position)).to eq [1, 4, 5, 6]
       end
 
-      it "should set completion requirement" do
-        assignment = @course.assignments.create!(:name => "pls submit", :submission_types => ["online_text_entry"])
-        json = api_call(:post, "/api/v1/courses/#{@course.id}/modules/#{@module1.id}/items",
-                        {:controller => "context_module_items_api", :action => "create", :format => "json",
-                         :course_id => "#{@course.id}", :module_id => "#{@module1.id}"},
-                        {:module_item => {:title => 'title', :type => 'Assignment', :content_id => assignment.id,
-                         :completion_requirement => {:type => 'min_score', :min_score => 2}}})
+      context "set_completion_requirement" do
+        it "should set completion requirement on assignment to min_score" do
+          assignment = @course.assignments.create!(:name => "pls submit", :submission_types => ["online_text_entry"])
+          json = api_call(:post, "/api/v1/courses/#{@course.id}/modules/#{@module1.id}/items",
+                          {:controller => "context_module_items_api", :action => "create", :format => "json",
+                           :course_id => "#{@course.id}", :module_id => "#{@module1.id}"},
+                          {:module_item => {:title => 'title', :type => 'Assignment', :content_id => assignment.id,
+                                            :completion_requirement => {:type => 'min_score', :min_score => 2}}})
 
-        expect(json['completion_requirement']).to eq({"type" => "min_score", "min_score" => 2})
+          expect(json['completion_requirement']).to eq({"type" => "min_score", "min_score" => 2})
 
-        @module1.reload
-        req = @module1.completion_requirements.find{|h| h[:id] == json['id'].to_i}
-        expect(req[:type]).to eq 'min_score'
-        expect(req[:min_score]).to eq 2
-      end
+          @module1.reload
+          req = @module1.completion_requirements.find{|h| h[:id] == json['id'].to_i}
+          expect(req[:type]).to eq 'min_score'
+          expect(req[:min_score]).to eq 2
+        end
 
-      it "should require valid completion requirement type" do
-        assignment = @course.assignments.create!(:name => "pls submit", :submission_types => ["online_text_entry"])
-        json = api_call(:post, "/api/v1/courses/#{@course.id}/modules/#{@module1.id}/items",
-                        {:controller => "context_module_items_api", :action => "create", :format => "json",
-                         :course_id => "#{@course.id}", :module_id => "#{@module1.id}"},
-                        {:module_item => {:title => 'title', :type => 'Assignment', :content_id => assignment.id,
-                         :completion_requirement => {:type => 'not a valid type'}}},
-                         {}, {:expected_status => 400})
+        it "should set completion requirement on wiki page to must_mark_done" do
+          page = @course.wiki_pages.create(:title => 'New Page')
+          json = api_call(:post, "/api/v1/courses/#{@course.id}/modules/#{@module1.id}/items",
+                          {:controller => "context_module_items_api", :action => "create", :format => "json",
+                           :course_id => "#{@course.id}", :module_id => "#{@module1.id}"},
+                          {:module_item => {:title => 'title', :type => 'wiki_page', :content_id => page.id,
+                                            :completion_requirement => {:type => 'must_mark_done'}}})
 
-        expect(json["errors"]["completion_requirement"].count).to eq 1
+          expect(json['completion_requirement']).to eq({"type" => "must_mark_done"})
+
+          @module1.reload
+          req = @module1.completion_requirements.find{|h| h[:id] == json['id'].to_i}
+          expect(req[:type]).to eq 'must_mark_done'
+        end
+
+        it "should require valid completion requirement type" do
+          assignment = @course.assignments.create!(:name => "pls submit", :submission_types => ["online_text_entry"])
+          json = api_call(:post, "/api/v1/courses/#{@course.id}/modules/#{@module1.id}/items",
+                          {:controller => "context_module_items_api", :action => "create", :format => "json",
+                           :course_id => "#{@course.id}", :module_id => "#{@module1.id}"},
+                          {:module_item => {:title => 'title', :type => 'Assignment', :content_id => assignment.id,
+                                            :completion_requirement => {:type => 'not a valid type'}}},
+                          {}, {:expected_status => 400})
+
+          expect(json["errors"]["completion_requirement"].count).to eq 1
+        end
       end
     end
 
@@ -617,35 +638,51 @@ describe "Module Items API", type: :request do
         expect(tags.map(&:position)).to eq [4, 1, 2, 3, 5]
       end
 
-      it "should set completion requirement" do
-        json = api_call(:put, "/api/v1/courses/#{@course.id}/modules/#{@module1.id}/items/#{@assignment_tag.id}",
-                        {:controller => "context_module_items_api", :action => "update", :format => "json",
-                         :course_id => "#{@course.id}", :module_id => "#{@module1.id}", :id => "#{@assignment_tag.id}"},
-                        {:module_item => {:title => 'title',
-                                          :completion_requirement => {:type => 'min_score', :min_score => 3}}})
+      context "set_completion_requirement" do
+        it "should update completion requirement to min_score" do
+          json = api_call(:put, "/api/v1/courses/#{@course.id}/modules/#{@module1.id}/items/#{@assignment_tag.id}",
+                          {:controller => "context_module_items_api", :action => "update", :format => "json",
+                           :course_id => "#{@course.id}", :module_id => "#{@module1.id}", :id => "#{@assignment_tag.id}"},
+                          {:module_item => {:title => 'title',
+                                            :completion_requirement => {:type => 'min_score', :min_score => 3}}})
 
-        expect(json['completion_requirement']).to eq({"type" => "min_score", "min_score" => 3})
+          expect(json['completion_requirement']).to eq({"type" => "min_score", "min_score" => 3})
 
-        @module1.reload
-        req = @module1.completion_requirements.find{|h| h[:id] == json['id'].to_i}
-        expect(req[:type]).to eq 'min_score'
-        expect(req[:min_score]).to eq 3
-      end
+          @module1.reload
+          req = @module1.completion_requirements.find{|h| h[:id] == json['id'].to_i}
+          expect(req[:type]).to eq 'min_score'
+          expect(req[:min_score]).to eq 3
+        end
 
-      it "should remove completion requirement" do
-        req = @module1.completion_requirements.find{|h| h[:id] == @assignment_tag.id}
-        expect(req).not_to be_nil
+        it "should update completion requirement to must_mark_done" do
+          json = api_call(:put, "/api/v1/courses/#{@course.id}/modules/#{@module1.id}/items/#{@assignment_tag.id}",
+                          {:controller => "context_module_items_api", :action => "update", :format => "json",
+                           :course_id => "#{@course.id}", :module_id => "#{@module1.id}", :id => "#{@assignment_tag.id}"},
+                          {:module_item => {:title => 'title',
+                                            :completion_requirement => {:type => 'must_mark_done'}}})
 
-        json = api_call(:put, "/api/v1/courses/#{@course.id}/modules/#{@module1.id}/items/#{@assignment_tag.id}",
-                        {:controller => "context_module_items_api", :action => "update", :format => "json",
-                         :course_id => "#{@course.id}", :module_id => "#{@module1.id}", :id => "#{@assignment_tag.id}"},
-                        {:module_item => {:title => 'title', :completion_requirement => ''}})
+          expect(json['completion_requirement']).to eq({"type" => "must_mark_done"})
 
-        expect(json['completion_requirement']).to be_nil
+          @module1.reload
+          req = @module1.completion_requirements.find{|h| h[:id] == json['id'].to_i}
+          expect(req[:type]).to eq 'must_mark_done'
+        end
 
-        @module1.reload
-        req = @module1.completion_requirements.find{|h| h[:id] == json['id'].to_i}
-        expect(req).to be_nil
+        it "should remove completion requirement" do
+          req = @module1.completion_requirements.find{|h| h[:id] == @assignment_tag.id}
+          expect(req).not_to be_nil
+
+          json = api_call(:put, "/api/v1/courses/#{@course.id}/modules/#{@module1.id}/items/#{@assignment_tag.id}",
+                          {:controller => "context_module_items_api", :action => "update", :format => "json",
+                           :course_id => "#{@course.id}", :module_id => "#{@module1.id}", :id => "#{@assignment_tag.id}"},
+                          {:module_item => {:title => 'title', :completion_requirement => ''}})
+
+          expect(json['completion_requirement']).to be_nil
+
+          @module1.reload
+          req = @module1.completion_requirements.find{|h| h[:id] == json['id'].to_i}
+          expect(req).to be_nil
+        end
       end
 
       it "should publish module items" do
@@ -993,7 +1030,6 @@ describe "Module Items API", type: :request do
     describe 'POST select_mastery_path' do
       before do
         allow(ConditionalRelease::Service).to receive(:enabled_in_context?).and_return(true)
-        allow(ConditionalRelease::Service).to receive(:select_mastery_path).and_return({ code: '200', body: {} })
         student_in_course(course: @course)
       end
 
@@ -1025,32 +1061,14 @@ describe "Module Items API", type: :request do
         expect(json['message']).to match(/assignment/)
       end
 
-      it 'should return the CYOE error if the action is unsuccessful' do
-        allow(ConditionalRelease::Service).to receive(:select_mastery_path).and_return({ code: '909', body: { 'foo' => 'bar' } })
-        json = call_select_mastery_path @assignment_tag, 100, @student.id, expected_status: 909
-        expect(json).to eq({ 'foo' => 'bar' })
-      end
-
       it 'should not allow unpublished items' do
         @assignment.unpublish!
         call_select_mastery_path @assignment_tag, 100, @student.id, expected_status: 404
       end
 
-      it 'should call the native selection path if configured' do
-        expect(ConditionalRelease::Service).to receive(:natively_enabled_for_account?).and_return(true)
-
-        assignment_ids = create_assignments([@course.id], 2)
-        expect(ConditionalRelease::OverrideHandler).to receive(:handle_assignment_set_selection).
-          with(@student, @assignment, "100").and_return(assignment_ids)
-        json = call_select_mastery_path @assignment_tag, "100", @student.id, expected_status: 200
-        expect(json['assignments'].map {|a| a['id']}).to eq assignment_ids
-      end
-
       context 'successful' do
         def cyoe_returns(assignment_ids)
-          cyoe_ids = assignment_ids.map {|id| { 'assignment_id' => "#{id}" }} # cyoe ids in strings
-          cyoe_response = { 'assignments' => cyoe_ids }
-          allow(ConditionalRelease::Service).to receive(:select_mastery_path).and_return({ code: '200', body: cyoe_response })
+          expect(ConditionalRelease::OverrideHandler).to receive(:handle_assignment_set_selection).and_return(assignment_ids)
         end
 
         it 'should return a list of assignments if the action is successful' do
@@ -1213,7 +1231,7 @@ describe "Module Items API", type: :request do
         rules = item.deep_symbolize_keys
         return false unless rules[:mastery_paths].present?
         rules[:mastery_paths][:assignment_sets].find do |set|
-          set[:assignments].find do |asg|
+          set[:assignment_set_associations].find do |asg|
             asg.key? :model
           end
         end
@@ -1234,42 +1252,16 @@ describe "Module Items API", type: :request do
                        :indent => 1, :updated_at => nil).publish!
           mod.publish
         end
-      end
 
-      before :each do
-        @resp = [{
-                  locked: false,
-                  trigger_assignment: @quiz.assignment_id,
-                  assignment_sets: [{
-                    id: 1,
-                    scoring_range_id: 1,
-                    created_at: @assignment.created_at,
-                    updated_at: @assignment.updated_at,
-                    position: 1,
-                    assignments: [{
-                      id: 1,
-                      assignment_id: @assignment.id,
-                      created_at: @assignment.created_at,
-                      updated_at: @assignment.updated_at,
-                      assignment_set_id: 1,
-                      position: 1
-                    }]
-                  }]
-                }]
-        allow(ConditionalRelease::Service).to receive_messages(headers_for: {}, submissions_for: [],
-          domain_for: "canvas.xyz", "enabled_in_context?" => true,
-          rules_summary_url: "cyoe.abc/rules", request_rules: @resp)
-      end
+        range = ConditionalRelease::ScoringRange.new(:lower_bound => 0.0, :upper_bound => 1.0, :assignment_sets => [
+          ConditionalRelease::AssignmentSet.new(:assignment_set_associations => [
+            ConditionalRelease::AssignmentSetAssociation.new(:assignment_id => @assignment.id)
+          ])
+        ])
+        @cyoe_rule = @course.conditional_release_rules.create!(:trigger_assignment_id => @quiz.assignment_id, :scoring_ranges => [range])
+        @course.enable_feature!(:conditional_release)
 
-      describe "CYOE interaction" do
-        it "makes a request to the CYOE service when included" do
-          expect(ConditionalRelease::Service).to receive(:request_rules).once
-
-          api_call(:get, "/api/v1/courses/#{@course.id}/modules/#{@cyoe_module1.id}/items?include[]=mastery_paths",
-            :controller => "context_module_items_api", :action => "index", :format => "json",
-            :course_id => @course.id.to_s, :module_id => @cyoe_module1.id.to_s,
-            :include => ['mastery_paths'])
-        end
+        graded_submission(@quiz, @student)
       end
 
       describe "module item list response data" do
@@ -1393,7 +1385,6 @@ describe "Module Items API", type: :request do
       describe "caching CYOE data" do
         it "uses the cache when requested again" do
           expect(ConditionalRelease::Service).to receive(:request_rules).never
-          allow(ConditionalRelease::Service).to receive_messages(rules_cache: {rules: @resp, updated_at: 1.day.from_now})
           3.times do
             api_call(:get, "/api/v1/courses/#{@course.id}/modules/#{@cyoe_module3.id}/items?include[]=mastery_paths",
               :controller => "context_module_items_api", :action => "index", :format => "json",
@@ -1573,6 +1564,7 @@ describe "Module Items API", type: :request do
 
         it "should work even when there is none must-mark-done requirement to delete" do
           mark_not_done_api_call
+          assert_status(200)
         end
       end
     end
@@ -1669,7 +1661,7 @@ describe "Module Items API", type: :request do
     describe 'POST select_mastery_path' do
       before do
         allow(ConditionalRelease::Service).to receive(:enabled_in_context?).and_return(true)
-        allow(ConditionalRelease::Service).to receive(:select_mastery_path).and_return({ code: '200', body: { 'assignments' => [] } })
+        allow(ConditionalRelease::OverrideHandler).to receive(:handle_assignment_set_selection).and_return([])
       end
 
       it 'should allow a mastery path' do

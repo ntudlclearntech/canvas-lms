@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #
 # Copyright (C) 2011 - present Instructure, Inc.
 #
@@ -53,12 +55,6 @@ describe RubricsController do
         get 'index', params: {:course_id => @course.id}
         expect(assigns[:js_env][:NON_SCORING_RUBRICS]).to eq true
       end
-
-      it 'should include the account_level_mastery_scales FF' do
-        @course.root_account.enable_feature!(:account_level_mastery_scales)
-        get 'index', params: {:course_id => @course.id}
-        expect(assigns[:js_env][:ACCOUNT_LEVEL_PROFICIENCIES]).to eq true
-      end
     end
 
     describe "after a course has concluded" do
@@ -67,22 +63,14 @@ describe RubricsController do
         @course.complete!
       end
 
-      it "cannot access rubrics without FF" do
+      it "can access rubrics" do
         get 'index', params: {:course_id => @course.id}
-        assert_unauthorized
+        expect(response).to be_successful
       end
 
-      describe "with FF enabled" do
-        before { @course.root_account.enable_feature!(:rubrics_in_course_navigation) }
-        it "can access rubrics" do
-          get 'index', params: {:course_id => @course.id}
-          expect(response).to be_successful
-        end
-
-        it "does not include manage_rubrics permission" do
-          get 'index', params: {:course_id => @course.id}
-          expect(assigns[:js_env][:PERMISSIONS][:manage_rubrics]).to eq false
-        end
+      it "should not allow the teacher to manage_rubrics" do
+        get 'index', params: {:course_id => @course.id}
+        expect(assigns[:js_env][:PERMISSIONS][:manage_rubrics]).to eq false
       end
     end
   end
@@ -278,6 +266,7 @@ describe RubricsController do
       expect(assigns[:association]).to be_nil
       expect(response).to be_successful
     end
+
     it "should update the rubric even if it doesn't belong to the context, just an association" do
       course_model
       @course2 = @course
@@ -297,7 +286,7 @@ describe RubricsController do
 
     # this happens after a importing content into a new course, before a new
     # association is set up
-    it "should create a new rubrice (and not update the existing rubric) if it doesn't belong to the context or to an association" do
+    it "should create a new rubric (and not update the existing rubric) if it doesn't belong to the context or to an association" do
       course_model
       @course2 = @course
       course_with_teacher_logged_in(:active_all => true)
@@ -306,6 +295,18 @@ describe RubricsController do
       @rubric.save
       @rubric_association.context = @course2
       @rubric_association.save
+      put 'update', params: {:course_id => @course.id, :id => @rubric.id, :rubric => {:title => "new title"}, :rubric_association_id => @rubric_association.id}
+      expect(assigns[:rubric]).not_to be_nil
+      expect(assigns[:rubric]).not_to eql(@rubric)
+      expect(assigns[:rubric].title).to eql("new title")
+    end
+
+    it "should create a new rubric (and not update the existing rubric) if it doesn't belongs to the same context" do
+      course_model
+      course_with_teacher_logged_in(:active_all => true)
+      rubric_association_model(:user => @user, :context => @course)
+      @rubric.context = @course.root_account
+      @rubric.save
       put 'update', params: {:course_id => @course.id, :id => @rubric.id, :rubric => {:title => "new title"}, :rubric_association_id => @rubric_association.id}
       expect(assigns[:rubric]).not_to be_nil
       expect(assigns[:rubric]).not_to eql(@rubric)
@@ -732,7 +733,7 @@ describe RubricsController do
         expect(response).to be_successful
       end
 
-      it "should include manage_rubrics permission" do
+      it "should allow the teacher to manage_rubrics" do
         get 'show', params: {id: @r.id, course_id: @course.id}
         expect(assigns[:js_env][:PERMISSIONS][:manage_rubrics]).to eq true
       end
@@ -740,23 +741,14 @@ describe RubricsController do
       describe "after a course has concluded" do
         before { @course.complete! }
 
-        it "cannot access the rubric without the rubrics_in_course_navigation FF" do
+        it "can access the rubric" do
           get 'show', params: {id: @r.id, course_id: @course.id}
-          assert_unauthorized
+          expect(response).to be_successful
         end
 
-        describe "with rubrics_in_course_navigation FF enabled" do
-          before { @course.root_account.enable_feature!(:rubrics_in_course_navigation) }
-
-          it "can access the rubric" do
-            get 'show', params: {id: @r.id, course_id: @course.id}
-            expect(response).to be_successful
-          end
-
-          it "does not include manage_rubrics permission" do
-            get 'show', params: {id: @r.id, course_id: @course.id}
-            expect(assigns[:js_env][:PERMISSIONS][:manage_rubrics]).to eq false
-          end
+        it "should not allow the teacher to manage_rubrics" do
+          get 'show', params: {id: @r.id, course_id: @course.id}
+          expect(assigns[:js_env][:PERMISSIONS][:manage_rubrics]).to eq false
         end
       end
     end
