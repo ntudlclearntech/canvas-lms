@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #
 # Copyright (C) 2011 - present Instructure, Inc.
 #
@@ -20,7 +22,7 @@
 # See Context::CONTEXT_TYPES below.
 module Context
 
-  CONTEXT_TYPES = [:Account, :Course, :User, :Group].freeze
+  CONTEXT_TYPES = [:Account, :Course, :CourseSection, :User, :Group].freeze
 
   ASSET_TYPES = {
       Announcement: :Announcement,

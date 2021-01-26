@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #
 # Copyright (C) 2014 - present Instructure, Inc.
 #
@@ -124,15 +126,21 @@ module Importers
         migration.add_imported_item(item)
       else
         item = outcome
+        if context.respond_to?(:root_account) && context.root_account.feature_enabled?(:outcome_alignments_course_migration)
+          migration.add_imported_item(item, key: CC::CCHelper.create_key(item, global: true))
+        end
       end
 
       # don't add a deleted outcome to an outcome group, or align it with an assignment
       # (blueprint migration will not undelete outcomes deleted downstream)
       return item if item.deleted?
 
-      log = hash[:learning_outcome_group] || context.root_outcome_group
-      outcome_link = log.add_outcome(item, migration_id: hash[:migration_id])
-      migration.add_imported_item(outcome_link)
+      # don't implicitly add an outcome to the root outcome group if it's already in an outcome group
+      if hash[:learning_outcome_group].present? || context.learning_outcome_links.not_deleted.where(content: item).none?
+        log = hash[:learning_outcome_group] || context.root_outcome_group
+        outcome_link = log.add_outcome(item, migration_id: hash[:migration_id])
+        migration.add_imported_item(outcome_link)
+      end
 
       if hash[:alignments] && !previously_imported
         alignments = hash[:alignments].sort_by{|a| a[:position].to_i}

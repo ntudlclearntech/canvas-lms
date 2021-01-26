@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #
 # Copyright (C) 2020 - present Instructure, Inc.
 #
@@ -24,8 +26,8 @@ RSpec.describe Mutations::UpdateNotificationPreferences do
     @account = Account.default
     @course = @account.courses.create!
     @teacher = @course.enroll_teacher(User.create!, enrollment_state: 'active').user
-    @account.enable_feature!(:mute_notifications_by_course)
-    @teacher.communication_channels.create!(path: 'two@example.com', path_type: 'email') { |cc| cc.workflow_state = 'active' }
+    @student = @course.enroll_student(User.create!, enrollemnt_state: 'active').user
+    communication_channel(@teacher, {username: 'two@example.com', active_cc: true})
     @notification = Notification.create!(:name => "Assignment Created", :subject => "Test", :category => 'Due Date')
   end
 
@@ -36,7 +38,11 @@ RSpec.describe Mutations::UpdateNotificationPreferences do
     enabled: nil,
     communication_channel_id: nil,
     notification_category: nil,
-    frequency: nil
+    frequency: nil,
+    user_id: nil,
+    send_scores_in_emails: nil,
+    send_observed_names_in_notifications: nil,
+    is_policy_override: nil
   )
     <<~GQL
       mutation {
@@ -48,9 +54,17 @@ RSpec.describe Mutations::UpdateNotificationPreferences do
           #{"communicationChannelId: #{communication_channel_id}" if communication_channel_id}
           #{"notificationCategory: #{notification_category}" if notification_category}
           #{"frequency: #{frequency}" if frequency}
+          #{"sendScoresInEmails: #{send_scores_in_emails}" unless send_scores_in_emails.nil?}
+          #{"sendObservedNamesInNotifications: #{send_observed_names_in_notifications}" unless send_observed_names_in_notifications.nil?}
+          #{"isPolicyOverride: #{is_policy_override}" unless is_policy_override.nil?}
         }) {
           user {
-            #{notification_preferences_str(account_id: account_id, course_id: course_id, context_type: context_type)}
+            #{notification_preferences_str(
+              account_id: account_id,
+              course_id: course_id,
+              context_type: context_type,
+              user_id: user_id
+            )}
           }
           errors {
             message
@@ -63,7 +77,8 @@ RSpec.describe Mutations::UpdateNotificationPreferences do
   def notification_preferences_str(
     account_id: nil,
     course_id: nil,
-    context_type: nil
+    context_type: nil,
+    user_id: nil
   )
     <<~GQL
       #{"notificationPreferencesEnabled(
@@ -72,6 +87,8 @@ RSpec.describe Mutations::UpdateNotificationPreferences do
         #{"accountId: #{account_id}" if account_id}
       )" if context_type && (course_id || account_id)}
       notificationPreferences {
+        sendScoresInEmails(courseId: #{course_id})
+        sendObservedNamesInNotifications
         channels {
           #{"notificationPolicyOverrides(
             contextType: #{context_type},
@@ -101,6 +118,85 @@ RSpec.describe Mutations::UpdateNotificationPreferences do
   def run_mutation(opts = {}, current_user = @teacher)
     result = CanvasSchema.execute(mutation_str(opts), context: {current_user: current_user, request: ActionDispatch::TestRequest.create})
     result.to_h.with_indifferent_access
+  end
+
+  context 'send observed names in notifications' do
+    it 'sets the user preference' do
+      @course.enroll_user(@teacher, "ObserverEnrollment", :associated_user_id => @student.id, :enrollment_state => 'active')
+      result = run_mutation(
+        user_id: @teacher.id,
+        account_id: @account.id,
+        context_type: 'Account',
+        send_observed_names_in_notifications: true
+      )
+      expect(result.dig(:data, :updateNotificationPreferences, :errors)).to be nil
+      expect(result.dig(
+        :data, :updateNotificationPreferences, :user, :notificationPreferences, :sendObservedNamesInNotifications
+      )).to be true
+      expect(@teacher.preferences[:send_observed_names_in_notifications]).to be true
+
+      result = run_mutation(
+        user_id: @teacher.id,
+        account_id: @account.id,
+        context_type: 'Account',
+        send_observed_names_in_notifications: false
+      )
+      expect(result.dig(:data, :updateNotificationPreferences, :errors)).to be nil
+      expect(result.dig(
+        :data, :updateNotificationPreferences, :user, :notificationPreferences, :sendObservedNamesInNotifications
+      )).to be false
+      expect(@teacher.preferences[:send_observed_names_in_notifications]).to be false
+    end
+  end
+
+  context 'send scores in emails' do
+    it 'sets the global setting' do
+      result = run_mutation(
+        user_id: @teacher.id,
+        account_id: @account.id,
+        context_type: 'Account',
+        send_scores_in_emails: true
+      )
+      expect(result.dig(:data, :updateNotificationPreferences, :errors)).to be nil
+      expect(result.dig(
+        :data, :updateNotificationPreferences, :user, :notificationPreferences, :sendScoresInEmails
+      )).to be true
+
+      result = run_mutation(
+        user_id: @teacher.id,
+        account_id: @account.id,
+        context_type: 'Account',
+        send_scores_in_emails: false
+      )
+      expect(result.dig(:data, :updateNotificationPreferences, :errors)).to be nil
+      expect(result.dig(
+        :data, :updateNotificationPreferences, :user, :notificationPreferences, :sendScoresInEmails
+      )).to be false
+    end
+
+    it 'sets the course override setting' do
+      result = run_mutation(
+        user_id: @teacher.id,
+        course_id: @course.id,
+        context_type: 'Course',
+        send_scores_in_emails: true
+      )
+      expect(result.dig(:data, :updateNotificationPreferences, :errors)).to be nil
+      expect(result.dig(
+        :data, :updateNotificationPreferences, :user, :notificationPreferences, :sendScoresInEmails
+      )).to be true
+
+      result = run_mutation(
+        user_id: @teacher.id,
+        course_id: @course.id,
+        context_type: 'Course',
+        send_scores_in_emails: false
+      )
+      expect(result.dig(:data, :updateNotificationPreferences, :errors)).to be nil
+      expect(result.dig(
+        :data, :updateNotificationPreferences, :user, :notificationPreferences, :sendScoresInEmails
+      )).to be false
+    end
   end
 
   context 'course' do
@@ -134,7 +230,8 @@ RSpec.describe Mutations::UpdateNotificationPreferences do
         course_id: @course.id,
         communication_channel_id: @teacher.communication_channels.first.id,
         notification_category: 'Due_Date',
-        frequency: 'daily'
+        frequency: 'daily',
+        is_policy_override: true
       )
       expect(result.dig(:data, :updateNotificationPreferences, :errors)).to be nil
       expect(
@@ -174,27 +271,19 @@ RSpec.describe Mutations::UpdateNotificationPreferences do
         account_id: @account.id,
         communication_channel_id: @teacher.communication_channels.first.id,
         notification_category: 'Due_Date',
-        frequency: 'immediately'
+        frequency: 'immediately',
+        is_policy_override: true
       )
       expect(result.dig(:data, :updateNotificationPreferences, :errors)).to be nil
       expect(
         result.dig(:data, :updateNotificationPreferences, :user, :notificationPreferences, :channels, 0, :notificationPolicyOverrides, 0, :frequency)
       ).to eq('immediately')
     end
-  end
 
-  context 'no context' do
-    it 'does not update enabled if not provided a context' do
-      result = run_mutation(enabled: false)
-      expect(result.dig(:data, :updateNotificationPreferences, :errors)).to be nil
-
-      # Enabled defaults to true when not set which is why we expect true here
-      expect(NotificationPolicyOverride.enabled_for(@teacher, @account)).to be true
-      expect(NotificationPolicyOverride.enabled_for(@teacher, @course)).to be true
-    end
-
-    it 'updates notification policies when no context is provided' do
+    it 'creates notification policies' do
       result = run_mutation(
+        context_type: 'Account',
+        account_id: @account.id,
         communication_channel_id: @teacher.communication_channels.first.id,
         notification_category: 'Due_Date',
         frequency: 'immediately'
@@ -202,12 +291,6 @@ RSpec.describe Mutations::UpdateNotificationPreferences do
       expect(result.dig(:data, :updateNotificationPreferences, :errors)).to be nil
       expect(
         result.dig(:data, :updateNotificationPreferences, :user, :notificationPreferences, :channels, 0, :notificationPolicies, 0, :frequency)
-      ).to eq('immediately')
-      expect(
-        NotificationPolicy.find_or_update_for_category(
-          @teacher.communication_channels.first,
-          'Due Date'
-        ).first.frequency
       ).to eq('immediately')
     end
   end
@@ -249,6 +332,17 @@ RSpec.describe Mutations::UpdateNotificationPreferences do
         enabled: false
       )
       expect(result.dig(:errors, 0, :message)).to eq 'not found'
+    end
+
+    it 'errors when not provided all arguments required to update a policy' do
+      result = run_mutation(
+        context_type: 'Account',
+        account_id: @account.id,
+        communication_channel_id: @teacher.communication_channels.first.id
+      )
+      expect(
+        result.dig(:data, :updateNotificationPreferences, :errors, 0, :message)
+      ).to eq 'Notification policies requires the communication channel id, the notification category, and the frequency to update'
     end
   end
 end

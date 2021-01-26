@@ -113,15 +113,26 @@ export function enhanceUserContent() {
     .each(function() {
       const $this = $(this)
       $this.find('img').each((i, img) => {
-        const handleWidth = () =>
-          $(img).css(
-            'maxWidth',
-            Math.min($content.width(), $this.width(), $(img).width() || img.naturalWidth)
-          )
+        const handleWidth = () => {
+          const maxw = Math.min($content.width(), $this.width(), $(img).width() || img.naturalWidth)
+          if (maxw > 0) {
+            $(img).css(
+              'maxWidth',
+              Math.min($content.width(), $this.width(), $(img).width() || img.naturalWidth)
+            )
+          }
+        }
         if (img.naturalWidth === 0) {
           img.addEventListener('load', handleWidth)
         } else {
           handleWidth()
+        }
+
+        // if the image file is unpublished it's replaced with the lock image
+        // and canvas adds hidden=1 to the URL.
+        // we also need to strip the alt text
+        if (/hidden=1$/.test(img.getAttribute('src'))) {
+          img.setAttribute('alt', I18n.t('This image is currently unavailable'))
         }
       })
       $this.data('unenhanced_content_html', $this.html())
@@ -239,7 +250,52 @@ export function enhanceUserContent() {
       .submit()
       .addClass('submitted')
   }, 10)
+  // Remove sandbox attribute from user content iframes to fix busted
+  // third-party content, like Google Drive documents.
+  document
+    .querySelectorAll('.user_content iframe[sandbox="allow-scripts allow-forms allow-same-origin"]')
+    .forEach(frame => {
+      frame.removeAttribute('sandbox')
+      const src = frame.src
+      frame.src = src
+    })
 }
+
+export function formatTimeAgoTitle(date) {
+  const fudgedDate = $.fudgeDateForProfileTimezone(date)
+  return fudgedDate.toString('MMM d, yyyy h:mmtt')
+}
+
+export function formatTimeAgoDate(date) {
+  if (typeof date === 'string') {
+    date = Date.parse(date)
+  }
+  const diff = new Date() - date
+  if (diff < 24 * 3600 * 1000) {
+    if (diff < 3600 * 1000) {
+      if (diff < 60 * 1000) {
+        return I18n.t('#time.less_than_a_minute_ago', 'less than a minute ago')
+      } else {
+        const minutes = parseInt(diff / (60 * 1000), 10)
+        return I18n.t(
+          '#time.count_minutes_ago',
+          {one: '1 minute ago', other: '%{count} minutes ago'},
+          {count: minutes}
+        )
+      }
+    } else {
+      const hours = parseInt(diff / (3600 * 1000), 10)
+      return I18n.t(
+        '#time.count_hours_ago',
+        {one: '1 hour ago', other: '%{count} hours ago'},
+        {count: hours}
+      )
+    }
+  } else {
+    return formatTimeAgoTitle(date)
+  }
+}
+
 $(function() {
   // handle all of the click events that were triggered before the dom was ready (and thus weren't handled by jquery listeners)
   if (window._earlyClick) {
@@ -433,8 +489,9 @@ $(function() {
       $.ajaxJSON(
         $link
           .attr('href')
-          .replace(/\/download|wrap=1/, '')
-          .replace(/[?&]wrap=1/, ''),
+          .replace(/\/download/, '') // download as part of the path
+          .replace(/wrap=1&?/, '') // wrap=1 as part of the query_string
+          .replace(/[?&]$/, ''), // any trailing chars if wrap=1 was at the end
         'GET',
         {},
         data => {
@@ -921,36 +978,10 @@ $(function() {
       const $event = $(eventElement),
         date = $event.data('parsed_date') || Date.parse($event.data('timestamp') || '')
       if (date) {
-        const diff = new Date() - date
         $event.data('timestamp', date.toISOString())
         $event.data('parsed_date', date)
-        const fudgedDate = $.fudgeDateForProfileTimezone(date)
-        const defaultDateString =
-          fudgedDate.toString('MMM d, yyyy') + fudgedDate.toString(' h:mmtt').toLowerCase()
-        let dateString = defaultDateString
-        if (diff < 24 * 3600 * 1000) {
-          if (diff < 3600 * 1000) {
-            if (diff < 60 * 1000) {
-              dateString = I18n.t('#time.less_than_a_minute_ago', 'less than a minute ago')
-            } else {
-              const minutes = parseInt(diff / (60 * 1000), 10)
-              dateString = I18n.t(
-                '#time.count_minutes_ago',
-                {one: '1 minute ago', other: '%{count} minutes ago'},
-                {count: minutes}
-              )
-            }
-          } else {
-            const hours = parseInt(diff / (3600 * 1000), 10)
-            dateString = I18n.t(
-              '#time.count_hours_ago',
-              {one: '1 hour ago', other: '%{count} hours ago'},
-              {count: hours}
-            )
-          }
-        }
-        $event.text(dateString)
-        $event.attr('title', defaultDateString)
+        $event.text(formatTimeAgoDate(date))
+        $event.attr('title', formatTimeAgoTitle(date))
       }
       setTimeout(processNextTimeAgoEvent, 1)
     } else {

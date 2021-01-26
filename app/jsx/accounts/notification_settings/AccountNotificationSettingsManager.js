@@ -22,6 +22,7 @@ import {useMutation} from 'react-apollo'
 import NotificationPreferences from 'jsx/notification_preferences/NotificationPreferences'
 import NotificationPreferencesShape from 'jsx/notification_preferences/NotificationPreferencesShape'
 import React, {useContext} from 'react'
+import {string} from 'prop-types'
 import {UPDATE_ACCOUNT_NOTIFICATION_PREFERENCES} from './graphqlData/Mutations'
 
 export default function AccountNotificationSettingsManager(props) {
@@ -49,9 +50,12 @@ export default function AccountNotificationSettingsManager(props) {
       updatePreference={(data = {}) =>
         updatePreference({
           variables: {
+            accountId: props.accountId,
             channelId: data.channel?._id,
             category: data.category?.split(' ').join('_'),
-            frequency: data.frequency
+            frequency: data.frequency,
+            sendScoresInEmails: data.sendScoresInEmails,
+            sendObservedNamesInNotifications: data.sendObservedNamesInNotifications
           }
         })
       }
@@ -61,5 +65,6 @@ export default function AccountNotificationSettingsManager(props) {
 }
 
 AccountNotificationSettingsManager.propTypes = {
+  accountId: string.isRequired,
   notificationPreferences: NotificationPreferencesShape
 }

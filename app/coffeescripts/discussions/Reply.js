@@ -26,6 +26,7 @@ import preventDefault from '../fn/preventDefault'
 import KeyboardShortcuts from '../views/editor/KeyboardShortcuts'
 import stripTags from 'str/stripTags'
 import RichContentEditor from 'jsx/shared/rce/RichContentEditor'
+import {send} from 'jsx/shared/rce/RceCommandShim'
 import 'jquery.instructure_forms'
 
 RichContentEditor.preloadRemoteModule()
@@ -69,6 +70,14 @@ class Reply {
         .toggle()
     })
     this.form.delegate('.alert .close', 'click', preventDefault(this.hideNotification))
+    this.form.on('change', 'ul.discussion-reply-attachments input[type=file]', e => {
+      this.form.find('ul.discussion-reply-attachments input[type=file]').focus()
+      if (e.target.files.length > 0) {
+        $.screenReaderFlashMessage(
+          I18n.t('File selected for upload: %{filename}', {filename: e.target.files[0].name})
+        )
+      }
+    })
     this.editing = false
 
     _.defer(this.attachKeyboardShortcuts)
@@ -153,6 +162,18 @@ class Reply {
   //
   // @api private
   submit() {
+    // Check to make sure the RCE is ready to submit
+    const rceInputs = this.discussionEntry.find('textarea[data-rich_text]').toArray()
+
+    if (rceInputs.length > 0) {
+      if (window.ENV.use_rce_enhancements) {
+        const okayToContinue = rceInputs
+          .map(rce => send($(rce), 'checkReadyToGetCode', window.confirm))
+          .every(i => i)
+        if (!okayToContinue) return
+      }
+    }
+
     this.hide()
     this.view.model.set(
       'notification',

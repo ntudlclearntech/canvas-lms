@@ -207,10 +207,15 @@ class ProfileController < ApplicationController
     js_env :enable_gravatar => @domain_root_account&.enable_gravatar?
     respond_to do |format|
       format.html do
+        @user.reload
         show_tutorial_ff_to_user = @domain_root_account&.feature_enabled?(:new_user_tutorial) &&
                                    @user.participating_instructor_course_ids.any?
-        add_crumb(t(:crumb, "%{user}'s settings", :user => @user.short_name), settings_profile_path )
-        js_env(:NEW_USER_TUTORIALS_ENABLED_AT_ACCOUNT => show_tutorial_ff_to_user)
+        add_crumb(t(:crumb, "%{user}'s settings", :user => @user.short_name), settings_profile_path)
+        js_env(
+          NEW_USER_TUTORIALS_ENABLED_AT_ACCOUNT: show_tutorial_ff_to_user,
+          NEW_FEATURES_UI: Account.site_admin.feature_enabled?(:new_features_ui),
+          CONTEXT_BASE_URL: "/users/#{@user.id}"
+        )
         render :profile
       end
       format.json do
@@ -228,10 +233,13 @@ class ProfileController < ApplicationController
     # Render updated UI if feature flag is enabled
     if Account.site_admin.feature_enabled?(:notification_update_account_ui)
       add_crumb(@current_user.short_name, profile_path)
-      add_crumb(t("Notification Preferences"))
-      js_env :NOTIFICATION_PREFERENCES_OPTIONS => {
-        :deprecate_sms_enabled => !@domain_root_account.settings[:sms_allowed] && Account.site_admin.feature_enabled?(:deprecate_sms),
-        :allowed_sms_categories => Notification.categories_to_send_in_sms(@domain_root_account),
+      add_crumb(t("Account Notification Settings"))
+      js_env NOTIFICATION_PREFERENCES_OPTIONS: {
+        deprecate_sms_enabled: !@domain_root_account.settings[:sms_allowed] && Account.site_admin.feature_enabled?(:deprecate_sms),
+        reduce_push_enabled: Account.site_admin.feature_enabled?(:reduce_push_notifications),
+        allowed_sms_categories: Notification.categories_to_send_in_sms(@domain_root_account),
+        allowed_push_categories: Notification.categories_to_send_in_push,
+        send_scores_in_emails_text: Notification.where(category: 'Grading').first.related_user_setting(@user, @domain_root_account)
       }
       js_bundle :account_notification_settings_show
       render html: '', layout: true
@@ -362,7 +370,7 @@ class ProfileController < ApplicationController
         user_params.delete(:short_name)
         user_params.delete(:sortable_name)
       end
-      if user_params[:pronouns].present? && @domain_root_account.pronouns.exclude?(user_params[:pronouns].strip)
+      if !@domain_root_account.can_change_pronouns? || user_params[:pronouns].present? && @domain_root_account.pronouns.exclude?(user_params[:pronouns].strip)
         user_params.delete(:pronouns)
       end
       if @user.update(user_params)
@@ -423,8 +431,11 @@ class ProfileController < ApplicationController
     @profile = @user.profile
     @context = @profile
 
+    if @domain_root_account.can_change_pronouns? && params[:pronouns].present? && @domain_root_account.pronouns.include?(params[:pronouns].strip)
+      @user.pronouns = params[:pronouns]
+    end
+
     short_name = params[:user] && params[:user][:short_name]
-    @user.pronouns = params[:pronouns] if params[:pronouns]
     @user.short_name = short_name if short_name && @user.user_can_edit_name?
     if params[:user_profile]
       user_profile_params = params[:user_profile].permit(:title, :bio)
@@ -436,9 +447,13 @@ class ProfileController < ApplicationController
       @profile.links = []
       params[:link_urls].zip(params[:link_titles]).
         reject { |url, title| url.blank? && title.blank? }.
-        each { |url, title|
-          @profile.links.build :url => url, :title => title
-        }
+        each do |url, title|
+          new_link = @profile.links.build :url => url, :title => title
+          # since every time we update links, we delete and recreate everything,
+          # deleting invalid link records will make sure the rest of the
+          # valid ones still save
+          new_link.delete unless new_link.valid?
+        end
     elsif params[:delete_links]
       @profile.links = []
     end
@@ -477,9 +492,6 @@ class ProfileController < ApplicationController
   private :require_user_for_private_profile
 
   def observees
-    if @domain_root_account.parent_registration?
-      js_env(AUTH_TYPE: @domain_root_account.parent_auth_type)
-    end
     @user ||= @current_user
     set_active_tab 'observees'
     @context = @user.profile if @user == @current_user

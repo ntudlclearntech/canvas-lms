@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #
 # Copyright (C) 2016 - present Instructure, Inc.
 #
@@ -551,6 +553,55 @@ describe MasterCourses::MasterMigration do
       expect(@new_assmt.reload).to_not be_deleted
     end
 
+    it "should delete an assignment group when all assignments are moved out in the same sync" do
+      @copy_to = course_factory
+      sub = @template.add_child_course!(@copy_to)
+
+      ag1 = @copy_from.assignment_groups.create!(:name => "group1")
+      a1 = @copy_from.assignments.create!(:title => "assmt1", :assignment_group => ag1)
+      ag2 = @copy_from.assignment_groups.create!(:name => "group2")
+      a2 = @copy_from.assignments.create!(:title => "assmt2", :assignment_group => ag2)
+
+      run_master_migration
+
+      ag1_to = @copy_to.assignment_groups.where(:migration_id => mig_id(ag1)).first
+      ag2_to = @copy_to.assignment_groups.where(:migration_id => mig_id(ag2)).first
+      a2_to = ag2_to.assignments.first
+
+      Timecop.freeze(30.seconds.from_now) do
+        a2.update_attribute(:assignment_group, ag1)
+        ag2.reload.destroy
+      end
+
+      run_master_migration
+
+      expect(ag2_to.reload).to be_deleted # should still delete
+      expect(a2_to.reload.assignment_group).to eq ag1_to
+      expect(a2_to).to be_active
+    end
+
+    it "shouldn't import into a deleted downstream assignment group" do
+      @copy_to = course_factory
+      sub = @template.add_child_course!(@copy_to)
+
+      ag1 = @copy_from.assignment_groups.create!(:name => "group1")
+      a1 = @copy_from.assignments.create!(:title => "assmt1", :assignment_group => ag1)
+
+      run_master_migration
+
+      ag1_to = @copy_to.assignment_groups.where(:migration_id => mig_id(ag1)).first
+      ag1_to.destroy
+
+      Timecop.freeze(30.seconds.from_now) do
+        @a2 = @copy_from.assignments.create!(:title => "assmt2", :assignment_group => ag1)
+      end
+
+      run_master_migration
+
+      a2_to = @copy_to.assignments.where(:migration_id => mig_id(@a2)).first
+      expect(a2_to.assignment_group).to be_available
+    end
+
     it "shouldn't change assignment group weights and rules if changed downstream" do
       @copy_to = course_factory
       sub = @template.add_child_course!(@copy_to)
@@ -568,7 +619,7 @@ describe MasterCourses::MasterMigration do
 
       # check that syncs still work before we change downstream
       Timecop.freeze(30.seconds.from_now) do
-        ag1.update_attributes(:rules => "drop_lowest:2\n", :group_weight => 75)
+        ag1.update(:rules => "drop_lowest:2\n", :group_weight => 75)
       end
       run_master_migration
       expect(ag1_to.reload.group_weight).to eq 75
@@ -577,11 +628,32 @@ describe MasterCourses::MasterMigration do
       # change downstream
       Timecop.freeze(30.seconds.from_now) do
         ag1.touch
-        ag1_to.update_attributes(:rules => "drop_lowest:3\n", :group_weight => 25)
+        ag1_to.update(:rules => "drop_lowest:3\n", :group_weight => 25)
       end
       run_master_migration
       expect(ag1_to.reload.group_weight).to eq 25 # should not have reverted from downstream change
       expect(ag1_to.rules).to eq "drop_lowest:3\n"
+    end
+
+    it "doesn't overwrite weights and rules of an assignment group with a similar name on initial sync" do
+      @copy_to = course_factory
+      sub = @template.add_child_course!(@copy_to)
+
+      ag1 = @copy_from.assignment_groups.create!(:name => "group1", :group_weight => 50)
+      a1 = @copy_from.assignments.create!(:title => "assmt1", :assignment_group => ag1)
+      ag1.update_attribute(:rules, "drop_lowest:1\nnever_drop:#{a1.id}\n")
+
+      ag1_assimilation_target = @copy_to.assignment_groups.create!(:name => "group1", :group_weight => 33)
+      ag1_assimilation_target.update_attribute(:rules, "drop_highest:1\n")
+
+      run_master_migration
+
+      ag1_to = @copy_to.assignment_groups.where(:migration_id => mig_id(ag1)).first
+      expect(ag1_to).to eq ag1_assimilation_target
+      expect(ag1_to.group_weight).to eq 33
+      expect(ag1_to.rules).to eq "drop_highest:1\n"
+      a1_to = ag1_to.assignments.first
+      expect(a1_to).to be
     end
 
     it "should sync unpublished quiz points possible" do
@@ -737,6 +809,15 @@ describe MasterCourses::MasterMigration do
 
         expect(@outcome_to.reload).to be_deleted
         expect(@og_to.child_outcome_links.not_deleted.where(content_type: 'LearningOutcome', content_id: @outcome_to)).not_to be_any
+      end
+
+      it "doesn't spuriously add the outcome to the root outcome group" do
+        Timecop.freeze(3.minutes.from_now) do
+          @outcome.touch
+        end
+        run_master_migration
+
+        expect(@copy_to.learning_outcome_links.where(content: @outcome_to).count).to eq 1
       end
     end
 
@@ -1393,7 +1474,7 @@ describe MasterCourses::MasterMigration do
       expect(assignment_to.reload).to be_deleted
       topic_tag = MasterCourses::ChildContentTag.where(content_type: 'DiscussionTopic', content_id: topic_to.id).take
       expect(topic_tag.downstream_changes).to include 'assignment_id'
-      assign_tag = MasterCourses::ChildContentTag.where(content_id: 'Assignment', content_id: assignment_to.id).take
+      assign_tag = MasterCourses::ChildContentTag.where(content_type: 'Assignment', content_id: assignment_to.id).take
       expect(assign_tag.downstream_changes).to include 'workflow_state'
 
       Timecop.travel(1.hour.from_now) do
@@ -1858,6 +1939,25 @@ describe MasterCourses::MasterMigration do
       expect(tag2_to.reload.position).to eq 1
     end
 
+    it "should try to properly append on the end even if the destination module item positions are lying" do
+      @copy_to = course_factory
+      sub = @template.add_child_course!(@copy_to)
+      mod = @copy_from.context_modules.create!(:name => "module")
+      tag1 = mod.add_item(type: 'context_module_sub_header', title: 'header')
+      tag2 = mod.add_item(type: 'context_module_sub_header', title: 'header2')
+
+      run_master_migration
+      @copy_to.context_modules.first.content_tags.update_all(:position => 1)
+
+      tag3 = mod.add_item(type: 'context_module_sub_header', title: 'header3') # should add at end
+      Timecop.freeze(2.seconds.from_now) do
+        mod.touch
+      end
+      run_master_migration
+      tag3_to = @copy_to.context_module_tags.where(:migration_id => mig_id(tag3)).first
+      expect(tag3_to.reload.position).to eq 3
+    end
+
     it "should be able to delete modules" do
       @copy_to = course_factory
       sub = @template.add_child_course!(@copy_to)
@@ -2241,7 +2341,7 @@ describe MasterCourses::MasterMigration do
       mod1 = @copy_from.context_modules.create! :name => 'mod'
       page = @copy_from.wiki_pages.create!(:title => "some page")
       page_tag = mod1.add_item({:id => page.id, :type => 'wiki_page', :indent => 1})
-      mod1.update_attributes(:completion_requirements => [{:id => page_tag.id, :type => 'must_view'}])
+      mod1.update(:completion_requirements => [{:id => page_tag.id, :type => 'must_view'}])
 
       run_master_migration
 
@@ -2250,7 +2350,7 @@ describe MasterCourses::MasterMigration do
       expect(mod1_to.completion_requirements).to eq([{:id => page_tag_to.id, :type => 'must_view'}])
 
       Timecop.freeze(1.minute.from_now) do
-        mod1.update_attributes(:completion_requirements => [])
+        mod1.update(:completion_requirements => [])
       end
       run_master_migration
       expect(mod1_to.reload.completion_requirements).to eq([])
@@ -2420,6 +2520,106 @@ describe MasterCourses::MasterMigration do
       expect(sub.reload.cached_due_date.to_i).to eq due_at.to_i
     end
 
+    it "handles downstream changes of ungraded discussion dates correctly" do
+      date1 = 1.week.ago.at_noon
+      date2 = 2.weeks.ago.at_noon
+      copy_to = course_factory
+      sub = @template.add_child_course!(copy_to)
+      topic = @copy_from.discussion_topics.create!(lock_at: date1)
+      run_master_migration
+      topic_to = copy_to.discussion_topics.where(migration_id: mig_id(topic)).take
+
+      # ensure schedule_delayed_transitions does not cause a spurious downstream change record
+      expect(sub.child_content_tags.polymorphic_where(content: topic_to).take.downstream_changes).to eq([])
+
+      Timecop.travel(5.minutes.from_now) do
+        # now actually make a downstream change
+        topic.touch
+        topic_to.lock_at = date2
+        topic_to.save!
+        run_master_migration
+        expect(topic_to.reload.lock_at).to eq date2
+        expect(sub.child_content_tags.polymorphic_where(content: topic_to).take.downstream_changes).to eq(['lock_at'])
+      end
+
+      # lock the availability dates and ensure the downstream change is overwritten
+      Timecop.travel(10.minutes.from_now) do
+        @template.content_tag_for(topic).update_attribute(:restrictions, {:availability_dates => true})
+        topic.touch
+        run_master_migration
+        expect(sub.child_content_tags.polymorphic_where(content: topic_to).take.downstream_changes).to eq([])
+        expect(topic_to.reload.lock_at).to eq date1
+      end
+    end
+
+    context "attachment migration id preservation" do
+      def run_course_copy(copy_from, copy_to)
+        @cm = ContentMigration.new(:context => copy_to, :user => @user, :source_course => copy_from,
+          :migration_type => 'course_copy_importer', :copy_options => {:everything => "1"})
+        @cm.migration_settings[:import_immediately] = true
+        @cm.set_default_settings
+        @cm.save!
+        worker = Canvas::Migration::Worker::CourseCopyWorker.new
+        worker.perform(@cm)
+      end
+
+      it "should not overwrite blueprint attachment migration ids from other course copies" do
+        att = Attachment.create!(:filename => 'first.txt', :uploaded_data => StringIO.new('ohai'), :folder => Folder.unfiled_folder(@copy_from), :context => @copy_from)
+
+        @copy_to = course_factory(:active_all => true)
+        @sub = @template.add_child_course!(@copy_to)
+
+        run_master_migration
+
+        att_to = @copy_to.attachments.where(:migration_id => mig_id(att)).take
+
+        @other_copy_from = course_factory(:active_all => true)
+        run_course_copy(@copy_from, @other_copy_from)
+        impostor_att = @other_copy_from.attachments.last
+
+        run_course_copy(@other_copy_from, @copy_to)
+        expect(att_to.reload.migration_id).to eq mig_id(att) # should not have changed
+
+        impostor_att_to = @copy_to.attachments.where(:migration_id => CC::CCHelper.create_key(impostor_att, global: true)).first
+        expect(impostor_att_to.id).to_not eq att_to.id # should make a copy
+        expect(impostor_att_to.display_name).to_not eq att_to.display_name
+      end
+
+      def import_package(course)
+        cm = ContentMigration.create!(context: course, user: @user)
+        cm.migration_type = 'canvas_cartridge_importer'
+        cm.migration_settings['import_immediately'] = true
+        cm.save!
+
+        package_path = File.join(File.dirname(__FILE__) + "/../../fixtures/migration/canvas_attachment.zip")
+        attachment = Attachment.create!(:context => cm, :uploaded_data => File.open(package_path, 'rb'), :filename => 'file.zip')
+        cm.attachment = attachment
+        cm.save!
+        cm.queue_migration
+        run_jobs
+      end
+
+      it "should not overwrite blueprint attachment migration ids from other canvas package imports" do
+        import_package(@copy_from)
+        att = @copy_from.attachments.first
+
+        course_factory(:active_all => true)
+        @copy_to = @course
+        @sub = @template.add_child_course!(@copy_to)
+
+        run_master_migration
+
+        att_to = @copy_to.attachments.where(:migration_id => mig_id(att)).take
+
+        import_package(@copy_to)
+        expect(att_to.reload.migration_id).to eq mig_id(att) # should not have changed
+
+        impostor_att_to = @copy_to.attachments.where(:migration_id => att.migration_id).first # package should make a copy
+        expect(impostor_att_to.id).to_not eq att_to.id
+        expect(impostor_att_to.display_name).to_not eq att_to.display_name
+      end
+    end
+
     context "caching" do
       specs_require_cache(:redis_cache_store)
 
@@ -2490,11 +2690,9 @@ describe MasterCourses::MasterMigration do
       n1 = Notification.create(:name => "Blueprint Content Added")
       @admin = @user
       course_with_teacher :active_all => true
-      sub = @template.add_child_course!(@course)
-      cc0 = @admin.communication_channels.create(:path => "test_#{@admin.id}@example.com", :path_type => "email")
-      cc0.confirm
-      cc1 = @user.communication_channels.create(:path => "test_#{@user.id}@example.com", :path_type => "email")
-      cc1.confirm
+      @template.add_child_course!(@course)
+      cc0 = communication_channel(@admin, {username: "test_#{@admin.id}@example.com", active_cc: true})
+      cc1 = communication_channel(@user, {username: "test_#{@user.id}@example.com", active_cc: true})
       run_master_migration :comment => "ohai eh", :send_notification => true
       expect(DelayedMessage.where(notification_id: n0, communication_channel_id: cc0).last.summary).to include "ohai eh"
       expect(DelayedMessage.where(notification_id: n1, communication_channel_id: cc1).last.summary).to include "ohai eh"

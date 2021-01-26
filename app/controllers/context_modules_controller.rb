@@ -28,7 +28,7 @@ class ContextModulesController < ApplicationController
     include ContextModulesHelper
 
     def load_module_file_details
-      attachment_tags = Shackles.activate(:slave) { @context.module_items_visible_to(@current_user).where(content_type: 'Attachment').preload(:content => :folder).to_a }
+      attachment_tags = GuardRail.activate(:secondary) { @context.module_items_visible_to(@current_user).where(content_type: 'Attachment').preload(:content => :folder).to_a }
       attachment_tags.inject({}) do |items, file_tag|
         items[file_tag.id] = {
           id: file_tag.id,
@@ -72,7 +72,7 @@ class ContextModulesController < ApplicationController
 
       @menu_tools = {}
       placements = [:assignment_menu, :discussion_topic_menu, :file_menu, :module_menu, :quiz_menu, :wiki_page_menu]
-      tools = Shackles.activate(:slave) do
+      tools = GuardRail.activate(:secondary) do
         ContextExternalTool.all_tools_for(@context, placements: placements,
           :root_account => @domain_root_account, :current_user => @current_user).to_a
       end
@@ -145,10 +145,7 @@ class ContextModulesController < ApplicationController
         # locked assignments always have 0 sets, so this check makes it not return 404 if locked
         # but instead progress forward and return a warning message if is locked later on
         if rule.present? && (rule[:locked] || !rule[:selected_set_id] || rule[:assignment_sets].length > 1)
-          if ConditionalRelease::Assimilator.assimilation_in_progress?(@context.root_account)
-            flash[:warning] = t('Mastery paths selection has been temporarily disabled for maintenance.')
-            return redirect_to named_context_url(@context, :context_context_modules_url)
-          elsif !rule[:locked]
+          if !rule[:locked]
             options = rule[:assignment_sets].map { |set|
               option = {
                 setId: set[:id]
@@ -306,7 +303,7 @@ class ContextModulesController < ApplicationController
       @context.touch
 
       # # Background this, not essential that it happen right away
-      # ContextModule.send_later(:update_tag_order, @context)
+      # ContextModule.delay.update_tag_order(@context)
       render :json => @modules.map{ |m| m.as_json(include: :content_tags, methods: :workflow_state) }
     end
   end
@@ -315,7 +312,7 @@ class ContextModulesController < ApplicationController
     if authorized_action(@context, @current_user, :read)
       info = {}
 
-      all_tags = Shackles.activate(:slave) { @context.module_items_visible_to(@current_user).to_a }
+      all_tags = GuardRail.activate(:secondary) { @context.module_items_visible_to(@current_user).to_a }
       user_is_admin = @context.grants_right?(@current_user, session, :read_as_admin)
 
       ActiveRecord::Associations::Preloader.new.preload(all_tags, :content)
@@ -371,7 +368,7 @@ class ContextModulesController < ApplicationController
       is_master_course = MasterCourses::MasterTemplate.is_master_course?(@context)
 
       if is_child_course || is_master_course
-        tag_ids = Shackles.activate(:slave) do
+        tag_ids = GuardRail.activate(:secondary) do
           tag_scope = @context.module_items_visible_to(@current_user).where(:content_type => %w{Assignment Attachment DiscussionTopic Quizzes::Quiz WikiPage})
           tag_scope = tag_scope.where(:id => params[:tag_id]) if params[:tag_id]
           tag_scope.pluck(:id)
@@ -465,22 +462,35 @@ class ContextModulesController < ApplicationController
     render :json => res
   end
 
+  def collapse(mod, should_collapse)
+    progression = mod.evaluate_for(@current_user)
+    progression ||= ContextModuleProgression.new
+    if value_to_boolean(should_collapse)
+      progression.collapse!(skip_save: progression.new_record?)
+    else
+      progression.uncollapse!(skip_save: progression.new_record?)
+    end
+    return progression
+  end
+
   def toggle_collapse
     if authorized_action(@context, @current_user, :read)
+      return unless params.key?(:collapse)
       @module = @context.modules_visible_to(@current_user).find(params[:context_module_id])
-      @progression = @module.evaluate_for(@current_user) #context_module_progressions.find_by_user_id(@current_user)
-      @progression ||= ContextModuleProgression.new
-      if params[:collapse] == '1'
-        @progression.collapsed = true
-      elsif params[:collapse]
-        @progression.uncollapse!
-      else
-        @progression.collapsed = !@progression.collapsed
-      end
-      @progression.save unless @progression.new_record?
+      progression = collapse(@module, params[:collapse])
       respond_to do |format|
         format.html { redirect_to named_context_url(@context, :context_context_modules_url) }
-        format.json { render :json => (@progression.collapsed ? @progression : @module.content_tags_visible_to(@current_user) )}
+        format.json { render :json => (progression.collapsed ? progression : @module.content_tags_visible_to(@current_user))}
+      end
+    end
+  end
+
+  def toggle_collapse_all
+    if authorized_action(@context, @current_user, :read)
+      return unless params.key?(:collapse)
+      @modules = @context.modules_visible_to(@current_user)
+      @modules.each do |mod|
+        collapse(mod, params[:collapse])
       end
     end
   end
@@ -571,7 +581,8 @@ class ContextModulesController < ApplicationController
     if authorized_action(@module, @current_user, :update)
       @tag = @module.add_item(params[:item])
       unless @tag&.valid?
-        return render :json => @tag.errors, :status => :bad_request
+        body = @tag.nil? ? { error: "Could not find item to tag" } : @tag.errors
+        return render :json => body, :status => :bad_request
       end
       json = @tag.as_json
       json['content_tag'].merge!(

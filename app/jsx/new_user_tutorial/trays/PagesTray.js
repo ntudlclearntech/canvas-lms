@@ -33,7 +33,6 @@ const PagesTray = () => (
           'https://docs.google.com/document/d/1_pgN6BAVIK4RmJzVy6DUs5HV8e25zTiLoc287QnMgzk/edit#heading=h.kq9xgh62ph56'
         )
       }
-
     ]}
   >
     {I18n.t(`Teachers and TAs can build Pages containing content and educational

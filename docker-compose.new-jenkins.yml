@@ -18,6 +18,7 @@ services:
       MAX_FAIL:
       COVERAGE:
       FORCE_FAILURE:
+      CANVAS_RAILS6_0:
 
       # parallel_tests
       CI_NODE_TOTAL:
@@ -25,6 +26,8 @@ services:
       DOCKER_PROCESSES:
       EXCLUDE_TESTS:
       TEST_PATTERN:
+      # rspec-parallel-log build
+      RSPEC_LOG:
     # this will stop passenger from booting so the container isn't running anything at all once up
     command: sleep infinity
     init: true
@@ -34,18 +37,19 @@ services:
     init: true
 
   postgres:
-    image: starlord.inscloudgate.net/jenkins/postgis:$POSTGRES-${POSTGIS:-2.5}
+    image: $POSTGRES_IMAGE_TAG
     environment:
+      PGDATA: /data
       POSTGRES_PASSWORD: $POSTGRES_PASSWORD
     init: true
 
   cassandra:
-    image: starlord.inscloudgate.net/jenkins/cassandra:2.2
+    image: $CASSANDRA_IMAGE_TAG
     environment:
       CASSANDRA_START_RPC: 'true'
     init: true
 
   dynamodb:
-    image: starlord.inscloudgate.net/jenkins/dynamodb-local
+    image: $DYNAMODB_IMAGE_TAG
     command: -jar DynamoDBLocal.jar
     init: true

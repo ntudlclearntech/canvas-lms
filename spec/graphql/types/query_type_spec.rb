@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #
 # Copyright (C) 2017 - present Instructure, Inc.
 #
@@ -39,6 +41,36 @@ describe Types::QueryType do
         context: {current_user: teacher}
       ).dig("data", "allCourses").map { |c| c["_id"] }
     ).to match_array [test_course_1, test_course_2].map(&:to_param)
+  end
+
+  context "OutcomeCalculationMethod" do
+    it "works" do
+      @course = Course.create! name: "TEST"
+      @admin = account_admin_user(account: @course.account)
+      @calc_method = outcome_calculation_method_model(@course.account)
+
+      expect(
+        CanvasSchema.execute(
+          "{ outcomeCalculationMethod(id: #{@calc_method.id}) { _id } }",
+          context: {current_user: @admin}
+        ).dig("data", "outcomeCalculationMethod", "_id")
+      ).to eq @calc_method.id.to_s
+    end
+  end
+
+  context "OutcomeProficiency" do
+    it "works" do
+      @course = Course.create! name: "TEST"
+      @admin = account_admin_user(account: @course.account)
+      @proficiency = outcome_proficiency_model(@course.account)
+
+      expect(
+        CanvasSchema.execute(
+          "{ outcomeProficiency(id: #{@proficiency.id}) { _id } }",
+          context: {current_user: @admin}
+        ).dig("data", "outcomeProficiency", "_id")
+      ).to eq @proficiency.id.to_s
+    end
   end
 
   context "sisId" do

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #
 # Copyright (C) 2019 - present Instructure, Inc.
 #
@@ -39,11 +41,25 @@ describe Types::AccountType do
     expect(account_type.resolve(:name, current_user: @student)).to be_nil
   end
 
+  it 'works for field outcome_proficiency' do
+    outcome_proficiency_model(account)
+    expect(account_type.resolve('outcomeProficiency { _id }')).to eq account.outcome_proficiency.id.to_s
+  end
+
   it 'works for field proficiency_ratings_connection' do
     outcome_proficiency_model(account)
     expect(
       account_type.resolve('proficiencyRatingsConnection { nodes { _id } }').sort
     ).to eq OutcomeProficiencyRating.all.map { |r| r.id.to_s }.sort
+  end
+
+  context 'outcome_calculation_method field' do
+    it 'works' do
+      outcome_calculation_method_model(account)
+      expect(
+        account_type.resolve('outcomeCalculationMethod { _id }')
+      ).to eq account.outcome_calculation_method.id.to_s
+    end
   end
 
   it 'works for courses' do
@@ -56,6 +72,10 @@ describe Types::AccountType do
 
   it 'works for subaccounts' do
     expect(account_type.resolve('subAccountsConnection { nodes { _id } }')).to eq [@sub_account.id.to_s]
+  end
+
+  it 'works for root_outcome_group' do
+    expect(account_type.resolve('rootOutcomeGroup { _id }')).to eq account.root_outcome_group.id.to_s
   end
 
   context "sis field" do

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #
 # Copyright (C) 2015 - present Instructure, Inc.
 #
@@ -248,7 +250,7 @@ describe AcademicBenchmark::Converter do
         document: 'document',
         user: @user
       )[0]
-      expect(cm.root_account_id).to be_nil
+      expect(cm.root_account_id).to eq 0
     end
   end
 end
