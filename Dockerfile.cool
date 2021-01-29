@@ -92,6 +92,5 @@ RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 561F9B9CAC
   && apt-get install -y libapache2-mod-xsendfile
 
 CMD ./config.sh \
-  && chown -R canvasuser:canvasuser config/ \
   && RAILS_ENV=production bundle exec rake css:compile \
   && bundle exec passenger start
