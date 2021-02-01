@@ -62,19 +62,20 @@ RUN apt-get update && apt-get install -y apt-utils tzdata \
   && apt-get install -y software-properties-common \
   && add-apt-repository ppa:brightbox/ruby-ng \
   && apt-get update \
-  # Install Ruby 2.4
-  && apt-get install -y ruby2.4 ruby2.4-dev zlib1g-dev libxml2-dev libsqlite3-dev libpq-dev libxmlsec1-dev curl make g++ \
-  && rm -rf /usr/bin/ruby && ln -s /usr/bin/ruby2.4 /usr/bin/ruby\
+  # Install Ruby 2.6
+  && apt-get install -y ruby2.6 ruby2.6-dev zlib1g-dev libxml2-dev libsqlite3-dev libpq-dev libxmlsec1-dev curl make g++ \
+  && rm -rf /usr/bin/ruby && ln -s /usr/bin/ruby2.6 /usr/bin/ruby\
   # Install Node.js
-  && curl -sL https://deb.nodesource.com/setup_10.x | bash - \
+  && curl -sL https://deb.nodesource.com/setup_12.x | bash - \
   && apt-get install -y nodejs \
   # 3-2. Ruby Gems
-  && gem2.4 install bundler --version 1.13.6 \
-  && bundle _1.13.6_ install --path vendor/bundle \
+  && gem2.6 install bundler --version 2.1.4 \
+  && bundle _2.1.4_ config set path 'vendor/bundle' \
+  && bundle _2.1.4_ install \
   # 3-3. Yarn Installation
   && curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - \
   && echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list \
-  && apt-get update && apt-get install -y yarn=1.10.1-1 \
+  && apt-get update && apt-get install -y yarn=1.19.1-1 \
   # Install Python
   && apt-get install -y python python-lxml python-pygments \
   # Install node modules
