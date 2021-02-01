@@ -3,6 +3,9 @@ version: '2'
 x-default:
   &default-setting
   image: ${CANVAS_LMS_CI_REGISTRY_IMAGE}:${CANVAS_LMS_IMAGE_TAG}
+  group_add:
+    - canvasuser
+  user: canvasuser
   links:
     - redis
   logging:
