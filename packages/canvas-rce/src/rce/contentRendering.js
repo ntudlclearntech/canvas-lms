@@ -24,7 +24,7 @@ import {
   VIDEO_SIZE_DEFAULT,
   AUDIO_PLAYER_SIZE
 } from './plugins/instructure_record/VideoOptionsTray/TrayController'
-import {isAudio} from './plugins/shared/fileTypeUtils'
+import {mediaPlayerURLFromFile} from './plugins/shared/fileTypeUtils'
 import {prepEmbedSrc, prepLinkedSrc} from '../common/fileUrl'
 
 export function renderLink(data, contents) {
@@ -66,16 +66,20 @@ export function renderLinkedImage(linkElem, image) {
 }
 
 export function constructJSXImageElement(image, opts = {}) {
-  const {href, url, title, display_name, alt_text, link, ...otherAttributes} = image
+  const {
+    href,
+    url,
+    title,
+    display_name,
+    alt_text,
+    isDecorativeImage,
+    link,
+    ...otherAttributes
+  } = image
   const src = href || url
-  let altText = title || display_name
-  if (alt_text) {
-    if (alt_text.decorativeSelected) {
-      altText = alt_text.altText || ' '
-      otherAttributes.role = 'presentation'
-    } else {
-      altText = alt_text.altText
-    }
+  const altText = alt_text || title || display_name || ''
+  if (isDecorativeImage) {
+    otherAttributes.role = 'presentation'
   }
 
   const ret = (
@@ -96,16 +100,8 @@ export function renderImage(image, opts) {
   return renderToStaticMarkup(constructJSXImageElement(image, opts))
 }
 
-export function mediaIframeSrcFromFile(fileProps) {
-  const type = isAudio(fileProps.content_type || fileProps.type) ? 'audio' : 'video'
-  if (fileProps.embedded_iframe_url) {
-    return `${fileProps.embedded_iframe_url}?type=${type}`
-  }
-  return `/media_objects_iframe?mediahref=${encodeURIComponent(fileProps.href)}&type=${type}`
-}
-
 export function renderVideo(video) {
-  const src = mediaIframeSrcFromFile(video)
+  const src = mediaPlayerURLFromFile(video)
   return `
   <iframe
       allow="fullscreen"
@@ -118,14 +114,14 @@ export function renderVideo(video) {
   };display:inline-block;"
       title="${formatMessage('Video player for {title}', {
         title: video.title || video.name || video.text
-      })}"></iframe>&nbsp;
+      })}"></iframe>
   `
     .trim()
     .replace(/\s+/g, ' ')
 }
 
 export function renderAudio(audio) {
-  const src = mediaIframeSrcFromFile(audio)
+  const src = mediaPlayerURLFromFile(audio)
   return `
   <iframe
       data-media-id="${audio.media_id || audio.id || audio.file_id}"
@@ -136,7 +132,7 @@ export function renderAudio(audio) {
   };display:inline-block;"
       title="${formatMessage('Audio player for {title}', {
         title: audio.title || audio.name || audio.text
-      })}"></iframe>&nbsp;
+      })}"></iframe>
   `
     .trim()
     .replace(/\s+/g, ' ')

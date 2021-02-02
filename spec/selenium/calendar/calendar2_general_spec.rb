@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #
 # Copyright (C) 2014 - present Instructure, Inc.
 #
@@ -21,6 +23,10 @@ require File.expand_path(File.dirname(__FILE__) + '/../helpers/calendar2_common'
 describe "calendar2" do
   include_context "in-process server selenium tests"
   include Calendar2Common
+
+  before(:once) do
+    Account.find_or_create_by!(id: 0).update_attributes(name: 'Dummy Root Account', workflow_state: 'deleted', root_account_id: nil)
+  end
 
   before(:each) do
     # or some stuff we need to click is "below the fold"
@@ -285,6 +291,8 @@ describe "calendar2" do
     end
 
     it "graded discussion appears on all calendars", priority: "1", test_id: 138851 do
+      skip('LS-1257 - 7/29/2020')
+
       create_graded_discussion
 
       # Even though graded discussion overwrites its assignment's title, less fragile to grab discussion's title
@@ -292,6 +300,8 @@ describe "calendar2" do
     end
 
     it "event appears on all calendars", priority: "1", test_id: 138846 do
+      skip('LS-1257 - 7/29/2020')
+
       title = 'loom'
       due_time = 5.minutes.from_now
       @course.calendar_events.create!(title: title, start_at: due_time)
@@ -300,6 +310,8 @@ describe "calendar2" do
     end
 
     it "assignment appears on all calendars", priority: "1", test_id: 238862 do
+      skip('LS-1257 - 7/29/2020')
+
       title = 'Zak McKracken'
       due_time = 5.minutes.from_now
       @assignment = @course.assignments.create!(name: title, due_at: due_time)
@@ -308,6 +320,8 @@ describe "calendar2" do
     end
 
     it "quiz appears on all calendars", priority: "1", test_id: 238863 do
+      skip('LS-1257 - 7/29/2020')
+
       create_quiz
 
       assert_views(@quiz.title,@quiz.due_at)

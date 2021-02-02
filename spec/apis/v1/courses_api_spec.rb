@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #
 # Copyright (C) 2011 - 2014 Instructure, Inc.
 #
@@ -2688,10 +2690,10 @@ describe CoursesController, type: :request do
         }
       end
 
-      it "returns an error when search_term is fewer than 3 characters" do
-        json = api_call(:get, api_url, api_route, {:search_term => 'ab'}, {}, :expected_status => 400)
+      it "returns an error when search_term is fewer than 2 characters" do
+        json = api_call(:get, api_url, api_route, {:search_term => 'a'}, {}, :expected_status => 400)
         error = json["errors"].first
-        verify_json_error(error, "search_term", "invalid", "3 or more characters is required")
+        verify_json_error(error, "search_term", "invalid", "2 or more characters is required")
       end
 
       it "returns a list of users" do
@@ -3526,7 +3528,8 @@ describe CoursesController, type: :request do
       expect(json).to have_key 'tabs'
       expected_tabs = [
         "home", "announcements", "assignments", "discussions", "grades", "people",
-        "pages", "files", "syllabus", "outcomes", "quizzes", "modules", "settings"
+        "pages", "files", "syllabus", "outcomes", "quizzes", "modules", "settings",
+        "rubrics"
       ]
       expect(json['tabs'].map{ |tab| tab['id'] }).to match_array(expected_tabs)
     end
@@ -3580,8 +3583,9 @@ describe CoursesController, type: :request do
       end
 
       it "should 404 for bad account id" do
-        json = api_call(:get, "/api/v1/accounts/0/courses/#{@course.id}.json",
-                          {:controller => 'courses', :action => 'show', :id => @course.id.to_param, :format => 'json', :account_id => '0'},
+        bad_account_id = Account.last.id + 9999
+        json = api_call(:get, "/api/v1/accounts/#{bad_account_id}/courses/#{@course.id}.json",
+                          {:controller => 'courses', :action => 'show', :id => @course.id.to_param, :format => 'json', :account_id => bad_account_id.to_s},
                           {}, {}, :expected_status => 404)
       end
 

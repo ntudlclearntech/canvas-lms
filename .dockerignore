@@ -8,6 +8,9 @@ build/
 !build/vendor/woff-code-latest.zip
 !build/gergich/
 !build/new-jenkins/
+!build/docker_utils.rb
+!build/dockerfile_writer.rb
+!build/Dockerfile.template
 docker-compose/
 !docker-compose/config/*
 docker-compose.local.*.yml

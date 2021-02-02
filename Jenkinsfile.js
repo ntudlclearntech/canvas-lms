@@ -18,8 +18,9 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-library "canvas-builds-library"
+library "canvas-builds-library@${env.CANVAS_BUILDS_REFSPEC}"
 
+def COFFEE_NODE_COUNT = 4
 def DEFAULT_NODE_COUNT = 1
 def JSG_NODE_COUNT = 3
 
@@ -47,93 +48,111 @@ def makeKarmaStage(group, ciNode, ciTotal) {
   }
 }
 
+def cleanupFn() {
+  timeout(time: 5) {
+    try {
+      if(env.TEST_SUITE != 'upload') {
+        archiveArtifacts artifacts: 'tmp/**/*.xml'
+        junit "tmp/**/*.xml"
+        sh 'find ./tmp -path "*.xml"'
+      }
+    } finally {
+      execute 'bash/docker-cleanup.sh --allow-failure'
+    }
+  }
+}
+
 pipeline {
-  agent { label 'canvas-docker' }
+  agent none
   options { ansiColor('xterm') }
 
   environment {
-    COMPOSE_FILE = 'docker-compose.new-jenkins.canvas.yml:docker-compose.new-jenkins-karma.yml'
+    COMPOSE_DOCKER_CLI_BUILD=1
+    COMPOSE_FILE = 'docker-compose.new-jenkins-js.yml'
+    DOCKER_BUILDKIT=1
     FORCE_FAILURE = configuration.forceFailureJS()
+    PROGRESS_NO_TRUNC=1
     SENTRY_URL="https://sentry.insops.net"
     SENTRY_ORG="instructure"
     SENTRY_PROJECT="master-javascript-build"
   }
 
   stages {
-    stage('Setup') {
+    stage('Environment') {
       steps {
-        cleanAndSetup()
-        timeout(time: 10) {
-          sh 'rm -vrf ./tmp/*'
-          sh './build/new-jenkins/docker-with-flakey-network-protection.sh pull $PATCHSET_TAG'
-          sh 'docker-compose build'
-        }
-      }
-    }
+        script {
+          protectedNode('canvas-docker', { cleanupFn() }) {
+            stage('Setup') {
+              cleanAndSetup()
+              timeout(time: 10) {
+                sh 'rm -vrf ./tmp/*'
+                def refspecToCheckout = env.GERRIT_PROJECT == "canvas-lms" ? env.JENKINSFILE_REFSPEC : env.CANVAS_LMS_REFSPEC
 
-    stage('Test Stage Coordinator') {
-      steps {
-        timeout(time: 60) {
-          script {
-            def tests = [:]
+                checkoutRepo("canvas-lms", refspecToCheckout, 1)
 
-            if(env.TEST_SUITE == 'jest') {
-              tests['Jest'] = {
-                withEnv(['CONTAINER_NAME=tests-jest']) {
-                  try {
-                    credentials.withSentryCredentials {
-                      sh 'build/new-jenkins/js/tests-jest.sh'
-                    }
-                  } finally {
-                    copyFiles(env.CONTAINER_NAME, 'coverage-js', "./tmp/${env.CONTAINER_NAME}")
-                  }
-                }
+                sh 'docker-compose build'
               }
             }
 
-            if(env.TEST_SUITE == 'karma') {
-              tests['Packages'] = {
-                withEnv(['CONTAINER_NAME=tests-packages']) {
-                  try {
-                    credentials.withSentryCredentials {
-                      sh 'build/new-jenkins/js/tests-packages.sh'
+            stage('Run Tests') {
+              timeout(time: 60) {
+                script {
+                  def tests = [:]
+
+                  if(env.TEST_SUITE == 'upload') {
+                    sh """
+                      docker tag local/js-runner $JS_DEBUG_IMAGE_TAG
+                      docker push $JS_DEBUG_IMAGE_TAG
+                    """
+                  } else if(env.TEST_SUITE == 'jest') {
+                    tests['Jest'] = {
+                      withEnv(['CONTAINER_NAME=tests-jest']) {
+                        try {
+                          credentials.withSentryCredentials {
+                            sh 'build/new-jenkins/js/tests-jest.sh'
+                          }
+                        } finally {
+                          copyFiles(env.CONTAINER_NAME, 'coverage-js', "./tmp/${env.CONTAINER_NAME}")
+                        }
+                      }
                     }
-                  } finally {
-                    copyFiles(env.CONTAINER_NAME, 'packages', "./tmp/${env.CONTAINER_NAME}")
+                  } else if(env.TEST_SUITE == 'coffee') {
+                    for(int i = 0; i < COFFEE_NODE_COUNT; i++) {
+                      tests["Karma - Spec Group - coffee${i}"] = makeKarmaStage('coffee', i, COFFEE_NODE_COUNT)
+                    }
+                  } else if(env.TEST_SUITE == 'karma') {
+                    tests['Packages'] = {
+                      withEnv(['CONTAINER_NAME=tests-packages']) {
+                        try {
+                          credentials.withSentryCredentials {
+                            sh 'build/new-jenkins/js/tests-packages.sh'
+                          }
+                        } finally {
+                          copyFiles(env.CONTAINER_NAME, 'packages', "./tmp/${env.CONTAINER_NAME}")
+                        }
+                      }
+                    }
+
+                    tests['canvas_quizzes'] = {
+                      sh 'build/new-jenkins/js/tests-quizzes.sh'
+                    }
+
+                    for(int i = 0; i < JSG_NODE_COUNT; i++) {
+                      tests["Karma - Spec Group - jsg${i}"] = makeKarmaStage('jsg', i, JSG_NODE_COUNT)
+                    }
+
+                    ['jsa', 'jsh'].each { group ->
+                      tests["Karma - Spec Group - ${group}"] = makeKarmaStage(group, 0, DEFAULT_NODE_COUNT)
+                    }
                   }
+
+                  parallel(tests)
                 }
               }
-
-              tests['canvas_quizzes'] = {
-                sh 'build/new-jenkins/js/tests-quizzes.sh'
-              }
-
-              for(int i = 0; i < JSG_NODE_COUNT; i++) {
-                tests["Karma - Spec Group - jsg${i}"] = makeKarmaStage('jsg', i, JSG_NODE_COUNT)
-              }
-
-              ['coffee', 'jsa', 'jsh'].each { group ->
-                tests["Karma - Spec Group - ${group}"] = makeKarmaStage(group, 0, DEFAULT_NODE_COUNT)
-              }
             }
-
-            parallel(tests)
           }
         }
       }
-    }
-  }
-
-  post {
-    always {
-      script {
-        archiveArtifacts artifacts: 'tmp/**/*.xml'
-        junit allowEmptyResults: true, testResults: 'tmp/**/*.xml'
-        sh 'find ./tmp -path "*.xml"'
-      }
-    }
-    cleanup {
-      execute 'bash/docker-cleanup.sh --allow-failure'
     }
   }
 }

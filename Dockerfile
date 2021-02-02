@@ -1,43 +1,67 @@
-ARG RUBY_PATCHSET_IMAGE=starlord.inscloudgate.net/jenkins/canvas-lms-ruby:master
-FROM ${RUBY_PATCHSET_IMAGE}
+# GENERATED FILE, DO NOT MODIFY!
+# To update this file please edit the relevant template and run the generation
+# task `build/dockerfile_writer.rb --env development --compose-file docker-compose.yml,docker-compose.override.yml --in build/Dockerfile.template --out Dockerfile`
+
+ARG RUBY=2.6-p6.0.4
+
+FROM instructure/ruby-passenger:$RUBY
 LABEL maintainer="Instructure"
 
-# default alpine HTTPS mirror
-ARG ALPINE_MIRROR=https://alpine.global.ssl.fastly.net/alpine/
-ARG NODE=10.19.0-r0
+ARG POSTGRES_CLIENT=12
+ENV APP_HOME /usr/src/app/
+ENV RAILS_ENV production
+ENV NGINX_MAX_UPLOAD_SIZE 10g
+ENV LANG en_US.UTF-8
+ENV LANGUAGE en_US.UTF-8
+ENV LC_CTYPE en_US.UTF-8
+ENV LC_ALL en_US.UTF-8
+ARG CANVAS_RAILS6_0=0
+ENV CANVAS_RAILS6_0=${CANVAS_RAILS6_0}
+
+ENV YARN_VERSION 1.19.1-1
+ENV BUNDLER_VERSION 1.17.3
+ENV GEM_HOME /home/docker/.gem/$RUBY
+ENV PATH $GEM_HOME/bin:$PATH
+ENV BUNDLE_APP_CONFIG /home/docker/.bundle
+
+WORKDIR $APP_HOME
 
 USER root
-RUN set -eux; \
-  \
-  # these packages are temporary for generating this image \
-  apk add --no-cache --virtual .builddeps --repository $ALPINE_MIRROR/v3.10/main \
-    g++ \
-    make \
-    libsass \
-  # these packages stick around in the final image \
-  && apk add --no-cache --repository $ALPINE_MIRROR/v3.10/main \
-    npm \
-    nodejs=${NODE} \
-    yarn \
-  && apk add --no-cache curl \
-  && cd /tmp \
-  && curl -Ls https://github.com/instructure/phantomized/releases/download/2.1.1a/dockerized-phantomjs.tar.gz | tar xzv -C / \
-  && curl -k -Ls https://bitbucket.org/ariya/phantomjs/downloads/phantomjs-2.1.1-linux-x86_64.tar.bz2 | tar -jxf - \
-  && cp phantomjs-2.1.1-linux-x86_64/bin/phantomjs /usr/local/bin/phantomjs \
-  && apk del --no-network curl \
-  && rm -rf /tmp/*
+
+ARG USER_ID
+# This step allows docker to write files to a host-mounted volume with the correct user permissions.
+# Without it, some linux distributions are unable to write at all to the host mounted volume.
+RUN if [ -n "$USER_ID" ]; then usermod -u "${USER_ID}" docker \
+        && chown --from=9999 docker /usr/src/nginx /usr/src/app -R; fi
+
+RUN curl -sL https://deb.nodesource.com/setup_12.x | bash - \
+  && curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - \
+  && echo "deb https://dl.yarnpkg.com/debian/ stable main" > /etc/apt/sources.list.d/yarn.list \
+  && printf 'path-exclude /usr/share/doc/*\npath-exclude /usr/share/man/*' > /etc/dpkg/dpkg.cfg.d/01_nodoc \
+  && echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list \
+  && curl -sS https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - \
+  && apt-get update -qq \
+  && apt-get install -qqy --no-install-recommends \
+       nodejs \
+       yarn="$YARN_VERSION" \
+       libxmlsec1-dev \
+       python-lxml \
+       libicu-dev \
+       parallel \
+       postgresql-client-$POSTGRES_CLIENT \
+       unzip \
+       pbzip2 \
+       fontforge \
+  && rm -rf /var/lib/apt/lists/* \
+  && mkdir -p /home/docker/.gem/ruby/$RUBY_MAJOR.0
+RUN if [ -e /var/lib/gems/$RUBY_MAJOR.0/gems/bundler-* ]; then BUNDLER_INSTALL="-i /var/lib/gems/$RUBY_MAJOR.0"; fi \
+  && gem uninstall --all --ignore-dependencies --force $BUNDLER_INSTALL bundler \
+  && gem install bundler --no-document -v 1.17.3 \
+  && find $GEM_HOME ! -user docker | xargs chown docker:docker
 
 USER docker
-COPY --chown=docker:docker babel.config.js    ${APP_HOME}
-COPY --chown=docker:docker build/new-jenkins  ${APP_HOME}build/new-jenkins
-COPY --chown=docker:docker gems               ${APP_HOME}gems
-COPY --chown=docker:docker package.json       ${APP_HOME}
-COPY --chown=docker:docker packages           ${APP_HOME}packages
-COPY --chown=docker:docker script             ${APP_HOME}script
-COPY --chown=docker:docker yarn.lock          ${APP_HOME}
 
 RUN set -eux; \
-  \
   mkdir -p \
     .yardoc \
     app/stylesheets/brandable_css_brands \
@@ -47,9 +71,24 @@ RUN set -eux; \
     client_apps/canvas_quizzes/tmp \
     config/locales/generated \
     gems/canvas_i18nliner/node_modules \
+    log \
     node_modules \
+    packages/canvas-media/es \
+    packages/canvas-media/lib \
+    packages/canvas-media/node_modules \
     packages/canvas-planner/lib \
     packages/canvas-planner/node_modules \
+    packages/canvas-rce/canvas \
+    packages/canvas-rce/lib \
+    packages/canvas-rce/node_modules \
+    packages/jest-moxios-utils/node_modules \
+    packages/js-utils/es \
+    packages/js-utils/lib \
+    packages/js-utils/node_modules \
+    packages/k5uploader/es \
+    packages/k5uploader/lib \
+    packages/k5uploader/node_modules \
+    packages/old-copy-of-react-14-that-is-just-here-so-if-analytics-is-checked-out-it-doesnt-change-yarn.lock/node_modules \
     pacts \
     public/dist \
     public/doc/api \
@@ -57,14 +96,7 @@ RUN set -eux; \
     public/javascripts/compiled \
     public/javascripts/translations \
     reports \
+    tmp \
+    /home/docker/.bundler/ \
     /home/docker/.cache/yarn \
-  \
-  && (yarn install --pure-lockfile || yarn install --pure-lockfile --network-concurrency 1) \
-  && yarn cache clean
-
-COPY --chown=docker:docker . ${APP_HOME}
-
-RUN set -exu; \
-  \
-  COMPILE_ASSETS_NPM_INSTALL=0 bundle exec rails canvas:compile_assets \
-  && yarn cache clean
+    /home/docker/.gem/

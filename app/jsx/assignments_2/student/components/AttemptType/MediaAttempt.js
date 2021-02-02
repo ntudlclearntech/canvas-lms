@@ -32,7 +32,7 @@ import {UploadMediaStrings, MediaCaptureStrings} from '../../../../shared/Upload
 import {Billboard} from '@instructure/ui-billboard'
 import {Button} from '@instructure/ui-buttons'
 import {Flex} from '@instructure/ui-flex'
-import {VideoPlayer} from '@instructure/ui-media-player'
+import {MediaPlayer} from '@instructure/ui-media-player'
 import {View} from '@instructure/ui-layout'
 
 const languages = Object.keys(closedCaptionLanguages).map(key => {
@@ -87,6 +87,9 @@ export default class MediaAttempt extends React.Component {
   }
 
   renderMediaPlayer = (mediaObject, renderTrashIcon) => {
+    if (!mediaObject) {
+      return null
+    }
     mediaObject.mediaSources.forEach(mediaSource => {
       mediaSource.label = `${mediaSource.width}x${mediaSource.height}`
     })
@@ -122,7 +125,7 @@ export default class MediaAttempt extends React.Component {
               />
             </div>
           ) : (
-            <VideoPlayer tracks={mediaTracks} sources={mediaObject.mediaSources} />
+            <MediaPlayer tracks={mediaTracks} sources={mediaObject.mediaSources} />
           )}
         </Flex.Item>
         <Flex.Item overflowY="visible" margin="medium 0">
