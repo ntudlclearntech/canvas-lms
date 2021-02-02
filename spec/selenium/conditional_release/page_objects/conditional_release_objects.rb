@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #
 # Copyright (C) 2020 - present Instructure, Inc.
 #
@@ -27,7 +29,7 @@ class ConditionalReleaseObjects
     # Assignment Index Page
 
     def assignment_kebob(page_title)
-      fxpath("//a[.//*[text() = 'Settings for Assignment #{page_title}']]")
+      fxpath("//button[.//*[text() = 'Settings for Assignment #{page_title}']]")
     end
 
     def edit_assignment(page_title)
@@ -76,6 +78,14 @@ class ConditionalReleaseObjects
       f("[title='Division cutoff 2']")
     end
 
+    def must_not_be_empty_exists?
+      element_exists?("//*[contains(@id,'error') and contains(text(),'must not be empty')]", true)
+    end
+
+    def these_scores_are_out_of_order_exists?
+      element_exists?("//*[contains(@id,'error') and contains(text(),'these scores are out of order')]", true)
+    end
+
     # Common Selectors
     def conditional_release_link
       f("#conditional_release_link")
@@ -83,6 +93,58 @@ class ConditionalReleaseObjects
 
     def conditional_release_editor_exists?
       element_exists?("#canvas-conditional-release-editor")
+    end
+
+    def save_button
+      f(".assignment__action-buttons .btn-primary")
+    end
+
+    def breakdown_graph_exists?
+      element_exists?(".crs-breakdown-graph")
+    end
+
+    def last_add_assignment_button
+      ff('.cr-scoring-range__add-assignment-button').last
+    end
+
+    def mp_assignment_checkbox(assignment_name)
+      fxpath("//li[contains(@aria-label, 'assignment category icon for item name #{assignment_name}')]/label[@class = 'cr-label__cbox']")
+    end
+
+    def add_items_button
+      find_button('Add Items')
+    end
+
+    def assignment_card_exists?(assignment_name)
+      element_exists?("div[aria-label='#{assignment_name}']")
+    end
+
+    def or_toggle_button
+      f("[title = 'Click to merge sets here']")
+    end
+
+    def and_toggle_button
+      f("[title = 'Click to split set here']")
+    end
+
+    def or_toggle_button_exists?
+      element_exists?("[title = 'Click to merge sets here']")
+    end
+
+    def and_toggle_button_exists?
+      element_exists?("[title = 'Click to split set here']")
+    end
+
+    def assignment_options_button(assignment_name)
+      fxpath("//*[@class = 'cr-assignment-card']//button[//*[contains(text(),'assignment #{assignment_name} options')]]")
+    end
+
+    def menu_option(menu_item)
+      fxpath("//*[contains(text(),'#{menu_item}')]")
+    end
+
+    def assignment_exists_in_scoring_range?(ordered_range, assignment_name)
+      element_exists?("//*[@class = 'cr-scoring-range' and position() = #{ordered_range}]//div[@aria-label = '#{assignment_name}']", true)
     end
   end
 end

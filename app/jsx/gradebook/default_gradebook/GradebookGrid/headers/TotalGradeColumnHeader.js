@@ -37,6 +37,38 @@ function renderTrigger(ref) {
   )
 }
 
+function TotalDetailContent({viewUngradedAsZero}) {
+  if (viewUngradedAsZero) {
+    return (
+      <View className="Gradebook__ColumnHeaderDetail">
+        <View className="Gradebook__ColumnHeaderDetailLine Gradebook__ColumnHeaderDetail--secondary">
+          <Text fontStyle="normal" size="x-small" weight="bold">
+            {I18n.t('Total')}
+          </Text>
+        </View>
+
+        <View className="Gradebook__ColumnHeaderDetailLine Gradebook__ColumnHeaderDetail--secondary">
+          <Text weight="normal" fontStyle="normal" size="x-small">
+            {I18n.t('Ungraded as 0')}
+          </Text>
+        </View>
+      </View>
+    )
+  }
+
+  return (
+    <View className="Gradebook__ColumnHeaderDetail Gradebook__ColumnHeaderDetail--OneLine">
+      <Text fontStyle="normal" size="x-small" weight="bold">
+        {I18n.t('Total')}
+      </Text>
+    </View>
+  )
+}
+
+TotalDetailContent.propTypes = {
+  viewUngradedAsZero: bool.isRequired
+}
+
 export default class TotalGradeColumnHeader extends ColumnHeader {
   static propTypes = {
     sortBySetting: shape({
@@ -61,6 +93,7 @@ export default class TotalGradeColumnHeader extends ColumnHeader {
     }).isRequired,
     onMenuDismiss: Menu.propTypes.onDismiss.isRequired,
     grabFocus: bool,
+    viewUngradedAsZero: bool.isRequired,
     ...ColumnHeader.propTypes
   }
 
@@ -93,7 +126,7 @@ export default class TotalGradeColumnHeader extends ColumnHeader {
   }
 
   render() {
-    const {sortBySetting, gradeDisplay, position} = this.props
+    const {sortBySetting, gradeDisplay, position, viewUngradedAsZero} = this.props
     const selectedSortSetting = sortBySetting.isSortColumn && sortBySetting.settingKey
     const displayAsPoints = gradeDisplay.currentDisplay === 'points'
     const showSeparator = !gradeDisplay.hidden
@@ -117,11 +150,7 @@ export default class TotalGradeColumnHeader extends ColumnHeader {
               </Grid.Col>
 
               <Grid.Col textAlign="center">
-                <View className="Gradebook__ColumnHeaderDetail Gradebook__ColumnHeaderDetail--OneLine">
-                  <Text fontStyle="normal" size="x-small" weight="bold">
-                    {I18n.t('Total')}
-                  </Text>
-                </View>
+                <TotalDetailContent viewUngradedAsZero={viewUngradedAsZero} />
               </Grid.Col>
 
               <Grid.Col textAlign="center" width="auto">

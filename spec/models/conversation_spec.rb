@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #
 # Copyright (C) 2011 - present Instructure, Inc.
 #
@@ -450,8 +452,7 @@ describe Conversation do
       n2 = Notification.create(:name => "Conversation Created", :category => "TestImmediately")
 
       [sender].each do |user|
-        channel = user.communication_channels.create(:path => "test_channel_email_#{user.id}", :path_type => "email")
-        channel.confirm
+        channel = communication_channel(user, {username: "test_channel_email_#{user.id}@test.com", active_cc: true})
 
         NotificationPolicy.create(:notification => n2, :communication_channel => channel, :frequency => "immediately")
       end

@@ -35,7 +35,6 @@ class CanvadocSessionsController < ApplicationController
         enable_annotations: blob['enable_annotations']
       }
 
-
       submission_id = blob["submission_id"]
       if submission_id
         submission = Submission.preload(:assignment).find(submission_id)
@@ -53,7 +52,7 @@ class CanvadocSessionsController < ApplicationController
         # If we're doing annotations, DocViewer needs additional information to send notifications
         opts[:canvas_base_url] = assignment.course.root_account.domain
         opts[:user_id] = @current_user.id
-        opts[:submission_user_ids] = submission.group_id ? submission.group.users.pluck(:id) : [submission.user_id] 
+        opts[:submission_user_ids] = submission.group_id ? submission.group.users.pluck(:id) : [submission.user_id]
         opts[:course_id] = assignment.context_id
         opts[:assignment_id] = assignment.id
         opts[:submission_id] = submission.id
@@ -85,10 +84,18 @@ class CanvadocSessionsController < ApplicationController
       render :plain => "Not found", :status => :not_found
     end
 
-  rescue HmacHelper::Error
+  rescue HmacHelper::Error => e
+    Canvas::Errors.capture_exception(:canvadocs, e, :info)
     render :plain => 'unauthorized', :status => :unauthorized
-  rescue Timeout::Error
+  rescue Timeout::Error, Canvadocs::BadGateway, Canvadocs::ServerError => e
+    Canvas::Errors.capture_exception(:canvadocs, e, :warn)
     render :plain => "Service is currently unavailable. Try again later.",
            :status => :service_unavailable
+  rescue Canvadocs::BadRequest => e
+    Canvas::Errors.capture_exception(:canvadocs, e, :info)
+    render :plain => 'Canvadocs Bad Request', :status => :bad_request
+  rescue Canvadocs::HttpError => e
+    Canvas::Errors.capture_exception(:canvadocs, e, :error)
+    render :plain => 'Unknown Canvadocs Error', :status => :service_unavailable
   end
 end

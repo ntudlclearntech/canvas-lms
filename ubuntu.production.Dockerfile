@@ -1,6 +1,6 @@
 # GENERATED FILE, DO NOT MODIFY!
 # To update this file please edit the relevant template and run the generation
-# task `build/dockerfile_writer.rb`
+# task `build/dockerfile_writer.rb --env production --compose-file docker-compose.yml --in build/ubuntu.Dockerfile.template --out ubuntu.production.Dockerfile`
 
 # For documentation, please check doc/docker/README.md in
 # this local repo which is also published at:
@@ -14,7 +14,7 @@ ENV YARN_VERSION 1.19.1-1
 
 USER root
 WORKDIR /root
-RUN curl -sL https://deb.nodesource.com/setup_10.x | bash - \
+RUN curl -sL https://deb.nodesource.com/setup_12.x | bash - \
   && curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - \
   && echo "deb https://dl.yarnpkg.com/debian/ stable main" > /etc/apt/sources.list.d/yarn.list \
   && printf 'path-exclude /usr/share/doc/*\npath-exclude /usr/share/man/*' > /etc/dpkg/dpkg.cfg.d/01_nodoc \

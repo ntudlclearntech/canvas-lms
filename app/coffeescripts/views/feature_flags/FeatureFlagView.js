@@ -59,7 +59,7 @@ export default class FeatureFlagView extends Backbone.View {
     this.applyAction($target.is(':checked') ? 'on' : 'off')
   }
 
-  onToggleDetails(e) {
+  onToggleDetails() {
     this.toggleDetailsArrow()
   }
 
@@ -68,12 +68,21 @@ export default class FeatureFlagView extends Backbone.View {
     this.$detailToggle.toggleClass('icon-mini-arrow-down')
   }
 
+  maybeReload(action) {
+    const warning = this.model.warningFor(action)
+    if (warning.reload_page) {
+      window.location.reload()
+    }
+  }
+
   applyAction(action) {
     $.when(this.canUpdate(action)).then(
-      $.when(this.checkSiteAdmin()).then(
-        () => this.model.updateState(action),
-        () => this.render() // undo UI change if user cancels
-      )
+      () =>
+        $.when(this.checkSiteAdmin()).then(
+          () => this.model.updateState(action).then(() => this.maybeReload(action)),
+          () => this.render() // undo UI change if user cancels
+        ),
+      () => this.render() // ditto
     )
   }
 
@@ -85,8 +94,7 @@ export default class FeatureFlagView extends Backbone.View {
       deferred,
       message: warning.message,
       title: this.model.get('display_name'),
-      hasCancelButton: !warning.locked && !warning.reload_page,
-      reloadOnConfirm: Boolean(warning.reload_page)
+      hasCancelButton: !warning.locked
     })
     view.render()
     view.show()

@@ -24,20 +24,16 @@ class RubricsController < ApplicationController
   include Api::V1::Outcome
 
   def index
-    permission = if @domain_root_account.feature_enabled?(:rubrics_in_course_navigation)
-      @context.is_a?(User) ? :manage : [:manage_rubrics, :read_rubrics]
-    else
-      @context.is_a?(User) ? :manage : :manage_rubrics
-    end
+    permission = @context.is_a?(User) ? :manage : [:manage_rubrics, :read_rubrics]
     return unless authorized_action(@context, @current_user, permission)
     js_env :ROOT_OUTCOME_GROUP => get_root_outcome,
       :PERMISSIONS => {
         manage_outcomes: @context.grants_right?(@current_user, session, :manage_outcomes),
         manage_rubrics: @context.grants_right?(@current_user, session, :manage_rubrics)
       },
-      :NON_SCORING_RUBRICS => @domain_root_account.feature_enabled?(:non_scoring_rubrics),
-      :ACCOUNT_LEVEL_PROFICIENCIES => @domain_root_account.feature_enabled?(:account_level_mastery_scales)
+      :NON_SCORING_RUBRICS => @domain_root_account.feature_enabled?(:non_scoring_rubrics)
 
+    mastery_scales_js_env
     set_tutorial_js_env
 
     @rubric_associations = @context.rubric_associations.bookmarked.include_rubric.to_a
@@ -47,17 +43,14 @@ class RubricsController < ApplicationController
   end
 
   def show
-    permission = if @domain_root_account.feature_enabled?(:rubrics_in_course_navigation)
-      @context.is_a?(User) ? :manage : [:manage_rubrics, :read_rubrics]
-    else
-      @context.is_a?(User) ? :manage : :manage_rubrics
-    end
+    permission = @context.is_a?(User) ? :manage : [:manage_rubrics, :read_rubrics]
     return unless authorized_action(@context, @current_user, permission)
     if (id = params[:id]) =~ Api::ID_REGEX
       js_env :ROOT_OUTCOME_GROUP => get_root_outcome,
         :PERMISSIONS => {
           manage_rubrics: @context.grants_right?(@current_user, session, :manage_rubrics)
         }
+      mastery_scales_js_env
       @rubric_association = @context.rubric_associations.bookmarked.where(rubric_id: params[:id]).first
       raise ActiveRecord::RecordNotFound unless @rubric_association
       @actual_rubric = @rubric_association.rubric
@@ -166,10 +159,16 @@ class RubricsController < ApplicationController
       # Update the rubric if you can
       # Better specify params[:rubric_association_id] if you want it to update an existing association
 
-      # If this is a brand new rubric OR if the rubric isn't editable,
+      # If this is a brand new rubric OR if the rubric isn't editable OR if the rubric context is different than the context,
       # then create a new rubric
-      if !@rubric || (@rubric.will_change_with_update?(params[:rubric]) && !@rubric.grants_right?(@current_user, session, :update))
-        original_rubric_id = @rubric && @rubric.id
+      if !@rubric || (
+        @rubric.will_change_with_update?(params[:rubric]) && (
+          !@rubric.grants_right?(@current_user, session, :update) || (
+            @rubric.context.is_a?(Account) && @rubric.context != @context
+          )
+        )
+      )
+        original_rubric_id = @rubric&.id
         @rubric = @context.rubrics.build
         @rubric.rubric_id = original_rubric_id
         @rubric.user = @current_user

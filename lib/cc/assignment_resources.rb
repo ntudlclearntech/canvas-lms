@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #
 # Copyright (C) 2011 - present Instructure, Inc.
 #
@@ -261,6 +263,7 @@ module CC
           end
         end
         node.external_tool_url assignment.external_tool_tag.url
+        node.external_tool_data_json assignment.external_tool_tag.external_data.to_json if assignment.external_tool_tag.external_data
         node.external_tool_new_tab assignment.external_tool_tag.new_tab
       end
 

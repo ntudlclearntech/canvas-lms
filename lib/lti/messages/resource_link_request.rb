@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #
 # Copyright (C) 2018 - present Instructure, Inc.
 #
@@ -56,6 +58,11 @@ module Lti::Messages
       @message.resource_link.title = resource_link && assignment&.title
     end
 
+    def unexpanded_custom_parameters
+      # Add in link-specific custom params (e.g. created by deep linking)
+      super.merge!(assignment_resource_link&.custom || {})
+    end
+
     def context_resource_link_id
       Lti::Asset.opaque_identifier_for(@context)
     end
@@ -70,10 +77,6 @@ module Lti::Messages
         raise launch_error.new(nil, api_message: 'Assignment not configured for launches with specified tool')
       end
       resource_link = line_item_for_assignment&.resource_link
-      unless resource_link&.current_external_tool(@context) == @tool
-        raise launch_error.new(nil, api_message: 'Mismatched assignment vs resource link tool configurations')
-      end
-      resource_link
     end
 
     def assignment_line_item_url

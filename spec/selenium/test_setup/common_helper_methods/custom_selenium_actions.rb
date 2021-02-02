@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #
 # Copyright (C) 2015 - present Instructure, Inc.
 #
@@ -276,6 +278,10 @@ module CustomSeleniumActions
   end
 
   def select_all_in_tiny(tiny_controlling_element)
+    select_in_tiny(tiny_controlling_element, 'body')
+  end
+
+  def select_in_tiny(tiny_controlling_element, css_selector)
     # This used to be a direct usage of "editorBox", which is sorta crummy because
     # we don't want acceptance tests to have special implementation knowledge of
     # the system under test.
@@ -285,9 +291,9 @@ module CustomSeleniumActions
     # cumbersome is because tinymce has it's actual interaction point down in
     # an iframe.
     src = %Q{
-      var $iframe = $("##{tiny_controlling_element.attribute(:id)}").siblings('[role="application"]').find('iframe');
+      var $iframe = $("##{tiny_controlling_element.attribute(:id)}").siblings('[role="application"],[role="document"]').find('iframe');
       var iframeDoc = $iframe[0].contentDocument;
-      var domElement = iframeDoc.getElementsByTagName("body")[0];
+      var domElement = iframeDoc.querySelector("#{css_selector}")
       var selection = iframeDoc.getSelection();
       var range = iframeDoc.createRange();
       range.selectNodeContents(domElement);

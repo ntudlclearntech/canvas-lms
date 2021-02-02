@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #
 # Copyright (C) 2016 - present Instructure, Inc.
 #
@@ -106,6 +108,19 @@ describe "scheduler" do
       create_appointment_group title: "appointment1"
       get "/calendar"
       expect(f('#select-course-component')).not_to contain_css("#FindAppointmentButton")
+    end
+
+    it 'linkifies links in appointment group description but not when editing description in modal' do
+      description = 'Submit document at http://google.com/submit'
+      create_appointment_group(title: "Peer review session", description: description)
+      get "/calendar"
+      # navigate to the next month for end of month
+      f('.navigate_next').click unless Time.now.utc.month == (Time.now.utc + 1.day).month
+      f('.scheduler-event').click
+      expect(f('.event-detail-overflow')).to include_text(description)
+      expect(f('.event-detail-overflow a')).to have_attribute('href', 'http://google.com/submit')
+      f('.edit_event_link').click
+      expect(f('#edit_appt_calendar_event_form textarea')).to include_text(description)
     end
   end
 end

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #
 # Copyright (C) 2011 - present Instructure, Inc.
 #
@@ -36,7 +38,7 @@ module ContextModulesHelper
   def cache_if_module(context_module, editable, is_student, can_view_unpublished, user, context, &block)
     if context_module
       visible_assignments = user ? user.assignment_and_quiz_visibilities(context) : []
-      cache_key_items = ['context_module_render_20_', context_module.cache_key, editable, is_student, can_view_unpublished,
+      cache_key_items = ['context_module_render_21_', context_module.cache_key, editable, is_student, can_view_unpublished,
         true, Time.zone, Digest::MD5.hexdigest([visible_assignments, @section_visibility].join("/"))]
       cache_key = cache_key_items.join('/')
       cache_key = add_menu_tools_to_cache_key(cache_key)
@@ -92,7 +94,8 @@ module ContextModulesHelper
   end
 
   def module_item_publishable?(item)
-    true
+    return true if item.nil? || !item.content || !item.content.respond_to?(:can_publish?)
+    item.content.can_publish?
   end
 
   def prerequisite_list(prerequisites)

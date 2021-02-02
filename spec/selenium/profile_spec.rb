@@ -1,5 +1,5 @@
-# encoding: utf-8
-#
+# frozen_string_literal: true
+
 # Copyright (C) 2011 - present Instructure, Inc.
 #
 # This file is part of Canvas.
@@ -137,9 +137,7 @@ describe "profile" do
 
     it "should change default email address" do
       @user.communication_channel.confirm!
-      channel = @user.communication_channels.create!(:path_type => 'email',
-                                                     :path => 'walter_white@example.com')
-      channel.confirm!
+      channel = communication_channel(@user, {username: 'walter_white@example.com', active_cc: true})
 
       get '/profile/settings'
       row = f("#channel_#{channel.id}")
@@ -188,6 +186,22 @@ describe "profile" do
       click_option('#user_locale', 'Español')
       expect_new_page_load { submit_form(edit_form) }
       expect(get_value('#user_locale')).to eq 'es'
+    end
+
+    context "when pronouns are enabled" do
+      before :each do
+        @user.account.settings = { :can_add_pronouns => true }
+        @user.account.save!
+      end
+
+      it "should change pronouns" do
+        get "/profile/settings"
+        desired_pronoun = 'She/Her'
+        edit_form = click_edit
+        click_option('#user_pronouns', desired_pronoun)
+        expect_new_page_load { submit_form(edit_form) }
+        expect(get_value('#user_pronouns')).to eq desired_pronoun
+      end
     end
 
     it "should add another contact method - sms" do
