@@ -201,9 +201,9 @@ create_outgoing_mail_config_file() {
 production:
   address: "<%= ENV.fetch('OUTGOING_MAIL_PRODUCTION_ADDRESS', 'smtp.example.com') %>"
   port: "<%= ENV.fetch('OUTGOING_MAIL_PRODUCTION_PORT', '25') %>"
-  user_name: "<%= ENV.fetch('OUTGOING_MAIL_PRODUCTION_USER_NAME', 'user') %>"
-  password: "<%= ENV.fetch('OUTGOING_MAIL_PRODUCTION_PASSWORD', 'password') %>"
-  authentication: "<%= ENV.fetch('OUTGOING_MAIL_PRODUCTION_AUTHENTICATION', 'plain') %>" # plain, login, or cram_md5
+  # user_name: "<%= ENV.fetch('OUTGOING_MAIL_PRODUCTION_USER_NAME', 'user') %>"
+  # password: "<%= ENV.fetch('OUTGOING_MAIL_PRODUCTION_PASSWORD', 'password') %>"
+  # authentication: "<%= ENV.fetch('OUTGOING_MAIL_PRODUCTION_AUTHENTICATION', 'plain') %>" # plain, login, or cram_md5
   domain: "<%= ENV.fetch('OUTGOING_MAIL_PRODUCTION_DOMAIN', 'example.com') %>"
   outgoing_address: "<%= ENV.fetch('OUTGOING_MAIL_PRODUCTION_OUTGOING_ADDRESS', 'canvas@example.com') %>"
   default_name: "<%= ENV.fetch('OUTGOING_MAIL_PRODUCTION_DEFAULT_NAME', 'Instructure Canvas') %>"
