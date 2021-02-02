@@ -72,6 +72,7 @@ export default class CourseFindSelectView extends Backbone.View
       source: @manageableCourseUrl()
       select: @updateSelect
     @$courseSearchField.data('ui-autocomplete')._renderItem = (ul, item) ->
+      item.value = item.course_code
       $(autocompleteItemTemplate(item)).appendTo(ul)
 
     # Accessiblity Hack. If you find a better solution please fix this. This makes it so the whole form isn't read
@@ -127,7 +128,7 @@ export default class CourseFindSelectView extends Backbone.View
 
   autocompleteCourses: ->
     _.map @courses, (course) ->
-      {label: course.label, id: course.id, value: course.label}
+      {label: course.label, id: course.id, value: course.course_code}
 
   # After finding a course by searching via autocomplete, update the
   # select menu to keep both input fields in sync. Also sets the
