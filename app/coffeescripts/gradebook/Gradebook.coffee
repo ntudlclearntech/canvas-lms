@@ -268,8 +268,7 @@ export default do ->
         default_max: 200
         max: 400
       total:
-        # min: 95 This is adjusted to fit in the custom reminder popover in app/jsx/gradebook/default_gradebook/GradebookGrid/headers/TotalGradeColumnHeader.js
-        min: 140
+        min: 95
         max: 400
       total_grade_override:
         min: 95
