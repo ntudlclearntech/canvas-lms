@@ -8285,8 +8285,8 @@ zh-Hant:
     loading: 正在載入……
   disable_a5c05db3: 停用
   disable_alert_timeouts_description: |-
-      啟用此功能可防止提醒通知超時彈出，讓
-      使用者可以有充足時間閱讀通知，然後在閱讀完畢時忽略訊息。
+      啟用此功能可防止通知提醒因超時而消失，
+      讓使用者可以有充足時間閱讀通知，閱讀完畢後再自行關閉訊息。
   disable_all_read_only_scopes_f9ffdd28: 停用所有唯讀範圍。
   disable_and_lock_7d0ef0e8: 停用並鎖定
   disable_authentication_for_graphql_3c019622: "停用 GraphQL 的驗證"
@@ -9957,7 +9957,7 @@ zh-Hant:
         差異化作業可讓您選擇不同分組(s)或個別學生(s)完成作業。
         未獲得作業的分組將無法在課程内容中看到作業内容而且最終成績
         將不包括上述作業的分值。
-    disable_alert_timeouts: 停用提醒通知超時
+    disable_alert_timeouts: 停用提醒超時功能
     ember_modules: "Ember 模組"
     google_docs_domain_restriction: "Google Docs 網域限制"
     gradebook_list_students_by_sortable_name: "成績冊 - 按可排序姓名列出學生"
@@ -16677,7 +16677,7 @@ zh-Hant:
   only_add_posts_with_a_specific_phrase_in_the_title_b8b7b04e: 只加入標題中具有特定語詞的貼文
   only_after_their_last_attempt_3593d101: 僅在繳交次數達到允許的作答次數後，才會顯示
   only_announcements_can_be_section_specific_1ff992a: 只有公告可以是特定分班的
-  only_available_to_students_with_link_107e2468: 只有持有連結的學生方可使用
+  only_available_to_students_with_link_107e2468: 只有知道連結的學生可以觀看
   only_available_to_students_with_link_not_visible_i_b21ec391: 僅適用於有連結的學生。在學生文件夾中不可見。
   only_course_announcements_and_discussions_can_be_s_924d4386: 只有課程公告和討論區可以是特定分班的
   only_course_announcements_can_be_section_specific_eabcd6e0: 只有課程公告可以是特定分班的
@@ -19962,7 +19962,7 @@ zh-Hant:
   read_only_3d26d8fe: 唯讀
   ready_to_enroll_panel_46f45abb: 已準備註冊面板
   recaptcha_not_configured_3a6ef9ee: "Recaptcha 未配置"
-  received_7689640e: 已收到
+  received_7689640e: 收到時間
   received_callback_from_identity_provider_80d999f5: 收到身分識別提供者的回呼
   received_cas_ticket_ea1bbeb: "收到的 CAS 票證"
   received_content_53049822: 收到的內容
@@ -20563,7 +20563,7 @@ zh-Hant:
   saving_new_role_458f4ba8: 儲存新的身份
   saving_recording_e111cb05: 正在儲存記錄...
   saving_the_csp_status_failed_please_try_again_8275aaa4: "儲存 CSP 狀態失敗，請重試。"
-  schedule_student_availability_332154a: 排程學生可用性
+  schedule_student_availability_332154a: 設定學生可以觀看文件的時間
   scheduled_date_5b0aedb6: 已排程日期
   scheduler_65b5ac91: 排程工具
   scheduler_must_be_enabled_by_your_canvas_admin_7508c8c2: "必須由您的 Canvas 管理員啟用排程工具。"
@@ -21544,7 +21544,7 @@ zh-Hant:
       save_profile: 儲存個人檔案
       service_contact: "使用 %{service} 服務聯繫 %{user}"
       social_instructions: 檢查您希望其他人在您的個人檔案上看到的聯絡方式。
-      title: 標題
+      title: 職稱
       titles: 
         click_to_change_profile_pic: 按一下以更改個人檔案圖片
       user_enrolled: 註冊

@@ -871,6 +871,7 @@ class User < ActiveRecord::Base
 
   def set_default_feature_flags
     self.enable_feature!(:new_user_tutorial_on_off) unless Rails.env.test?
+    self.enable_feature!(:disable_alert_timeouts) unless Rails.env.test?
   end
 
   def sortable_name
