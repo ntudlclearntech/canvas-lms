@@ -102,8 +102,10 @@ export default function ProfileTray(props) {
           </List.Item>
         )}
       </List>
+      {/* 
       <hr role="presentation" />
       <HighContrastModeToggle />
+      */}
     </View>
   )
 }
