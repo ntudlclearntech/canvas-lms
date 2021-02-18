@@ -65,7 +65,7 @@ services:
   web:
     << : *default-setting
     ports:
-      - "${CANVAS_LMS_DEPLOY_PORT}:3000"
+      - "${CANVAS_LMS_DEPLOY_HOST}:${CANVAS_LMS_DEPLOY_PORT}:3000"
 
   jobs:
     << : *default-setting
