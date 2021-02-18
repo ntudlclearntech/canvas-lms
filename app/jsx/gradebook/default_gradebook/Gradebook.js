@@ -2048,6 +2048,7 @@ class Gradebook {
   renderActionMenu() {
     const mountPoint = document.querySelector("[data-component='ActionMenu']")
     const props = this.getActionMenuProps()
+    props.variant = mountPoint.getAttribute('data-variant')
     return renderComponent(ActionMenu, mountPoint, props)
   }
 
