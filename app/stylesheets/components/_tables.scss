@@ -218,9 +218,9 @@ $sp-table: $ic-sp + 2;
     tbody {
       tr:nth-child(odd) {
         background-color: $ic-bg-light-neutral;
-        a {
-          color: var(--ic-link-color-darkened-10);
-        }
+        // a {
+        //   color: var(--ic-link-color-darkened-10);
+        // }
       }
     }
   }

@@ -428,6 +428,7 @@ class GroupCategoriesController < ApplicationController
           users.preload(:pseudonyms).find_each { |u| csv << build_row(u, section_names, gms_by_user_id, include_sis_id) }
         end
       end
+      csv_string = "\xEF\xBB\xBF".freeze + csv_string # Force excel to open with utf-8 encoding by adding BOM
       respond_to do |format|
         format.csv { send_data csv_string, type: 'text/csv', filename: "#{@group_category.name}.csv", disposition: 'attachment' }
       end

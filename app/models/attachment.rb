@@ -274,6 +274,34 @@ class Attachment < ActiveRecord::Base
     false
   end
 
+  def self.valid_big5?(file)
+    # validate Big5
+    chunk = file.read(read_file_chunk_size)
+    error_count = 0
+
+    while chunk
+      begin
+        raise EncodingError unless chunk.dup.force_encoding("Big5").valid_encoding?
+      rescue EncodingError
+        error_count += 1
+        if !file.eof? && error_count <= 4
+          # we may have split a big5 character in the chunk - try to resolve it, but only to a point
+          chunk << file.read(1)
+          next
+        else
+          raise
+        end
+      end
+
+      error_count = 0
+      chunk = file.read(read_file_chunk_size)
+    end
+    file.close
+    true
+  rescue EncodingError
+    false
+  end
+
   def infer_encoding
     return unless self.encoding.nil?
     begin
