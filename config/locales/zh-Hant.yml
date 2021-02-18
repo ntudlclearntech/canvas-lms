@@ -3256,7 +3256,7 @@ zh-Hant:
       notify_content_change: 通知使用者該內容已更改
       points_possible: 總分
       post_to_sis: 在發佈到您所在學校的學生資訊系統上時，包括該作業的評分
-      submission_attempts: 提交嘗試
+      submission_attempts: 重複繳交
       warnings: 
         assignment_is_frozen: 部分設定已被管理員鎖定。
     errors: 
@@ -3518,8 +3518,8 @@ zh-Hant:
     status: 
       deleting_group: 正在刪除群組...
     student_assignment_overview: 
-      allowed_attempts: 允許的嘗試
-      attempts: 嘗試
+      allowed_attempts: 允許繳交次數
+      attempts: 繳交次數
       date_time_by: "更新於 %{date}；編輯人：%{time}"
       due_at: 截止
       no_due_date: 無截止日期
@@ -10271,7 +10271,7 @@ zh-Hant:
   france_c25bfeae: 法國
   french_33881544: 法語
   from_date_must_be_before_to_date_79f00046: 「從」日期必須在「至」日期之前
-  from_fdd4956d: 傳送者
+  from_fdd4956d: 來自
   from_from_to_to_e31f6422: "自 %{from} 至 %{to}"
   from_gravatar_58372d5a: "來自 Gravatar"
   front_page_must_be_set_first_4dbbfdbe: 必須先設定首頁
@@ -10749,6 +10749,9 @@ zh-Hant:
       student_example: 某些人
       student_question: 所述學生
     student: 學生
+    # NTU COOL Custom Locale
+    From: 原始分數
+    To: 修改分數 
   gradebookold: 
     hide_notes: 隱藏註釋欄
     hide_student_names: 隱藏學生姓名
@@ -23713,7 +23716,7 @@ zh-Hant:
   tls_7a2eaba5: TLS
   to_1126ab55: 至
   to_35c6baa2: 至
-  to_51406be9: 修改分數
+  to_51406be9: 至
   to_access_assignment_submissions_through_assignmen_30c5c8f2: "要透過作業列表或成績單存取作業提交項目，並於 作業批改模式 內查看，必須同時啟用「成績 - 查看所有成績」或「成績 - 編輯」。"
   to_access_assignment_submissions_through_assignmen_ce438715: |-
       要透過作業列表及 作業批改模式 存取作業提交項目，必須同時啟用「成績 - 編輯」。
@@ -25818,3 +25821,10 @@ zh-Hant:
       TotalGradePopoverText3: 為原則，如百分成績有小數，預設將小數點第一位四捨五入至整數。
       TotalGradePopoverLinkText: 《國立臺灣大學學生成績評量辦法》
       TotalGradePopoverLinkURL: https://gra103.aca.ntu.edu.tw/gra2007/gra/tienn/law63.pdf
+  shared_message_students:
+    To: 收件者
+  student_context_trayStudentContextTray:
+    send_a_message: 傳送訊息
+  allowed_attempts:
+    allowed_attempts: 允許繳交次數
+    number_of_attempts: 繳交次數
