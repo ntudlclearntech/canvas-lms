@@ -300,7 +300,8 @@ create_passengerfile_file() {
   "max_pool_size": ${PASSENGERFILE_MAX_POOL_SIZE},
   "max_request_queue_size": ${PASSENGERFILE_MAX_REQUEST_QUEUE_SIZE},
   "max_requests": ${PASSENGERFILE_MAX_REQUESTS},
-  "pool_idle_time": ${PASSENGERFILE_POOL_IDLE_TIME}
+  "pool_idle_time": ${PASSENGERFILE_POOL_IDLE_TIME},
+  "start_timeout": ${PASSENGERFILE_START_TIMEOUT}
 }
 EOF
 }
