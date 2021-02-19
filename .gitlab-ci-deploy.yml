@@ -69,6 +69,7 @@
 
 .migration: &migration
   - ssh $DEPLOY_USER@$CANVAS_LMS_DEPLOY_HOST "docker exec -t --env RAILS_ENV=production canvas-lms_web_1 bundle exec rake db:migrate:predeploy"
+  - ssh $DEPLOY_USER@$CANVAS_LMS_DEPLOY_HOST "docker exec -t --env RAILS_ENV=production canvas-lms_web_1 bundle exec rake db:migrate"
   - ssh $DEPLOY_USER@$CANVAS_LMS_DEPLOY_HOST "docker exec -t --env RAILS_ENV=production canvas-lms_web_1 bundle exec rake db:load_notifications"
 
 .canvas-lms-deploy:
