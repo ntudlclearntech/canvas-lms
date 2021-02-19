@@ -3480,7 +3480,7 @@ zh-Hant:
       other: "%{count} 個規則"
     select_assignment: "[選擇作業]"
     show: 
-      allowed_attempts: 允許的作答次數
+      allowed_attempts: 允許繳交次數
       assignment_locked: 此作業目前已鎖定。
       attempts: 嘗試
       available_from: 開放時間
