@@ -1479,7 +1479,9 @@ class Gradebook {
       grades = grades.gradingPeriods[this.gradingPeriodId]
     }
 
-    const scoreType = this.viewUngradedAsZero() ? 'final' : 'current'
+    // COOL#119 force to display unposted final score
+    // const scoreType = this.viewUngradedAsZero() ? 'final' : 'current'
+    const scoreType = 'final' 
     Object.keys(this.assignmentGroups).forEach(assignmentGroupId => {
       let grade = grades.assignmentGroups[assignmentGroupId]
       grade = grade?.[scoreType] || {
