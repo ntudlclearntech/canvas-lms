@@ -10,6 +10,35 @@
   - ssh $DEPLOY_USER@$CANVAS_LMS_DEPLOY_HOST "docker pull $CANVAS_LMS_CI_REGISTRY_IMAGE:$CANVAS_LMS_IMAGE_TAG"
   - ssh $DEPLOY_USER@$CANVAS_LMS_DEPLOY_HOST "docker pull $CANVAS_LMS_CI_REGISTRY_IMAGE/deployer:$CANVAS_LMS_IMAGE_TAG"
 
+.migration: &migration
+  - ssh $DEPLOY_USER@$CANVAS_LMS_DEPLOY_HOST "docker run --rm -t
+    --env RAILS_ENV=production
+    --env CASSANDRA_SERVERS=$CANVAS_LMS_CASSANDRA_SERVERS
+    --env CASSANDRA_PAGE_VIEWS_KEYSPACE=$CANVAS_LMS_CASSANDRA_PAGE_VIEWS_KEYSPACE
+    --env CASSANDRA_AUDITORS_KEYSPACE=$CANVAS_LMS_CASSANDRA_AUDITORS_KEYSPACE
+    --env DATABASE_DATABASE=$CANVAS_LMS_DATABASE_DATABASE
+    --env DATABASE_USERNAME=$CANVAS_LMS_DATABASE_USERNAME
+    --env DATABASE_PASSWORD=$CANVAS_LMS_DATABASE_PASSWORD
+    --env DATABASE_HOST=$DATABASE_HOST
+    $CANVAS_LMS_CI_REGISTRY_IMAGE:$CANVAS_LMS_IMAGE_TAG bundle exec rake db:migrate:predeploy"
+  - ssh $DEPLOY_USER@$CANVAS_LMS_DEPLOY_HOST "docker run --rm -t
+    --env RAILS_ENV=production
+    --env CASSANDRA_SERVERS=$CANVAS_LMS_CASSANDRA_SERVERS
+    --env CASSANDRA_PAGE_VIEWS_KEYSPACE=$CANVAS_LMS_CASSANDRA_PAGE_VIEWS_KEYSPACE
+    --env CASSANDRA_AUDITORS_KEYSPACE=$CANVAS_LMS_CASSANDRA_AUDITORS_KEYSPACE
+    --env DATABASE_DATABASE=$CANVAS_LMS_DATABASE_DATABASE
+    --env DATABASE_USERNAME=$CANVAS_LMS_DATABASE_USERNAME
+    --env DATABASE_PASSWORD=$CANVAS_LMS_DATABASE_PASSWORD
+    --env DATABASE_HOST=$DATABASE_HOST
+    $CANVAS_LMS_CI_REGISTRY_IMAGE:$CANVAS_LMS_IMAGE_TAG bundle exec rake db:migrate"
+  - ssh $DEPLOY_USER@$CANVAS_LMS_DEPLOY_HOST "docker run --rm -t
+    --env RAILS_ENV=production
+    --env DATABASE_DATABASE=$CANVAS_LMS_DATABASE_DATABASE
+    --env DATABASE_USERNAME=$CANVAS_LMS_DATABASE_USERNAME
+    --env DATABASE_PASSWORD=$CANVAS_LMS_DATABASE_PASSWORD
+    --env DATABASE_HOST=$DATABASE_HOST
+    $CANVAS_LMS_CI_REGISTRY_IMAGE:$CANVAS_LMS_IMAGE_TAG bundle exec rake db:load_notifications"
+
 .deploy-container: &deploy-container
     - ssh $DEPLOY_USER@$CANVAS_LMS_DEPLOY_HOST "docker run
       --rm
@@ -68,14 +97,9 @@
         --project-name $CANVAS_LMS_CONTAINER_NAME
         up --detach --scale application=$CANVAS_LMS_NUMBER_OF_WORKERS"
 
-.migration: &migration
-  - ssh $DEPLOY_USER@$CANVAS_LMS_DEPLOY_HOST "docker exec -t --env RAILS_ENV=production canvas-lms_web_1 bundle exec rake db:migrate:predeploy"
-  - ssh $DEPLOY_USER@$CANVAS_LMS_DEPLOY_HOST "docker exec -t --env RAILS_ENV=production canvas-lms_web_1 bundle exec rake db:migrate"
-  - ssh $DEPLOY_USER@$CANVAS_LMS_DEPLOY_HOST "docker exec -t --env RAILS_ENV=production canvas-lms_web_1 bundle exec rake db:load_notifications"
-
 .canvas-lms-deploy:
   script:
     - *check-image-tag
     - *pre-deploy
-    - *deploy-container
     - *migration
+    - *deploy-container
