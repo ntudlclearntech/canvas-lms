@@ -315,8 +315,8 @@ class Enrollment < ActiveRecord::Base
       'TeacherEnrollment' => t('#enrollment.roles.teacher_with_indefinite_article', "A Teacher"),
       'TaEnrollment' => t('#enrollment.roles.ta_with_indefinite_article', "A TA"),
       'DesignerEnrollment' => t('#enrollment.roles.designer_with_indefinite_article', "A Designer"),
-      'StudentEnrollment' => t('#enrollment.roles.student_with_indefinite_article', "A Student"),
-      'StudentViewEnrollment' => t('#enrollment.roles.student_with_indefinite_article', "A Student"),
+      'StudentEnrollment' => t('#enrollment.roles.student_with_indefinite_article', "A Student/Auditor"),
+      'StudentViewEnrollment' => t('#enrollment.roles.student_with_indefinite_article', "A Student/Auditor"),
       'ObserverEnrollment' => t('#enrollment.roles.observer_with_indefinite_article', "An Observer")
     }
   end
