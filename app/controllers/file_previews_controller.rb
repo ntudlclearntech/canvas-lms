@@ -50,11 +50,7 @@ class FilePreviewsController < ApplicationController
       # google docs
       elsif GoogleDocsPreview.previewable?(@domain_root_account, @file)
         url = verified_google_preview_file_download_url(@file)
-        if @file[:content_type] == 'application/pdf'
-          redirect_to('//' + Rails.configuration.predoc['viewer_url'] + '/viewer?' + { embedded: true, url: url }.to_query) and return
-        else
-          redirect_to('//docs.google.com/viewer?' + { embedded: true, url: url }.to_query) and return
-        end
+        redirect_to('//' + Rails.configuration.predoc['viewer_url'] + '/viewer?' + { embedded: true, url: url }.to_query) and return
       # images
       elsif @file.content_type =~ %r{\Aimage/}
         return render template: 'file_previews/img_preview', layout: false
