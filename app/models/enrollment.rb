@@ -948,7 +948,7 @@ class Enrollment < ActiveRecord::Base
   end
 
   def readable_role_name
-    self.role.built_in? ? self.readable_type : self.role.name
+    self.role.built_in? ? self.readable_type : RoleOverride.get_custom_role_label(self.role)
   end
 
   def readable_type
