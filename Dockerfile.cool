@@ -94,5 +94,6 @@ RUN bundle _2.1.4_ config set path 'vendor/bundle' \
   && RAILS_ENV=production bundle exec rake canvas:compile_assets --trace
 
 CMD ./config.sh \
+  && rm -rf public/dist/brandable_css/* \
   && RAILS_ENV=production bundle exec rake css:compile \
   && bundle exec passenger start
