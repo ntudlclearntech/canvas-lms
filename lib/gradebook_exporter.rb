@@ -179,12 +179,12 @@ class GradebookExporter
           row.concat([nil] * group_filler_length)
           row.concat(buffer_columns(:points)) if include_points?
           row.concat(buffer_columns(:total_scores))
-        end
 
-        row.concat(buffer_columns(:grading_standard)) if @course.grading_standard_enabled?
-        if include_final_grade_override?
-          row.concat(buffer_columns(:override_score))
-          row.concat(buffer_columns(:override_grade)) if @course.grading_standard_enabled?
+          row.concat(buffer_columns(:grading_standard)) if @course.grading_standard_enabled?
+          if include_final_grade_override?
+            row.concat(buffer_columns(:override_score))
+            row.concat(buffer_columns(:override_grade)) if @course.grading_standard_enabled?
+          end
         end
 
         lengths_match = header.length == row.length
