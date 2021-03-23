@@ -3840,6 +3840,7 @@ en:
       saving: Saving...
       buttons:
         save_and_publish: Save & Publish
+        publish: Publish
       save: Save
     page_nav:
       Page: Page
