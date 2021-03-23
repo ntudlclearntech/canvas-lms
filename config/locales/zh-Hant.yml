@@ -8441,6 +8441,7 @@ zh-Hant:
         not_published: 未發佈
         published: 已發佈
         save_and_publish: 儲存並發佈
+        publish: 發佈
       delay_posting: 延後發佈
       enable_podcast_feed: 啟用播客摘要
       include_replies_in_podcast_feed: 包含學生在播客摘要中的回覆

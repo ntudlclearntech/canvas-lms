@@ -394,7 +394,13 @@
       {{#t "buttons.save_and_publish"}}Save & Publish{{/t}}
     </button>
   {{/if}}
-  <button type="submit"
-          data-text-while-loading="{{#t "saving"}}Saving...{{/t}}"
-          class="btn btn-primary">{{#t "save"}}Save{{/t}}</button>
+  {{#if isAnnouncement }}
+    <button type="submit"
+            data-text-while-loading="{{#t "saving"}}Saving...{{/t}}"
+            class="btn btn-primary">{{#t "buttons.publish"}}Publish{{/t}}</button>
+  {{else}}
+    <button type="submit"
+            data-text-while-loading="{{#t "saving"}}Saving...{{/t}}"
+            class="btn btn-primary">{{#t "save"}}Save{{/t}}</button>
+  {{/if}}
 </div>
