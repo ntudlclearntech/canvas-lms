@@ -19,8 +19,10 @@ import {View} from 'Backbone'
 import $ from 'jquery'
 import template from 'jst/quizzes/fileUploadQuestionState'
 import uploadedOrRemovedTemplate from 'jst/quizzes/fileUploadedOrRemoved'
+import uploadedError from 'jst/quizzes/fileUploadedError'
 import 'jquery.instructure_forms'
 import 'jquery.disableWhileLoading'
+import I18n from 'i18n!quizzes_file_upload_question_view'
 
 export default class FileUploadQuestion extends View {
   static initClass() {
@@ -79,6 +81,20 @@ export default class FileUploadQuestion extends View {
 
   // For now we'll just process the first one.
   processAttachment(attachment) {
+    // NTU COOL: Handle uploaded attachment file size zero byte or null #97
+    if (attachment && !attachment.size) {
+      alert(I18n.t('error.zero_byte', 'Upload failed. Please try again.'))
+
+      // Set uploaded file to null so user can re-upload the same file.
+      this.$fileUpload.val(null)
+
+      // Render Error messages
+      this.$fileUploadBox
+        .parent()
+        .append(uploadedError({...this.model.present(), fileUploadedZeroByte: true}))
+      return
+    }
+
     this.$attachmentID.val(this.model.id).trigger('change')
     this.$fileUploadBox.addClass('file-upload-box-with-file')
     this.render()

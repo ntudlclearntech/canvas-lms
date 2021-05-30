@@ -18772,6 +18772,9 @@ zh-Hant:
       quizzes: 
         file_successfully_uploaded: 您的文檔已成功上傳。
         files_removed: "%{display_name} 已被刪除。"
+    file_uploaded_error:
+      quizzes:
+        file_zero_byte: "您的檔案上傳失敗，請再試一次。"
     final_answer: 最終答案
     headers: 
       assignment_quizzes: 作業測驗
@@ -25830,3 +25833,6 @@ zh-Hant:
   allowed_attempts:
     allowed_attempts: 允許繳交次數
     number_of_attempts: 繳交次數
+  quizzes_file_upload_question_view: 
+    error:
+      zero_byte: "您的檔案上傳失敗，請再試一次。"
