@@ -47,6 +47,10 @@ $(document).ready(function() {
     $('#js-sequential-warning-dialogue div a').attr('href', $('#preview_quiz_button').attr('href'))
   })
 
+  $('#preview_quiz_button_bottom').click(e => {
+    $('#js-sequential-warning-dialogue div a').attr('href', $('#preview_quiz_button_bottom').attr('href'))
+  })
+
   function ensureStudentsLoaded(callback) {
     if ($('#quiz_details').length) {
       return callback()

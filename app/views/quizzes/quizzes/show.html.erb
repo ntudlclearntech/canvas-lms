@@ -401,7 +401,7 @@
 
     <% if can_do(@quiz, @current_user, :preview) && !can_do(@context, @current_user, :participate_as_student) %>
       <div class="preview_quiz_button">
-        <%= link_to_preview_quiz('class' => "btn btn-primary", 'id' => "preview_quiz_button", 'preview' => 1) %>
+        <%= link_to_preview_quiz('class' => "btn btn-primary", 'id' => "preview_quiz_button_bottom", 'preview' => 1) %>
       </div>
     <% elsif @quiz.available? %>
       <% if @can_take %>
