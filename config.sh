@@ -298,6 +298,7 @@ create_passengerfile_file() {
   cat << EOF > "${PASSENGERFILE_FILE}"
 {
   "max_pool_size": ${PASSENGERFILE_MAX_POOL_SIZE},
+  "min_instances": ${PASSENGERFILE_MIN_INSTANCES},
   "max_request_queue_size": ${PASSENGERFILE_MAX_REQUEST_QUEUE_SIZE},
   "max_requests": ${PASSENGERFILE_MAX_REQUESTS},
   "pool_idle_time": ${PASSENGERFILE_POOL_IDLE_TIME},
