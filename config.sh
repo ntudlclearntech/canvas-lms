@@ -13,8 +13,8 @@ PREDOC_FILE="${DIR}/config/predoc.yml"
 REDIS_FILE="${DIR}/config/redis.yml"
 SAML_FILE="${DIR}/config/saml.yml"
 SECURITY_FILE="${DIR}/config/security.yml"
+SESSION_STORE_FILE="${DIR}/config/session_store.yml"
 PASSENGERFILE_FILE="${DIR}/Passengerfile.json"
-
 
 create_cache_store_config_file() {
   cat << EOF > "${CACHE_STORE_FILE}"
@@ -294,6 +294,15 @@ production:
 EOF
 }
 
+create_session_store_file() {
+  cat << EOF > "${SESSION_STORE_FILE}"
+production:
+  session_store: "<%= ENV.fetch('SESSION_STORE_SESSION_STORE', 'encrypted_cookie_store') %>"
+  expire_after: "<%= ENV.fetch('SESSION_STORE_EXPIRE_AFTER', '86400') %>"
+  secure: "<%= ENV.fetch('SESSION_STORE_SECURE', 'true') %>"
+EOF
+}
+
 create_passengerfile_file() {
   cat << EOF > "${PASSENGERFILE_FILE}"
 {
@@ -319,4 +328,5 @@ create_predoc_config_file
 create_redis_config_file
 create_saml_config_file
 create_security_config_file
+create_session_store_config_file
 create_passengerfile_file
