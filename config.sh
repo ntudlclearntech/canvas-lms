@@ -294,7 +294,7 @@ production:
 EOF
 }
 
-create_session_store_file() {
+create_session_store_config_file() {
   cat << EOF > "${SESSION_STORE_FILE}"
 production:
   session_store: "<%= ENV.fetch('SESSION_STORE_SESSION_STORE', 'encrypted_cookie_store') %>"
