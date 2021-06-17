@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #
 # Copyright (C) 2011 - present Instructure, Inc.
 #
@@ -240,7 +242,7 @@ class PseudonymsController < ApplicationController
     return unless update_pseudonym_from_params
 
     @pseudonym.generate_temporary_password if !params[:pseudonym][:password]
-    if @pseudonym.save_without_session_maintenance
+    if Pseudonym.unique_constraint_retry { @pseudonym.save_without_session_maintenance }
       respond_to do |format|
         flash[:notice] = t 'notices.account_registered', "Account registered!"
         format.html { redirect_to user_profile_url(@current_user) }

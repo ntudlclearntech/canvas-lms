@@ -35,6 +35,8 @@ module AccountReports
       @created_by_sis = @account_report.parameters['created_by_sis']
       extra_text_term(@account_report)
       include_deleted_objects
+      include_enrollment_filter
+      include_enrollment_states
     end
 
     def csv
@@ -492,7 +494,7 @@ module AccountReports
         # rather than a cursor for this iteration
         # because it often is big enough that the secondary
         # kills it mid-run (http://www.postgresql.org/docs/9.0/static/hot-standby.html)
-        enrol.preload(:root_account, :sis_pseudonym).find_in_batches(start: 0) do |batch|
+        enrol.preload(:root_account, :sis_pseudonym, :role).find_in_batches(start: 0) do |batch|
           users = batch.map {|e| User.new(id: e.user_id)}.compact
           users += batch.map {|e| User.new(id: e.associated_user_id) unless e.associated_user_id.nil?}.compact
           users.uniq!
@@ -549,6 +551,14 @@ module AccountReports
       if @sis_format
         enrol = enrol.where("enrollments.workflow_state NOT IN ('rejected', 'invited', 'creation_pending')
                                AND (courses.sis_source_id IS NOT NULL OR cs.sis_source_id IS NOT NULL)")
+      end
+
+      if @enrollment_filter
+        enrol = enrol.where(type: @enrollment_filter)
+      end
+
+      if @enrollment_states
+        enrol = enrol.where(workflow_state: @enrollment_states)
       end
       enrol
     end

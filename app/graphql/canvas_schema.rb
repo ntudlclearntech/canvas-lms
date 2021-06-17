@@ -49,6 +49,7 @@ class CanvasSchema < GraphQL::Schema
     when Course then Types::CourseType
     when Assignment then Types::AssignmentType
     when AssignmentGroup then Types::AssignmentGroupType
+    when CommentBankItem then Types::CommentBankItemType
     when Conversation then Types::ConversationType
     when CourseSection then Types::SectionType
     when User then Types::UserType
@@ -65,6 +66,7 @@ class CanvasSchema < GraphQL::Schema
     when WikiPage then Types::PageType
     when Attachment then Types::FileType
     when DiscussionTopic then Types::DiscussionType
+    when DiscussionEntry then Types::DiscussionEntryType
     when Quizzes::Quiz then Types::QuizType
     when OutcomeCalculationMethod then Types::OutcomeCalculationMethodType
     when OutcomeProficiency then Types::OutcomeProficiencyType
@@ -73,6 +75,7 @@ class CanvasSchema < GraphQL::Schema
     when MediaObject then Types::MediaObjectType
     when LearningOutcomeGroup then Types::LearningOutcomeGroupType
     when LearningOutcome then Types::LearningOutcomeType
+    when OutcomeFriendlyDescription then Types::OutcomeFriendlyDescriptionType
     when ContentTag
       if type&.name == "ModuleItemInterface"
         case obj.content_type

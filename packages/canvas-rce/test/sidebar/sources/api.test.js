@@ -18,7 +18,7 @@
 
 import assert from 'assert'
 import sinon from 'sinon'
-import RceApiSource from '../../../src/sidebar/sources/api'
+import RceApiSource, {headerFor, originFromHost} from '../../../src/sidebar/sources/api'
 import fetchMock from 'fetch-mock'
 import * as fileUrl from '../../../src/common/fileUrl'
 
@@ -200,21 +200,6 @@ describe('sources/api', () => {
     it('parses server response before handing it back', () => {
       const uri = 'theURI'
       fetchMock.mock(uri, fakePageBody)
-      return apiSource.fetchPage(uri).then(page => {
-        assert.deepEqual(page, {
-          bookmark: 'newBookmark',
-          links: [
-            {href: 'link1', title: 'Link 1'},
-            {href: 'link2', title: 'Link 2'}
-          ]
-        })
-      })
-    })
-
-    it('can parse while-wrapped page data', () => {
-      const whileFakePageBody = 'while(1);' + fakePageBody
-      const uri = 'theURI'
-      fetchMock.mock(uri, whileFakePageBody)
       return apiSource.fetchPage(uri).then(page => {
         assert.deepEqual(page, {
           bookmark: 'newBookmark',
@@ -652,6 +637,42 @@ describe('sources/api', () => {
         assert.strictEqual(fetchMock.lastOptions(uri).headers.Authorization, 'Bearer theJWT')
         assert.deepEqual(response, {media_id: 'm-id', title: 'new title'})
       })
+    })
+  })
+
+  describe('headerFor', () => {
+    it('returns an authorization header', () => {
+      assert.deepStrictEqual(headerFor('the_jwt'), {
+        Authorization: 'Bearer the_jwt'
+      })
+    })
+  })
+
+  describe('originFromHost', () => {
+    // this logic was factored out from baseUri, so the logic is tested
+    // there too.
+    it('uses the incoming http(s) protocol if present', () => {
+      assert.strictEqual(originFromHost('http://host:port'), 'http://host:port', 'echoes http')
+      assert.strictEqual(originFromHost('https://host:port'), 'https://host:port', 'echoes https')
+      assert.strictEqual(originFromHost('host:port', {}), '//host:port', 'no protocol')
+    })
+
+    it('uses the windowOverride protocol if present', () => {
+      const win = {
+        location: {
+          protocol: 'https:'
+        }
+      }
+      assert.strictEqual(
+        originFromHost('http://host:port', win),
+        'http://host:port',
+        'use provided protocol'
+      )
+      assert.strictEqual(
+        originFromHost('host:port', win),
+        'https://host:port',
+        'use window protocol'
+      )
     })
   })
 })

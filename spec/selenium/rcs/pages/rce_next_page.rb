@@ -153,6 +153,10 @@ module RCENextPage
     f('[role^="menuitem"][title="Course Links"]')
   end
 
+  def group_links
+    f('[role^="menuitem"][title="Group Links"]')
+  end
+
   def external_links
     f('[role^="menuitem"][title="External Links"]')
   end
@@ -295,6 +299,10 @@ module RCENextPage
     f('[role^="menuitem"][title="User Documents"]')
   end
 
+  def group_documents
+    f('[role^="menuitem"][title="Group Documents"]')
+  end
+
   def upload_document_modal
     f('[role="dialog"][aria-label="Upload File"')
   end
@@ -309,6 +317,14 @@ module RCENextPage
 
   def course_item_link(title)
     fj("[data-testid='instructure_links-Link'] [role='button']:contains('#{title}')")
+  end
+
+  def course_item_link_exists?(title)
+    element_exists?("//*[@data-testid = 'instructure_links-Link']//*[text() = '#{title}']", true)
+  end
+
+  def pages_list_item_exists?(title)
+    element_exists?("//a[. = '#{title}']", true)
   end
 
   def course_item_links_list
@@ -526,7 +542,11 @@ module RCENextPage
   end
 
   def math_square_root_button
-    f('.sqrt-stem')
+    f('.sqrt-prefix')
+  end
+
+  def editor_sqrt_textarea
+    f('#mathquill-container textarea')
   end
 
   def math_builder_insert_equation_button
@@ -547,6 +567,10 @@ module RCENextPage
 
   def math_rendering_exists?
     element_exists?('.equation_image')
+  end
+
+  def mathjax_element_exists_in_title?
+    element_exists?('.assignment-title .MathJax_Preview')
   end
 
   def save_button
@@ -592,7 +616,7 @@ module RCENextPage
   end
 
   def editor_view_button
-    f('[data-btn-id="rce-edit-btn"]')
+    f('button[data-btn-id="rce-edit-btn"]')
   end
 
   def fullscreen_element
@@ -709,6 +733,10 @@ module RCENextPage
     course_links.click
   end
 
+  def click_group_links
+    group_links.click
+  end
+
   def click_external_links
     external_links.click
   end
@@ -786,6 +814,11 @@ module RCENextPage
 
   def click_course_documents
     course_documents.click
+    wait_for_ajaximations
+  end
+
+  def click_group_documents
+    group_documents.click
     wait_for_ajaximations
   end
 
@@ -932,7 +965,7 @@ module RCENextPage
   end
 
   def click_editor_view_button
-    editor_view_button.click
+    force_click('button[data-btn-id="rce-edit-btn"]')
   end
 
   def switch_to_html_view
@@ -941,10 +974,6 @@ module RCENextPage
 
   def switch_to_editor_view
     click_editor_view_button
-  end
-
-  def tiny_rce_ifr_id
-    f('.tox-editor-container iframe')['id']
   end
 
   def insert_tiny_text(text = 'hello')
@@ -1025,6 +1054,10 @@ module RCENextPage
     math_square_root_button.click
   end
 
+  def add_squareroot_value
+    editor_sqrt_textarea.send_keys('81')
+  end
+
   def select_math_equation_from_toolbar
     math_builder_button.click
   end
@@ -1046,15 +1079,15 @@ module RCENextPage
   end
   def select_text_of_element_by_id(id)
     script = <<-JS
-        const id = arguments[0]
-        const win = document.querySelector('iframe.tox-edit-area__iframe').contentWindow
-        const rng = win.document.createRange()
-        rng.setStart(win.document.getElementById(id).firstChild, 0)
-        rng.setEnd(win.document.getElementById(id).firstChild, 9)
-        const sel = win.getSelection()
-        sel.removeAllRanges()
-        sel.addRange(rng)
-      JS
+    const id = arguments[0]
+    const win = document.querySelector('iframe.tox-edit-area__iframe').contentWindow
+    const rng = win.document.createRange()
+    rng.setStart(win.document.getElementById(id).firstChild, 0)
+    rng.setEnd(win.document.getElementById(id).firstChild, 9)
+    const sel = win.getSelection()
+    sel.removeAllRanges()
+    sel.addRange(rng)
+    JS
 
     driver.execute_script script, id
   end
@@ -1093,8 +1126,8 @@ module RCENextPage
   def create_course_text_file(title)
     @root_folder = Folder.root_folders(@course).first
     @text_file =
-      @root_folder.attachments.create!(filename: title, context: @course) do |a|
-        a.content_type = 'text/plain'
-      end
+      @root_folder
+        .attachments
+        .create!(filename: title, context: @course) { |a| a.content_type = 'text/plain' }
   end
 end

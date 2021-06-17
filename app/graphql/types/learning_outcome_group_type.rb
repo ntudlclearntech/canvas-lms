@@ -28,8 +28,11 @@ module Types
 
     field :parent_outcome_group, Types::LearningOutcomeGroupType, null: true
     field :child_groups, Types::LearningOutcomeGroupType.connection_type,
-          null: true,
-          method: :child_outcome_groups
+          null: true
+    def child_groups
+      object.child_outcome_groups.active
+    end
+
     field :context_id, Integer, null: true
     field :context_type, String, null: true
     field :title, String, null: false
@@ -47,19 +50,27 @@ module Types
 
     field :child_groups_count, Integer, null: false
     def child_groups_count
-      # Not Implemented yet
-      0
+      learning_outcome_group_children_service.total_subgroups(object.id)
     end
 
-    field :outcomes_count, Integer, null: false
-    def outcomes_count
-      # Not Implemented yet
-      0
+    field :outcomes_count, Integer, null: false do
+      argument :search_query, String, required: false
+    end
+    def outcomes_count(**args)
+      learning_outcome_group_children_service.total_outcomes(object.id, args)
     end
 
-    field :outcomes, Types::ContentTagConnection, null: false
-    def outcomes
-      object.child_outcome_links.active.order_by_outcome_title
+    field :outcomes, Types::ContentTagConnection, null: false do
+      argument :search_query, String, required: false
+    end
+    def outcomes(**args)
+      learning_outcome_group_children_service.suboutcomes_by_group_id(object.id, args)
+    end
+
+    private
+
+    def learning_outcome_group_children_service
+      @learning_outcome_group_children_service ||= Outcomes::LearningOutcomeGroupChildren.new(object.context)
     end
   end
 end

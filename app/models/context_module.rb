@@ -549,11 +549,11 @@ class ContextModule < ActiveRecord::Base
     end
   end
 
-  def visibility_for_user(user)
+  def visibility_for_user(user, session=nil)
     opts = {}
-    opts[:can_read] = self.context.grants_right?(user, :read)
+    opts[:can_read] = self.context.grants_right?(user, session, :read)
     if opts[:can_read]
-      opts[:can_read_as_admin] = self.context.grants_right?(user, :read_as_admin)
+      opts[:can_read_as_admin] = self.context.grants_right?(user, session, :read_as_admin)
     end
     opts
   end
@@ -684,6 +684,14 @@ class ContextModule < ActiveRecord::Base
       added_item.indent = params[:indent] || 0
       added_item.workflow_state = 'unpublished' if added_item.new_record?
       added_item.link_settings = params[:link_settings]
+      if content.is_a?(ContextExternalTool) && content.use_1_3? && content.id != 0
+        # Note: using 'new' here instead of 'ResourceLink.create_with' so if validation
+        # of the added item fails, no orphaned resource link is created
+        added_item.associated_asset = context.lti_resource_links.new(
+          custom: Lti::DeepLinkingUtil.validate_custom_params(params[:custom_params]),
+          context_external_tool: content
+        )
+      end
       added_item.save
       added_item
     elsif params[:type] == 'context_module_sub_header' || params[:type] == 'sub_header'

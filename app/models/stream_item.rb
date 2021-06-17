@@ -229,32 +229,26 @@ class StreamItem < ActiveRecord::Base
   end
 
   def self.generate_or_update(object)
-    item = nil
     # we can't coalesce messages that weren't ever saved to the DB
-    if !new_message?(object)
+    unless new_message?(object)
       item = object.stream_item
-    end
-    if item
-      item.regenerate!(object)
-    else
-      item = self.new
-      item.generate_data(object)
-      StreamItem.unique_constraint_retry do |retry_count|
-        if retry_count == 0
-          item.save!
-        else
-          item = nil # if it fails just carry on - it got created somewhere else so grab it later
-        end
-      end
-      item ||= object.reload.stream_item
-
       # prepopulate the reverse association
-      # (mostly useful for specs that regenerate stream items
-      #  multiple times without reloading the asset)
-      if !new_message?(object)
-        object.stream_item = item
-      end
+      object.stream_item = item
+      item&.regenerate!(object)
+      return item if item
     end
+
+    item = self.new
+    item.generate_data(object)
+    StreamItem.unique_constraint_retry do |retry_count|
+      retry_count == 0 ? item.save! : item = nil # if it fails just carry on - it got created somewhere else so grab it later
+    end
+    item ||= object.reload.stream_item
+
+    # prepopulate the reverse association
+    # (mostly useful for specs that regenerate stream items
+    #  multiple times without reloading the asset)
+    object.stream_item = item unless new_message?(object)
 
     item
   end
@@ -267,6 +261,8 @@ class StreamItem < ActiveRecord::Base
     # Make the StreamItem
     object = root_object(object)
     res = StreamItem.generate_or_update(object)
+    return [] if res.nil?
+
     prepare_object_for_unread(object)
 
     l_context_type = res.context_type
@@ -349,7 +345,9 @@ class StreamItem < ActiveRecord::Base
 
   def self.update_read_state_for_asset(asset, new_state, user_id)
     if item = asset.stream_item
-      StreamItemInstance.where(user_id: user_id, stream_item_id: item).first.try(:update_attribute, :workflow_state, new_state)
+      Shard.shard_for(user_id).activate do
+        StreamItemInstance.where(user_id: user_id, stream_item_id: item).first&.update_attribute(:workflow_state, new_state)
+      end
     end
   end
 

@@ -37,7 +37,7 @@ I18nliner.config.babylonPlugins.push('optionalChaining')
 
 AbstractProcessor.prototype.checkFiles = function() {
   const processor = this.constructor.name.replace(/Processor/, '').toLowerCase()
-  const files = scanner.processorFiles[processor]
+  const files = scanner.getFilesForProcessor(processor)
 
   for (const file of files) {
     this.checkWrapper(file, this.checkFile.bind(this))
@@ -70,11 +70,11 @@ var ScopedTranslationHash = require("./scoped_translation_hash");
 // remove path stuff we don't want in the scope
 var pathRegex = new RegExp(
   '.*(' +
-    "app/views/jst" +
-    "|app/coffeescripts/ember" +
+    'ui/shared/jst' +
+    '|ui/features/screenreader_gradebook/jst' +
+    '|packages/[^/]+/src/jst' +
     '|gems/plugins/[^/]+/app/views/jst' +
-  ')' +
-  '(/plugins/[^/]+)?/' // remove plugins bit once we drop requirejs/handlebars_tasks/plugin symlinks
+  ')'
 )
 
 ScopedHbsExtractor.prototype.normalizePath = function(path) {
@@ -96,16 +96,11 @@ module.exports = {
     argv = require('minimist')(argv);
 
     scanner.scanFilesFromI18nrc(
-      scanner.loadConfigFromI18nrc(
-        require('path').resolve(__dirname, '../../../.i18nrc')
+      scanner.loadConfigFromDirectory(
+        require('path').resolve(__dirname, '../../..')
       )
     )
 
-    // the unlink/symlink uglieness is a temporary hack to get around our circular
-    // symlinks. we should just remove the symlinks
-    fs.unlinkSync('./public/javascripts/symlink_to_node_modules')
     Commands.run(argv._[0], argv) || (process.exitCode = 1);
-    fs.symlinkSync('../../node_modules', './public/javascripts/symlink_to_node_modules')
-
   }
 };

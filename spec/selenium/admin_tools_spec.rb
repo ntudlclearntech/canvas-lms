@@ -603,7 +603,6 @@ describe "admin_tools" do
         cc.last_bounce_at = 6.days.ago
         cc.last_bounce_details = {'bouncedRecipients' => [{'diagnosticCode' => '550 what a luser'}]}
       end
-      @account.enable_feature!(:bounced_emails_admin_tool)
       @user = @account_admin
     end
 
@@ -626,6 +625,8 @@ describe "admin_tools" do
       expect(data).not_to include 'one@example.com'
       expect(data).to include 'two@example.com'
       expect(data).not_to include 'three@example.com'
+      csvLink = fj("#bouncedEmailsPane a:contains('Download these results as CSV')")['href']
+      expect(csvLink).to include "/api/v1/accounts/#{@account.id}/bounced_communication_channels.csv?order=desc&pattern=*%40example.com"
     end
   end
 end

@@ -58,8 +58,8 @@ module CC::Importer::Canvas
       ['title', 'course_code', 'default_wiki_editing_roles',
        'turnitin_comments', 'default_view', 'license', 'locale',
        'group_weighting_scheme', 'storage_quota', 'grading_standard_identifier_ref',
-       'overridden_course_visibility',
-       'root_account_uuid', 'image_url', 'image_identifier_ref'].each do |string_type|
+       'overridden_course_visibility', 'root_account_uuid',
+       'image_url', 'image_identifier_ref', 'course_color'].each do |string_type|
         val = get_node_val(doc, string_type)
         course[string_type] = val unless val.nil?
       end
@@ -73,7 +73,8 @@ module CC::Importer::Canvas
        'hide_distribution_graphs', 'allow_student_discussion_topics',
        'allow_student_discussion_editing', 'show_announcements_on_home_page', 'usage_rights_required',
        'restrict_student_future_view', 'restrict_student_past_view', 'show_total_grade_as_points',
-       'organize_epub_by_content_type', 'enable_offline_web_export', 'restrict_enrollments_to_course_dates'
+       'organize_epub_by_content_type', 'enable_offline_web_export', 'restrict_enrollments_to_course_dates',
+       'homeroom_course', 'sync_enrollments_from_homeroom'
       ].each do |bool_val|
         val = get_bool_val(doc, bool_val)
         course[bool_val] = val unless val.nil?
@@ -82,7 +83,7 @@ module CC::Importer::Canvas
         val = get_time_val(doc, date_type)
         course[date_type] = val
       end
-      ['grading_standard_id', 'home_page_announcement_limit'].each do |int_val|
+      ['grading_standard_id', 'home_page_announcement_limit', 'homeroom_course_id'].each do |int_val|
         if val = get_int_val(doc, int_val)
           course[int_val] = val
         end
