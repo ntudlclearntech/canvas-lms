@@ -63,4 +63,42 @@ describe Types::LearningOutcomeType do
       expect(outcome_type.resolve("_id")).to be_nil
     end
   end
+
+  context "assessed" do
+    before(:once) do
+      outcome_with_rubric(outcome: @outcome, context: Account.default)
+      course_with_student
+    end
+
+    it "returns false when not assessed" do
+      expect(outcome_type.resolve("assessed")).to eq false
+    end
+
+    it "returns true when assessed" do
+      rubric_assessment_model(rubric: @rubric, user: @student)
+      expect(outcome_type.resolve("assessed")).to eq true
+    end
+
+    it "returns false when assessment deleted" do
+      assessment = rubric_assessment_model(rubric: @rubric, user: @student)
+      assessment.learning_outcome_results.destroy_all
+      expect(outcome_type.resolve("assessed")).to eq false
+    end
+  end
+
+  context "imported" do
+    let(:course) { Course.create! }
+    let(:root_group) { course.root_outcome_group }
+
+    it "returns false when not imported" do
+      expect(outcome_type.resolve("isImported(targetContextType: \"Course\", targetContextId: #{course.id})"))
+        .to eq false
+    end
+
+    it "returns true when imported" do
+      root_group.add_outcome(@outcome)
+      expect(outcome_type.resolve("isImported(targetContextType: \"Course\", targetContextId: #{course.id})"))
+        .to eq true
+    end
+  end
 end

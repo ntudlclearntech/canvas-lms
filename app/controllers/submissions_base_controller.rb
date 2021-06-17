@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #
 # Copyright (C) 2018 - present Instructure, Inc.
 #
@@ -195,6 +197,16 @@ class SubmissionsBaseController < ApplicationController
           format.text { render json: {errors: error_json}, status: error_status }
         end
       end
+    end
+  end
+
+  def redo_submission
+    if @assignment.can_reassign?(@current_user) &&
+        @submission.cached_due_date
+      @submission.update!(redo_request: true)
+      head :no_content
+    else
+      render_unauthorized_action
     end
   end
 

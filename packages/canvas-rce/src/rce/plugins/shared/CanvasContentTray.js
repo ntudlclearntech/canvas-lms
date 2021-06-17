@@ -29,6 +29,7 @@ import Bridge from '../../../bridge/Bridge'
 import formatMessage from '../../../format-message'
 import Filter, {useFilterSettings} from './Filter'
 import {StoreProvider} from './StoreContext'
+import {getTrayHeight} from './trayUtils'
 
 /**
  * Returns the translated tray label
@@ -223,6 +224,7 @@ export default function CanvasContentTray(props) {
   const [hidingTrayOnAction, setHidingTrayOnAction] = useState(true)
 
   const trayRef = useRef(null)
+  const scrollingAreaRef = useRef(null)
   const [filterSettings, setFilterSettings] = useFilterSettings()
 
   const {bridge, editor, onTrayClosing} = {...props}
@@ -262,6 +264,16 @@ export default function CanvasContentTray(props) {
     // it's OK the setFilterSettings is not a dependency
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editor.id, bridge, handleDismissTray, hidingTrayOnAction])
+
+  useEffect(() => {
+    if (
+      hasOpened &&
+      scrollingAreaRef.current &&
+      !scrollingAreaRef.current.style.overscrollBehaviorY
+    ) {
+      scrollingAreaRef.current.style.overscrollBehaviorY = 'contain'
+    }
+  }, [hasOpened])
 
   function handleOpenTray() {
     bridge.focusEditor(editor)
@@ -341,10 +353,19 @@ export default function CanvasContentTray(props) {
           onOpen={handleOpenTray}
           onEntered={() => {
             const c = document.querySelector('[role="main"]')
-            const target_w = c ? c.offsetWidth - trayRef.current?.offsetWidth : 0
-            if (target_w >= 320) {
-              c.style.boxSizing = 'border-box'
-              c.style.width = `${target_w}px`
+            let target_w = 0
+            if (c) {
+              const margin =
+                window.getComputedStyle(c).direction === 'ltr'
+                  ? document.body.getBoundingClientRect().right - c.getBoundingClientRect().right
+                  : c.getBoundingClientRect().left
+
+              target_w = c.offsetWidth - trayRef.current?.offsetWidth + margin
+
+              if (target_w >= 320 && target_w < c.offsetWidth) {
+                c.style.boxSizing = 'border-box'
+                c.style.width = `${target_w}px`
+              }
             }
             setHidingTrayOnAction(target_w < 320)
           }}
@@ -358,7 +379,7 @@ export default function CanvasContentTray(props) {
             <Flex
               direction="column"
               as="div"
-              height="100vh"
+              height={getTrayHeight()}
               overflowY="hidden"
               tabIndex="-1"
               data-canvascontenttray-content
@@ -384,6 +405,7 @@ export default function CanvasContentTray(props) {
                 <Filter
                   {...filterSettings}
                   userContextType={props.contextType}
+                  containingContextType={props.containingContext.contextType}
                   onChange={newFilter => {
                     handleFilterChange(
                       newFilter,
@@ -396,7 +418,12 @@ export default function CanvasContentTray(props) {
                 />
               </Flex.Item>
 
-              <Flex.Item grow shrink margin="xx-small xxx-small 0">
+              <Flex.Item
+                grow
+                shrink
+                margin="xx-small xxx-small 0"
+                elementRef={el => (scrollingAreaRef.current = el)}
+              >
                 <ErrorBoundary>
                   <DynamicPanel
                     contentType={filterSettings.contentType}
@@ -429,6 +456,11 @@ const trayPropsMap = {
   canUploadFiles: bool.isRequired,
   contextId: string.isRequired, // initial value indicating the user's context (e.g. student v teacher), not the tray's
   contextType: string.isRequired, // initial value indicating the user's context, not the tray's
+  containingContext: shape({
+    contextType: string.isRequired,
+    contextId: string.isRequired,
+    userId: string.isRequired
+  }),
   filesTabDisabled: bool,
   host: requiredWithoutSource,
   jwt: requiredWithoutSource,
@@ -439,7 +471,7 @@ const trayPropsMap = {
   themeUrl: string
 }
 
-export const trayProps = shape(trayPropsMap)
+export const trayPropTypes = shape(trayPropsMap)
 
 CanvasContentTray.propTypes = {
   bridge: instanceOf(Bridge).isRequired,

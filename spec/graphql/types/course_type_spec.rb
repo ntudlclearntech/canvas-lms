@@ -554,10 +554,25 @@ describe Types::CourseType do
       expect(course_type.resolve("imageUrl")).to_not be_nil
     end
 
+    it 'returns a url from id when url is blank' do
+      course.image_url = ''
+      course.image_id = attachment_model(context: @course).id
+      course.save!
+      expect(course_type.resolve("imageUrl")).to_not be_nil
+      expect(course_type.resolve("imageUrl")).to_not eq ""
+    end
+
     it 'returns a url from settings' do
       course.image_url = "http://some.cool/gif.gif"
       course.save!
       expect(course_type.resolve("imageUrl")).to eq "http://some.cool/gif.gif"
+    end
+  end
+
+  describe 'AssetString' do
+    it 'returns the asset string' do
+      result = course_type.resolve('assetString')
+      expect(result).to eq @course.asset_string
     end
   end
 end

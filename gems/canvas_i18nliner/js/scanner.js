@@ -2,7 +2,7 @@ const path = require('path')
 const glob = require('glob')
 const fs = require('fs')
 
-const processorFiles = { js: [], hbs: [] }
+const filesByProcessor = { js: [], hbs: [] }
 
 const loadIgnoreFile = file => (
   fs.readFileSync(file, 'utf8')
@@ -34,14 +34,18 @@ const discoverIgnores = files => {
   return ignoreLists.flat()
 }
 
-const loadConfigFromI18nrc = file => {
-  const config = JSON.parse(fs.readFileSync(file, 'utf8'))
-  const ignoreFile = path.resolve(path.dirname(file), '.i18nignore')
+const loadConfigFromDirectory = dir => {
+  const configFile = path.resolve(dir, '.i18nrc')
+  const ignoreFile = path.resolve(dir, '.i18nignore')
+  const config = fs.existsSync(configFile) ?
+    JSON.parse(fs.readFileSync(configFile, 'utf8')) :
+    {}
+  ;
 
-  config.cwd = path.dirname(file)
+  config.cwd = dir
   config.ignore = fs.existsSync(ignoreFile) ? loadIgnoreFile(ignoreFile) : []
 
-  return Object.assign(config, { cwd: path.dirname(file) })
+  return config
 }
 
 const scanFilesFromI18nrc = ({ cwd, files = [], ignore = [], include = [] }) => {
@@ -51,27 +55,27 @@ const scanFilesFromI18nrc = ({ cwd, files = [], ignore = [], include = [] }) => 
     // need 2 passes to discover .i18nignore files
     const included = glob.sync(pattern, { ignore, ...globopts })
 
-    processorFiles[processor] = processorFiles[processor].concat(
+    filesByProcessor[processor] = filesByProcessor[processor].concat(
       glob.sync(pattern, { ignore: ignore.concat(discoverIgnores(included)), ...globopts })
     )
   }
 
-  for (const subConfigFile of include) {
+  for (const dir of include) {
     scanFilesFromI18nrc(
       combineIgnores(ignore)(
-        loadConfigFromI18nrc(
-          path.resolve(cwd, subConfigFile)
+        loadConfigFromDirectory(
+          path.resolve(cwd, dir)
         )
       )
     )
   }
 }
 
-exports.processorFiles = processorFiles
-exports.loadConfigFromI18nrc = loadConfigFromI18nrc
+exports.getFilesForProcessor = name => filesByProcessor[name]
+exports.loadConfigFromDirectory = loadConfigFromDirectory
 exports.scanFilesFromI18nrc = scanFilesFromI18nrc
 exports.reset = () => {
-  for (const processor of Object.keys(processorFiles)) {
-    processorFiles[processor] = []
+  for (const processor of Object.keys(filesByProcessor)) {
+    filesByProcessor[processor].splice(0)
   }
 }

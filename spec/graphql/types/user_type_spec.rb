@@ -177,6 +177,19 @@ describe Types::UserType do
       ).to match_array @student.enrollments.map(&:to_param)
     end
 
+    it "excludes deleted course enrollments for a user" do
+      @course1.enroll_student(@student, enrollment_state: "active")
+      @course2.destroy
+
+      site_admin_user
+      expect(
+        user_type.resolve(
+          "enrollments { _id }",
+          current_user: @admin
+        )
+      ).to eq [@student.enrollments.first.to_param]
+    end
+
     it "doesn't return enrollments for courses the user doesn't have permission for" do
       expect(
         user_type.resolve(%|enrollments(courseId: "#{@course2.id}") { _id }|)
@@ -313,25 +326,31 @@ describe Types::UserType do
     end
 
     it 'has createdAt field for conversationMessagesConnection' do
-      c = conversation(@student, @teacher)
-      type = GraphQLTypeTester.new(@student, current_user: @student, domain_root_account: @student.account, request: ActionDispatch::TestRequest.create)
-      expect(
-        type.resolve('conversationsConnection { nodes { conversation { conversationMessagesConnection { nodes { createdAt } } } } }')[0][0]
-      ).to eq c.conversation.conversation_messages.first.created_at.iso8601
+      Timecop.freeze do
+        c = conversation(@student, @teacher)
+        type = GraphQLTypeTester.new(@student, current_user: @student, domain_root_account: @student.account, request: ActionDispatch::TestRequest.create)
+        expect(
+          type.resolve('conversationsConnection { nodes { conversation { conversationMessagesConnection { nodes { createdAt } } } } }')[0][0]
+        ).to eq c.conversation.conversation_messages.first.created_at.iso8601
+      end
     end
 
     it 'has updatedAt field for conversations and conversationParticipants' do
-      convo = conversation(@student, @teacher)
-      type = GraphQLTypeTester.new(@student, current_user: @student, domain_root_account: @student.account, request: ActionDispatch::TestRequest.create)
-      res_node = type.resolve('conversationsConnection { nodes { updatedAt }}')[0]
-      expect(res_node).to eq convo.conversation.updated_at.iso8601
+      Timecop.freeze do
+        convo = conversation(@student, @teacher)
+        type = GraphQLTypeTester.new(@student, current_user: @student, domain_root_account: @student.account, request: ActionDispatch::TestRequest.create)
+        res_node = type.resolve('conversationsConnection { nodes { updatedAt }}')[0]
+        expect(res_node).to eq convo.conversation.conversation_participants.first.updated_at.iso8601
+      end
     end
 
     it 'has updatedAt field for conversationParticipantsConnection' do
-      convo = conversation(@student, @teacher)
-      type = GraphQLTypeTester.new(@student, current_user: @student, domain_root_account: @student.account, request: ActionDispatch::TestRequest.create)
-      res_node = type.resolve('conversationsConnection { nodes { conversation { conversationParticipantsConnection { nodes { updatedAt } } } } }')[0][0]
-      expect(res_node).to eq convo.conversation.conversation_participants.first.updated_at.iso8601
+      Timecop.freeze do
+        convo = conversation(@student, @teacher)
+        type = GraphQLTypeTester.new(@student, current_user: @student, domain_root_account: @student.account, request: ActionDispatch::TestRequest.create)
+        res_node = type.resolve('conversationsConnection { nodes { conversation { conversationParticipantsConnection { nodes { updatedAt } } } } }')[0][0]
+        expect(res_node).to eq convo.conversation.conversation_participants.first.updated_at.iso8601
+      end
     end
 
     it 'does not return conversations for other users' do
@@ -365,6 +384,8 @@ describe Types::UserType do
       conversation(@teacher, @student, {body: 'oh yea =)'})
       conversation(@student, @random_person, {body: 'Whats up?', starred: true})
 
+      # used for the sent scope
+      conversation(@random_person, @teacher, {body: 'Help! Please make me non-random!'})
       type = GraphQLTypeTester.new(@student, current_user: @student, domain_root_account: @student.account, request: ActionDispatch::TestRequest.create)
       result = type.resolve(
         "conversationsConnection(scope: \"inbox\") { nodes { conversation { conversationMessagesConnection { nodes { body } } } } }"
@@ -377,6 +398,15 @@ describe Types::UserType do
       )
       expect(result.count).to eq 1
       expect(result[0][0]).to eq 'Whats up?'
+
+      type = GraphQLTypeTester.new(
+        @random_person,
+        current_user: @random_person,
+        domain_root_account: @random_person.account,
+        request: ActionDispatch::TestRequest.create
+      )
+      result = type.resolve("conversationsConnection(scope: \"sent\") { nodes { conversation { conversationMessagesConnection { nodes { body } } } } }")
+      expect(result[0][0]).to eq "Help! Please make me non-random!"
     end
   end
 
@@ -428,6 +458,131 @@ describe Types::UserType do
       known_users = @student.address_book.search_users(context: "course_#{@course.id}_students").paginate(per_page: 3)
       result = type.resolve("recipients(context: \"course_#{@course.id}_students\") { usersConnection { nodes { _id } } }")
       expect(result).to match_array(known_users.pluck(:id).map(&:to_s))
+    end
+  end
+
+  context 'favorite_courses' do
+    before(:once) do
+      @course1 = @course
+      course_with_user("StudentEnrollment", user: @student, active_all: true)
+      @course2 = @course
+    end
+
+    let(:type) do
+      GraphQLTypeTester.new(
+        @student,
+        current_user: @student,
+        domain_root_account: @course.account.root_account,
+        request: ActionDispatch::TestRequest.create
+      )
+    end
+
+    it 'returns primary enrollment courses if there are no favorite courses' do
+      result = type.resolve('favoriteCoursesConnection { nodes { _id } }')
+      expect(result).to match_array([@course1.id.to_s, @course2.id.to_s])
+    end
+
+    it 'returns favorite courses' do
+      @student.favorites.create!(context: @course1)
+      result = type.resolve('favoriteCoursesConnection { nodes { _id } }')
+      expect(result).to match_array([@course1.id.to_s])
+    end
+  end
+
+  context 'favorite_groups' do
+    let(:type) do
+      GraphQLTypeTester.new(
+        @student,
+        current_user: @student,
+        domain_root_account: @course.account.root_account,
+        request: ActionDispatch::TestRequest.create
+      )
+    end
+
+    it 'returns all groups if there are no favorite groups' do
+      group_with_user(user: @student, active_all: true)
+      result = type.resolve('favoriteGroupsConnection { nodes { _id } }')
+      expect(result).to match_array([@group.id.to_s])
+    end
+
+    it 'return favorite groups' do
+      2.times do
+        group_with_user(user: @student, active_all: true)
+      end
+      @student.favorites.create!(context: @group)
+      result = type.resolve('favoriteGroupsConnection { nodes { _id } }')
+      expect(result).to match_array([@group.id.to_s])
+    end
+  end
+
+  context 'CommentBankItemsConnection' do
+    before do
+      @comment_bank_item = comment_bank_item_model(user: @teacher, context: @course, comment: 'great comment!')
+    end
+
+    let(:type) do
+      GraphQLTypeTester.new(
+        @teacher,
+        current_user: @teacher,
+        domain_root_account: @course.account.root_account,
+        request: ActionDispatch::TestRequest.create
+      )
+    end
+
+    it 'returns comment bank items for the queried user' do
+      expect(
+        type.resolve('commentBankItemsConnection { nodes { _id } }')
+      ).to eq [@comment_bank_item.id.to_s]
+    end
+
+    describe 'cross sharding' do
+      specs_require_sharding
+
+      it 'returns comments across shards' do
+        @shard1.activate do
+          account = Account.create!(name: 'new shard account')
+          @course2 = course_factory(account: account)
+          @course2.enroll_user(@teacher)
+          @comment2 = comment_bank_item_model(user: @teacher, context: @course2, comment: 'shard 2 comment')
+        end
+
+        expect(
+          type.resolve('commentBankItemsConnection { nodes { comment } }').sort
+        ).to eq ['great comment!', 'shard 2 comment']
+      end
+    end
+
+    describe 'with the limit argument' do
+      it 'returns a limited number of results' do
+        comment_bank_item_model(user: @teacher, context: @course, comment: '2nd great comment!')
+        expect(
+          type.resolve('commentBankItemsConnection(limit: 1) { nodes { comment } }').length
+        ).to eq 1
+      end
+    end
+
+    describe 'with a search query' do
+      before do
+        @comment_bank_item2 = comment_bank_item_model(user: @teacher, context: @course, comment: 'new comment!')
+      end
+
+      it 'returns results that match the query' do
+        expect(
+          type.resolve("commentBankItemsConnection(query: \"new\") { nodes { _id } }").length
+        ).to eq 1
+      end
+
+      it 'strips leading/trailing white space' do
+        expect(
+          type.resolve("commentBankItemsConnection(query: \"    new   \") { nodes { _id } }").length
+        ).to eq 1
+      end
+
+      it 'does not query results if query.strip is blank' do
+        expect(
+          type.resolve("commentBankItemsConnection(query: \"  \") { nodes { _id } }").length
+        ).to eq 2
+      end
     end
   end
 end

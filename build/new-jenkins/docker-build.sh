@@ -11,13 +11,13 @@ WORKSPACE=${WORKSPACE:-$(pwd)}
 # 1. When using a multi-stage build, only the first stage was cached. We were
 #    unable to get the CI system to use cached layers from any subsequent stage.
 # 2. When using buildkit, the entire cache would be intermittently not reused.
-#    It seemed to happen if Buildkit also pulled the instructure/ruby-passenger
+#    It seemed to happen if Buildkit also pulled the starlord.inscloudgate.net/jenkins/ruby-passenger
 #    image manifest before pulling the image layers.
 # 3. When using buildkit, modifying a layer could result in the cache for previous
 #    layers not being used, even when their contents have not changed.
 
 # Images:
-# $RUBY_RUNNER_PREFIX: instructure/ruby-passenger + gems
+# $RUBY_RUNNER_PREFIX: starlord.inscloudgate.net/jenkins/ruby-passenger + gems
 # $YARN_RUNNER_PREFIX: $RUBY_RUNNER_PREFIX + yarn
 # $WEBPACK_BUILDER_PREFIX: $YARN_RUNNER_PREFIX + compiled packages/
 # $WEBPACK_CACHE_PREFIX: $RUBY_RUNNER_PREFIX + final compiled assets
@@ -35,7 +35,12 @@ WORKSPACE=${WORKSPACE:-$(pwd)}
 # $WEBPACK_BUILDER_TAG: additional tag for the webpack-builder image
 #   - set to patchset unique ID for builds to reference without knowing about the hash ID
 
+export CACHE_VERSION="2021-02-16.1"
+
 source ./build/new-jenkins/docker-build-helpers.sh
+
+./build/new-jenkins/docker-with-flakey-network-protection.sh pull starlord.inscloudgate.net/jenkins/dockerfile:1.0-experimental
+./build/new-jenkins/docker-with-flakey-network-protection.sh pull starlord.inscloudgate.net/jenkins/busybox
 
 DOCKER_BUILDKIT=1 docker build --file Dockerfile.jenkins-cache --tag "local/cache-helper-collect-gems" --target cache-helper-collect-gems "$WORKSPACE"
 DOCKER_BUILDKIT=1 docker build --file Dockerfile.jenkins-cache --tag "local/cache-helper-collect-yarn" --target cache-helper-collect-yarn "$WORKSPACE"
@@ -52,17 +57,18 @@ YARN_RUNNER_DOCKERFILE_MD5=$(cat Dockerfile.jenkins.yarn-runner | md5sum)
 WEBPACK_BUILDER_DOCKERFILE_MD5=$(cat Dockerfile.jenkins.webpack-builder | md5sum)
 WEBPACK_CACHE_DOCKERFILE_MD5=$(cat Dockerfile.jenkins.webpack-cache | md5sum)
 
-./build/new-jenkins/docker-with-flakey-network-protection.sh pull instructure/ruby-passenger:$RUBY
+./build/new-jenkins/docker-with-flakey-network-protection.sh pull starlord.inscloudgate.net/jenkins/ruby-passenger:$RUBY
 
-BASE_IMAGE_ID=$(docker images --filter=reference=instructure/ruby-passenger:$RUBY --format '{{.ID}}')
+BASE_IMAGE_ID=$(docker images --filter=reference=starlord.inscloudgate.net/jenkins/ruby-passenger:$RUBY --format '{{.ID}}')
 
 RUBY_RUNNER_BUILD_ARGS=(
-  --build-arg CANVAS_RAILS6_0=${CANVAS_RAILS6_0:-0}
+  --build-arg CANVAS_RAILS6_0=${CANVAS_RAILS6_0:-1}
   --build-arg POSTGRES_CLIENT="$POSTGRES_CLIENT"
   --build-arg RUBY="$RUBY"
 )
 WEBPACK_CACHE_BUILD_ARGS=(
   --build-arg JS_BUILD_NO_UGLIFY="$JS_BUILD_NO_UGLIFY"
+  --build-arg RAILS_LOAD_ALL_LOCALES="$RAILS_LOAD_ALL_LOCALES"
 )
 RUBY_RUNNER_PARTS=(
   $BASE_IMAGE_ID
@@ -137,7 +143,6 @@ if [ -z "${WEBPACK_CACHE_SELECTED_TAG}" ]; then
       --label "RUBY_RUNNER_SELECTED_TAG=$RUBY_RUNNER_SELECTED_TAG" \
       --label "YARN_RUNNER_SELECTED_TAG=$YARN_RUNNER_SELECTED_TAG" \
       --tag "${WEBPACK_BUILDER_TAGS[SAVE_TAG]}" \
-      ${WEBPACK_BUILDER_TAG:+ --tag "$WEBPACK_BUILDER_TAG"} \
       - < Dockerfile.jenkins.webpack-builder
 
     WEBPACK_BUILDER_SELECTED_TAG=${WEBPACK_BUILDER_TAGS[SAVE_TAG]}
@@ -156,7 +161,7 @@ if [ -z "${WEBPACK_CACHE_SELECTED_TAG}" ]; then
     tag_many $RUBY_RUNNER_SELECTED_TAG local/ruby-runner ${RUBY_RUNNER_TAGS[SAVE_TAG]}
   fi
 
-  tag_many $WEBPACK_BUILDER_SELECTED_TAG local/webpack-builder ${WEBPACK_BUILDER_TAGS[SAVE_TAG]}
+  tag_many $WEBPACK_BUILDER_SELECTED_TAG local/webpack-builder ${WEBPACK_BUILDER_TAGS[SAVE_TAG]} ${WEBPACK_BUILDER_TAGS[UNIQUE_TAG]-}
 
   # Using a multi-stage build is safe for the below image because
   # there is no expectation that we will need to use docker's
@@ -177,6 +182,12 @@ else
   RUBY_RUNNER_SELECTED_TAG=$(docker inspect $WEBPACK_CACHE_SELECTED_TAG --format '{{ .Config.Labels.RUBY_RUNNER_SELECTED_TAG }}')
   YARN_RUNNER_SELECTED_TAG=$(docker inspect $WEBPACK_CACHE_SELECTED_TAG --format '{{ .Config.Labels.YARN_RUNNER_SELECTED_TAG }}')
   WEBPACK_BUILDER_SELECTED_TAG=$(docker inspect $WEBPACK_CACHE_SELECTED_TAG --format '{{ .Config.Labels.WEBPACK_BUILDER_SELECTED_TAG }}')
+
+  [ "$RUBY_RUNNER_SELECTED_TAG" != "${RUBY_RUNNER_TAGS[SAVE_TAG]}" ] && tag_remote_async "RUBY_RUNNER_TAG_REMOTE_SAVE_PID" $RUBY_RUNNER_SELECTED_TAG ${RUBY_RUNNER_TAGS[SAVE_TAG]}
+  [ "$YARN_RUNNER_SELECTED_TAG" != "${YARN_RUNNER_TAGS[SAVE_TAG]}" ] && tag_remote_async "YARN_RUNNER_TAG_REMOTE_SAVE_PID" $YARN_RUNNER_SELECTED_TAG ${YARN_RUNNER_TAGS[SAVE_TAG]}
+  [ "$WEBPACK_BUILDER_SELECTED_TAG" != "${WEBPACK_BUILDER_TAGS[SAVE_TAG]}" ] && tag_remote_async "WEBPACK_BUILDER_TAG_REMOTE_SAVE_PID" $WEBPACK_BUILDER_SELECTED_TAG ${WEBPACK_BUILDER_TAGS[SAVE_TAG]}
+
+  [ ! -z "${CACHE_UNIQUE_SCOPE-}" ] && tag_remote_async "WEBPACK_BUILDER_TAG_REMOTE_UNIQUE_PID" $WEBPACK_BUILDER_SELECTED_TAG ${WEBPACK_BUILDER_TAGS[UNIQUE_TAG]}
 fi
 
 tag_many $WEBPACK_CACHE_SELECTED_TAG local/webpack-cache ${WEBPACK_CACHE_TAGS[SAVE_TAG]}

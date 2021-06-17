@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License along
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-import React, {useEffect, useState} from 'react'
+import React, {useCallback, useEffect, useRef, useState} from 'react'
 import {func, string} from 'prop-types'
 import formatMessage from 'format-message'
 import {CodeEditor} from '@instructure/ui-code-editor'
@@ -57,9 +57,14 @@ const inline_elems = [
   'tt'
 ]
 
-const RceHtmlEditor = React.forwardRef((props, editorRef) => {
+const RceHtmlEditor = React.forwardRef(({onFocus, ...props}, editorRef) => {
   const [code, setCode] = useState(props.code)
   const label = formatMessage('html code editor')
+  const [dir, setDir] = useState(getComputedStyle(document.body, null).direction)
+
+  useEffect(() => {
+    setCode(beautify.html(props.code, {inline: inline_elems}))
+  }, [])
 
   useEffect(() => {
     // INSTUI sets the CodeEditor's surrounding label's
@@ -82,7 +87,9 @@ const RceHtmlEditor = React.forwardRef((props, editorRef) => {
       `
       document.head.appendChild(stylesheet)
     }
-  }, [])
+    // odds are, this won't change the dir.
+    setDir(getComputedStyle(editorRef.current || document.body, null).direction)
+  }, [dir, editorRef])
 
   useEffect(() => {
     // scoping querySelector to the container div makes sure we're targeting this CodeEditor
@@ -94,16 +101,26 @@ const RceHtmlEditor = React.forwardRef((props, editorRef) => {
     editor.style.border = '0'
   }, [props.height, editorRef])
 
-  useEffect(() => {
-    setCode(beautify.html(props.code, {inline: inline_elems}))
-  }, [props.code])
+  const isFocused = useRef(false)
+
+  // move cursor to the top of the html code when the editor is focused for the first time
+  const handleFocus = useCallback(
+    (editor, event) => {
+      if (!isFocused.current) {
+        editor.setCursor(0, 0)
+        isFocused.current = true
+      }
+      onFocus(event)
+    },
+    [onFocus]
+  )
 
   // setting height on the container keeps the RCE toolbar from jumping
   return (
     <div
       ref={editorRef}
       className="RceHtmlEditor"
-      style={{height: props.height, overflow: 'hidden'}}
+      style={{height: props.height, overflow: 'hidden', textAlign: 'start'}}
     >
       <CodeEditor
         label={label}
@@ -114,14 +131,16 @@ const RceHtmlEditor = React.forwardRef((props, editorRef) => {
           autofocus: false,
           spellcheck: true,
           extraKeys: {Tab: false, 'Shift-Tab': false},
-          screenReaderLabel: label
+          screenReaderLabel: label,
+          direction: dir,
+          rtlMoveVisually: true
         }}
         value={code}
         onChange={value => {
           setCode(value)
           props.onChange(value)
         }}
-        onFocus={props.onFocus}
+        onFocus={handleFocus}
       />
     </div>
   )

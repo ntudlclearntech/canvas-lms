@@ -41,6 +41,7 @@ import {
 import Bridge from '../../../../bridge'
 import formatMessage from '../../../../format-message'
 import DimensionsInput, {useDimensionsState} from '../../shared/DimensionsInput'
+import {getTrayHeight} from '../../shared/trayUtils'
 
 const getLiveRegion = () => document.getElementById('flash_screenreader_holder')
 export default function VideoOptionsTray(props) {
@@ -147,7 +148,7 @@ export default function VideoOptionsTray(props) {
           shouldReturnFocus
           size={cc_in_rce_video_tray ? 'regular' : undefined}
         >
-          <Flex direction="column" height="100vh">
+          <Flex direction="column" height={getTrayHeight()}>
             <Flex.Item as="header" padding="medium">
               <Flex direction="row">
                 <Flex.Item grow shrink>
@@ -225,7 +226,7 @@ export default function VideoOptionsTray(props) {
                           <ClosedCaptionPanel
                             subtitles={subtitles.map(st => ({
                               locale: st.locale,
-                              file: {name: st.language} // this is an artifact of ClosedCaptionCreatorRow's inards
+                              file: {name: st.language || st.locale} // this is an artifact of ClosedCaptionCreatorRow's inards
                             }))}
                             uploadMediaTranslations={Bridge.uploadMediaTranslations}
                             languages={Bridge.languages}

@@ -1,40 +1,46 @@
 const I18nPlugin = require('../frontend_build/i18nPlugin')
 const path = require('path')
 const baseWebpackConfig = require('../frontend_build/baseWebpackConfig')
-const CompiledReferencePlugin = require('../frontend_build/CompiledReferencePlugin')
 
 const root = path.resolve(__dirname, '..')
 
 module.exports = {
-  "stories": [
-    "../app/jsx/**/*.stories.mdx",
-    "../app/jsx/**/*.stories.@(js|jsx|ts|tsx)"
+  stories: [
+    '../ui/**/*.stories.mdx',
+    '../ui/**/*.stories.@(js|jsx|ts|tsx)'
   ],
-  "addons": [
-    "@storybook/addon-links",
-    "@storybook/addon-essentials"
+  addons: [
+    '@storybook/addon-links',
+    '@storybook/addon-essentials'
   ],
-  "webpackFinal": async (config, { configType }) => {
+  webpackFinal: async (config) => {
     config.module.noParse = [/i18nliner\/dist\/lib\/i18nliner/]
-    config.plugins.push(
-      new I18nPlugin()
-    );
-    config.plugins.push(
-      new CompiledReferencePlugin(),
-    );
+    config.plugins.push(new I18nPlugin())
     config.resolveLoader.modules = [
-      path.resolve(__dirname, '../public/javascripts/'),
-      path.resolve(__dirname, '../app/coffeescripts/'),
       path.resolve(__dirname, '../frontend_build/'),
       'node_modules'
     ]
+
     config.resolve.modules = [
-      path.resolve(__dirname, '../public/javascripts/'),
-      path.resolve(__dirname, '../app/coffeescripts'),
-      path.resolve(__dirname, '../frontend_build/'),
+      path.resolve(__dirname, '../ui/shims'),
+      path.resolve(__dirname, '../public/javascripts'), // for translations
       'node_modules'
     ]
-    config.resolve.alias['coffeescripts/str/i18nLolcalize.js'] = path.resolve(__dirname, '../app/coffeescripts/str/i18nLolcalize.js')
-    return config;
+    config.resolve.alias = {...baseWebpackConfig.resolve.alias, ...config.resolve.alias}
+    config.module.rules = [
+      ...config.module.rules,
+      {
+        test: /\.coffee$/,
+        include: [path.resolve(__dirname, '../ui')],
+        loaders: ['coffee-loader']
+      },
+      {
+        test: /\.handlebars$/,
+        include: [path.resolve(__dirname, '../ui')],
+        loaders: ['i18nLinerHandlebars']
+      }
+    ]
+
+    return config
   }
 }

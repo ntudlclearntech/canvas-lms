@@ -89,10 +89,9 @@ describe 'assignments' do
     module_dropdown_item(@module1.name).click
   }
 
-  context 'with direct share FF ON' do
+  describe 'direct share feature' do
     before(:once) do
       setup
-      Account.default.enable_feature!(:direct_share)
     end
 
     before(:each) do
@@ -128,11 +127,11 @@ describe 'assignments' do
         expect(course_dropdown_list[0].text).to include 'Second Course2'
       end
 
-      it 'copy tray lists concluded courses' do
+      it 'copy tray does not list concluded courses' do
         course_search_dropdown.click
         wait_for_ajaximations
 
-        expect(course_dropdown_list[0].text).to include 'Third Course3'
+        expect(course_dropdown_list[0].text).not_to include 'Third Course3'
       end
 
       it 'copy tray lists course modules' do
@@ -194,12 +193,13 @@ describe 'assignments' do
           expect(page_body.text).to include "Preview"
         end
 
-        it 'can be imported into concluded courses', custom_timeout: 120 do
+        it 'cant be imported into concluded courses', custom_timeout: 30 do
           import_content_share.click
           course_search_dropdown.click
           wait_for_ajaximations
 
-          expect(course_dropdown_list[0].text).to include 'Third Course3'
+          expect(course_dropdown_list[0].text).to include 'Second Course2'
+          expect(course_dropdown_list[0].text).not_to include 'Third Course3'
         end
 
         it 'can be imported into a course', custom_timeout: 30 do
@@ -210,24 +210,6 @@ describe 'assignments' do
           expect(import_dialog_import_success_alert.text).to include "Import started successfully"
         end
       end
-    end
-  end
-
-  context 'with direct share FF OFF' do
-    before(:each) do
-      course_with_teacher_logged_in
-      @course.save!
-      @course.require_assignment_group
-      @assignment1 = @course.assignments.create!(:title => 'Assignment First', :points_possible => 10)
-      Account.default.disable_feature!(:direct_share)
-      user_session(@teacher)
-      visit_assignments_index_page(@course.id)
-    end
-
-    it 'hides direct share options' do
-      manage_assignment_menu(@assignment1.id).click
-      expect(assignment_settings_menu(@assignment1.id).text).not_to include('Send to...')
-      expect(assignment_settings_menu(@assignment1.id).text).not_to include('Copy to...')
     end
   end
 end

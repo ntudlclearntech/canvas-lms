@@ -175,6 +175,20 @@ describe Quizzes::QuizzesController do
       expect(assigns[:js_env][:FLAGS][:quiz_lti_enabled]).to be false
     end
 
+    it "js_env FLAGS/new_quizzes_modules_support is true if new_quizzes_modules_support enabled" do
+      user_session(@teacher)
+      Account.site_admin.enable_feature!(:new_quizzes_modules_support)
+      get 'index', params: {:course_id => @course.id}
+      expect(assigns[:js_env][:FLAGS][:new_quizzes_modules_support]).to be true
+    end
+
+    it "js_env FLAGS/new_quizzes_modules_support is false if new_quizzes_modules_support disabled" do
+      user_session(@teacher)
+      Account.site_admin.disable_feature!(:new_quizzes_modules_support)
+      get 'index', params: {:course_id => @course.id}
+      expect(assigns[:js_env][:FLAGS][:new_quizzes_modules_support]).to be false
+    end
+
     it "js_env quiz_lti_enabled is false when quizzes_next is disabled" do
       user_session(@teacher)
       @course.context_external_tools.create!(
@@ -254,21 +268,13 @@ describe Quizzes::QuizzesController do
         course_quiz()
       end
 
-      it "js_env DIRECT_SHARE_ENABLED is true when feature flag is on" do
-        Account.default.enable_feature!(:direct_share)
+      it "js_env DIRECT_SHARE_ENABLED is true when user can manage" do
         user_session(@teacher)
         get 'index', params: {course_id: @course.id}
         expect(assigns[:js_env][:FLAGS][:DIRECT_SHARE_ENABLED]).to eq(true)
       end
 
-      it "js_env DIRECT_SHARE_ENABLED is false when feature flag is off" do
-        user_session(@teacher)
-        get 'index', params: {:course_id => @course.id}
-        expect(assigns[:js_env][:FLAGS][:DIRECT_SHARE_ENABLED]).to eq(false)
-      end
-
       it "js_env DIRECT_SHARE_ENABLED is false when user does not have manage" do
-        Account.default.enable_feature!(:direct_share)
         user_session(@student)
         get 'index', params: {:course_id => @course.id}
         expect(assigns[:js_env][:FLAGS][:DIRECT_SHARE_ENABLED]).to eq(false)
@@ -526,7 +532,7 @@ describe Quizzes::QuizzesController do
       @course.update_attribute :is_public, true
       course_quiz !!:active
       get 'show', params: { course_id: @course.id, id: @quiz.id, take: '1'}
-      expect(response).to be_success
+      expect(response).to be_successful
     end
 
     it "should set session[headless_quiz] if persist_headless param is sent" do

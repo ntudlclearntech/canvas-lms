@@ -159,6 +159,7 @@ module Importers
         migration.update_import_progress(85)
         Importers::WikiPageImporter.process_migration_course_outline(data, migration)
         Importers::CalendarEventImporter.process_migration(data, migration)
+        Importers::LtiResourceLinkImporter.process_migration(data, migration)
 
         everything_selected = !migration.copy_options || migration.is_set?(migration.copy_options[:everything])
         if everything_selected || migration.is_set?(migration.copy_options[:all_course_settings])
@@ -503,8 +504,8 @@ module Importers
       result[:time_zone] = Time.find_zone(options[:time_zone])
       result[:time_zone] ||= course.root_account.default_time_zone unless course.root_account.nil?
       time_zone = result[:time_zone] || Time.zone
-      result[:default_start_at] = time_zone.parse(options[:new_start_date]) rescue result[:new_start_date]
-      result[:default_conclude_at] = time_zone.parse(options[:new_end_date]) rescue result[:new_end_date]
+      result[:default_start_at] = time_zone.parse(options[:new_start_date]) rescue nil
+      result[:default_conclude_at] = time_zone.parse(options[:new_end_date]) rescue nil
       result
     end
 

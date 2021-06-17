@@ -35,6 +35,8 @@ module Types
   class CourseType < ApplicationObjectType
     graphql_name "Course"
 
+    implements Interfaces::AssetStringInterface
+
     alias :course :object
 
     class CourseWorkflowState < BaseEnum
@@ -259,7 +261,7 @@ module Types
       "returns permission information for the current user in this course",
       null: true
     def permissions
-      Loaders::CoursePermissionsLoader.for(
+      Loaders::PermissionsLoader.for(
         course,
         current_user: current_user, session: session
       )
@@ -288,7 +290,7 @@ module Types
     def image_url
       return nil unless course.feature_enabled?('course_card_images')
 
-      if course.image_url
+      if course.image_url.present?
         course.image_url
       elsif course.image_id.present?
         Loaders::IDLoader.for(Attachment.active).load(

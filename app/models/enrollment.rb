@@ -83,6 +83,7 @@ class Enrollment < ActiveRecord::Base
   after_save :update_assignment_overrides_if_needed
   after_create :needs_grading_count_updated, if: :active_student?
   after_update :needs_grading_count_updated, if: :active_student_changed?
+  after_commit :sync_microsoft_group
 
   attr_accessor :already_enrolled, :need_touch_user, :skip_touch_user
   scope :current, -> { joins(:course).where(QueryBuilder.new(:active).conditions).readonly(false) }
@@ -308,21 +309,6 @@ class Enrollment < ActiveRecord::Base
 
   def self.valid_type?(type)
     SIS_TYPES.has_key?(type)
-  end
-
-  def self.types_with_indefinite_article
-    {
-      'TeacherEnrollment' => t('#enrollment.roles.teacher_with_indefinite_article', "A Teacher"),
-      'TaEnrollment' => t('#enrollment.roles.ta_with_indefinite_article', "A TA"),
-      'DesignerEnrollment' => t('#enrollment.roles.designer_with_indefinite_article', "A Designer"),
-      'StudentEnrollment' => t('#enrollment.roles.student_with_indefinite_article', "A Student/Auditor"),
-      'StudentViewEnrollment' => t('#enrollment.roles.student_with_indefinite_article', "A Student/Auditor"),
-      'ObserverEnrollment' => t('#enrollment.roles.observer_with_indefinite_article', "An Observer")
-    }
-  end
-
-  def self.type_with_indefinite_article(type)
-    types_with_indefinite_article[type] || types_with_indefinite_article['StudentEnrollment']
   end
 
   def reload(options = nil)
@@ -875,7 +861,7 @@ class Enrollment < ActiveRecord::Base
     can_remove = [StudentEnrollment].include?(self.class) &&
       context.grants_right?(user, session, :manage_students) &&
       context.id == ((context.is_a? Course) ? self.course_id : self.course_section_id)
-    can_remove ||= context.grants_right?(user, session, :manage_admin_users)
+    can_remove || context.grants_right?(user, session, manage_admin_users_perm)
   end
 
   # Determine if a user has permissions to delete this enrollment.
@@ -888,11 +874,16 @@ class Enrollment < ActiveRecord::Base
   def can_be_deleted_by(user, context, session)
     return context.grants_right?(user, session, :use_student_view) if fake_student?
 
-    can_remove = [StudentEnrollment, ObserverEnrollment].include?(self.class) &&
-      context.grants_right?(user, session, :manage_students)
-    can_remove ||= context.grants_right?(user, session, :manage_admin_users) unless student?
-    can_remove &&= self.user_id != user.id || context.account.grants_right?(user, session, :manage_admin_users)
-    can_remove &&= context.id == ((context.is_a? Course) ? self.course_id : self.course_section_id)
+    can_remove = [StudentEnrollment, ObserverEnrollment].include?(self.class) && context.grants_right?(user, session, :manage_students)
+
+    if self.root_account.feature_enabled? :granular_permissions_manage_users
+      can_remove ||= can_delete_via_granular(user, session, context)
+      can_remove &&= self.user_id != user.id || context.account.grants_right?(user, session, :allow_course_admin_actions)
+    else
+      can_remove ||= context.grants_right?(user, session, :manage_admin_users) unless student?
+      can_remove &&= self.user_id != user.id || context.account.grants_right?(user, session, :manage_admin_users)
+    end
+    can_remove && context.id == (context.is_a?(Course) ? self.course_id : self.course_section_id)
   end
 
   def pending?
@@ -1214,7 +1205,7 @@ class Enrollment < ActiveRecord::Base
   end
 
   set_policy do
-    given {|user, session| self.course.grants_any_right?(user, session, :manage_students, :manage_admin_users, :read_roster)}
+    given { |user, session| self.course.grants_any_right?(user, session, :manage_students, manage_admin_users_perm, :read_roster) }
     can :read
 
     given { |user| self.user == user }
@@ -1535,6 +1526,17 @@ class Enrollment < ActiveRecord::Base
     ).where.not(id: id).where.not(workflow_state: :deleted)
   end
 
+  def manage_admin_users_perm
+    self.root_account.feature_enabled?(:granular_permissions_manage_users) ? :allow_course_admin_actions : :manage_admin_users
+  end
+
+  def can_delete_via_granular(user, session, context)
+    self.teacher? && context.grants_right?(user, session, :remove_teacher_from_course) ||
+    self.ta? && context.grants_right?(user, session, :remove_ta_from_course) ||
+    self.designer? && context.grants_right?(user, session, :remove_designer_from_course) ||
+    self.observer? && context.grants_right?(user, session, :remove_observer_from_course)
+  end
+
   def remove_user_as_final_grader?
     instructor? &&
       !other_enrollments_of_type(['TaEnrollment', 'TeacherEnrollment']).exists?
@@ -1558,5 +1560,12 @@ class Enrollment < ActiveRecord::Base
 
   def being_deleted?
     workflow_state == 'deleted' && workflow_state_before_last_save != 'deleted'
+  end
+
+  def sync_microsoft_group
+    return unless self.root_account.feature_enabled?(:microsoft_group_enrollments_syncing)
+    return unless self.root_account.settings[:microsoft_sync_enabled]
+
+    MicrosoftSync::Group.not_deleted.find_by(course_id: course_id)&.enqueue_future_sync
   end
 end

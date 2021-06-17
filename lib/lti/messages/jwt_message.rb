@@ -20,6 +20,22 @@
 require 'lti_advantage'
 
 module Lti::Messages
+
+  # Base class for all LTI Message "factory" classes.
+  #
+  # This class, and it's child classes, are responsible
+  # for constructing and ID token suitable for LTI 1.3
+  # authentication responses (LTI launches).
+  #
+  # These class have counterparts for simply modeling the
+  # data  at "gems/lti-advantage/lib/lti_advantage/messages".
+  #
+  # For details on the data included in the ID token please refer
+  # to http://www.imsglobal.org/spec/lti/v1p3/.
+  #
+  # For implementation details on LTI Advantage launches in
+  # Canvas, please see the inline documentation of
+  # app/models/lti/lti_advantage_adapter.rb.
   class JwtMessage
     EXTENSION_PREFIX = 'https://www.instructure.com/'.freeze
 
@@ -55,6 +71,8 @@ module Lti::Messages
       add_custom_params_claims! if include_claims?(:custom_params)
       add_names_and_roles_service_claims! if include_names_and_roles_service_claims?
       add_lti11_legacy_user_id!
+      add_lti1p1_claims! if include_lti1p1_claims?
+      add_extension("placement", @opts[:resource_type])
 
       @expander.expand_variables!(@message.extensions)
       @message.validate! if validate_launch
@@ -75,8 +93,12 @@ module Lti::Messages
       @message.iat = Time.zone.now.to_i
       @message.iss = Canvas::Security.config['lti_iss']
       @message.nonce = SecureRandom.uuid
-      @message.sub = @user&.lookup_lti_id(@context) || User.public_lti_id
+      @message.sub = @user&.lookup_lti_id(@context) if include_sub_claim?
       @message.target_link_uri = target_link_uri
+    end
+
+    def include_sub_claim?
+      @user.present?
     end
 
     def target_link_uri
@@ -142,7 +164,19 @@ module Lti::Messages
     end
 
     def add_lti11_legacy_user_id!
-      @message.lti11_legacy_user_id = @tool.opaque_identifier_for(@user) || User.public_lti_id
+      @message.lti11_legacy_user_id = @tool.opaque_identifier_for(@user) || ''
+    end
+
+    def add_lti1p1_claims!
+      @message.lti1p1.user_id = @user&.lti_context_id
+    end
+
+    # Following the spec https://www.imsglobal.org/spec/lti/v1p3/migr#remapping-parameters
+    # If the parameter's value is not the same as its LTI 1.3 equivalent, the
+    # platform MUST include the parameter and its LTI 1.1 value. Otherwise the
+    # platform MAY omit that attribute.
+    def include_lti1p1_claims?
+      @user&.lti_context_id && @user.lti_context_id != @user.lti_id
     end
 
     def include_names_and_roles_service_claims?
