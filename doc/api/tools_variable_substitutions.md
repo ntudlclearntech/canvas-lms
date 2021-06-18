@@ -303,8 +303,10 @@ The sourced Id of the context.
 1234
 ```
 ## Context.id.history
-return a string with a comma-separeted list of the context ids of the
+Returns a string with a comma-separated list of the context ids of the
 courses in reverse chronological order from which content has been copied.
+Will show a limit of 1000 context ids.  When the number passes 1000,
+'truncated' will show at the end of the list.
 
 **Availability**: *when launched in a course*  
 
@@ -674,6 +676,7 @@ With respect to the current course, returns the context ids of the courses from 
 ```
 ## Canvas.course.previousContextIds.recursive
 With respect to the current course, recursively returns the context ids of the courses from which content has been copied (excludes cartridge imports).
+Will show a limit of 1000 context ids.  When the number passes 1000, 'truncated' will show at the end of the list.
 
 **Availability**: *when launched in a course*  
 
