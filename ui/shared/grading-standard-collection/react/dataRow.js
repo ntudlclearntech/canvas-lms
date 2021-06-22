@@ -168,19 +168,33 @@ class DataRow extends React.Component {
       }
       ref="editContainer"
     >
-      <td className="insert_row_icon_container">{this.renderInsertRowButton()}</td>
+      <td className="insert_row_icon_container">{['course_3100', 'course_3398', 'course_3399', 'course_3984'].includes(ENV['context_asset_string']) ? this.renderInsertRowButton() : null}</td>
       <td className="row_name_container">
         <div>
-          <input
-            type="text"
-            ref="nameInput"
-            onChange={this.triggerRowNameChange}
-            className="standard_name"
-            title={I18n.t('Range name')}
-            aria-label={I18n.t('Range name')}
-            name={`grading_standard[standard_data][scheme_${this.props.uniqueId}[name]`}
-            value={this.getRowData().name}
-          />
+          {['course_3100', 'course_3398', 'course_3399', 'course_3984'].includes(ENV['context_asset_string']) ?
+            <input
+              type="text"
+              ref="nameInput"
+              onChange={this.triggerRowNameChange}
+              className="standard_name"
+              title={I18n.t('Range name')}
+              aria-label={I18n.t('Range name')}
+              name={`grading_standard[standard_data][scheme_${this.props.uniqueId}[name]`}
+              value={this.getRowData().name}
+            />
+            :
+            <input
+              type="text"
+              ref="nameInput"
+              onChange={this.triggerRowNameChange}
+              className="standard_name"
+              title={I18n.t('Range name')}
+              aria-label={I18n.t('Range name')}
+              name={`grading_standard[standard_data][scheme_${this.props.uniqueId}[name]`}
+              value={this.getRowData().name}
+              disabled
+            />
+          }
         </div>
       </td>
       <td className="row_cell max_score_cell edit_max_score">
