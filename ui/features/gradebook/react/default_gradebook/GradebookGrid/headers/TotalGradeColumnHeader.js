@@ -18,13 +18,14 @@
 
 import React from 'react'
 import {bool, func, shape, string} from 'prop-types'
-import {IconMoreSolid} from '@instructure/ui-icons'
-import {Button} from '@instructure/ui-buttons'
+import {IconMoreSolid, IconQuestionLine} from '@instructure/ui-icons'
+import {Button, IconButton} from '@instructure/ui-buttons'
 import {Grid} from '@instructure/ui-grid'
 import {View} from '@instructure/ui-view'
 
 import {Menu} from '@instructure/ui-menu'
 import {Text} from '@instructure/ui-text'
+import {Popover} from '@instructure/ui-popover'
 import I18n from 'i18n!gradebook'
 import {ScreenReaderContent} from '@instructure/ui-a11y-content'
 import ColumnHeader from './ColumnHeader'
@@ -112,6 +113,11 @@ export default class TotalGradeColumnHeader extends ColumnHeader {
   }
 
   componentDidMount() {
+    this.state = {
+      ...this.state,
+      isShowingContent: false
+    }
+
     if (this.props.grabFocus) {
       this.focusAtEnd()
     }
@@ -143,6 +149,70 @@ export default class TotalGradeColumnHeader extends ColumnHeader {
 
               <Grid.Col textAlign="center">
                 <TotalDetailContent viewUngradedAsZero={viewUngradedAsZero} />
+              </Grid.Col>
+
+              <Grid.Col textAlign="center" width="auto">
+                <Popover
+                  renderTrigger={
+                    <IconButton
+                      renderIcon={IconQuestionLine}
+                      withBackground={false}
+                      withBorder={false}
+                      size="small"
+                      screenReaderLabel="Toggle Tooltip"
+                    />
+                  }
+                  isShowingContent={this.state.isShowingContent}
+                  onShowContent={e => {
+                    this.setState({ isShowingContent: true })
+                  }}
+                  onHideContent={e => {
+                    this.setState({ isShowingContent: false })
+                  }}
+                  on={['click']}
+                  shouldContainFocus
+                  shouldReturnFocus
+                  shouldCloseOnDocumentClick
+                  color="primary-inverse"
+                  placement="bottom center"
+                  mountNode={() => document.getElementById('main')}
+                >
+                  <View padding="small" display="block" maxWidth="500px">
+                    <Text fontStyle="normal" size="x-small" weight="bold">
+                      <ol>
+                        <li>
+                          {I18n.t(
+                            'custom.total_grade_popover_text1',
+                            'Ungraded assignment items such as homework, and quizzes will be treated as zero points, and counted toward the final grade. Please ensure students receive grades on all graded assignment items.'
+                          )}
+                        </li>
+                        <li>
+                          {I18n.t(
+                            'custom.total_grade_popover_text2',
+                            'The default rule for score to grade conversion is based on the '
+                          )}
+                          <a
+                            href={I18n.t(
+                              'custom.total_grade_popover_link_url',
+                              'https://gra103.aca.ntu.edu.tw/gra2007/gra/hamson/Grading%20Policy.pdf'
+                            )}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            {I18n.t(
+                              'custom.total_grade_popover_link_text',
+                              '"National Taiwan University Students Grading Policy"'
+                            )}
+                          </a>
+                          {I18n.t(
+                            'custom.total_grade_popover_text3',
+                            ' When the score is a number with decimals, it will be rounded to the nearest whole number.'
+                          )}
+                        </li>
+                      </ol>
+                    </Text>
+                  </View>
+                </Popover>
               </Grid.Col>
 
               <Grid.Col textAlign="center" width="auto">
