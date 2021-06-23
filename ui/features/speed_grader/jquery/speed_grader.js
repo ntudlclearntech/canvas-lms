@@ -2658,7 +2658,7 @@ EG = {
       }
 
       selectMenu.val(idToSelect)
-      $('#rubric_assessments_list').showIf(isModerator || selectMenu.find('option').length > 1)
+      $('#rubric_assessments_list').showIf(isModerator || selectMenu.find('option').length > 0)
 
       handleSelectedRubricAssessmentChanged({validateEnteredData})
     }
