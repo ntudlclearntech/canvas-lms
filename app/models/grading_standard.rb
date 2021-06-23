@@ -108,15 +108,13 @@ class GradingStandard < ActiveRecord::Base
     end
 
     idx = place_in_scheme(grade)
-    excpetion_course = ['course_3100', 'course_3398', 'course_3399', 'course_3984']
-    if !excpetion_course.include?(self.context_code)
-      if idx == 0
-        return ((100 + (ordered_scheme[0].last * 100.0)) / 2.0).round
-      elsif idx
-        return ((ordered_scheme[idx].last + ordered_scheme[idx - 1].last).abs * 100.0 / 2.0).round
-      else
-        return nil
-      end
+    # The following is the NTU grading standard
+    if idx == 0
+      return ((100 + (ordered_scheme[0].last * 100.0)) / 2.0).round
+    elsif idx
+      return ((ordered_scheme[idx].last + ordered_scheme[idx - 1].last).abs * 100.0 / 2.0).round
+    else
+      return nil
     end
 
     # The following is the default standard of Canvas
