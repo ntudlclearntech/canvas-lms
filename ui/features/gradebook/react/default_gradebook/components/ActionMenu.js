@@ -143,7 +143,7 @@ class ActionMenu extends React.Component {
         const updatedAt = new Date(resolution.updatedAt)
 
         const previousExport = {
-          label: `${I18n.t('New Export')} (${DateHelper.formatDatetimeForDisplay(updatedAt)})`,
+          label: `${I18n.t('Custom.previous_export', 'Previous Export')} (${DateHelper.formatDatetimeForDisplay(updatedAt)})`,
           attachmentUrl
         }
 
@@ -197,7 +197,7 @@ class ActionMenu extends React.Component {
     const updatedAt = tz.parse(attachment.updatedAt)
 
     return {
-      label: `${I18n.t('Previous Export')} (${DateHelper.formatDatetimeForDisplay(updatedAt)})`,
+      label: `${I18n.t('Custom.previous_export', 'Previous Export')} (${DateHelper.formatDatetimeForDisplay(updatedAt)})`,
       attachmentUrl: attachment.downloadUrl
     }
   }
@@ -301,7 +301,7 @@ class ActionMenu extends React.Component {
         trigger={
           <Button variant="link">
             <Text {...buttonTypographyProps}>
-              {I18n.t('Actions')}
+              {I18n.t('Custom.import_and_export', 'Import and Export')}
               <IconMiniArrowDownSolid />
             </Text>
           </Button>
@@ -316,7 +316,7 @@ class ActionMenu extends React.Component {
             this.handleImport()
           }}
         >
-          <span data-menu-id="import">{I18n.t('Import')}</span>
+          <span data-menu-id="import">{I18n.t('Import CSV')}</span>
         </Menu.Item>
 
         <Menu.Item
@@ -326,7 +326,7 @@ class ActionMenu extends React.Component {
           }}
         >
           <span data-menu-id="export">
-            {this.exportInProgress() ? I18n.t('Export in progress') : I18n.t('Export')}
+            {this.exportInProgress() ? I18n.t('Export in progress') : I18n.t('Export CSV')}
           </span>
         </Menu.Item>
 

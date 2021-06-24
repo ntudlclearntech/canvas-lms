@@ -26965,8 +26965,8 @@ zh-Hant:
   ntucool_course_copy_file_description: "複製COOL課程"
   gradebookActionMenu:
     Custom:
-      PreviousExport: "上次匯出"
-      ImportAndExport: "匯入成績與登分"
+      previous_export: "上次匯出"
+      import_and_export: "匯入成績與登分"
       SubmitToTheGradingSystem: "匯入登分系統"
   gradebook:
     custom:
