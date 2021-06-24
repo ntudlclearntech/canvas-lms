@@ -48,7 +48,11 @@ export default class MigrationConverterView extends ValidatedFormView
 
   toJSON: (json) ->
     json = super
-    json.selectOptions = @selectOptions || ENV.SELECT_OPTIONS
+    # Adjust selectOptions at courses/:course_id/content_migrations #96
+    if !ENV.current_user_roles.includes('admin')
+      json.selectOptions = ENV.SELECT_OPTIONS.filter((option) => "course_copy_importer" == option.id)
+    else
+      json.selectOptions = @selectOptions || ENV.SELECT_OPTIONS
     json
 
   # Render a backbone view (converter view) into

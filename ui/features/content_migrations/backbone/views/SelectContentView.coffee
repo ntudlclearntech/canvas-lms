@@ -94,6 +94,8 @@ export default class SelectContentView extends DialogFormView
     dfd.done =>
       @maintainTheTree(@$el.find('ul[role=tree]'))
       @selectContentDialogEvents()
+      if !ENV.current_user_roles.includes('admin')
+        @$el.find('li[data-type="syllabus_body"]').hide()
 
     @checkboxCollectionView.render()
 
