@@ -6648,6 +6648,7 @@ en:
       available_from: Available From
       buttons:
         save_and_publish: Save & Publish
+        publish: Publish
       delay_posting: Delay posting
       enable_podcast_feed: Enable podcast feed
       include_replies_in_podcast_feed: Include student replies in podcast feed
