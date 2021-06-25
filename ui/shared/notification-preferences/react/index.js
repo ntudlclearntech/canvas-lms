@@ -143,7 +143,7 @@ const NotificationPreferences = props => {
       </Flex.Item>
       {renderNotificationInfoAlert()}
       {renderAccountPrivacyInfoAlert()}
-      {renderMuteToggle()}
+      {/*renderMuteToggle()*/}
       {renderSendObservedNamesInNotificationsToggle()}
       {renderNotificationPreferences()}
     </Flex>
