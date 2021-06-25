@@ -74,7 +74,7 @@ export default function AllowedAttempts({
 
   return (
     <>
-      <FormField id={selectIdRef.current} label={I18n.t('Allowed Attempts')}>
+      <FormField id={selectIdRef.current} label={I18n.t('allowed_attempts', 'Allowed Attempts')}>
         <select
           id={selectIdRef.current}
           value={limitedValue}
@@ -88,7 +88,7 @@ export default function AllowedAttempts({
 
       <div hidden={!limited}>
         <NumberInput
-          renderLabel={I18n.t('Number of Attempts')}
+          renderLabel={I18n.t('number_of_attempts', 'Number of Attempts')}
           name="allowed_attempts"
           display="inline-block"
           width="200px"
