@@ -24,6 +24,8 @@ import template from '../../jst/editRolesView.handlebars'
 import '@canvas/rails-flash-notifications'
 import '@canvas/jquery/jquery.disableWhileLoading'
 
+import filterRoles from './filterRoles'
+
 export default class EditRolesView extends DialogBaseView {
   static initClass() {
     this.mixin(RosterDialogMixin)
@@ -48,7 +50,7 @@ export default class EditRolesView extends DialogBaseView {
       json.role_id = this.role_id
     }
 
-    json.roles = ENV.ALL_ROLES
+    json.roles = filterRoles(ENV.ALL_ROLES, ENV.current_user_roles);
     return json
   }
 
