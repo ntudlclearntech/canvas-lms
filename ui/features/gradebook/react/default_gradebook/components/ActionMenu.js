@@ -30,7 +30,7 @@ import DateHelper from '@canvas/datetime/dateHelper'
 import I18n from 'i18n!gradebookActionMenu'
 import '@canvas/rails-flash-notifications'
 
-const {arrayOf, bool, func, object, shape, string} = PropTypes
+const {arrayOf, bool, func, object, shape, string, oneOf} = PropTypes
 
 class ActionMenu extends React.Component {
   static defaultProps = {
