@@ -190,9 +190,11 @@ export default class MobileGlobalMenu extends React.Component {
                   <List.Item>
                     <LogoutButton variant="link" fluidWidth />
                   </List.Item>
+                  {/* removed by NTU COOL
                   <List.Item>
                     <HighContrastModeToggle isMobile />
                   </List.Item>
+                  */}
                 </List>
               </ToggleDetails>
             ) : (
@@ -437,7 +439,7 @@ export default class MobileGlobalMenu extends React.Component {
             </ToggleDetails>
           </List.Item>
 
-          {true /* TODO: put a check for if we should show help */ && (
+          {false /* TODO: put a check for if we should show help */ && (
             <List.Item>
               <ToggleDetails
                 iconPosition="end"
