@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #
 # Copyright (C) 2015 - present Instructure, Inc.
 #
@@ -63,6 +65,28 @@ class Oauth2ProviderController < ApplicationController
         error_description: "Only response_type=code is permitted")
     end
 
+    case params[:prompt]
+    when nil
+      # do nothing, omitting this param is fine
+    when 'none'
+      if !logged_in_user
+        return redirect_to Canvas::Oauth::Provider.final_redirect(self,
+          error: 'login_required',
+          error_description: 'prompt=none but there is no current session')
+      elsif !provider.authorized_token?(@current_user, real_user: logged_in_user)
+        return redirect_to Canvas::Oauth::Provider.final_redirect(self,
+          error: 'interaction_required',
+          error_description: 'prompt=none but a token cannot be granted without user interaction')
+      else
+        redirect_params = Canvas::Oauth::Provider.final_redirect_params(session[:oauth2], @current_user, logged_in_user)
+        return redirect_to Canvas::Oauth::Provider.final_redirect(self, redirect_params)
+      end
+    else
+      return redirect_to Canvas::Oauth::Provider.final_redirect(self,
+        error: 'unsupported_prompt_type',
+        error_description: 'prompt must be "none" (or omitted)')
+    end
+
     if @current_pseudonym && !params[:force_login]
       redirect_to Canvas::Oauth::Provider.confirmation_redirect(self, provider, @current_user, logged_in_user)
     else
@@ -108,7 +132,7 @@ class Oauth2ProviderController < ApplicationController
     elsif grant_type == "refresh_token"
       Canvas::Oauth::GrantTypes::RefreshToken.new(client_id, secret, params)
     elsif grant_type == 'client_credentials'
-      Canvas::Oauth::GrantTypes::ClientCredentials.new(params, request.host, request.protocol)
+      Canvas::Oauth::GrantTypes::ClientCredentials.new(params, request.host_with_port, request.protocol)
     else
       Canvas::Oauth::GrantTypes::BaseType.new(client_id, secret, params)
     end

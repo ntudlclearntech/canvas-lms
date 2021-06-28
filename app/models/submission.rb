@@ -104,7 +104,11 @@ class Submission < ActiveRecord::Base
   has_many :attachment_associations, :as => :context, :inverse_of => :context
   has_many :provisional_grades, class_name: 'ModeratedGrading::ProvisionalGrade'
   has_many :originality_reports
-  has_one :rubric_assessment, -> { where(assessment_type: 'grading').where.not(rubric_association: nil) }, as: :artifact, inverse_of: :artifact
+  has_one :rubric_assessment, -> do
+    joins(:rubric_association).
+      where(assessment_type: 'grading').
+      where(rubric_associations: { workflow_state: 'active' })
+  end, as: :artifact, inverse_of: :artifact
   has_one :lti_result, inverse_of: :submission, class_name: 'Lti::Result', dependent: :destroy
   has_many :submission_drafts, inverse_of: :submission, dependent: :destroy
 
@@ -115,6 +119,7 @@ class Submission < ActiveRecord::Base
 
   has_many :content_participations, :as => :content
 
+  has_many :canvadocs_annotation_contexts, inverse_of: :submission, dependent: :destroy
   has_many :canvadocs_submissions
 
   has_many :auditor_grade_change_records,
@@ -333,6 +338,7 @@ class Submission < ActiveRecord::Base
   before_save :check_is_new_attempt
   before_save :check_reset_graded_anonymously
   before_save :set_root_account_id
+  before_save :reset_redo_request
   after_save :touch_user
   after_save :clear_user_submissions_cache
   after_save :touch_graders
@@ -520,7 +526,10 @@ class Submission < ActiveRecord::Base
       settings = assignment.vericite_settings
       type_can_peer_review = true
     else
-      return false unless self.turnitin_data[:provider].to_s != "vericite"
+      unless self.vericite_data_hash[:provider].to_s != "vericite" ||
+        AssignmentConfigurationToolLookup.where(assignment_id: self.assignment_id).where.not(tool_product_code: 'vericite').exists?
+        return false
+      end
       plagData = self.turnitin_data
       @submit_to_turnitin = false
       settings = assignment.turnitin_settings
@@ -568,7 +577,8 @@ class Submission < ActiveRecord::Base
   end
 
   def can_read_submission_user_name?(user, session)
-    return false if self.assignment.anonymize_students?
+    return false if self.user_id != user.id && self.assignment.anonymize_students?
+
     !self.assignment.anonymous_peer_reviews? ||
         self.user_id == user.id ||
         self.assignment.context.grants_right?(user, session, :view_all_grades)
@@ -1353,6 +1363,17 @@ class Submission < ActiveRecord::Base
     end
   end
 
+  def annotation_context(attempt: nil, draft: false)
+    if draft
+      canvadocs_annotation_contexts.find_or_create_by(
+        attachment_id: assignment.annotatable_attachment_id,
+        submission_attempt: nil
+      )
+    else
+      canvadocs_annotation_contexts.find_by(submission_attempt: attempt)
+    end
+  end
+
   def infer_values
     if assignment
       if assignment.association(:context).loaded?
@@ -1375,7 +1396,7 @@ class Submission < ActiveRecord::Base
     self.workflow_state = 'unsubmitted' if self.submitted? && !self.has_submission?
     self.workflow_state = 'graded' if self.grade && self.score && self.grade_matches_current_submission
     self.workflow_state = 'pending_review' if self.submission_type == 'online_quiz' && self.quiz_submission.try(:latest_submitted_attempt).try(:pending_review?)
-    if self.workflow_state_changed? && self.graded?
+    if (self.workflow_state_changed? && self.graded?) || self.late_policy_status_changed?
       self.graded_at = Time.now
     end
     self.media_comment_id = nil if self.media_comment_id && self.media_comment_id.strip.empty?
@@ -2062,7 +2083,12 @@ class Submission < ActiveRecord::Base
     allow_list = []
     return allow_list unless current_user.present? && assignment.moderated_grading?
 
-    if assignment.grades_published?
+    if assignment.annotated_document?
+      # The student's annotations are what make up the submission in this case.
+      allow_list.push(self.user)
+    end
+
+    if posted?
       allow_list.push(self.grader, self.user, current_user)
     elsif self.user == current_user
       # Requesting user is the student.
@@ -2225,7 +2251,7 @@ class Submission < ActiveRecord::Base
     @assessment_request_count ||= 0
     @assessment_request_count += 1
     user = obj.user rescue nil
-    association = self.assignment.rubric_association
+    association = self.assignment.active_rubric_association? ? self.assignment.rubric_association : nil
     res = self.assessment_requests.where(assessor_asset_id: obj.id, assessor_asset_type: obj.class.to_s, assessor_id: user.id, rubric_association_id: association.try(:id)).
       first_or_initialize
     res.user_id = self.user_id
@@ -2300,7 +2326,7 @@ class Submission < ActiveRecord::Base
 
     def time_of_submission
       time = submitted_at || Time.zone.now
-      time -= 60.seconds if submission_type == 'online_quiz'
+      time -= 60.seconds if submission_type == 'online_quiz' || self.assignment.quiz_lti?
       time
     end
     private :time_of_submission
@@ -2404,8 +2430,10 @@ class Submission < ActiveRecord::Base
     end
   end
 
-  def comments_for(user)
-    user_can_read_grade?(user) ? submission_comments : visible_submission_comments
+  # Note that this will return an Array (not an ActiveRecord::Relation) if comments are preloaded
+  def comments_excluding_drafts_for(user)
+    comments = user_can_read_grade?(user) ? submission_comments : visible_submission_comments
+    comments.loaded? ? comments.reject(&:draft?) : comments.published
   end
 
   def filter_attributes_for_user(hash, user, session)
@@ -2435,7 +2463,9 @@ class Submission < ActiveRecord::Base
 
   def update_line_item_result
     return unless saved_change_to_score?
-    Lti::Result.where(submission: self).update_all(result_score: score)
+    return if autograded? # Submission changed by LTI Tool, it will set result score directly
+
+    Lti::Result.update_score_for_submission(self, score)
   end
 
   def delete_ignores
@@ -2553,7 +2583,7 @@ class Submission < ActiveRecord::Base
   end
 
   def visible_rubric_assessments_for(viewing_user, attempt: nil)
-    return [] if assignment.rubric_association.blank?
+    return [] unless assignment.active_rubric_association?
 
     unless posted? || grants_right?(viewing_user, :read_grade)
       # If this submission is unposted and the viewer can't view the grade,
@@ -2636,7 +2666,7 @@ class Submission < ActiveRecord::Base
           submission.user = user
 
           assessment = user_data[:rubric_assessment]
-          if assessment.is_a?(Hash) && assignment.rubric_association
+          if assessment.is_a?(Hash) && assignment.active_rubric_association?
             # prepend each key with "criterion_", which is required by
             # the current RubricAssociation#assess code.
             assessment.keys.each do |crit_name|
@@ -2717,6 +2747,10 @@ class Submission < ActiveRecord::Base
   end
 
   private
+
+  def reset_redo_request
+    self.redo_request = false if self.redo_request && self.attempt_changed?
+  end
 
   def set_root_account_id
     self.root_account_id ||= assignment&.course&.root_account_id

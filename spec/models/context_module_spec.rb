@@ -390,6 +390,44 @@ describe ContextModule do
 
       expect(@module.content_tags).to be_include(@tag)
     end
+
+    describe 'when adding an LTI 1.3 external tool' do
+      let(:tool) {
+        @course.context_external_tools.create!(
+          name: 'tool', consumer_key: '1', shared_secret: '1',
+          url: 'http://example.com/', developer_key: DeveloperKey.create!,
+          settings: {use_1_3: true}
+        )
+      }
+
+      let(:args) {
+        {
+          type: 'context_external_tool',
+          id: tool.id,
+          title: 'The tool',
+          url: 'http://example.com/',
+          indent: 0,
+          position: 0,
+          tag_type: 'context_module',
+        }
+      }
+
+      it 'should add an external tool with resource link and custom params' do
+        @tag = @module.add_item(args.merge(custom_params: {'foo' => 'bar'}))
+        @module.workflow_state = 'published'
+        @module.save!
+
+        expect(@module.content_tags).to be_include(@tag)
+        expect(@tag.associated_asset).to be_a(Lti::ResourceLink)
+        expect(@tag.associated_asset.custom).to eq('foo' => 'bar')
+      end
+
+      it 'should add an external tool with custom params in a JSON string' do
+        @tag = @module.add_item(args.merge(custom_params: '{"foo":"bar"}'))
+        expect(@tag.associated_asset).to be_a(Lti::ResourceLink)
+        expect(@tag.associated_asset.custom).to eq('foo' => 'bar')
+      end
+    end
   end
 
   describe "insert_items" do
@@ -408,7 +446,7 @@ describe ContextModule do
 
     it "appends items to the end of a module" do
       @module.insert_items([@attach, @assign, @page, @quiz, @topic, @tool])
-      expect(@module.content_tags.order(:position).pluck(:title)).to eq(
+      expect(@module.content_tags.ordered.pluck(:title)).to eq(
         %w(one two three attach assign page quiz topic tool))
     end
 
@@ -419,14 +457,14 @@ describe ContextModule do
 
     it "inserts items into a module" do
       @module.insert_items([@attach, @assign, @page, @quiz, @topic, @tool], 2)
-      expect(@module.content_tags.order(:position).pluck(:title)).to eq(
+      expect(@module.content_tags.ordered.pluck(:title)).to eq(
         %w(one attach assign page quiz topic tool two three))
     end
 
     it "adds things to an empty module" do
       empty = @course.context_modules.create! name: 'empty'
       empty.insert_items([@attach, @assign])
-      expect(empty.content_tags.order(:position).pluck(:title)).to eq(%w(attach assign))
+      expect(empty.content_tags.ordered.pluck(:title)).to eq(%w(attach assign))
     end
 
     it "sets the indent to 0" do
@@ -437,7 +475,7 @@ describe ContextModule do
 
     it "doesn't add weird things to a module" do
       @module.insert_items([@attach, user_model, 'foo', @assign])
-      expect(@module.content_tags.order(:position).pluck(:title)).to eq(
+      expect(@module.content_tags.ordered.pluck(:title)).to eq(
         %w(one two three attach assign))
     end
 
@@ -1503,7 +1541,7 @@ describe ContextModule do
         @p2.save!
       end
       @module.restore
-      tags = @module.content_tags.not_deleted.order(:position).to_a
+      tags = @module.content_tags.not_deleted.ordered.to_a
       expect(tags.size).to eq 4
       expect(tags.map(&:content_id)).to eq([0, @a1.id, @a2.id, @p2.id])
       expect(tags.map(&:title)).to eq(['foo', 'a1', 'a2', 'p2-renamed'])

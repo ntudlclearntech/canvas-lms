@@ -41,7 +41,7 @@ class CourseSection < ActiveRecord::Base
   }, dependent: :destroy
   has_many :discussion_topics, :through => :discussion_topic_section_visibilities
 
-  before_validation :infer_defaults, :verify_unique_sis_source_id
+  before_validation :infer_defaults, :verify_unique_sis_source_id, :verify_unique_integration_id
   validates_presence_of :course_id, :root_account_id, :workflow_state
   validates_length_of :sis_source_id, :maximum => maximum_string_length, :allow_nil => true, :allow_blank => false
   validates_length_of :name, :maximum => maximum_string_length, :allow_nil => false, :allow_blank => false
@@ -147,31 +147,28 @@ class CourseSection < ActiveRecord::Base
 
   set_policy do
     given do |user, session|
-      self.course.root_account.feature_enabled?(:granular_permissions_course_sections) &&
       self.course.grants_right?(user, session, :manage_sections_add)
     end
     can :read and can :create
 
     given do |user, session|
-      self.course.root_account.feature_enabled?(:granular_permissions_course_sections) &&
       self.course.grants_right?(user, session, :manage_sections_edit)
     end
     can :read and can :update
 
     given do |user, session|
-      self.course.root_account.feature_enabled?(:granular_permissions_course_sections) &&
       self.course.grants_right?(user, session, :manage_sections_delete)
     end
     can :read and can :delete
 
-    # Bundled legacy role override for managing course sections
     given do |user, session|
-      !self.course.root_account.feature_enabled?(:granular_permissions_course_sections) &&
-      self.course.grants_right?(user, session, :manage_sections)
+      manage_perm = if self.root_account.feature_enabled? :granular_permissions_manage_users
+        :allow_course_admin_actions
+      else
+        :manage_admin_users
+      end
+      self.course.grants_any_right?(user, session, :manage_students, manage_perm)
     end
-    can :read and can :create and can :update and can :delete
-
-    given { |user, session| self.course.grants_any_right?(user, session, :manage_students, :manage_admin_users) }
     can :read
 
     given { |user| self.course.account_membership_allows(user, :read_roster) }
@@ -219,6 +216,20 @@ class CourseSection < ActiveRecord::Base
     throw :abort
   end
 
+
+  def verify_unique_integration_id
+    return true unless self.integration_id
+    return true if !root_account_id_changed? && !integration_id_changed?
+
+    scope = root_account.course_sections.where(integration_id: self.integration_id)
+    scope = scope.where("id<>?", self) unless self.new_record?
+
+    return true unless scope.exists?
+
+    self.errors.add(:integration_id, t('integration_id_taken', "INTEGRATRION ID \"%{integration_id}\" is already in use", :integration_id => self.integration_id))
+    throw :abort
+  end
+
   alias_method :parent_event_context, :course
 
   def section_code
@@ -259,7 +270,17 @@ class CourseSection < ActiveRecord::Base
     old_course = self.course
     self.course = course
     self.root_account_id = course.root_account_id
-    self.default_section = (course.course_sections.active.size == 0)
+
+    all_attrs = { course_id: course.id }
+    if self.root_account_id_changed?
+      all_attrs[:root_account_id] = self.root_account_id
+    end
+
+    CourseSection.unique_constraint_retry do
+      self.default_section = (course.course_sections.active.size == 0)
+      self.save!
+    end
+
     old_course.course_sections.reset
     course.course_sections.reset
     assignment_overrides.active.destroy_all
@@ -269,11 +290,6 @@ class CourseSection < ActiveRecord::Base
     enrollment_ids = enrollment_data.map(&:first)
     user_ids = enrollment_data.map(&:last).uniq
 
-    all_attrs = { course_id: course.id }
-    if self.root_account_id_changed?
-      all_attrs[:root_account_id] = self.root_account_id
-    end
-    self.save!
     if enrollment_ids.any?
       self.all_enrollments.update_all all_attrs
       Enrollment.delay_if_production.batch_add_to_favorites(enrollment_ids)
@@ -291,12 +307,10 @@ class CourseSection < ActiveRecord::Base
       old_course.delay_if_production.update_account_associations unless Course.skip_updating_account_associations?
     end
 
-    run_immediately = opts.include?(:run_jobs_immediately)
     DueDateCacher.recompute_users_for_course(
       user_ids,
       course,
       nil,
-      run_immediately: run_immediately,
       update_grades: true,
       executing_user: opts[:updating_user]
     )

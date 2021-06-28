@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #
 # Copyright (C) 2014 - present Instructure, Inc.
 #
@@ -26,7 +28,7 @@ group :test do
   gem 'simplecov', '0.15.1', require: false
     gem 'docile', '1.1.5', require: false
   gem 'simplecov-rcov', '0.2.3', require: false
-  gem 'puma', '5.0.0', require: false
+  gem 'puma', '5.2.2', require: false
 
   gem 'db-query-matchers', '0.10.0'
   gem 'rspec', '3.9.0'
@@ -60,15 +62,15 @@ group :test do
   gem 'headless', '2.3.1', require: false
   gem 'escape_code', '0.2', require: false
   gem 'luminosity_contrast', '0.2.1'
-  gem 'pact', '1.49.0', require: false
-    gem 'pact-mock_service', '3.5.0', require: false
-    gem 'pact-support', '1.15.1', require: false # pinned until https://github.com/pact-foundation/pact-support/issues/81 fixed
+  gem 'pact', '1.57.0', require: false
   gem 'pact-messages', '0.2.0'
-  gem 'pact_broker-client', '1.25.0'
+  gem 'pact_broker-client', '1.40.0'
   gem 'database_cleaner', '~> 1.5', '>= 1.5.3'
 
   gem 'parallel_tests'
   gem 'flakey_spec_catcher', require: false
   gem 'factory_bot', '6.1.0', require: false
   gem 'rspec_junit_formatter', require: false
+  gem 'axe-core-selenium', '4.1.0', require: false
+  gem 'axe-core-rspec', '4.1.0', require: false
 end

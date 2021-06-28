@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #
 # Copyright (C) 2014 - present Instructure, Inc.
 #
@@ -160,8 +162,7 @@ Rails.configuration.after_initialize do
     DatabaseServer.send_in_each_region(
       BounceNotificationProcessor,
       :process,
-      { run_current_region_asynchronously: true,
-        singleton: 'BounceNotificationProcessor.process' }
+      { run_current_region_asynchronously: true }
     )
   end
 
@@ -266,6 +267,10 @@ Rails.configuration.after_initialize do
 
   Delayed::Periodic.cron 'ScheduledSmartAlert.queue_current_jobs', '5 * * * *' do
     with_each_shard_by_database(ScheduledSmartAlert, :queue_current_jobs)
+  end
+
+  Delayed::Periodic.cron 'Course.sync_homeroom_enrollments', '5 0 * * *' do
+    with_each_shard_by_database(Course, :sync_homeroom_enrollments)
   end
 
   # the default is hourly, and we picked a weird minute just to avoid

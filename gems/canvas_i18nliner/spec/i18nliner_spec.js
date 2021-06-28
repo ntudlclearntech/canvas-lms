@@ -20,22 +20,18 @@ const mkdirp = require("mkdirp");
 const { I18nliner } = require("../js/main");
 const scanner = require("../js/scanner");
 
-var subject = function(path) {
+var subject = function(dir) {
   var command = new I18nliner.Commands.Check({});
-  var origDir = process.cwd();
-  try {
-    process.chdir(path);
-    scanner.scanFilesFromI18nrc(scanner.loadConfigFromI18nrc('.i18nrc'))
-    command.run();
-  }
-  finally {
-    process.chdir(origDir);
-    scanner.reset()
-  }
+  scanner.scanFilesFromI18nrc(scanner.loadConfigFromDirectory(dir))
+  command.run();
   return command.translations.masterHash.translations;
 }
 
 describe("I18nliner", function() {
+  afterEach(function() {
+    scanner.reset()
+  })
+
   describe("handlebars", function() {
     it("extracts default translations", function() {
       expect(subject("spec/fixtures/hbs")).toEqual({
@@ -54,6 +50,18 @@ describe("I18nliner", function() {
         }
       });
     });
+
+    it('throws if no scope was specified', () => {
+      const command = new I18nliner.Commands.Check({});
+      const origDir = process.cwd();
+
+      scanner.scanFilesFromI18nrc(scanner.loadConfigFromDirectory('spec/fixtures/hbs-missing-i18n-scope'))
+      command.checkFiles();
+
+      expect(command.isSuccess()).toBeFalsy()
+      expect(command.errors.length).toEqual(1)
+      expect(command.errors[0]).toMatch(/expected i18nScope for Handlebars template to be specified/)
+    })
   });
 
   describe("javascript", function() {

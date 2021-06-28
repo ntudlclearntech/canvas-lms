@@ -25,30 +25,30 @@ import moxios from 'moxios'
 import qs from 'qs'
 
 import fakeENV from 'helpers/fakeENV'
-import UserSettings from 'compiled/userSettings'
-import natcompare from 'compiled/util/natcompare'
-import round from 'compiled/util/round'
-import * as FlashAlert from 'jsx/shared/FlashAlert'
-import AsyncComponents from 'jsx/gradebook/default_gradebook/AsyncComponents'
-import ActionMenu from 'jsx/gradebook/default_gradebook/components/ActionMenu'
-import CourseGradeCalculator from 'jsx/gradebook/CourseGradeCalculator'
-import AnonymousSpeedGraderAlert from 'jsx/gradebook/default_gradebook/components/AnonymousSpeedGraderAlert'
-import GradebookApi from 'jsx/gradebook/default_gradebook/apis/GradebookApi'
-import LatePolicyApplicator from 'jsx/grading/LatePolicyApplicator'
-import SubmissionCommentApi from 'jsx/gradebook/default_gradebook/apis/SubmissionCommentApi'
-import SubmissionStateMap from 'jsx/gradebook/SubmissionStateMap'
-import studentRowHeaderConstants from 'jsx/gradebook/default_gradebook/constants/studentRowHeaderConstants'
-import {darken, statusColors, defaultColors} from 'jsx/gradebook/default_gradebook/constants/colors'
-import ViewOptionsMenu from 'jsx/gradebook/default_gradebook/components/ViewOptionsMenu'
+import UserSettings from '@canvas/user-settings'
+import natcompare from '@canvas/util/natcompare'
+import round from 'round'
+import * as FlashAlert from '@canvas/alerts/react/FlashAlert'
+import AsyncComponents from 'ui/features/gradebook/react/default_gradebook/AsyncComponents.js'
+import ActionMenu from 'ui/features/gradebook/react/default_gradebook/components/ActionMenu.js'
+import CourseGradeCalculator from '@canvas/grading/CourseGradeCalculator'
+import AnonymousSpeedGraderAlert from 'ui/features/gradebook/react/default_gradebook/components/AnonymousSpeedGraderAlert.js'
+import GradebookApi from 'ui/features/gradebook/react/default_gradebook/apis/GradebookApi.js'
+import LatePolicyApplicator from 'ui/features/gradebook/react/LatePolicyApplicator.js'
+import SubmissionCommentApi from 'ui/features/gradebook/react/default_gradebook/apis/SubmissionCommentApi.js'
+import SubmissionStateMap from '@canvas/grading/SubmissionStateMap'
+import studentRowHeaderConstants from 'ui/features/gradebook/react/default_gradebook/constants/studentRowHeaderConstants.js'
+import {darken, statusColors, defaultColors} from 'ui/features/gradebook/react/default_gradebook/constants/colors.js'
+import ViewOptionsMenu from 'ui/features/gradebook/react/default_gradebook/components/ViewOptionsMenu.js'
 import ContentFilterDriver from './default_gradebook/components/content-filters/ContentFilterDriver'
 import {waitFor} from '../support/Waiters'
 
-import {compareAssignmentDueDates} from 'jsx/gradebook/default_gradebook/Gradebook.utils'
+import {compareAssignmentDueDates} from 'ui/features/gradebook/react/default_gradebook/Gradebook.utils.js'
 
 import {
   createGradebook,
   setFixtureHtml
-} from 'jsx/gradebook/default_gradebook/__tests__/GradebookSpecHelper'
+} from 'ui/features/gradebook/react/default_gradebook/__tests__/GradebookSpecHelper.js'
 import {createCourseGradesWithGradingPeriods as createGrades} from './GradeCalculatorSpecHelper'
 
 const $fixtures = document.getElementById('fixtures')
@@ -296,23 +296,6 @@ QUnit.module('Gradebook#initialize', () => {
     test('stores the late policy as undefined if the late_policy option is null', () => {
       const gradebook = createInitializedGradebook({late_policy: null})
       strictEqual(gradebook.courseContent.latePolicy, undefined)
-    })
-  })
-})
-
-QUnit.module('Gradebook', () => {
-  QUnit.module('#dataLoader', () => {
-    // TODO: remove this entire module with TALLY-831
-
-    test('is the new DataLoader when `dataloader_improvements` is true', () => {
-      // `dataloader_improvements` should default to enabled except in beta and production
-      const gradebook = createGradebook()
-      strictEqual(gradebook.dataLoader.constructor.name, 'DataLoader')
-    })
-
-    test('is the old DataLoader when `dataloader_improvements` is false', () => {
-      const gradebook = createGradebook({dataloader_improvements: false})
-      strictEqual(gradebook.dataLoader.constructor.name, 'OldDataLoader')
     })
   })
 })
@@ -1731,38 +1714,6 @@ test('disables the input when submissions are not loaded', function() {
   const input = document.querySelector('#search-filter-container input')
   strictEqual(input.disabled, true, 'input is disabled')
   strictEqual(input.getAttribute('aria-disabled'), 'true', 'input is aria-disabled')
-})
-
-QUnit.module('Gradebook#studentsParams', {
-  setup() {
-    this.gradebook = createGradebook()
-  }
-})
-
-test('enrollment_state includes "completed" when concluded filter is on', function() {
-  sandbox.stub(this.gradebook, 'getEnrollmentFilters').returns({concluded: true, inactive: false})
-  ok(this.gradebook.studentsParams().enrollment_state.includes('completed'))
-})
-
-test('enrollment_state excludes "completed" when concluded filter is off', function() {
-  sandbox.stub(this.gradebook, 'getEnrollmentFilters').returns({concluded: false, inactive: false})
-  notOk(this.gradebook.studentsParams().enrollment_state.includes('completed'))
-})
-
-test('enrollment_state includes "inactive" when inactive filter is on', function() {
-  sandbox.stub(this.gradebook, 'getEnrollmentFilters').returns({concluded: false, inactive: true})
-  ok(this.gradebook.studentsParams().enrollment_state.includes('inactive'))
-})
-
-test('enrollment_state excludes "inactive" when inactive filter is off', function() {
-  sandbox.stub(this.gradebook, 'getEnrollmentFilters').returns({concluded: false, inactive: false})
-  notOk(this.gradebook.studentsParams().enrollment_state.includes('inactive'))
-})
-
-test('enrollment_state includes "active" and "invited" by default', function() {
-  sandbox.stub(this.gradebook, 'getEnrollmentFilters').returns({concluded: false, inactive: false})
-  ok(this.gradebook.studentsParams().enrollment_state.includes('active'))
-  ok(this.gradebook.studentsParams().enrollment_state.includes('invited'))
 })
 
 QUnit.module('Gradebook#weightedGroups', {
@@ -9824,6 +9775,80 @@ QUnit.module('Gradebook#toggleViewUngradedAsZero', hooks => {
   })
 })
 
+QUnit.module('Gradebook#confirmViewUngradedAsZero', hooks => {
+  let gradebook
+
+  const confirmationDialog = () =>
+    document.querySelector('span[role=dialog][aria-label="View Ungraded as Zero"]')
+  const acceptConfirmation = () => {
+    const okButton = [...confirmationDialog().querySelectorAll('button')].find(
+      button => button.textContent === 'OK'
+    )
+    okButton.click()
+  }
+  const denyConfirmation = () => {
+    const cancelButton = [...confirmationDialog().querySelectorAll('button')].find(
+      button => button.textContent === 'Cancel'
+    )
+    cancelButton.click()
+  }
+
+  hooks.beforeEach(() => {
+    gradebook = createGradebook({
+      grid: {
+        getColumns: () => [],
+        updateCell: sinon.stub()
+      },
+      settings: {
+        allow_view_ungraded_as_zero: 'true'
+      }
+    })
+    sinon.stub(gradebook, 'toggleViewUngradedAsZero')
+  })
+
+  test('shows a confirmation dialog if not viewing ungraded as zero', async () => {
+    const promise = gradebook.confirmViewUngradedAsZero()
+
+    ok(confirmationDialog())
+    acceptConfirmation()
+    await promise
+  })
+
+  test('does not show a confirmation dialog if already viewing ungraded as zero', async () => {
+    gradebook.gridDisplaySettings.viewUngradedAsZero = true
+    const promise = gradebook.confirmViewUngradedAsZero()
+
+    notOk(confirmationDialog())
+    await promise
+  })
+
+  QUnit.module('when the confirmation is requested and accepted', () => {
+    const confirmAndAccept = async () => {
+      const promise = gradebook.confirmViewUngradedAsZero()
+      acceptConfirmation()
+      await promise
+    }
+
+    test('calls toggleViewUngradedAsZero', async () => {
+      await confirmAndAccept()
+      strictEqual(gradebook.toggleViewUngradedAsZero.callCount, 1)
+    })
+  })
+
+  QUnit.module('when the confirmation is requested and denied', () => {
+    const confirmAndDeny = async () => {
+      const promise = gradebook.confirmViewUngradedAsZero()
+      denyConfirmation()
+      await promise
+    }
+
+    test('does not call toggleViewUngradedAsZero', async () => {
+      await confirmAndDeny()
+      strictEqual(gradebook.toggleViewUngradedAsZero.callCount, 0)
+    })
+  })
+})
+
 QUnit.module('Gradebook', suiteHooks => {
   let $container
   let gradebook
@@ -9864,14 +9889,6 @@ QUnit.module('Gradebook', suiteHooks => {
       gradebook._updateEssentialDataLoaded()
       await waitForTick()
       strictEqual(gradebook.finishRenderingUI.callCount, 1)
-    })
-
-    test('does not finish rendering the UI when dataloader performance improvements is disabled', async () => {
-      options.dataloader_improvements = false
-      createInitializedGradebook()
-      gradebook._updateEssentialDataLoaded()
-      await waitForTick()
-      strictEqual(gradebook.finishRenderingUI.callCount, 0)
     })
 
     test('does not finish rendering the UI when student ids are not loaded', async () => {
