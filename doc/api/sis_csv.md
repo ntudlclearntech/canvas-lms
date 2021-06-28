@@ -265,8 +265,9 @@ user's name, but you can customize it here.</td>
 <td>text</td>
 <td></td>
 <td></td>
-<td>The email address of the user. This might be the same as login_id, but should
-still be provided.</td>
+<td>The email address of the user. This might be the same as login_id but would
+be used to set email for user and will tie the email to the login. It is
+recommended to omit this field over using fake email addresses for testing.</td>
 </tr>
 <tr>
 <td>pronouns</td>
@@ -545,6 +546,20 @@ the current course will be set up to receive updates from the blueprint course.
 Requires Blueprint Courses feature.
 To remove the Blueprint Course link you can pass 'dissociate' in place of the id.
 </td>
+</tr>
+<tr>
+<td>grade_passback_setting</td>
+<td>text</td>
+<td></td>
+<td>✓</td>
+<td>nightly_sync, not_set</td>
+</tr>
+<tr>
+<td>homeroom_course</td>
+<td>boolean</td>
+<td></td>
+<td></td>
+<td>Whether the course is a homeroom course. Requires the courses to be associated with a "Canvas for Elementary"-enabled account.</td>
 </tr>
 </table>
 

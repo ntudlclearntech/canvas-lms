@@ -21,11 +21,12 @@ this will replace the i18n_tasks and i18n_extraction gems
 }
 ```
 
-`.i18nrc` files can include other files that may in turn specify more files:
+`.i18nrc` files can include other directories that may in turn specify more
+files through their `.i18nrc` configuration file:
 
 ```json
 {
-  "include": [ "relative/path/to/.i18nrc" ]
+  "include": [ "relative/path/to/dir" ]
 }
 ```
 

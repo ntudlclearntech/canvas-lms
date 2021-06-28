@@ -108,15 +108,13 @@ class GradingStandard < ActiveRecord::Base
     end
 
     idx = place_in_scheme(grade)
-    excpetion_course = ['course_3100', 'course_3398', 'course_3399', 'course_3984']
-    if !excpetion_course.include?(self.context_code)
-      if idx == 0
-        return ((100 + (ordered_scheme[0].last * 100.0)) / 2.0).round
-      elsif idx
-        return ((ordered_scheme[idx].last + ordered_scheme[idx - 1].last).abs * 100.0 / 2.0).round
-      else
-        return nil
-      end
+    # The following is the NTU grading standard
+    if idx == 0
+      return ((100 + (ordered_scheme[0].last * 100.0)) / 2.0).round
+    elsif idx
+      return ((ordered_scheme[idx].last + ordered_scheme[idx - 1].last).abs * 100.0 / 2.0).round
+    else
+      return nil
     end
 
     # The following is the default standard of Canvas
@@ -127,10 +125,10 @@ class GradingStandard < ActiveRecord::Base
     # grade cutoffs.
     # otherwise, we step down just 1/10th of a point, which is the
     # granularity we support right now
-    elsif idx && (ordered_scheme[idx].last - ordered_scheme[idx - 1].last).abs >= 0.01
-      ordered_scheme[idx - 1].last * 100.0 - 1.0
+    elsif idx && (ordered_scheme[idx].last - ordered_scheme[idx - 1].last).abs >= 0.01.to_d
+      ordered_scheme[idx - 1].last * 100.0.to_d - 1.0.to_d
     elsif idx
-      ordered_scheme[idx - 1].last * 100.0 - 0.1
+      ordered_scheme[idx - 1].last * 100.0.to_d - 0.1.to_d
     else
       nil
     end
@@ -174,7 +172,7 @@ class GradingStandard < ActiveRecord::Base
     # assign the highest grade whose min cutoff is less than the score
     # if score is less than all scheme cutoffs, assign the lowest grade
     score = BigDecimal(score.to_s) # Cast this to a BigDecimal too or comparisons get wonky
-    ordered_scheme.max_by {|_, lower_bound| score >= lower_bound * 100 ? lower_bound : -lower_bound }[0]
+    ordered_scheme.max_by {|_, lower_bound| score >= lower_bound * 100.0.to_d ? lower_bound : -lower_bound }[0]
   end
 
   def data=(new_val)

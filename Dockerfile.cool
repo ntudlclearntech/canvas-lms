@@ -5,6 +5,7 @@ WORKDIR /var/canvas
 RUN adduser --disabled-password --gecos canvas --uid 1001 canvasuser \
   && chown -R canvasuser:canvasuser /var/canvas
 ENV RAILS_ENV=production
+ARG MAX_ASSET_SIZE
 # 0-1. Set up locales
 RUN apt-get update && apt-get install -y locales \
   && sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen && locale-gen
@@ -25,16 +26,17 @@ RUN apt-get update && apt-get install -y git apt-utils tzdata \
   && apt-get install -y ruby2.6 ruby2.6-dev zlib1g-dev libxml2-dev libsqlite3-dev libpq-dev libxmlsec1-dev curl make g++ \
   && rm -rf /usr/bin/ruby && ln -s /usr/bin/ruby2.6 /usr/bin/ruby \
   # Install Node.js
-  && curl -sL https://deb.nodesource.com/setup_12.x | bash - \
+  && curl -sL https://deb.nodesource.com/setup_14.x | bash - \
   && apt-get install -y nodejs \
   # Install bundler
-  && gem2.6 install bundler --version 2.1.4 \
+  && gem2.6 install bundler --version 2.2.17 \
   # Yarn Installation
   && curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - \
   && echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list \
   && apt-get update && apt-get install -y yarn=1.19.1-1 \
   # Install Python
-  && apt-get install -y python python-lxml python-pygments
+  && apt-get install -y python python-lxml python-pygments \
+  && apt-get install -y automake
 
 # 2. Passenger Configuration
 RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 561F9B9CAC40B2F7 \
@@ -86,12 +88,12 @@ RUN mkdir -p log tmp/pids public/assets app/stylesheets/brandable_css_brands \
   && touch log/production.log 
 
 # 5. bundle install and yarn install
-RUN bundle _2.1.4_ config set path 'vendor/bundle' \
+RUN bundle _2.2.17_ config set path 'vendor/bundle' \
   # Ruby Gems
-  && bundle _2.1.4_ install \ 
-  && yarn install \
+  && bundle _2.2.17_ install --without pulsar --path vendor/bundle \ 
+  && yarn install --network-concurrency 1 \
   # Compile
-  && RAILS_ENV=production bundle exec rake canvas:compile_assets --trace
+  && RAILS_ENV=production MAX_ASSET_SIZE=$MAX_ASSET_SIZE bundle exec rake canvas:compile_assets --trace
 
 CMD ./config.sh \
   && rm -rf public/dist/brandable_css/* \

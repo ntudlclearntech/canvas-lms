@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #
 # Copyright (C) 2011 - present Instructure, Inc.
 #
@@ -131,8 +133,8 @@ class RubricAssociationsController < ApplicationController
       # If the rubric wasn't created as a general course rubric,
       # and this was the last place it was being used in the course,
       # go ahead and delete the rubric from the course.
-      association_count = RubricAssociation.where(:context_id => @context, :context_type => @context.class.to_s, :rubric_id => @rubric).for_grading.count
-      if !RubricAssociation.for_purpose('bookmark').where(rubric_id: @rubric).first && association_count == 0
+      association_count = RubricAssociation.active.where(:context_id => @context, :context_type => @context.class.to_s, :rubric_id => @rubric).for_grading.count
+      if !RubricAssociation.active.for_purpose('bookmark').where(rubric_id: @rubric).first && association_count == 0
         @rubric.destroy_for(@context, current_user: @current_user)
       end
       render :json => @association

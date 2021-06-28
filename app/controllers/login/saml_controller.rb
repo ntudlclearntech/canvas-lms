@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #
 # Copyright (C) 2015 - present Instructure, Inc.
 #
@@ -190,6 +192,7 @@ class Login::SamlController < ApplicationController
           session[:return_to] = relay_state
         end
       end
+      pseudonym.infer_auth_provider(aac)
       successful_login(user, pseudonym)
     else
       unknown_user_url = @domain_root_account.unknown_user_url.presence || login_url
