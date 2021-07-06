@@ -3,4 +3,5 @@
 	url = https://github.com/instructure/QTIMigrationTool.git
 [submodule "gems/plugins/analytics"]
 	path = gems/plugins/analytics
-	url = https://gitlab.dlc.ntu.edu.tw/ntu-cool/canvas-lms-analytics
+	url = ../canvas-lms-analytics
+	branch = dev

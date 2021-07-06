@@ -2703,6 +2703,7 @@ zh-Hant:
   an_unknown_server_error_occurred_please_try_again_f517eaf3: 出現未知服務器錯誤。請重試。
   an_update_is_available_for_toolname_bba3fa2: "%{toolName}有可用更新"
   analytics: 
+    participation_header: 學習活動次數
     course: 
       analytics: 分析數據
       page_title: "分析數據：%{course}"
@@ -6904,6 +6905,10 @@ zh-Hant:
   country_or_region_26ea046c: 國家或地區
   country_or_region_is_required_86917b39: 國家或地區必填
   course: 
+    analytics:
+      course_graph_title: 學習活動紀錄
+      participation_label: 課程參與
+      participation_header: 學習活動次數
     access_denied: 訪問被拒絕
     batch_update_message: 
       one: "%{count} 門課程已處理"
@@ -17765,6 +17770,7 @@ zh-Hant:
   page_title_ascending_b5df950c: 頁面標題：升序
   page_title_descending_70c1483d: 頁面標題：降序
   page_views: 
+    frequency: 次數
     download_filename: "%{user} 的頁面瀏覽人數"
     table: 
       headers: 
