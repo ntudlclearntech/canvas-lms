@@ -22599,6 +22599,7 @@ zh-Hant:
       new_topic_option: "[新主題]"
       options: 
         assignments: 作業
+      other_teaching_material: 其他教學素材
       quiz_item: 測驗
       quiz_notice: 選擇您想要連結至此*單元*的測驗，或者透過點選『新測驗』來新增測驗。
       quiz_select_label: 選擇您要連結的測驗，或點選『新測驗』來新增測驗。
