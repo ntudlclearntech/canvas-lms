@@ -22564,7 +22564,7 @@ zh-Hant:
       discussion_topic_select_label_new: 選擇您要關聯的主題，或選擇「新主題」添加話題。
       domain_match_notice: "要使用此工具，網域必須與 %{domain} 相符"
       external_tool_item: 外部工具
-      external_tool_notice: "從以下清單中選擇一個工具，或輸入您知道已經完成基本 LTI 設定的外部工具網址，以將該服務新增至此*單元*。"
+      external_tool_notice: "請選擇欲新增的教學素材類型或輸入符合LTI 設定的（外部）網址，以新增該素材至此。"
       external_url_item: 外部網址
       external_url_notice: "輸入網址和頁面名稱，以將任何網站的頁面新增至此*單元*。"
       file_item: 文件
