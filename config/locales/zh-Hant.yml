@@ -22585,6 +22585,7 @@ zh-Hant:
         quiz_group: 群組
         quiz_name: 測驗名稱
         topic_name: 主題名稱
+        type: 素材類型
         url: 網址
         wiki_page_name: 頁面名稱
         wiki_page_namem: 作業名稱
