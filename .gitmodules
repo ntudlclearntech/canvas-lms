@@ -4,4 +4,3 @@
 [submodule "gems/plugins/analytics"]
 	path = gems/plugins/analytics
 	url = ../canvas-lms-analytics
-	branch = dev
