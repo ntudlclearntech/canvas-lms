@@ -68,7 +68,7 @@
         </div>
         <table>
           <tr>
-            <td><label for="sub_header_title"><%= before_label :header, "Header" %></label></td>
+            <td><label for="sub_header_title"><%= before_label :header, "Header", show_colon: false %></label></td>
             <td><input type="text" name="title" id="sub_header_title" style="width: 200px;"/></td>
           </tr>
         </table>
@@ -82,7 +82,7 @@
         </div>
         <table>
           <tr>
-            <td><label for="content_tag_create_url"><%= before_label :url, "URL" %></label></td>
+            <td><label for="content_tag_create_url"><%= before_label :url, "URL", show_colon: false %></label></td>
             <td>
               <input type="text" name="url" id="content_tag_create_url" style="width: 200px;"/>
               <div id="content_tag_services">
@@ -91,7 +91,7 @@
             </td>
           </tr>
           <tr class='select_item_name'>
-            <td><label for="content_tag_create_title"><%= before_label :page_name, "Page Name" %></label></td>
+            <td><label for="content_tag_create_title"><%= before_label :page_name, "Page Name", show_colon: false %></label></td>
             <td><input type="text" name="title" id="content_tag_create_title" style="width: 120px;"/></td>
           </tr>
           <tr>
@@ -115,7 +115,7 @@
         <input type="hidden" name="custom_params" id="external_tool_create_custom_params" />
         <table>
           <tr>
-            <td><label for="external_tool_type"><%= before_label :type, "Type" %></label></td>
+            <td><label for="external_tool_type"><%= before_label :type, "Type", show_colon: false %></label></td>
             <td colspan="2">
               <ul class="tools" style="max-height: 250px; overflow: auto;">
                 <li class="message" style="margin: 10px 0;"><%= t :loading, "Loading..." %></li>
@@ -127,7 +127,7 @@
             </td>
           </tr>
           <tr>
-            <td><label for="external_tool_create_url"><%= before_label :url, "URL" %></label></td>
+            <td><label for="external_tool_create_url"><%= before_label :url, "URL", show_colon: false %></label></td>
             <td>
               <input type="text" name="url" id="external_tool_create_url" style="width: 200px;"/>
               <div class="domain_message" style="font-size: 0.8em; display: none;">
@@ -136,7 +136,7 @@
             </td>
           </tr>
           <tr class='select_item_name'>
-            <td><label for="external_tool_create_title"><%= before_label :page_name, "Page Name" %></label></td>
+            <td><label for="external_tool_create_title"><%= before_label :page_name, "Page Name", show_colon: false %></label></td>
             <td><input type="text" name="title" id="external_tool_create_title" style="width: 120px;"/></td>
           </tr>
           <tr>
@@ -393,7 +393,7 @@
       <% end %>
       <% if !only || only.include?(:indentation) %>
       <div class="context_module_content">
-        <%= before_label :indentation, "Indentation" %>
+        <%= before_label :indentation, "Indentation", show_colon: false %>
         <select name="content_tag[indent]" id="content_tag_indent" aria-label="<%= before_label :indentation, "Indentation" %>">
           <% (0..5).each do |level| %>
             <%= t(:indent_level, { :zero => "*Don't Indent*", :one => "*Indent 1 Level*", :other => "*Indent %{count} levels*" }, :count => level, :wrapper => "<option value=\"#{level}\">\\1</option>") %>

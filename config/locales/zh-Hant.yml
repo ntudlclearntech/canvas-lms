@@ -4273,6 +4273,7 @@ zh-Hant:
   before_implementing_custom_css_or_javascript_pleas_128da8cd: "在實施自定義 CSS 或 Javascript 腳本前，請參閱*我們的文檔*。"
   before_implementing_custom_css_or_javascript_pleas_65423572: "在實施自定義 CSS 或 Javascript 腳本前，請參閱*我們的文檔*。"
   before_label_wrapper: "%{text}："
+  before_label_wrapper_without_colon: "%{text}"
   before_publishing_this_file_you_must_specify_usage_2229d20b: 在發佈該文檔之前，您必須指定使用權。
   before_publishing_you_must_set_usage_rights_on_you_dcd7b567: 在發佈之前，您必須在您的文檔上設置使用權。
   before_publishing_your_course_you_must_either_publ_cdfdc78c: 在發佈課程前，您必須發佈單元，或選擇其他主頁。
