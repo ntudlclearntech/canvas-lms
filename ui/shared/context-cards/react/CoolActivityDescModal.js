@@ -23,19 +23,20 @@ export default class CoolActivityDescModal extends React.Component {
         <Modal.Body>
           <Text size="large" weight="bold">{I18n.t('modal_body.page_view', 'Page View')}</Text>
           <br />
-          <Text>{I18n.t('modal_body.page_view_explanation', 'Any course page view.')}</Text>
+          <Text>{I18n.t('modal_body.page_view_explanation', 'A view is counted each time a user navigates to a course page.')}</Text>
           <br /><br />
           <Text size="large" weight="bold">{I18n.t('modal_body.participation', 'Participation')}</Text>
           <br />
-          <Text>{I18n.t('modal_body.participation_explanation_1', 'The sum of student\'s participation and page view.')}</Text>
+          <Text>{I18n.t('modal_body.participation_explanation_1', 'The sum of page views and the times students taking parts in course activities.')}</Text>
           <br />
-          <Text>{I18n.t('modal_body.participation_explanation_2', 'Participation includes downloading, reading documents, joining disscusion, taking quizzes, submitting assignments, and creating a new page.')}</Text>
+          <Text>{I18n.t('modal_body.participation_explanation_2', 'User actions will generate analytics course participation, such as  loads a collaboration to view/edit the document, posts a new comment to a discussion or an announcement, starts taking and submits a quiz, submits an assignment and creates a wiki page etc.')}</Text>
           <br /><br />
-          <Text size="large" weight="bold">{I18n.t('modal_body.calculation_method', 'Calculation Method:')}</Text>
+          <Text size="large" weight="bold">{I18n.t('modal_body.calculation_rules', 'Calculation Rules')}</Text>
           <br />
-          <Text>{I18n.t('modal_body.calculation_method_explanation_1', 'The data represents the comparison of activity between individuals and the rest of the class, and its calculation is based on the quartile of participation and page view.')}</Text>
+          <Text>{I18n.t('modal_body.calculation_rules_explanation_1', 'The activity section provides an overview of the student\'s participation compared to other students in the course. It is not meant to be an exact comparison and is based on the standard deviation of the student\'s participation and page views in the course.')}</Text>
           <br />
-          <Text>{I18n.t('modal_body.calculation_method_explanation_2', 'There are four different level of activeness:')}</Text>
+          <Text>{I18n.t('modal_body.calculation_rules_explanation_2', 'Star rating definition into four levels:')}</Text>
+          <br />
           <View
             as="span"
             display="inline-block"
@@ -48,19 +49,19 @@ export default class CoolActivityDescModal extends React.Component {
             <IconStarLightSolid style={{ color: '#008EE2', paddingRight: '0.2rem' }} />
             <IconStarLightSolid style={{ color: '#008EE2', paddingRight: '0.2rem' }} />
             <IconStarLightSolid style={{ color: '#008EE2', paddingRight: '0.2rem' }} />
-            <Text>{I18n.t('modal_body.zero_star', 'Zero star means the student didn\'t participate in any course activities, or view any page')}</Text>
+            <Text>{I18n.t('modal_body.zero_star', 'Student with no page views and no participation in any course activities.')}</Text>
             <br />
             <IconStarSolid style={{ color: '#008EE2', paddingRight: '0.2rem' }} />
-            <Text>{I18n.t('modal_body.one_star', 'One star means the student\'s activeness lies in the first quartile')}</Text>
-            <br />
-            <IconStarSolid style={{ color: '#008EE2', paddingRight: '0.2rem' }} />
-            <IconStarSolid style={{ color: '#008EE2', paddingRight: '0.2rem' }} />
-            <Text>{I18n.t('modal_body.two_star', 'Two star means the student\'s activeness lies between the second and thrid quartile')}</Text>
+            <Text>{I18n.t('modal_body.one_star', 'Students whose participation falls in the lowest quartile of course activity.')}</Text>
             <br />
             <IconStarSolid style={{ color: '#008EE2', paddingRight: '0.2rem' }} />
             <IconStarSolid style={{ color: '#008EE2', paddingRight: '0.2rem' }} />
+            <Text>{I18n.t('modal_body.two_star', 'Students whose participation falls in the middle two quartiles.')}</Text>
+            <br />
             <IconStarSolid style={{ color: '#008EE2', paddingRight: '0.2rem' }} />
-            <Text>{I18n.t('modal_body.three_star', 'Two star means the student\'s activeness lies in the fourth quartile')}</Text>
+            <IconStarSolid style={{ color: '#008EE2', paddingRight: '0.2rem' }} />
+            <IconStarSolid style={{ color: '#008EE2', paddingRight: '0.2rem' }} />
+            <Text>{I18n.t('modal_body.three_star', 'Students whose participation falls in the top quartile.')}</Text>
             <br />
           </View>
         </Modal.Body>
