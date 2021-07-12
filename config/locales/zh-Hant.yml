@@ -27013,12 +27013,12 @@ zh-Hant:
       participation: 課程參與（Participation）
       participation_explanation_1: 學生學習活動次數以及網頁點閱數的加總。
       participation_explanation_2: 學習活動次數包含下載或檢閱線上文件、參與討論區的討論議題、參與線上測驗、繳交作業、建立一個新的頁面等行為將會被計入課程參與次數。
-      calculation_method: 計算方式：
-      calculation_method_explanation_1: 資料呈現個別學生其課程參與度與班上其他同學之間的比較，計算根據個別學生在該課程的課程活動參與次數以及頁面點閱數的標準差而來。
-      calculation_method_explanation_2: 系統將活躍動分成四個等級：
-      zero_star: 零顆星大表該學生沒有任何的課程活動參與，以及沒有任何的網頁點閱
-      one_star: 一顆星代表該學生的活躍程度，落在班上第一四分位數的以下（ < 25％ ）
-      two_star: 兩顆星代表該學生的活躍程度，落在班上第二、三四分位數之間（ ≧ 25％, ≦ 75％ ）
-      three_star: 三顆星代表該學生的活躍程度，高於班上第三四分位數（ > 75％ ）
+      calculation_rules: 計算方式
+      calculation_rules_explanation_1: 資料呈現個別學生其課程參與度與班上其他同學之間的比較，計算根據個別學生在該課程的課程活動參與次數以及頁面點閱數的標準差而來。
+      calculation_rules_explanation_2: 系統將活躍動分成四個等級：
+      zero_star: 該學生沒有任何的課程活動參與，以及沒有任何的網頁點閱
+      one_star: 該學生的活躍程度落在班上第一四分位數的以下
+      two_star: 該學生的活躍程度落在班上第二、三分位數之間
+      three_star: 該學生的活躍程度，高於班上第三四分位數
     close: 關閉
 
