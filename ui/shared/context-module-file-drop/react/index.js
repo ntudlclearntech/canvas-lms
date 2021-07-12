@@ -157,7 +157,6 @@ export default class ModuleFileDrop extends React.Component {
     const {folder} = this.state
     return (
       <Billboard
-        heading={folder ? I18n.t('Drop files here to add to module. Videos files are recommended to be .mp4 format and added by the External Tool.') : I18n.t('Loading...')}
         headingLevel="h4"
         hero={size => this.renderHero(size)}
         message={
@@ -180,14 +179,19 @@ export default class ModuleFileDrop extends React.Component {
   renderFileDrop() {
     const {interaction, folder} = this.state
     return (
-      <FileDrop
-        allowMultiple
-        renderLabel={this.renderBillboard()}
-        onDragEnter={this.handleDragEnter}
-        onDragLeave={this.handleDragLeave}
-        onDrop={this.handleDrop}
-        interaction={interaction && folder ? 'enabled' : 'disabled'}
-      />
+      <>
+        <FileDrop
+          allowMultiple
+          renderLabel={this.renderBillboard()}
+          onDragEnter={this.handleDragEnter}
+          onDragLeave={this.handleDragLeave}
+          onDrop={this.handleDrop}
+          interaction={interaction && folder ? 'enabled' : 'disabled'}
+        />
+        <Text color="success">
+          {folder ? I18n.t('file_drop.notice', 'Click the "+" button next to area title, select "Other teaching material" to upload your MP4 files (Videos files are recommended to be .mp4 format).') : I18n.t('Loading...')}
+        </Text>
+      </>
     )
   }
 
