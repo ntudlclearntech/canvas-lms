@@ -2226,9 +2226,12 @@ class ApplicationController < ActionController::Base
   def prevent_image_cache(description)
     return "" unless description
 
+    # Description type: ActiveSupport::SafeBuffer
+    # no_cache_description is a string
     no_cache_description = description.gsub(/(img src="\/(courses|users)\/\d+\/files\/\d+\/preview)(\??)(.*?")/, '\1?random=' + "#{Random.new_seed}" + '&\4')
 
-    description.replace(no_cache_description)
+    # the description comes from public_user_content/user_content, so we can suppose the content is safe
+    no_cache_description.html_safe
   end
   helper_method :prevent_image_cache
 

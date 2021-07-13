@@ -152,6 +152,12 @@ export default function getTranslations(locale) {
           case 'zh':
             p = import('./translations/locales/zh')
             break
+          case 'zh-Hans':
+            p = import('./translations/locales/zh-Hans')
+            break
+          case 'zh-Hant':
+            p = import('./translations/locales/zh-Hant')
+            break
           case 'zh_HK':
             p = import('./translations/locales/zh_HK')
             break
@@ -210,6 +216,8 @@ export function getLocaleList() {
     'tr',
     'uk_UA',
     'zh',
+    'zh-Hans',
+    'zh-Hant',
     'zh_HK'
   ]
 }

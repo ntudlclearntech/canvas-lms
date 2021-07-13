@@ -76,7 +76,7 @@ export default function(props, tinymce, MutationObserver) {
 function configureMenus(editorOptions, instRecordDisabled) {
   const insertMenuItems = [
     ['instructure_links', 'instructure_image', 'instructure_document'],
-    ['instructure_equation', 'inserttable', 'instructure_media_embed'],
+    ['instructure_equation', 'inserttable', 'media'],
     ['hr']
   ]
   if (!instRecordDisabled) {
@@ -89,7 +89,7 @@ function configureMenus(editorOptions, instRecordDisabled) {
     // default edit menu is fine
     view: {
       title: formatMessage('View'),
-      items: 'fullscreen instructure_html_view'
+      items: 'instructure_html_view'
     },
     insert: {
       title: formatMessage('Insert'),
