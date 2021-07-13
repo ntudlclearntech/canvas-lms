@@ -54,7 +54,8 @@ export default class ModuleFileDrop extends React.Component {
       folder: null,
       contextType: null,
       contextId: null,
-      interaction: true
+      interaction: true,
+      messages: [],
     }
   }
 
@@ -113,6 +114,11 @@ export default class ModuleFileDrop extends React.Component {
     this.setState(folderState)
   }
 
+  // Reference: https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types
+  getAllowedMimeTypes = () => {
+    return ['image/*', 'text/*', 'application/*', 'model/*', 'audio/*']
+  }
+
   handleDragEnter = () => {
     this.setState({hightlightUpload: true})
   }
@@ -121,7 +127,24 @@ export default class ModuleFileDrop extends React.Component {
     this.setState({hightlightUpload: false})
   }
 
-  handleDrop = files => {
+  handleDrop = (acceptedFiles, rejectedFiles) => {
+    // Handle invalid messages
+    if (rejectedFiles.length > 0) {
+      this.setState({
+        messages: [{
+          text: I18n.t(
+            'file_drop.invalid_file_type',
+            '%{invalid_files_count} of the files you upload are invalid.',
+            {invalid_files_count: rejectedFiles.length}
+          ), type: 'error'}]
+        })
+    } else {
+      this.setState({messages: []})
+    }
+
+    if (acceptedFiles.length == 0) return
+
+    const files = acceptedFiles
     const {moduleId, contextModules} = this.props
     const {folder} = this.state
     this.setInteractionOnAll(false)
@@ -177,15 +200,17 @@ export default class ModuleFileDrop extends React.Component {
   }
 
   renderFileDrop() {
-    const {interaction, folder} = this.state
+    const {interaction, folder, messages} = this.state
     return (
       <>
         <FileDrop
           allowMultiple
+          accept={this.getAllowedMimeTypes()}
           renderLabel={this.renderBillboard()}
           onDragEnter={this.handleDragEnter}
           onDragLeave={this.handleDragLeave}
           onDrop={this.handleDrop}
+          messages={messages}
           interaction={interaction && folder ? 'enabled' : 'disabled'}
         />
         <Text color="success">
