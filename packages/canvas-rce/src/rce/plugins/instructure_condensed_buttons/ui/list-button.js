@@ -20,39 +20,6 @@ import Actions from '../core/Actions'
 import ListUtils from '../core/ListUtils'
 import formatMessage from '../../../../format-message'
 
-const listTypes = {
-  'unordered-default': {
-    listType: 'UL',
-    icon: 'list-bull-default',
-    text: formatMessage('default bulleted unordered list')
-  },
-  circle: {
-    listType: 'UL',
-    icon: 'list-bull-circle',
-    text: formatMessage('circle unordered list')
-  },
-  square: {
-    listType: 'UL',
-    icon: 'list-bull-square',
-    text: formatMessage('square unordered list')
-  },
-  'ordered-default': {
-    listType: 'OL',
-    icon: 'list-num-default',
-    text: formatMessage('default numerical ordered list')
-  },
-  'upper-alpha': {
-    listType: 'OL',
-    icon: 'list-num-upper-alpha',
-    text: formatMessage('uppercase alphabetic ordered list')
-  },
-  'upper-roman': {
-    listType: 'OL',
-    icon: 'list-num-upper-roman',
-    text: formatMessage('uppercase Roman numeral ordered list')
-  }
-}
-
 function selectedListType(listTypes, editor) {
   const selected = ListUtils.getSelectedStyleType(editor)
   return (
@@ -74,8 +41,42 @@ const isWithinList = (editor, e) => {
   return lists.length > 0 && (lists[0].nodeName === 'UL' || lists[0].nodeName === 'OL')
 }
 
-const buttonLabel = formatMessage('Ordered and Unordered Lists')
 export default function register(editor) {
+  const buttonLabel = formatMessage('Ordered and Unordered Lists')
+
+  const listTypes = {
+    'unordered-default': {
+      listType: 'UL',
+      icon: 'list-bull-default',
+      text: formatMessage('default bulleted unordered list')
+    },
+    circle: {
+      listType: 'UL',
+      icon: 'list-bull-circle',
+      text: formatMessage('circle unordered list')
+    },
+    square: {
+      listType: 'UL',
+      icon: 'list-bull-square',
+      text: formatMessage('square unordered list')
+    },
+    'ordered-default': {
+      listType: 'OL',
+      icon: 'list-num-default',
+      text: formatMessage('default numerical ordered list')
+    },
+    'upper-alpha': {
+      listType: 'OL',
+      icon: 'list-num-upper-alpha',
+      text: formatMessage('uppercase alphabetic ordered list')
+    },
+    'upper-roman': {
+      listType: 'OL',
+      icon: 'list-num-upper-roman',
+      text: formatMessage('uppercase Roman numeral ordered list')
+    }
+  }
+
   editor.ui.registry.addSplitButton('bullist', {
     tooltip: buttonLabel,
     icon: 'unordered-list',

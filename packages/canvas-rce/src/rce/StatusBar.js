@@ -359,7 +359,7 @@ export default function StatusBar(props) {
         {renderWordCount()}
         <div className={css(styles.separator)} />
         {renderToggleHtml()}
-        {renderFullscreen()}
+        {/* renderFullscreen() */}
         {renderResizeHandle()}
       </Flex.Item>
     </Flex>
