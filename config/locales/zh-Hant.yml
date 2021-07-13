@@ -16220,6 +16220,7 @@ zh-Hant:
   modules: 
     file_drop:
       notice: "如欲新增課程影片(上傳限傳MP4格式)，請點選單元標題右方「＋」按鈕，使用下拉選項中的「其他教學素材」方式新增。"
+      invalid_file_type: "此功能不支援您上傳檔案中的%{invalid_files_count}個檔案格式。"
     add: 
       assignment: 
         add_assignments: 新增作業
