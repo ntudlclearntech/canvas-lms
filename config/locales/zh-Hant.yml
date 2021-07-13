@@ -2706,8 +2706,8 @@ zh-Hant:
     page_view: 網頁點閱數（Page View）
     page_view_explanation: 課程中任何頁面的檢閱次數。
     participation: 課程參與（Participation）
-    participation_explanation: 學生學習活動次數以及網頁點閱數的加總。
-    activities_explanation: 學習活動次數包含下載或檢閱線上文件、參與討論區的討論議題、參與線上測驗、繳交作業、建立一個新的頁面等行為將會被計入課程參與次數。
+    participation_explanation_1: 學生學習活動次數以及網頁點閱數的加總。
+    participation_explanation_2: 學習活動次數包含下載或檢閱線上文件、參與討論區的討論議題、參與線上測驗、繳交作業、建立一個新的頁面等行為將會被記入課程參與次數。
     participation_header: 學習活動次數
     course: 
       analytics: 分析數據
