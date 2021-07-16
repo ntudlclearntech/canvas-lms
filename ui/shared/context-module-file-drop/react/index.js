@@ -214,7 +214,7 @@ export default class ModuleFileDrop extends React.Component {
           interaction={interaction && folder ? 'enabled' : 'disabled'}
         />
         <Text color="success">
-          {folder ? I18n.t('file_drop.notice', 'Click the "+" button next to area title, select "Other teaching material" to upload your MP4 files (Videos files are recommended to be .mp4 format).') : I18n.t('Loading...')}
+          {folder ? I18n.t('file_drop.notice', 'To add lecture videos, please click the “+” button, choose “Other Teaching Material” from the dropdown menu, and upload video files.(MP4 files are recommended.)') : I18n.t('Loading...')}
         </Text>
       </>
     )
