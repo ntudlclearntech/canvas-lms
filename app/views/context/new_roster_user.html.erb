@@ -114,13 +114,15 @@
             </td>
             <td style="width: 70px;">
             <% if enrollment.admin? ? (can_manage_admins && enrollment.user_id != @current_user.id) : can_manage_students %>
-              <% unless @context.completed? %>
-                <div class="conclude_enrollment_link_holder" style="<%= hidden if enrollment.completed? %>">
-                  <a class="conclude_enrollment_link" href="<%= context_url(@context, :controller => :courses, :action => :conclude_user, :id => enrollment.id) %>"><%= t('links.conclude_enrollment', %{Conclude}) %></a>
-                </div>
-                <div class="unconclude_enrollment_link_holder" style="<%= hidden unless enrollment.explicitly_completed? || enrollment.inactive? %>">
-                  <a class="unconclude_enrollment_link" href="<%= context_url(@context, :controller => :courses, :action => :unconclude_user, :id => enrollment.id) %>"><%= t('links.restore_enrollment', %{Restore}) %></a>
-                </div>
+              <% if enrollment.role.name != 'StudentEnrollment' || @context.grants_right?(@current_user, session, :manage_account_memberships) %>
+                <% unless @context.completed? %>
+                  <div class="conclude_enrollment_link_holder" style="<%= hidden if enrollment.completed? %>">
+                    <a class="conclude_enrollment_link" href="<%= context_url(@context, :controller => :courses, :action => :conclude_user, :id => enrollment.id) %>"><%= t('links.conclude_enrollment', %{Conclude}) %></a>
+                  </div>
+                  <div class="unconclude_enrollment_link_holder" style="<%= hidden unless enrollment.explicitly_completed? || enrollment.inactive? %>">
+                    <a class="unconclude_enrollment_link" href="<%= context_url(@context, :controller => :courses, :action => :unconclude_user, :id => enrollment.id) %>"><%= t('links.restore_enrollment', %{Restore}) %></a>
+                  </div>
+                <% end %>
               <% end %>
             </td>
             <td style="width: 70px;">
