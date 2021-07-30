@@ -5829,7 +5829,7 @@ zh-Hant:
       not_found: 匯出不存在
     index: 
       buttons: 
-        create: 建立匯出
+        create: 開始匯出
       content_exports: 內容匯出
       export_type: 匯出類型
       labels: 
@@ -5843,7 +5843,7 @@ zh-Hant:
       message: 
         export_started: 匯出過程已經開始。對於大型課程，這可能需要一段時間。*您可以離開此頁面*，並且，當匯出完成後，您會收到一封電子郵件。
       no_submissions: 您目前沒有要匯出的作業繳交。
-      user_data_exports: 下載作業繳交
+      user_data_exports: 下載已繳交的作業
     labels: 
       new_export: 新導出：
     links: 
@@ -7948,7 +7948,7 @@ zh-Hant:
       在
       透過 RCE 上傳或錄製媒體後，建立檔案物件（若在課程中，一開始對學生隱藏）。
   creating_a_group_is_not_yet_handled_by_the_new_ass_3360471d: 新作業流態尚未處理建立小組。是否要前往舊版作業頁面？
-  creating_a_submission_export_will_allow_you_to_dow_b4b1a658: 建立『提交項目匯出』之後，您可以將所有目前和以往課程所涉及的作業打包下載。壓縮包可能較大，請稍候。您可以瀏覽其他頁面，稍後回來。
+  creating_a_submission_export_will_allow_you_to_dow_b4b1a658: 按下『開始匯出』後，系統將匯出所有您繳交過的課程作業，包括目前的課程、已經結束的課程。產生壓縮檔需要些時間，請稍後再回到此頁面。
   creating_conference_95b59116: 正在創建會議
   creating_group_17bd69ce: 建立群組
   creating_key_8a026e61: 建立金鑰
@@ -16649,7 +16649,7 @@ zh-Hant:
   new_discussion_dae4fae3: 新討論區
   new_discussions_a5715370: 新討論
   new_event_for_course_name_2ba1f734: "%{course_name} 的新事件"
-  new_export_3ab758: 新匯出
+  new_export_3ab758: 下載檔案
   new_feature_flags_c4b70a5e: 新的功能新增標記
   new_features_for_developer_key_management_994090dc: 開發人員金鑰管理的新功能
   new_file_135ae520: "[新文件]"
@@ -25683,7 +25683,7 @@ zh-Hant:
   user_c95de254: 使用者
   user_content_aaf0fb5a: 使用者內容
   user_count_respondents_e30a8593: "%{user_count} 個回應"
-  user_data_export_from_date_6ba21b89: "*使用者數據從...匯出%{date}*"
+  user_data_export_from_date_6ba21b89: "*%{date} 匯出的檔案*"
   user_date_range_search: 
     cant_be_blank: "Canvas 使用者 ID 不能為空。"
     cant_come_before_from: 『終止日期』不能在『開始日期』之前
