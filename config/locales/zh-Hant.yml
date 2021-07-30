@@ -1929,7 +1929,7 @@ zh-Hant:
   additional_settings_for_sis_syncing_f926973e: "額外的 SIS 同步化設定"
   additional_sis_sync_assignment_quiz_and_discussion_d941fa5: "額外 SIS 同步作業、測驗及討論區設定"
   additional_sort_options_for_new_gradebook_2dc1939: 適用於「新成績單」的其他排序選項
-  address_use_as_wildcard_48f2cf60: 地址（以*為萬用字元）
+  address_use_as_wildcard_48f2cf60: 地址（以*為預設郵件）
   addressbook_microservice_a4940422: "AddressBook Microservice"
   addressbook_performance_tap_98ddf67: "AddressBook 表現點選"
   adds_a_new_bounced_emails_tab_to_account_admin_too_6714c09d: |-
@@ -4407,7 +4407,7 @@ zh-Hant:
   bottom_15a2a9be: 底部
   bounce_count_reset_c4c2218f: 退信計數器已重置！
   bounce_reason_689ed4c6: 退信原因
-  bounced_emails_83f293b5: 被彈回電子郵件
+  bounced_emails_83f293b5: 被退回電子郵件
   bounced_emails_admin_tool_9730a5e4: 彈回電子郵件管理員工具
   brand_configs_b465a03f: 品牌配置
   brazil_55_34103ffa: "巴西 (+55)"
@@ -6684,7 +6684,7 @@ zh-Hant:
   conversations_send_messages_to_individual_course_m_733620b: "交談 - 發送訊息至個別課程成員"
   copy_9748f9f: 複製
   copy_assignment_name_to_another_course_b62d0a54: "將作業 %{name} 複製到其他課程中"
-  copy_operation_started_successfully_b2f236a1: 拷貝操作已成功開始
+  copy_operation_started_successfully_b2f236a1: 已成功開始複製內容
   copy_page_to_another_course_405cc07c: 將頁面複製到其他課程中
   copy_quiz_to_course_74f9c8c1: 複製測驗到課程中
   copy_this_module_item_to_a_course_790a0cf4: 將此單元項目複製到課程...
@@ -13361,8 +13361,8 @@ zh-Hant:
   large_course_db3d58b: 大型課程：
   last_assessment_cd5659b6: "最新的評估： "
   last_attempt_7258ebd7: 最後一次嘗試
-  last_bounced_after_76f9ce30: 於此日期後最後彈回日：
-  last_bounced_before_601c221a: 於此日期前最後彈回日：
+  last_bounced_after_76f9ce30: 起始日期：
+  last_bounced_before_601c221a: 截止日期：
   last_changed_b544504d: 上次變更：
   last_changed_date_82f1ce56: "上次變更：%{date}"
   last_day_attended_b72d623c: 最後一次加入日期
@@ -23326,7 +23326,7 @@ zh-Hant:
     student_summary_table_ascending: "學生一覽表已按照 %{sortText} 升序排列 "
     student_summary_table_descending: "學生一覽表已按照 %{sortText} 降序排列"
   student_tour_38b735c8: 學生導覽
-  student_view_ac9b672f: 學生視圖
+  student_view_ac9b672f: 學生視角
   student_viewed_document_9065adb8: 學生已檢視的文件
   studentcount_student_scores_updated_232ad7b7: 
     one: "%{studentCount} 學生的分數已更新"
@@ -24365,7 +24365,7 @@ zh-Hant:
   this_is_a_preview_of_the_draft_version_of_the_quiz_910a02e0: 這是測驗的草稿版本預覽
   this_is_a_preview_of_the_published_version_of_the__70e0c8: 這是測驗發佈後的預覽
   this_is_a_siteadmin_test_feature_flag_3ab5184: "這是 SiteAdmin 測試功能標記"
-  this_is_a_what_if_score_cbdc04f9: 这是『假設分析』分数
+  this_is_a_what_if_score_cbdc04f9: 這是您自行填入的「預設分數」
   this_is_an_account_setting_that_must_be_turned_on__4c939dea: 此帳戶設定必須由您的客戶服務經理啟用。
   this_is_just_a_dev_only_feature_you_can_turn_on_to_7f88c58f: "這只是一個僅限於開發人員的功能，您可以開啟它來預覽頁面在 RTL 環境中的外觀，而不必將語言變更為通常為 RTL 的語言"
   this_is_not_a_valid_grade_9cc2cb8: 此為一個無效的評分
