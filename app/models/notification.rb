@@ -362,7 +362,7 @@ class Notification < Switchman::UnshardedRecord
     when 'Announcement Reply'
       FREQ_NEVER
     when 'Due Date'
-      FREQ_IMMEDIATELY
+      FREQ_NEVER
     when 'Grading'
       FREQ_DAILY
     when 'Grading Policies'
