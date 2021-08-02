@@ -243,6 +243,9 @@ class FilesController < ApplicationController
   protected :redirect_to_fallback_url
 
   def index
+    # Set show_left_side to false to fix spaces bug #172
+    # And remove it in the next upgrade #181
+    @show_left_side = false
     return react_files
   end
 
