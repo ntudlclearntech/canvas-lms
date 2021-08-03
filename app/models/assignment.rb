@@ -3711,7 +3711,7 @@ class Assignment < ActiveRecord::Base
     post_manually = if course.default_post_policy.present?
       course.default_post_policy.post_manually
     else
-      false
+      true
     end
 
     create_post_policy!(course: course, post_manually: post_manually)
