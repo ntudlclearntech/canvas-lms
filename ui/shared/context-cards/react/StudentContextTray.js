@@ -307,7 +307,8 @@ export default class StudentContextTray extends React.Component {
                           width: '1.2rem',
                           height: '1.2rem',
                           paddingLeft: '0.2rem',
-                          paddingBottom: '0.3rem'
+                          paddingBottom: '0.3rem',
+                          cursor: 'pointer'
                         }}
                       />
                       <CoolActivityDescModal
