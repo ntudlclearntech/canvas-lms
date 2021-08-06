@@ -511,6 +511,7 @@ export default class EditView extends ValidatedFormView
       unless data.message?.length > 0
         unless @lockedItems.content
           errors['message'] = [{type: 'message_required_error', message: I18n.t("A message is required")}]
+          alert(I18n.t("Please add content for the announcement before publishing it."))
 
     if @showConditionalRelease()
       crErrors = @conditionalReleaseEditor.validateBeforeSave()
