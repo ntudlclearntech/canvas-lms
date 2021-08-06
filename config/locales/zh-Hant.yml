@@ -27024,3 +27024,4 @@ zh-Hant:
   count_course_activities_fc5e54d3:
     one: "%{count} 學習活動次數"
     other: "%{count} 學習活動次數"
+  please_add_content_for_the_announcement_before_pub_1db4c836: 您未輸入任何內容，無法發佈公告。
