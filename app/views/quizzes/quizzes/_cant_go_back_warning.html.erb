@@ -20,7 +20,7 @@
 <div
   id="js-sequential-warning-dialogue"
   data-turn-into-dialog='{"width": 400, "modal":true}'
-  title="Attention!"
+  title=<%= t "Attention!" %>
   style="display: none;"
 >
   <p style="font-size: 14px; padding: 10px 10px 10px 10px;">
@@ -31,7 +31,7 @@
   </p>
   <div class="button-container">
     <a href="<%= preview ? preview_quiz_url : take_quiz_url %>" data-method="POST">
-      <button type="button" class="btn btn-primary">Begin</button>
+      <button type="button" class="btn btn-primary"><%= t("button.begin", "Begin") %></button>
     </a>
   </div>
 </div>
