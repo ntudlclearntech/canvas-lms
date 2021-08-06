@@ -3713,13 +3713,13 @@ zh-Hant:
     student_assignment_overview: 
       allowed_attempts: 允許繳交次數
       attempts: 繳交次數
-      date_time_by: "更新於 %{date}；編輯人：%{time}"
-      due_at: 截止
+      date_time_by: "%{date} %{time}"
+      due_at: 截止時間：
       no_due_date: 無截止日期
       no_points: 無
       points: 分數
       submission_types: 檔案類型
-      submitting: 提交
+      submitting: 繳交方式
       turnitin_enabled_short: "（Turnitin 已啟用）"
       vericite_enabled_short: "（VeriCite 已啟用）"
     submission_sidebar: 
@@ -3833,7 +3833,7 @@ zh-Hant:
         submit_assignment: 繳交作業
       comments_placeholder: 評論…
       instructions: 
-        online_text_entry: 複製並貼上，或在這裡輸入您的繳交項目。
+        online_text_entry: 您可以在這裡輸入您的作業內容。
     submit_online_upload: 
       additional_comments: 其他評論
       buttons: 
@@ -16632,7 +16632,7 @@ zh-Hant:
   new_appointment_timeslots_are_available_for_signup_a3e3f964: 新的預約時段現在可供註冊
   new_assignment_2a984756: 新作業
   new_assignment_for_course_name_f71dd337: "%{course_name} 的新作業"
-  new_attempt_57eae3d9: 新嘗試
+  new_attempt_57eae3d9: 重新繳交作業
   new_bd30f253: 新
   new_canvas_message_from_user_name_94cc720: "來自 %{user_name} 的新 NTU COOL 訊息"
   new_comment_by_author_name_for_assignment_title_us_19f3c2a5: "%{author_name} 對 %{assignment_title} 的新評論，%{user_name}，%{course_name}。"
@@ -17405,7 +17405,7 @@ zh-Hant:
       \x20           "
   once_a_grade_is_posted_manually_it_will_automatica_bb90f67c: 當手動公佈成績後，系統會自動向學生發送新通知，而且學生能夠看到。
   once_this_feature_is_enabled_you_will_not_be_able__ad338dcb: 啟用該功能之後，您將無法再次將其關閉。因此，確保您在繼續之前，已經準備好啟用『提交文件夾』功能。
-  once_you_have_submitted_an_answer_you_will_not_be__840df9e9: 一旦您提交了回答，您將無法再更改。您將無法查看上一個問題。
+  once_you_have_submitted_an_answer_you_will_not_be__840df9e9: 本測驗的設定為一次顯示一題，一旦您進入下一題，將無法回到前一題查看題目與修改答案。
   once_you_start_debugging_all_info_about_the_next_a_e871403b: 在開始偵錯後，將收集有關下一次嘗試登入嘗試的所有資訊。按一下「重新整理」以瞭解是否已收集更多的資料，或「停止偵錯」以清除所收集的資料，並停止目前的偵錯嘗試。
   once_you_ve_changed_an_answer_you_ll_need_to_choos_7071f728: 一旦您更改了答案，則需要在更新問題之前，選擇一個選項。
   one_or_more_items_are_currently_being_imported_the_186fe069: 目前正在匯入一個或多個項目。項目可用時將顯示在以下課程內。
@@ -19716,6 +19716,9 @@ zh-Hant:
           access_code: 訪問碼
         quiz_restricted: 此測驗由一個訪問碼限制。您需要讓您的老師或監考官輸入或者告訴您訪問碼，以參加測驗。
         survey_restricted: 此調查由一個訪問碼限制。您需要讓您的老師或監考官輸入或者告訴您訪問碼，以參加調查。
+      cant_go_back_warning:
+        button:
+          begin: 開始測驗
       default_history_crumb: 記錄
       default_title: 新測驗
       display_answer: 
@@ -19846,8 +19849,8 @@ zh-Hant:
         explanations: 
           calculated: 請輸入您的問題，建立一個公式，並生成一組可能的答案組合。學生們將看到填充隨機選擇變量組的問題，並且需要鍵入正確的數值答案。
           equations: 您可以透過鍵入被括弧括起來的變量名來定義變量
-          essay: 學生將獲得一個文字字段，以撰寫自己的答案。
-          file_upload: 學生將能夠為自己的答案上傳文檔。
+          essay: 學生能夠在文字編輯器中輸入答案。
+          file_upload: 學生能夠上傳一個檔案作為此題的答案。
           fill_in_multiple_blanks: 請輸入您的問題，並指定每個空白的所在處。並以中括號定義填答的空格處，並輸入每個空格的所有正確答案。學生必須在每個空白處的文本框中鍵入其中一個正確答案，才算得分。此題的「配分」會平均分給每個空格的作答結果。
           formula_definition: 接下來，您將需要寫下用於計算正確答案的一個或多個公式。只使用與以上所列相同的變量名。
           matching: 建立配對的選項。學生們將會看到左邊的題目，並需要從右邊下拉式清單中選擇相符的答案。不同題目可以有相同的答案，您可以增加額外的誘導答案，將會出現在每題的配對清單中。此題的「配分」會平均分給每個配對的結果。
@@ -23187,7 +23190,7 @@ zh-Hant:
   start_5a4cfcd6: 開始
   start_a_conversation_with_your_instructor_in_the_c_50c9b8d5: "在 Canvs 收件匣內與您的考試開始交談。"
   start_a_new_course_1f5f2266: 開始新課程
-  start_assignment_d56256d3: 開始作業
+  start_assignment_d56256d3: 繳交作業
   start_date_c41cb23a: 開始日期：
   start_date_e937be8a: 開始日期
   start_date_end_date_d809dd93: "%{start_date} - %{end_date}"
@@ -24428,7 +24431,7 @@ zh-Hant:
   this_placement_requires_deep_link_support_by_the_v_702d554f: "此配置需要供應商支援 Deep Link。與您的工具供應商確認以確保他們支援此功能"
   this_pronoun_appears_after_last_name_bf5c0bf5: 此代詞將顯示於姓氏後面
   this_pronoun_will_appear_after_your_name_when_enab_473d8e1d: 此代詞在啟用後將出現在您的名字之後
-  this_question_group_is_set_to_pick_more_questions__2e3552c4: 該問題群組已設置，已選擇比可用數量更多的問題。
+  this_question_group_is_set_to_pick_more_questions__2e3552c4: 目前群組內的總問題數，少於指定選取的問題數。
   this_question_will_show_a_checkbox_next_to_each_an_169cd6d9: 此問題會在每個答案旁邊顯示一個複選框。
   this_quiz_has_been_excused_d89d2b74: 此測驗已被免除。
   this_quiz_is_unpublished_only_teachers_can_see_the_51d281b1: "此測驗未發佈，只有教師可以看到。"
