@@ -1749,7 +1749,7 @@ zh-Hant:
   activate_key_developername_cd62a4a9: "啟動金鑰%{developerName}"
   activate_key_name_a99df672: "啟動金鑰%{name}"
   activate_this_key_6cd98f4b: 啟動此金鑰
-  active_announcements_6b67f33b: 活躍狀態的通告
+  active_announcements_6b67f33b: 目前的站內公告
   active_d7e32718: 啟用
   active_students_e4c48a06: 活躍的學生
   active_terms_83df727e: 有效學期
@@ -2806,7 +2806,7 @@ zh-Hant:
   announcements_account_4e9df626: 公告（帳戶）
   announcements_cannot_be_duplicated_2de8824c: 公告不能重複
   announcements_deleted_successfully_7d77e9e1: 已成功刪除公告
-  announcements_from_the_past_four_months_cefbc99c: 過去四個月內的通告
+  announcements_from_the_past_four_months_cefbc99c: 過去四個月內的站內公告
   announcements_list_c75fc413: 公告清單
   announcements_loaded_e9335d5f: 已載入公告！
   announcements_locked_successfully_43d58107: 已成功鎖定公告
@@ -8067,7 +8067,7 @@ zh-Hant:
   csv_de77e441: CSV
   csv_file_8061540e: CSV文檔
   csv_or_json_formats_only_d8ba36d: "只限 CSV 或 JSON 格式"
-  current_367624e9: 當前
+  current_367624e9: 目前
   current_courses_d5287d50: 當前課程
   current_folder_path_e094d59: 目前資料夾路徑
   current_grade_1fb4ea06: 目前評分
@@ -10797,7 +10797,7 @@ zh-Hant:
   give_all_students_the_same_grade_for_assignment_na_e44fcc7e: "*%{assignment.name}* 透過輸入並提交以下評分值，為所有學生評定相同的評分："
   give_all_students_the_same_percent_grade_for_assig_6a008004: "**%{assignment.name}** 透過輸入並提交以下評分值，為所有學生評定相同的*百分比*評分："
   giving_up_on_retrieving_media_sources_this_issue_w_ad49b0d3: 放棄取回媒體來源。此問題可能會自行解決。
-  global_announcements_a78912c8: 全域通告
+  global_announcements_a78912c8: 站內公告
   global_announcements_add_edit_delete_843ca4d2: "總體通告 - 添加 / 編輯 / 刪除"
   global_branding_df1cae12: 全局品牌推廣
   global_message_icons: 
@@ -12785,9 +12785,9 @@ zh-Hant:
   if_you_need_to_make_your_course_public_please_cont_7084c67b: 如需將您的課程公開，請聯絡您的管理員/支援人員。
   if_you_turn_this_on_when_an_account_admin_goes_to__42e74f56: |-
       開啟此功能後，當帳戶管理員在頁面
-      建立全域通告時，勾選框將出現，以供在通告開始時
+      建立站內公告時，勾選框將出現，以供在通告開始時
       直接向使用者傳送通知。
-  if_you_turn_this_on_when_an_account_admin_goes_to__c1173b32: 開啟此功能後，當帳戶管理員在頁面創建全域通告時，勾選框將出現，以供在通告開始時直接向使用者發送通知。
+  if_you_turn_this_on_when_an_account_admin_goes_to__c1173b32: 開啟此功能後，當帳戶管理員在頁面創建站內公告時，勾選框將出現，以供在通告開始時直接向使用者發送通知。
   if_you_ve_been_using_another_course_management_sys_67edfab1: "如果您已經使用了其他的課程管理系統，其中可能有您想移動至 Canvas 的資料。我們可以引導您輕鬆完成遷移您的內容到 Canvas 的過程。"
   if_you_wish_you_can_rename_sis_to_something_more_f_ac9ef13b: "你可以將 \"SIS\" 重新命名為你的員工熟悉的東西"
   if_you_would_like_to_keep_your_unsubmitted_comment_b7e349ce: 如果您需要儲存未提交的評論，請在離開本頁前儲存。
@@ -12827,7 +12827,7 @@ zh-Hant:
     invalid_file_type: "無效的文檔類型 %{type}。允許的類型包括：%{type_list}"
     not_an_image: 所選的文檔不是影像
   images_documents_and_more_dccb362f: 圖像、檔案、和更多
-  immediate_notifications_for_global_announcements_682f5a3d: 全域通告即時通知
+  immediate_notifications_for_global_announcements_682f5a3d: 站內公告即時通知
   immediately_c128ede6: 立即
   immersive_reader_7b87538: "Immersive Reader"
   immersive_reader_failed_to_load_bc8d4dd4: "Immersive Reader 載入失敗"
@@ -16963,7 +16963,7 @@ zh-Hant:
   notice_the_grading_period_is_closed_for_this_stude_6c3ce0f9: 注意：此學生的評分時間已結束
   notification: 
     account_notification_description: 全機構通告（同時顯示於控制面板頁面）
-    account_notification_display: 全域通告
+    account_notification_display: 站內公告
     added_to_conversation_description: 您被加入收件人
     added_to_conversation_display: 您被加入收件人
     all_submissions_description: |-
@@ -23784,7 +23784,7 @@ zh-Hant:
     observees: 正在觀察
     outcomes: 成果
     pages: 頁面
-    past_global_announcements: 全域通告
+    past_global_announcements: 站內公告
     people: 成員
     profile: 個人檔案
     qr_mobile_login: "流動登入 QR 碼"
@@ -23931,7 +23931,7 @@ zh-Hant:
       要於成員頁面的使用者側欄內看到分析工具連結，必須停用您的帳戶的個人檔案。
   the_analytics_feature_must_be_enabled_in_account_s_cf577263: 必須於帳戶設定中啟用分析工具功能，以檢視分析工具頁面。要於「成員」頁面的使用者側欄內查看分析工具連結，必須停用您的帳戶的個人檔案。
   the_announcement_title_could_not_be_linked_to_the__78c747f3: "公告『%{title}』無法連結到單元『%{mod_title}』"
-  the_announcements_tab_is_always_visible_to_admins__58df854d: "管理員一定能看到通告標籤；但是，如需管理通告，則必須同時啟用「全域通告 - 添加/編輯/刪除」。"
+  the_announcements_tab_is_always_visible_to_admins__58df854d: "管理員一定能看到通告標籤；但是，如需管理通告，則必須同時啟用「站內公告 - 添加/編輯/刪除」。"
   the_announcements_tab_is_always_visible_to_admins__eb447785: "管理員一定能看到公告頁籤；但是，如需管理通告，則必須同時啟用「全站公告 - 新增 / 編輯 / 刪除」。"
   the_app_was_activated_a84e055f: 應用程式已啟動
   the_app_was_added_58e2836a: 該應用程式已新增
@@ -24423,7 +24423,7 @@ zh-Hant:
   this_permission_is_available_for_all_canvas_accoun_25cd5444: "此權限開放予所有 Canvas 帳戶，但僅供與 Canvas 目錄帳戶關聯的機構使用。權限目前對前台操作並無影響，但工程師建議管理員維持啟用此權限。此權限可對其他身份停用。"
   this_permission_is_deprecated_please_reference_use_8ce8eb30: "此權限已遭棄用。請參考「使用者 - 學生」和「使用者 - 觀察者」。"
   this_permission_is_only_supported_when_canvas_insi_85cc2938: "只有啟用了 Canvas Insights 的帳戶支援此權限。請聯繫客戶服務經理了解詳情。"
-  this_permission_only_affects_course_announcements__6bc2b0a5: "此權限僅影響課程通告；要管理全域通告，必須啟用「全域通告 - 添加 / 編輯 / 刪除」。"
+  this_permission_only_affects_course_announcements__6bc2b0a5: "此權限僅影響課程通告；要管理站內公告，必須啟用「站內公告 - 添加 / 編輯 / 刪除」。"
   this_permission_only_controls_adding_users_at_the__5a2463b1: "此權限僅控制於帳戶級別添加使用者的活動。要添加使用者至課程，必須啟用「使用者 - 從課程添加 / 移除學生」或「使用者 - 從課程添加/移除教師、課程設計者或助教至該課程」。"
   this_permission_only_controls_adding_users_at_the__f33e8ae8: |-
       此權限僅控制於帳戶級別添加使用者的活動。要添加使用者至課程，

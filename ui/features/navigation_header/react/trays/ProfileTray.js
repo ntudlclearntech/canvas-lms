@@ -67,8 +67,62 @@ ProfileTab.propTypes = {
   counts: object
 }
 
+// currentTabId and targetTabId are string
+function moveTabToUnderTarget(tabs, currentTabId, targetTabId) {
+  let targetTabPosition = -1
+  let currentTabPosition = -1
+  for (let i = 0; i < tabs.length; i++) {
+    if (tabs[i].id == targetTabId) {
+      targetTabPosition = i
+    }
+    if (tabs[i].id == currentTabId) {
+      currentTabPosition = i
+    }
+  }
+
+  if (targetTabPosition !== -1 && currentTabPosition !== -1) {
+    let index = currentTabPosition
+
+    // current tab is under the target tab
+    if (currentTabPosition > targetTabPosition) {
+      while (index > targetTabPosition + 1) {
+        const tempTabPosition = tabs[index - 1]
+        tabs[index - 1] = tabs[index]
+        tabs[index] = tempTabPosition
+        index--
+      }
+    } else {
+      while (index < targetTabPosition) {
+        const tempTabPosition = tabs[index + 1]
+        tabs[index + 1] = tabs[index]
+        tabs[index] = tempTabPosition
+        index++
+      }
+    }
+  }
+
+  return tabs
+}
+
 export default function ProfileTray(props) {
-  const {userDisplayName, userAvatarURL, loaded, userPronouns, tabs, counts} = props
+  const {userDisplayName, userAvatarURL, loaded, userPronouns, counts} = props
+
+  let {tabs} = props
+  /*
+  tab format:
+  {
+    full_url: ""
+    html_url: "",
+    id: "notifications",
+    label: "Notifications",
+    position: 1
+    type: "internal"
+  }
+  */
+  const video_external_tool_tab_id = `context_external_tool_${ntuCoolLmsId || 0}`
+  tabs = moveTabToUnderTarget(tabs, video_external_tool_tab_id, 'notifications')
+  const announcements_external_tool_tab_id = `context_external_tool_${announcementId || 0}`
+  tabs = moveTabToUnderTarget(tabs, announcements_external_tool_tab_id, 'past_global_announcements')
 
   return (
     <View as="div" padding="medium">
