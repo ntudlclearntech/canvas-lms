@@ -2509,6 +2509,12 @@ $(document).ready(function() {
         .attr('name', 'publish')
         .attr('value', 'true')
       $quiz_options_form.append($publish_input)
+      const $save_and_publish_clicked_input = $(document.createElement('input'))
+      $save_and_publish_clicked_input
+        .attr('type', 'hidden')
+        .attr('name', 'save_and_publish_clicked')
+        .attr('value', 'true')
+      $quiz_options_form.append($save_and_publish_clicked_input)
 
       $quiz_edit_wrapper
         .find('.btn.save_and_publish')
