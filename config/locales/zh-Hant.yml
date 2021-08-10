@@ -19262,7 +19262,7 @@ zh-Hant:
       regrade_disabled: 此問題不允許進行重新評分，因為學生完成提交之後，答案已被刪除或問題類型已更改。
       regrade_options: |-
           為已繳交測驗的學生選擇重新計分選項。
-          在您儲存測驗之後，系統將更新您的設定，可能會影響學生成績。"
+          在您儲存測驗之後，系統將更新您的設定，可能會影響學生成績。
       some_scores_reduced: 只有目前答對給分，過去答對不給分（過去答對的學生分數會減少）
       update_question_without_regrading: 分數保持不變
   quiz_40ee61b1: 測驗
