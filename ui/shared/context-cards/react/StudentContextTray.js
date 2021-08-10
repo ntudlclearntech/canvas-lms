@@ -319,7 +319,7 @@ export default class StudentContextTray extends React.Component {
                     <div className="StudentContextTray-Ratings__Layout">
                       <Rating
                         metric={user.analytics.participations}
-                        label={I18n.t('participation', 'Participation')}
+                        label={I18n.t('participation', 'Participations')}
                       />
                       <Rating metric={user.analytics.page_views} label={I18n.t('page_views', 'Page Views')} />
                     </div>
