@@ -94,7 +94,7 @@ export default class RosterUserView extends Backbone.View {
     // if current user is admin, use original logic, otherwise only allow remove (edit) auditors
     json.canRemoveUsers = _.every(this.model.get('enrollments'), e => e.can_be_removed)
     if (!isAdmin) {
-      json.canRemoveUsers = json.canRemoveUsers && _.every(this.model.get('enrollments'), e => e.role === '旁聽生')
+      json.canRemoveUsers = json.canRemoveUsers && _.every(this.model.get('enrollments'), e => e.role !== 'StudentEnrollment')
     }
 
     json.canResendInvitation = !json.isInactive
