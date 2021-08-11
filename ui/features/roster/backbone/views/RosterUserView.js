@@ -91,7 +91,7 @@ export default class RosterUserView extends Backbone.View {
 
     const isAdmin = ENV.current_user_roles.includes('admin') || ENV.current_user_roles.includes('root admin')
 
-    // if current user is admin, use original logic, otherwise only allow remove (edit) auditors
+    // if current user is admin, use original logic, otherwise disable remove/edit non-auditor students
     json.canRemoveUsers = _.every(this.model.get('enrollments'), e => e.can_be_removed)
     if (!isAdmin) {
       json.canRemoveUsers = json.canRemoveUsers && _.every(this.model.get('enrollments'), e => e.role !== 'StudentEnrollment')
@@ -106,7 +106,12 @@ export default class RosterUserView extends Backbone.View {
       )
     }
 
+    // if current user is admin, use original logic, otherwise disable edit non-auditor students' sections
     json.canEditSections = !json.isInactive && !_.isEmpty(this.model.sectionEditableEnrollments())
+    if (!isAdmin) {
+      json.canEditSections = json.canEditSections && _.every(this.model.get('enrollments'), e => e.role !== 'StudentEnrollment')
+    }
+
     json.canLinkStudents = json.isObserver && !ENV.course.concluded
     json.canViewLoginIdColumn = ENV.permissions.view_user_logins
     json.canViewSisIdColumn = ENV.permissions.read_sis
