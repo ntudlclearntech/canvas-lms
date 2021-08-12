@@ -24,7 +24,7 @@ import shortId from 'shortid'
 import tz from '@canvas/timezone'
 import '@canvas/forms/jquery/jquery.instructure_forms'
 import cx from 'classnames'
-import { Tooltip } from '@instructure/ui-overlays'
+import { Tooltip } from '@instructure/ui-tooltip'
 import { IconQuestionLine } from '@instructure/ui-icons'
 import './DueDateCalendarPicker.css'
 
@@ -121,9 +121,9 @@ class DueDateCalendarPicker extends React.Component {
     if (content){
       return (
         <Tooltip
-         tip={content}
+         renderTip={content}
          placement="end"
-         variant="inverse"
+         color="primary"
         >
           <IconQuestionLine />
         </Tooltip>
