@@ -24,11 +24,15 @@ module FeatureFlags
   end
 
   def feature_enabled?(feature)
-    return false if id&.zero?
+    if id&.zero?
+      InstStatsd::Statsd.increment("feature_flag_check", tags: { feature: feature, enabled: 'false'})
+      return false
+    end
 
     flag = lookup_feature_flag(feature)
     return flag.enabled? if flag
 
+    InstStatsd::Statsd.increment("feature_flag_check", tags: { feature: feature, enabled: 'false'})
     false
   end
 
@@ -106,7 +110,7 @@ module FeatureFlags
     RequestCache.cache('feature_flag_account_ids', self) do
       shard.activate do
         cache.fetch(['feature_flag_account_ids', self].cache_key) do
-          chain = account_chain(include_site_admin: true)
+          chain = account_chain(include_site_admin: true).dup
           chain.shift if is_a?(Account)
           chain.reverse.map(&:global_id)
         end

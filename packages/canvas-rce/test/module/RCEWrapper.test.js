@@ -17,7 +17,6 @@
  */
 
 import assert from 'assert'
-import jsdomify from 'jsdomify'
 import sinon from 'sinon'
 import Bridge from '../../src/bridge'
 import * as indicateModule from '../../src/common/indicate'
@@ -32,6 +31,7 @@ import RCEWrapper, {
 const textareaId = 'myUniqId'
 
 let React, fakeTinyMCE, editorCommandSpy, sd, editor
+let failedCount = 0
 
 // ====================
 //        HELPERS
@@ -47,7 +47,7 @@ function createBasicElement(opts) {
     // so RCEWrapper.mceInstance() works
     fakeTinyMCE.editors[0].id = opts.textareaId
   }
-  const props = {textareaId, tinymce: fakeTinyMCE, ...trayProps(), ...opts}
+  const props = {textareaId, tinymce: fakeTinyMCE, ...trayProps(), ...defaultProps(), ...opts}
   return new RCEWrapper(props)
 }
 
@@ -70,15 +70,31 @@ function createdMountedElement(additionalProps = {}) {
 function trayProps() {
   return {
     trayProps: {
+      canUploadFiles: true,
       host: 'rcs.host',
       jwt: 'donotlookatme',
       contextType: 'course',
       contextId: '17',
       containingContext: {
+        userId: '1',
         contextType: 'course',
         contextId: '17'
       }
     }
+  }
+}
+
+// many of the tests call `new RCEWrapper`, so there's no React
+// to provide the default props
+function defaultProps() {
+  return {
+    textareaId,
+    highContrastCSS: [],
+    languages: [{id: 'en', label: 'English'}],
+    autosave: {enabled: false},
+    ltiTools: [],
+    editorOptions: {},
+    liveRegion: () => document.getElementById('flash_screenreader_holder')
   }
 }
 
@@ -88,15 +104,21 @@ describe('RCEWrapper', () => {
   // ====================
 
   beforeEach(() => {
-    jsdomify.create(`
-      <!DOCTYPE html><html><head></head><body>
-      <div id="flash_screenreader_holder"/>
+    document.body.innerHTML = `
+      <div id="flash_screenreader_holder" role="alert"/>
       <div id="app">
         <textarea id="${textareaId}" />
       </div>
-      </body></html>
-    `)
-    // must create react after jsdom setup
+    `
+    document.documentElement.dir = 'ltr'
+
+    // mock MutationObserver
+    if (!global.MutationObserver) {
+      global.MutationObserver = function MutationObserver(_props) {
+        this.observe = () => {}
+      }
+    }
+
     requireReactDeps()
     editorCommandSpy = sinon.spy()
     editor = {
@@ -134,7 +156,11 @@ describe('RCEWrapper', () => {
         editor.content += contentToInsert
       },
       getContainer: () => {
-        return {}
+        return {
+          style: {
+            height: 300
+          }
+        }
       },
       setContent: sinon.spy(c => (editor.content = c)),
       getContent: () => editor.content,
@@ -148,7 +174,8 @@ describe('RCEWrapper', () => {
       execCommand: editorCommandSpy,
       serializer: {serialize: sinon.stub()},
       ui: {registry: {addIcon: () => {}}},
-      isDirty: () => false
+      isDirty: () => false,
+      fire: () => {}
     }
 
     fakeTinyMCE = {
@@ -169,8 +196,16 @@ describe('RCEWrapper', () => {
     sinon.spy(editor, 'insertContent')
   })
 
-  afterEach(() => {
-    jsdomify.destroy()
+  afterEach(function () {
+    if (this.currentTest.state === 'failed') {
+      ++failedCount
+    }
+    document.body.innerHTML = ''
+  })
+
+  after(() => {
+    // I don't know why, but this this suite of tests stopped exiting
+    process.exit(failedCount ? 1 : 0)
   })
 
   // ====================
@@ -183,7 +218,7 @@ describe('RCEWrapper', () => {
         const editor = {
           ui: {registry: {addIcon: () => {}}}
         }
-        const wrapper = new RCEWrapper({tinymce: fakeTinyMCE, ...trayProps()})
+        const wrapper = new RCEWrapper({tinymce: fakeTinyMCE, ...trayProps(), ...defaultProps()})
         const options = wrapper.wrapOptions({})
         options.setup(editor)
         assert.equal(RCEWrapper.getByEditor(editor), wrapper)
@@ -210,11 +245,6 @@ describe('RCEWrapper', () => {
       element = createBasicElement({textareaId: 'myOtherUniqId'})
       element.focus()
       assert(editorCommandSpy.withArgs('mceFocus', false, 'myOtherUniqId', undefined).called)
-    })
-
-    it('resets the doc of the editor on removal', () => {
-      element.destroy()
-      assert(editorCommandSpy.calledWith('mceNewDocument'))
     })
 
     it('calls handleUnmount when destroyed', () => {
@@ -337,7 +367,6 @@ describe('RCEWrapper', () => {
     describe('insertImagePlaceholder', () => {
       let globalImage
       function mockImage(props) {
-        // jsdom doesn't support Image
         // mock enough for RCEWrapper.insertImagePlaceholder
         globalImage = global.Image
         global.Image = function () {
@@ -870,10 +899,6 @@ describe('RCEWrapper', () => {
   })
 
   describe('alert area', () => {
-    afterEach(() => {
-      jsdomify.destroy()
-    })
-
     it('adds an alert and attaches an id when addAlert is called', () => {
       const tree = createdMountedElement()
       const rce = tree.getMountedInstance()
@@ -958,6 +983,7 @@ describe('RCEWrapper', () => {
       const wrapper = new RCEWrapper({
         tinymce: fakeTinyMCE,
         ...trayProps(),
+        ...defaultProps(),
         instRecordDisabled: false
       })
       const options = wrapper.wrapOptions({})
@@ -968,6 +994,7 @@ describe('RCEWrapper', () => {
       const wrapper = new RCEWrapper({
         tinymce: fakeTinyMCE,
         ...trayProps(),
+        ...defaultProps(),
         instRecordDisabled: true
       })
       const options = wrapper.wrapOptions({})
@@ -1181,6 +1208,123 @@ describe('RCEWrapper', () => {
         const result = standardPlugins.concat(['fizz'])
         assert.deepStrictEqual(mergePlugins(a, b), result)
       })
+    })
+  })
+
+  describe('lti tool favorites', () => {
+    it('extracts favorites', () => {
+      const element = createBasicElement({
+        ltiTools: [
+          {
+            canvas_icon_class: null,
+            description: 'the thing',
+            favorite: true,
+            height: 160,
+            id: 1,
+            name: 'A Tool',
+            width: 340
+          },
+          {
+            canvas_icon_class: null,
+            description: 'another thing',
+            favorite: false,
+            height: 600,
+            id: 2,
+            name: 'Not a favorite tool',
+            width: 560
+          },
+          {
+            canvas_icon_class: null,
+            description: 'another thing',
+            favorite: true,
+            height: 600,
+            id: 3,
+            name: 'Another Tool',
+            width: 560
+          },
+          {
+            canvas_icon_class: null,
+            description: 'yet another thing',
+            favorite: true,
+            height: 600,
+            id: 4,
+            name: 'Yet Another Tool',
+            width: 560
+          }
+        ]
+      })
+
+      assert.deepStrictEqual(element.ltiToolFavorites, [
+        'instructure_external_button_1',
+        'instructure_external_button_3'
+      ])
+    })
+  })
+
+  describe('limit the number or RCEs fully rendered on page load', () => {
+    let ReactDOM
+    before(() => {
+      ReactDOM = require('react-dom')
+
+      global.IntersectionObserver = function () {
+        return {
+          observe: () => {},
+          disconnect: () => {}
+        }
+      }
+    })
+    beforeEach(() => {
+      document.getElementById('app').innerHTML = `
+        <div class='rce-wrapper'>faux rendered rce</div>
+        <div class='rce-wrapper'>faux rendered rce</div>
+        <div id="here"/>
+      `
+    })
+
+    it('renders them all if no max is set', done => {
+      ReactDOM.render(
+        <RCEWrapper {...defaultProps()} tinymce={fakeTinyMCE} />,
+        document.getElementById('here'),
+        () => {
+          assert.strictEqual(document.querySelectorAll('.rce-wrapper').length, 3)
+          done()
+        }
+      )
+    })
+
+    it('renders them all if maxInitRenderedRCEs is <0', done => {
+      ReactDOM.render(
+        <RCEWrapper {...defaultProps()} tinymce={fakeTinyMCE} maxInitRenderedRCEs={-1} />,
+        document.getElementById('here'),
+        () => {
+          assert.strictEqual(document.querySelectorAll('.rce-wrapper').length, 3)
+          done()
+        }
+      )
+    })
+
+    it('limits them to maxInitRenderedRCEs value', done => {
+      ReactDOM.render(
+        <RCEWrapper {...defaultProps()} tinymce={fakeTinyMCE} maxInitRenderedRCEs={2} />,
+        document.getElementById('here'),
+        () => {
+          assert.strictEqual(document.querySelectorAll('.rce-wrapper').length, 2)
+          done()
+        }
+      )
+    })
+
+    it('copes with missing IntersectionObserver', done => {
+      delete global.IntersectionObserver
+
+      ReactDOM.render(
+        <RCEWrapper {...defaultProps()} tinymce={fakeTinyMCE} maxInitRenderedRCEs={2} />,
+        document.getElementById('here'),
+        () => {
+          assert.strictEqual(document.querySelectorAll('.rce-wrapper').length, 3)
+          done()
+        }
+      )
     })
   })
 })

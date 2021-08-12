@@ -16,7 +16,7 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import React, {useCallback, useReducer, useState} from 'react'
+import React, {useCallback, useState} from 'react'
 import {PresentationContent} from '@instructure/ui-a11y-content'
 import {Billboard} from '@instructure/ui-billboard'
 import {Flex} from '@instructure/ui-flex'
@@ -33,18 +33,18 @@ import {useManageOutcomes} from '@canvas/outcomes/react/treeBrowser'
 import useCanvasContext from '@canvas/outcomes/react/hooks/useCanvasContext'
 import useModal from '@canvas/outcomes/react/hooks/useModal'
 import useGroupDetail from '@canvas/outcomes/react/hooks/useGroupDetail'
-import MoveModal from './MoveModal'
+import useResize from '@canvas/outcomes/react/hooks/useResize'
+import useSelectedOutcomes from '@canvas/outcomes/react/hooks/useSelectedOutcomes'
+import GroupMoveModal from './GroupMoveModal'
 import EditGroupModal from './EditGroupModal'
+import GroupDescriptionModal from './GroupDescriptionModal'
 import GroupRemoveModal from './GroupRemoveModal'
 import OutcomeRemoveModal from './OutcomeRemoveModal'
 import OutcomeEditModal from './OutcomeEditModal'
-import {moveOutcomeGroup} from '@canvas/outcomes/graphql/Management'
-import {showFlashAlert} from '@canvas/alerts/react/FlashAlert'
-import startMoveOutcome from '@canvas/outcomes/react/helpers/startMoveOutcome'
+import OutcomeMoveModal from './OutcomeMoveModal'
 
 const NoOutcomesBillboard = () => {
-  const {contextType} = useCanvasContext()
-  const isCourse = contextType === 'Course'
+  const {isCourse} = useCanvasContext()
 
   return (
     <div className="management-panel" data-testid="outcomeManagementPanel">
@@ -74,21 +74,17 @@ const NoOutcomesBillboard = () => {
 }
 
 const OutcomeManagementPanel = () => {
-  const {contextType, contextId} = useCanvasContext()
+  const {isCourse} = useCanvasContext()
   const {
     search: searchString,
     debouncedSearch: debouncedSearchString,
     onChangeHandler: onSearchChangeHandler,
     onClearHandler: onSearchClearHandler
   } = useSearch()
-  const [selectedOutcomes, toggleSelectedOutcomes] = useReducer((prevState, id) => {
-    const updatedState = {...prevState}
-    prevState[id] ? delete updatedState[id] : (updatedState[id] = true)
-    return updatedState
-  }, {})
-
-  const selected = Object.keys(selectedOutcomes).length
-  const noop = () => {}
+  const {setContainerRef, setLeftColumnRef, setDelimiterRef, setRightColumnRef} = useResize()
+  const [scrollContainer, setScrollContainer] = useState(null)
+  const {selectedOutcomes, selectedOutcomesCount, toggleSelectedOutcomes, clearSelectedOutcomes} =
+    useSelectedOutcomes()
   const {
     error,
     isLoading,
@@ -97,45 +93,64 @@ const OutcomeManagementPanel = () => {
     rootId,
     selectedGroupId,
     selectedParentGroupId
-  } = useManageOutcomes()
+  } = useManageOutcomes('OutcomeManagementPanel')
+
   const {group, loading, loadMore} = useGroupDetail({
     id: selectedGroupId,
     searchString: debouncedSearchString
   })
-  const [isMoveGroupModalOpen, openMoveGroupModal, closeMoveGroupModal] = useModal()
+  const [isGroupMoveModalOpen, openGroupMoveModal, closeGroupMoveModal] = useModal()
   const [isGroupRemoveModalOpen, openGroupRemoveModal, closeGroupRemoveModal] = useModal()
-  const [isEditGroupModalOpen, openEditGroupModal, closeEditGroupModal] = useModal()
+  const [isGroupEditModalOpen, openGroupEditModal, closeGroupEditModal] = useModal()
   const [isOutcomeEditModalOpen, openOutcomeEditModal, closeOutcomeEditModal] = useModal()
   const [isOutcomeRemoveModalOpen, openOutcomeRemoveModal, closeOutcomeRemoveModal] = useModal()
+  const [isOutcomesRemoveModalOpen, openOutcomesRemoveModal, closeOutcomesRemoveModal] = useModal()
   const [isOutcomeMoveModalOpen, openOutcomeMoveModal, closeOutcomeMoveModal] = useModal()
+  const [isOutcomesMoveModalOpen, openOutcomesMoveModal, closeOutcomesMoveModal] = useModal()
+  const [isGroupDescriptionModalOpen, openGroupDescriptionModal, closeGroupDescriptionModal] =
+    useModal()
   const [selectedOutcome, setSelectedOutcome] = useState(null)
+  const selectedOutcomeObj = selectedOutcome ? {[selectedOutcome.linkId]: selectedOutcome} : {}
   const onCloseOutcomeRemoveModal = () => {
     closeOutcomeRemoveModal()
     setSelectedOutcome(null)
   }
-  const onCloseOutcomeEditModal = () => {
-    closeOutcomeEditModal()
-    setSelectedOutcome(null)
+  const onCloseOutcomesRemoveModal = () => {
+    closeOutcomesRemoveModal()
+    clearSelectedOutcomes()
   }
   const onCloseOutcomeMoveModal = () => {
     closeOutcomeMoveModal()
     setSelectedOutcome(null)
   }
-  const onCloseEditGroupModal = () => {
-    closeEditGroupModal()
+  const onCloseOutcomesMoveModal = () => {
+    closeOutcomesMoveModal()
+    clearSelectedOutcomes()
   }
-  const groupMenuHandler = (_, action) => {
-    if (action === 'move') {
-      openMoveGroupModal()
-    } else if (action === 'remove') {
-      openGroupRemoveModal()
-    } else if (action === 'edit') {
-      openEditGroupModal()
-    }
+  const onCloseOutcomeEditModal = () => {
+    closeOutcomeEditModal()
+    setSelectedOutcome(null)
   }
+
+  const groupMenuHandler = useCallback(
+    (_arg, action) => {
+      if (action === 'move') {
+        openGroupMoveModal()
+      } else if (action === 'remove') {
+        openGroupRemoveModal()
+      } else if (action === 'edit') {
+        openGroupEditModal()
+      } else if (action === 'description') {
+        openGroupDescriptionModal()
+      }
+    },
+    [openGroupDescriptionModal, openGroupEditModal, openGroupMoveModal, openGroupRemoveModal]
+  )
+
   const outcomeMenuHandler = useCallback(
-    (id, action) => {
-      setSelectedOutcome(group.outcomes.edges.find(edge => edge.node._id === id)?.node)
+    (linkId, action) => {
+      const edge = group.outcomes.edges.find(edgeEl => edgeEl.id === linkId)
+      setSelectedOutcome({linkId, canUnlink: edge.canUnlink, ...edge.node})
       if (action === 'remove') {
         openOutcomeRemoveModal()
       } else if (action === 'edit') {
@@ -148,40 +163,6 @@ const OutcomeManagementPanel = () => {
     [group]
   )
 
-  const onMoveHandler = async newParentGroup => {
-    closeMoveGroupModal()
-    try {
-      if (!group) {
-        return
-      }
-      await moveOutcomeGroup(contextType, contextId, group._id, newParentGroup.id)
-      showFlashAlert({
-        message: I18n.t('"%{title}" has been moved to "%{newGroupTitle}".', {
-          title: group.title,
-          newGroupTitle: newParentGroup.name
-        }),
-        type: 'success'
-      })
-    } catch (err) {
-      showFlashAlert({
-        message: err.message
-          ? I18n.t('An error occurred moving group "%{title}": %{message}', {
-              title: group.title,
-              message: err.message
-            })
-          : I18n.t('An error occurred moving group "%{title}"', {
-              title: group.title
-            }),
-        type: 'error'
-      })
-    }
-  }
-
-  const onMoveOutcomeHandler = newParentGroup => {
-    startMoveOutcome(contextType, contextId, selectedOutcome, selectedGroupId, newParentGroup)
-    onCloseOutcomeMoveModal()
-  }
-
   if (isLoading) {
     return (
       <div style={{textAlign: 'center'}}>
@@ -190,20 +171,18 @@ const OutcomeManagementPanel = () => {
     )
   }
 
-  if (error) {
+  if (error && Object.keys(collections).length === 0) {
     return (
       <Text color="danger">
-        {contextType === 'Course'
+        {isCourse
           ? I18n.t('An error occurred while loading course outcomes: %{error}', {error})
           : I18n.t('An error occurred while loading account outcomes: %{error}', {error})}
       </Text>
     )
   }
 
-  // Currently we're checking the presence of outcomes by checking the presence of folders
-  // we need to implement the correct behavior later
-  // https://gerrit.instructure.com/c/canvas-lms/+/255898/8/app/jsx/outcomes/Management/index.js#235
-  const hasOutcomes = Object.keys(collections).length > 1
+  const hasOutcomes = Object.keys(collections).length > 1 || collections[rootId].outcomesCount > 0
+  const canManage = ENV.PERMISSIONS?.manage_outcomes
 
   return (
     <div className="management-panel" data-testid="outcomeManagementPanel">
@@ -211,7 +190,7 @@ const OutcomeManagementPanel = () => {
         <NoOutcomesBillboard />
       ) : (
         <>
-          <Flex>
+          <Flex elementRef={setContainerRef}>
             <Flex.Item
               width="33%"
               display="inline-block"
@@ -220,8 +199,9 @@ const OutcomeManagementPanel = () => {
               as="div"
               overflowY="auto"
               overflowX="hidden"
+              elementRef={setLeftColumnRef}
             >
-              <View as="div" padding="small none none x-small">
+              <View as="div" padding="small x-small none x-small">
                 <Text size="large" weight="light" fontStyle="normal">
                   {I18n.t('Outcome Groups')}
                 </Text>
@@ -229,19 +209,32 @@ const OutcomeManagementPanel = () => {
                   onCollectionToggle={queryCollections}
                   collections={collections}
                   rootId={rootId}
+                  showRootCollection
+                  defaultExpandedIds={[rootId]}
                 />
               </View>
             </Flex.Item>
             <Flex.Item
-              width="1%"
-              display="inline-block"
-              position="relative"
-              padding="small none large none"
-              margin="small none none none"
-              borderWidth="none small none none"
-              height="60vh"
               as="div"
-            />
+              position="relative"
+              width="1%"
+              height="60vh"
+              margin="small none none none"
+              padding="small none large none"
+              display="inline-block"
+            >
+              <div
+                data-testid="handlerRef"
+                ref={setDelimiterRef}
+                style={{
+                  width: '1vw',
+                  height: '100%',
+                  cursor: 'col-resize',
+                  background:
+                    '#EEEEEE url("/images/splitpane_handle-ew.gif") no-repeat scroll 50% 50%'
+                }}
+              />
+            </Flex.Item>
             <Flex.Item
               as="div"
               width="66%"
@@ -250,6 +243,10 @@ const OutcomeManagementPanel = () => {
               height="60vh"
               overflowY="visible"
               overflowX="auto"
+              elementRef={el => {
+                setRightColumnRef(el)
+                setScrollContainer(el)
+              }}
             >
               <View as="div" padding="x-small none none x-small">
                 {selectedGroupId && (
@@ -265,67 +262,90 @@ const OutcomeManagementPanel = () => {
                     onSearchChangeHandler={onSearchChangeHandler}
                     onSearchClearHandler={onSearchClearHandler}
                     loadMore={loadMore}
+                    scrollContainer={scrollContainer}
+                    isRootGroup={collections[selectedGroupId]?.isRootGroup}
                   />
                 )}
               </View>
             </Flex.Item>
           </Flex>
-          <hr />
+          <hr style={{margin: '0 0 7px'}} />
+          {canManage && (
+            <ManageOutcomesFooter
+              selected={selectedOutcomes}
+              selectedCount={selectedOutcomesCount}
+              onRemoveHandler={openOutcomesRemoveModal}
+              onMoveHandler={openOutcomesMoveModal}
+            />
+          )}
           {selectedGroupId && (
             <>
-              <ManageOutcomesFooter
-                selected={selected}
-                onRemoveHandler={noop}
-                onMoveHandler={noop}
-              />
-
-              <MoveModal
-                title={loading ? '' : group.title}
-                groupId={selectedGroupId}
-                parentGroupId={selectedParentGroupId}
-                type="group"
-                isOpen={isMoveGroupModalOpen}
-                onCloseHandler={closeMoveGroupModal}
-                onMoveHandler={onMoveHandler}
-              />
-
               <GroupRemoveModal
                 groupId={selectedGroupId}
                 isOpen={isGroupRemoveModalOpen}
                 onCloseHandler={closeGroupRemoveModal}
               />
-            </>
-          )}
-          {selectedGroupId && selectedOutcome && (
-            <>
-              <OutcomeRemoveModal
-                groupId={selectedGroupId}
-                outcomeId={selectedOutcome._id}
-                isOpen={isOutcomeRemoveModalOpen}
-                onCloseHandler={onCloseOutcomeRemoveModal}
-              />
-              <OutcomeEditModal
-                outcome={selectedOutcome}
-                isOpen={isOutcomeEditModalOpen}
-                onCloseHandler={onCloseOutcomeEditModal}
-              />
-              <MoveModal
-                title={selectedOutcome.title}
-                groupId={selectedGroupId}
-                parentGroupId={selectedGroupId}
-                type="outcome"
-                isOpen={isOutcomeMoveModalOpen}
-                onCloseHandler={onCloseOutcomeMoveModal}
-                onMoveHandler={onMoveOutcomeHandler}
-              />
+              {!loading && (
+                <GroupMoveModal
+                  groupId={selectedGroupId}
+                  groupTitle={group?.title}
+                  parentGroupId={selectedParentGroupId}
+                  isOpen={isGroupMoveModalOpen}
+                  onCloseHandler={closeGroupMoveModal}
+                />
+              )}
+              {selectedOutcome && (
+                <>
+                  <OutcomeRemoveModal
+                    outcomes={selectedOutcomeObj}
+                    isOpen={isOutcomeRemoveModalOpen}
+                    onCloseHandler={onCloseOutcomeRemoveModal}
+                    onCleanupHandler={onCloseOutcomeRemoveModal}
+                  />
+                  <OutcomeEditModal
+                    outcome={selectedOutcome}
+                    isOpen={isOutcomeEditModalOpen}
+                    onCloseHandler={onCloseOutcomeEditModal}
+                  />
+                  <OutcomeMoveModal
+                    outcomes={selectedOutcomeObj}
+                    isOpen={isOutcomeMoveModalOpen}
+                    onCloseHandler={onCloseOutcomeMoveModal}
+                    onCleanupHandler={onCloseOutcomeMoveModal}
+                  />
+                </>
+              )}
             </>
           )}
           {group && (
-            <EditGroupModal
-              outcomeGroup={group}
-              isOpen={isEditGroupModalOpen}
-              onCloseHandler={onCloseEditGroupModal}
-            />
+            <>
+              <EditGroupModal
+                outcomeGroup={group}
+                isOpen={isGroupEditModalOpen}
+                onCloseHandler={closeGroupEditModal}
+              />
+              <GroupDescriptionModal
+                outcomeGroup={group}
+                isOpen={isGroupDescriptionModalOpen}
+                onCloseHandler={closeGroupDescriptionModal}
+              />
+            </>
+          )}
+          {selectedOutcomesCount > 0 && (
+            <>
+              <OutcomeRemoveModal
+                outcomes={selectedOutcomes}
+                isOpen={isOutcomesRemoveModalOpen}
+                onCloseHandler={closeOutcomesRemoveModal}
+                onCleanupHandler={onCloseOutcomesRemoveModal}
+              />
+              <OutcomeMoveModal
+                outcomes={selectedOutcomes}
+                isOpen={isOutcomesMoveModalOpen}
+                onCloseHandler={closeOutcomesMoveModal}
+                onCleanupHandler={onCloseOutcomesMoveModal}
+              />
+            </>
           )}
         </>
       )}

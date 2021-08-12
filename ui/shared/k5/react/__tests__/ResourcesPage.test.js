@@ -139,6 +139,20 @@ describe('ResourcesPage', () => {
       window.location.assign = assign
     })
 
+    it('does not fetch apps without subject courses', async () => {
+      const props = getProps({
+        cards: [
+          {
+            id: '2',
+            isHomeroom: true,
+            originalName: 'Homeroom A'
+          }
+        ]
+      })
+      render(<ResourcesPage {...props} />)
+      expect(utils.fetchCourseApps).not.toHaveBeenCalled()
+    })
+
     it('falls back to use app.icon_url if an icon is not defined in course_navigation', async () => {
       const response = [
         {
@@ -155,6 +169,14 @@ describe('ResourcesPage', () => {
       const image = getByTestId('renderedIcon')
       expect(image).toBeInTheDocument()
       expect(image.src).toContain('/2.png')
+    })
+
+    it("doesn't fail if course_navigation property is null", async () => {
+      const response = [{id: '3'}]
+      utils.fetchCourseApps.mockReturnValue(Promise.resolve(response))
+      const {getByText, queryByText} = render(<ResourcesPage {...getProps()} />)
+      await waitFor(() => expect(getByText('Student Applications')).toBeInTheDocument())
+      expect(queryByText('Failed to load apps.')).not.toBeInTheDocument()
     })
   })
 

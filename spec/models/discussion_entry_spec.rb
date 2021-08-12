@@ -58,6 +58,16 @@ describe DiscussionEntry do
     expect(topic.discussion_entries.active.length).to eq 1
   end
 
+  it "should check both feature flags for the legacy boolean" do
+    @course = course_model
+    Account.site_admin.enable_feature!(:react_discussions_post)
+    expect(topic.discussion_entries.create(user: user_model).legacy?).to be true
+    Account.site_admin.enable_feature!(:isolated_view)
+    expect(topic.discussion_entries.create(user: user_model).legacy?).to be false
+    @course.disable_feature!(:react_discussions_post)
+    expect(topic.discussion_entries.create(user: user_model).legacy?).to be true
+  end
+
   it "should preserve parent_id if valid" do
     course_factory
     entry = topic.discussion_entries.create!
@@ -100,7 +110,7 @@ describe DiscussionEntry do
 
     it 'should create on entry save' do
       entry = @topic.discussion_entries.new(user: @student)
-      allow(entry).to receive(:message).and_return("<p>hello</p><span data-mention=#{@mentioned_student.id} </span> what's up dude")
+      allow(entry).to receive(:message).and_return("<p>hello <span data-mention=#{@mentioned_student.id} class=mention>@#{@mentioned_student.short_name}</span> what's up dude</p>")
       expect{entry.save!}.to change{entry.mentions.count}.from(0).to(1)
       expect(entry.mentions.take.user_id).to eq @mentioned_student.id
     end
@@ -599,6 +609,23 @@ describe DiscussionEntry do
         expect(participant.discussion_entry).to eq @reply2
         expect(participant.workflow_state).to eq 'unread'
         expect(participant.forced_read_state).to be_falsey
+      end
+
+      it "should work with user_id or user" do
+        participant = @reply2.find_existing_participant(@student.id)
+        expect(participant.id).to be_nil
+        @reply2.change_read_state('read', @student, forced: true)
+        participant_from_id = @reply2.find_existing_participant(@student.id)
+        participant_from_user = @reply2.find_existing_participant(@student)
+        expect(participant_from_id.id).not_to be_nil
+        expect(participant_from_id.id).to eq participant_from_user.id
+      end
+
+      it "should update stream item from a mention" do
+        @reply2.mentions.create!(user_id: @student, root_account_id: @reply2.root_account_id)
+        expect(@student.stream_item_instances.last.workflow_state).to eq 'unread'
+        @reply2.change_read_state('read', @student, forced: true)
+        expect(@student.stream_item_instances.last.workflow_state).to eq 'read'
       end
     end
 

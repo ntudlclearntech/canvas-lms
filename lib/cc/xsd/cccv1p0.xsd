@@ -99,8 +99,6 @@
         <xs:element name="organize_epub_by_content_type" type="xs:boolean" minOccurs="0"/>
         <xs:element name="enable_offline_web_export" type="xs:boolean" minOccurs="0"/>
         <xs:element name="homeroom_course" type="xs:boolean" minOccurs="0"/>
-        <xs:element name="sync_enrollments_from_homeroom" type="xs:boolean" minOccurs="0"/>
-        <xs:element name="homeroom_course_id" type="xs:string" minOccurs="0"/>
         <xs:element name="course_color" type="xs:string" minOccurs="0"/>
         <xs:element name="image_url" type="xs:string" minOccurs="0"/>
         <xs:element name="image_identifier_ref" type="xs:string" minOccurs="0"/>
@@ -262,6 +260,7 @@
           </xs:sequence>
         </xs:complexType>
       </xs:element>
+      <xs:element name="annotatable_attachment_migration_id" type="xs:ID" minOccurs="0"/>
     </xs:all>
     <xs:attribute name="identifier" type="xs:ID" use="required"/>
   </xs:complexType>
@@ -556,6 +555,7 @@
             <xs:element name="description" type="xs:string" minOccurs="0"/>
             <xs:element name="learningOutcomes" type="learningOutcomesType" minOccurs="0"/>
             <xs:element name="vendor_guid" type="xs:string" minOccurs="0"/>
+            <xs:element name="source_outcome_group_id" type="xs:string" minOccurs="0"/>
           </xs:all>
           <xs:attribute name="identifier" type="xs:ID" use="required"/>
         </xs:complexType>

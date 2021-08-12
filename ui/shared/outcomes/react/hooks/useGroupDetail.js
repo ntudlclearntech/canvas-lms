@@ -83,7 +83,7 @@ const useGroupDetail = ({
           setLoading(false)
         })
         .catch(err => {
-          setError(err)
+          setError(err.message)
         })
     }
   }
@@ -106,6 +106,7 @@ const useGroupDetail = ({
         type: 'error'
       })
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [error])
 
   const loadMore = () => {

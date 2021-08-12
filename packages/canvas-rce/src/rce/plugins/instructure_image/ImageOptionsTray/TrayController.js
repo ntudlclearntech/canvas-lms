@@ -72,12 +72,13 @@ export default class TrayController {
     const {$img} = this
 
     if (imageOptions.displayAs === 'embed') {
+      // Workaround: When passing empty string to editor.dom.setAttribs it removes the attribute
+      $img.setAttribute('alt', imageOptions.altText)
       editor.dom.setAttribs($img, {
-        alt: imageOptions.altText,
+        src: imageOptions.url,
         role: imageOptions.isDecorativeImage ? 'presentation' : null,
         width: imageOptions.appliedWidth,
-        height: imageOptions.appliedHeight,
-        'data-decorative': imageOptions.isDecorativeImage ? true : null // should be replaced by role=presentation once a11y-checker supports it
+        height: imageOptions.appliedHeight
       })
 
       // tell tinymce so the context toolbar resets

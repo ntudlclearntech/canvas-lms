@@ -302,7 +302,6 @@ class AccountsController < ApplicationController
   include Api::V1::Account
   include CustomSidebarLinksHelper
   include SupportHelpers::ControllerHelpers
-  include MicrosoftSync::Concerns::Settings
 
   INTEGER_REGEX = /\A[+-]?\d+\z/
   SIS_ASSINGMENT_NAME_LENGTH_DEFAULT = 255
@@ -323,7 +322,7 @@ class AccountsController < ApplicationController
   def index
     respond_to do |format|
       format.html do
-        @accounts = @current_user ? @current_user.adminable_accounts : []
+        @accounts = (@current_user&.all_paginatable_accounts || []).paginate(per_page: 100)
       end
       format.json do
         if @current_user
@@ -372,7 +371,7 @@ class AccountsController < ApplicationController
           @current_user.enrollments.admin.shard(@current_user).except(:select, :joins)
         ).select("accounts.id").distinct.pluck(:id).map{|id| Shard.global_id_for(id)}
       end
-      course_accounts = BookmarkedCollection.wrap(Account::Bookmarker, Account.where(:id => account_ids))
+      course_accounts = ShardedBookmarkedCollection.build(Account::Bookmarker, Account.where(id: account_ids))
       @accounts = Api.paginate(course_accounts, self, api_v1_course_accounts_url)
     else
       @accounts = []
@@ -591,6 +590,9 @@ class AccountsController < ApplicationController
   #   or both the course's end_at and the enrollment term's end_at are set to null.
   #   The value should be formatted as: yyyy-mm-dd or ISO 8601 YYYY-MM-DDTHH:MM:SSZ.
   #
+  # @argument homeroom [Optional, Boolean]
+  #   If set, only return homeroom courses.
+  #
   # @returns [Course]
   def courses_api
     return unless authorized_action(@account, @current_user, :read_course_list)
@@ -664,6 +666,10 @@ class AccountsController < ApplicationController
       @courses = @courses.associated_courses
     elsif !params[:blueprint_associated].nil?
       @courses = @courses.not_associated_courses
+    end
+
+    if value_to_boolean(params[:homeroom])
+      @courses = @courses.homeroom
     end
 
     if starts_before || ends_after
@@ -807,11 +813,9 @@ class AccountsController < ApplicationController
         end
       end
 
-      # All the Microsoft Teams Sync things!
-      sync_enabled = params.dig(:account, :settings)&.delete(:microsoft_sync_enabled)
-      tenant = params.dig(:account, :settings)&.delete(:microsoft_sync_tenant)
-      login_attribute = params.dig(:account, :settings)&.delete(:microsoft_sync_login_attribute)
-      set_microsoft_sync_settings(sync_enabled, tenant, login_attribute)
+      param_settings = params.dig(:account, :settings)
+      microsoft_sync_settings = param_settings&.permit(*MicrosoftSync::SettingsValidator::SYNC_SETTINGS)
+      MicrosoftSync::SettingsValidator.new(microsoft_sync_settings, @account).validate_and_save
 
 
       # quotas (:manage_account_quotas)
@@ -899,7 +903,8 @@ class AccountsController < ApplicationController
   #
   #   Note that if you are altering Microsoft Teams sync settings you must enable
   #   the Microsoft Group enrollment syncing feature flag. In addition, if you are enabling
-  #   Microsoft Teams sync, you must also specify a tenant and login attribute.
+  #   Microsoft Teams sync, you must also specify a tenant, login attribute, and a remote attribute.
+  #   Specifying a suffix to use is optional.
   #
   # @argument account[settings][microsoft_sync_tenant]
   #   The tenant this account should use when using Microsoft Teams Sync.
@@ -907,7 +912,16 @@ class AccountsController < ApplicationController
   #
   # @argument account[settings][microsoft_sync_login_attribute]
   #   The attribute this account should use to lookup users when using Microsoft Teams Sync.
-  #   Must be one of sub, email, oid, or preferred_username.
+  #   Must be one of "sub", "email", "oid", "preferred_username", or "integration_id".
+  #
+  # @argument account[settings][microsoft_sync_login_attribute_suffix]
+  #   A suffix that will be appended to the result of the login attribute when associating
+  #   Canvas users with Microsoft users. Must be under 255 characters and contain no whitespace.
+  #   This field is optional.
+  #
+  # @argument account[settings][microsoft_sync_remote_attribute]
+  #   The Active Directory attribute to use when associating Canvas users with Microsoft users.
+  #   Must be one of "mail", "mailNickname", or "userPrincipalName".
   #
   # @argument account[settings][restrict_student_future_view][locked] [Boolean]
   #   Lock this setting for sub-accounts and courses
@@ -1099,9 +1113,7 @@ class AccountsController < ApplicationController
             @account.root_account.settings[:k5_accounts] = k5_accounts.to_a
             @account.root_account.save!
             # Invalidate the cached k5 settings for all users in the account
-            User.of_account(@account.root_account).find_in_batches do |users|
-              User.clear_cache_keys(users.pluck(:id), :k5_user)
-            end
+            @account.root_account.clear_k5_cache
           end
         end
 
@@ -1172,7 +1184,6 @@ class AccountsController < ApplicationController
         MEMBERSHIP_SERVICE_FEATURE_FLAG_ENABLED: @account.root_account.feature_enabled?(:membership_service_for_lti_tools),
         CONTEXT_BASE_URL: "/accounts/#{@context.id}",
         MASKED_APP_CENTER_ACCESS_TOKEN: @account.settings[:app_center_access_token].try(:[], 0...5),
-        NEW_FEATURES_UI: Account.site_admin.feature_enabled?(:new_features_ui),
         PERMISSIONS: {
           :create_tool_manually => @account.grants_right?(@current_user, session, :create_tool_manually),
           :manage_feature_flags => @account.grants_right?(@current_user, session, :manage_feature_flags)
@@ -1677,6 +1688,7 @@ class AccountsController < ApplicationController
                                    :login_handle_name, :mfa_settings, :no_enrollments_can_create_courses,
                                    :mobile_qr_login_is_enabled,
                                    :microsoft_sync_enabled, :microsoft_sync_tenant, :microsoft_sync_login_attribute,
+                                   :microsoft_sync_login_attribute_suffix, :microsoft_sync_remote_attribute,
                                    :open_registration, :outgoing_email_default_name, :prevent_course_availability_editing_by_teachers,
                                    :prevent_course_renaming_by_teachers, :restrict_quiz_questions,
                                    {:restrict_student_future_listing => [:value, :locked]}.freeze,

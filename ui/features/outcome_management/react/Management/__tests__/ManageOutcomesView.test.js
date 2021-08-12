@@ -17,10 +17,11 @@
  */
 
 import React from 'react'
-import {render} from '@testing-library/react'
+import {fireEvent, render} from '@testing-library/react'
 import ManageOutcomesView from '../ManageOutcomesView'
 import {outcomeGroup} from '@canvas/outcomes/mocks/Management'
 import {addZeroWidthSpace} from '@canvas/outcomes/addZeroWidthSpace'
+import OutcomesContext from '@canvas/outcomes/react/contexts/OutcomesContext'
 
 describe('ManageOutcomesView', () => {
   let onSelectOutcomesHandler
@@ -40,6 +41,7 @@ describe('ManageOutcomesView', () => {
     onSearchChangeHandler,
     onSearchClearHandler,
     loadMore,
+    isRootGroup: false,
     ...props
   })
 
@@ -56,6 +58,16 @@ describe('ManageOutcomesView', () => {
     jest.clearAllMocks()
   })
 
+  const mockContainer = (container, prop, value) => {
+    jest.spyOn(container, prop, 'get').mockImplementation(() => value)
+  }
+
+  const renderWithContext = (children, {canManage = true} = {}) => {
+    return render(
+      <OutcomesContext.Provider value={{env: {canManage}}}>{children}</OutcomesContext.Provider>
+    )
+  }
+
   it('renders loading indicator', () => {
     const {queryByTestId} = render(
       <ManageOutcomesView {...defaultProps({outcomeGroup: null, loading: true})} />
@@ -71,8 +83,7 @@ describe('ManageOutcomesView', () => {
             _id: '1',
             title: 'Group Title',
             outcomesCount: 0,
-            outcomes: {edges: [], pageInfo: {hasNextPage: false}},
-            canEdit: true
+            outcomes: {edges: [], pageInfo: {hasNextPage: false}}
           }
         })}
       />
@@ -101,26 +112,45 @@ describe('ManageOutcomesView', () => {
     expect(queryByTestId('outcome-group-container')).not.toBeInTheDocument()
   })
 
-  it('does not render the kebab menu if the group isnt editable', () => {
-    const {queryByText} = render(
-      <ManageOutcomesView
-        {...defaultProps({
-          outcomeGroup: {
-            _id: '1',
-            title: 'Group Title',
-            outcomesCount: 0,
-            outcomes: {edges: [], pageInfo: {hasNextPage: false}},
-            canEdit: false
-          }
-        })}
-      />
-    )
-    expect(queryByText('Outcome Group Menu')).not.toBeInTheDocument()
-  })
+  describe('kebab menu', () => {
+    it('is not rendered if canManage is false', () => {
+      const {queryByText} = renderWithContext(
+        <ManageOutcomesView
+          {...defaultProps({
+            outcomeGroup: {
+              _id: '1',
+              title: 'Group Title',
+              outcomesCount: 0,
+              outcomes: {edges: [], pageInfo: {hasNextPage: false}}
+            }
+          })}
+        />,
+        {canManage: false}
+      )
+      expect(queryByText('Outcome Group Menu')).not.toBeInTheDocument()
+    })
 
-  it('renders the kebab menu if the group is editable', () => {
-    const {getByText} = render(<ManageOutcomesView {...defaultProps()} />)
-    expect(getByText('Outcome Group Menu')).toBeInTheDocument()
+    it('is not rendered if isRootGroup is true', () => {
+      const {queryByText} = render(<ManageOutcomesView {...defaultProps({isRootGroup: true})} />)
+      expect(queryByText('Outcome Group Menu')).not.toBeInTheDocument()
+    })
+
+    it('rendered if canManage is true', () => {
+      const {getByText} = renderWithContext(
+        <ManageOutcomesView
+          {...defaultProps({
+            outcomeGroup: {
+              _id: '1',
+              title: 'Group Title',
+              outcomesCount: 0,
+              outcomes: {edges: [], pageInfo: {hasNextPage: false}}
+            }
+          })}
+        />,
+        {canManage: true}
+      )
+      expect(getByText('Outcome Group Menu')).toBeInTheDocument()
+    })
   })
 
   it('shows small loader when searching for outcomes', () => {
@@ -128,5 +158,82 @@ describe('ManageOutcomesView', () => {
       <ManageOutcomesView {...defaultProps({loading: true, searchString: 'test'})} />
     )
     expect(getByTestId('search-loading')).toBeInTheDocument()
+  })
+
+  it('render a message when search does not return any result', () => {
+    const {queryByText} = render(
+      <ManageOutcomesView
+        {...defaultProps({
+          outcomeGroup: {
+            _id: '1',
+            title: 'Group Title',
+            outcomesCount: 0,
+            outcomes: {edges: [], pageInfo: {hasNextPage: false}}
+          }
+        })}
+      />
+    )
+    expect(queryByText('The search returned no results')).toBeInTheDocument()
+  })
+
+  it('does not render a message when does not have search when group does not have outcome', () => {
+    const {queryByText} = render(
+      <ManageOutcomesView
+        {...defaultProps({
+          searchString: '',
+          outcomeGroup: {
+            _id: '1',
+            title: 'Group Title',
+            outcomesCount: 0,
+            outcomes: {edges: [], pageInfo: {hasNextPage: false}}
+          }
+        })}
+      />
+    )
+    expect(queryByText('The search returned no results')).not.toBeInTheDocument()
+  })
+
+  it('calls load more when hasNextPage is true and scroll reaches the infinite scroll threshold', () => {
+    const scrollContainer = document.createElement('div')
+    mockContainer(scrollContainer, 'scrollHeight', 1000)
+    mockContainer(scrollContainer, 'clientHeight', 400)
+    mockContainer(scrollContainer, 'scrollTop', 0)
+
+    render(
+      <ManageOutcomesView
+        {...defaultProps({
+          scrollContainer,
+          outcomeGroup: {
+            _id: '1',
+            title: 'Group Title',
+            outcomesCount: 0,
+            outcomes: {edges: [], pageInfo: {hasNextPage: true}}
+          }
+        })}
+      />
+    )
+
+    mockContainer(scrollContainer, 'scrollTop', 600)
+    fireEvent.scroll(scrollContainer)
+    expect(loadMore).toHaveBeenCalled()
+  })
+
+  it('doesnt calls load more when hasNextPage is false and scroll reaches the infinite scroll threshold', () => {
+    const scrollContainer = document.createElement('div')
+    mockContainer(scrollContainer, 'scrollHeight', 1000)
+    mockContainer(scrollContainer, 'clientHeight', 400)
+    mockContainer(scrollContainer, 'scrollTop', 0)
+
+    render(
+      <ManageOutcomesView
+        {...defaultProps({
+          scrollContainer
+        })}
+      />
+    )
+
+    mockContainer(scrollContainer, 'scrollTop', 600)
+    fireEvent.scroll(scrollContainer)
+    expect(loadMore).not.toHaveBeenCalled()
   })
 })

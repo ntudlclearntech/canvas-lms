@@ -875,6 +875,34 @@ describe Account do
     expect(manual.grants_right?(@user, :create_courses)).to eq false
   end
 
+  it "does not allow create courses for student view students" do
+    a = Account.default
+    a.settings = { :no_enrollments_can_create_courses => true }
+    a.save!
+
+    manual = a.manually_created_courses_account
+    course = manual.courses.create!
+    user = course.student_view_student
+
+    expect(a.grants_right?(user, :create_courses)).to eq false
+    expect(manual.grants_right?(user, :create_courses)).to eq false
+  end
+
+
+  it "does not allow create courses for student view students (granular permissions)" do
+    a = Account.default
+    a.settings = { :no_enrollments_can_create_courses => true }
+    a.save!
+    a.enable_feature!(:granular_permissions_manage_courses)
+
+    manual = a.manually_created_courses_account
+    course = manual.courses.create!
+    user = course.student_view_student
+
+    expect(a.grants_right?(user, :create_courses)).to eq false
+    expect(manual.grants_right?(user, :create_courses)).to eq false
+  end
+
   it "should correctly return sub-accounts as options" do
     a = Account.default
     sub = Account.create!(:name => 'sub', :parent_account => a)
@@ -1746,6 +1774,7 @@ describe Account do
 
         # should clear caches
         to_be_subaccount.parent_account = account
+        to_be_subaccount.root_account = account
         to_be_subaccount.save!
         expect(to_be_subaccount.default_storage_quota).to eq 10.megabytes
       end
@@ -2070,6 +2099,7 @@ describe Account do
         au = AccountUser.create!(:account => other_account, :user => @user)
         expect(cached_account_users).to eq []
         @account.update_attribute(:parent_account, other_account)
+        @account.reload
         expect(cached_account_users).to eq [au]
       end
 
@@ -2223,6 +2253,14 @@ describe Account do
   end
 
   context '#roles_with_enabled_permission' do
+    def create_role_override(permission, role, context, enabled = true)
+      RoleOverride.create!(
+        context: context,
+        permission: permission,
+        role: role,
+        enabled: enabled
+      )
+    end
     let(:account) { account_model }
 
     it 'returns expected roles with the given permission' do
@@ -2231,12 +2269,7 @@ describe Account do
       role.base_role_type = 'TaEnrollment'
       role.workflow_state = 'active'
       role.save!
-      RoleOverride.create!(
-        context: account,
-        permission: 'change_course_state',
-        role: role,
-        enabled: true
-      )
+      create_role_override('change_course_state', role, account)
       expect(
         account.roles_with_enabled_permission(:change_course_state).map(&:name).sort
       ).to eq %w[AccountAdmin AssistantGrader DesignerEnrollment TeacherEnrollment]
@@ -2248,30 +2281,11 @@ describe Account do
       role.base_role_type = 'TeacherEnrollment'
       role.workflow_state = 'active'
       role.save!
-      RoleOverride.create!(
-        context: account,
-        permission: 'manage_courses_add',
-        role: role,
-        enabled: true
-      )
-      RoleOverride.create!(
-        context: account,
-        permission: 'manage_courses_publish',
-        role: role,
-        enabled: true
-      )
-      RoleOverride.create!(
-        context: account,
-        permission: 'manage_courses_conclude',
-        role: role,
-        enabled: true
-      )
-      RoleOverride.create!(
-        context: account,
-        permission: 'manage_courses_delete',
-        role: role,
-        enabled: true
-      )
+      create_role_override('manage_courses_add', role, account)
+      create_role_override('manage_courses_publish', role, account)
+      create_role_override('manage_courses_conclude', role, account)
+      create_role_override('manage_courses_reset', role, account)
+      create_role_override('manage_courses_delete', role, account)
       expect(
         account.roles_with_enabled_permission(:manage_courses_add).map(&:name).sort
       ).to eq %w[AccountAdmin TeacherAdmin]
@@ -2281,6 +2295,9 @@ describe Account do
       expect(
         account.roles_with_enabled_permission(:manage_courses_conclude).map(&:name).sort
       ).to eq %w[AccountAdmin DesignerEnrollment TeacherAdmin TeacherEnrollment]
+      expect(
+        account.roles_with_enabled_permission(:manage_courses_reset).map(&:name).sort
+      ).to eq %w[AccountAdmin TeacherAdmin]
       expect(
         account.roles_with_enabled_permission(:manage_courses_delete).map(&:name).sort
       ).to eq %w[AccountAdmin TeacherAdmin]

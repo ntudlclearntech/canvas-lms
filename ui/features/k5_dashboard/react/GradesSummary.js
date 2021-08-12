@@ -30,7 +30,7 @@ import {ProgressBar} from '@instructure/ui-progress'
 import {Text} from '@instructure/ui-text'
 import {View} from '@instructure/ui-view'
 
-import I18n from 'i18n!k5_dashboard'
+import I18n from 'i18n!grades_summary'
 import instFSOptimizedImageUrl from '@canvas/dashboard-card/util/instFSOptimizedImageUrl'
 import k5Theme from '@canvas/k5/react/k5-theme'
 import {DEFAULT_COURSE_COLOR} from '@canvas/k5/react/utils'
@@ -44,6 +44,7 @@ const GradeSummaryShape = {
   courseColor: PropTypes.string,
   courseImage: PropTypes.string,
   currentGradingPeriodId: PropTypes.string,
+  finalGradesHidden: PropTypes.bool,
   grade: PropTypes.string,
   score: PropTypes.number
 }
@@ -84,6 +85,7 @@ export const GradeSummaryLine = ({
   courseName,
   currentGradingPeriodId,
   enrollmentType,
+  finalGradesHidden,
   grade,
   score
 }) => {
@@ -96,7 +98,7 @@ export const GradeSummaryLine = ({
       })
       isPercentage = true
     } else {
-      gradeText = currentGradingPeriodId ? I18n.t('Not Graded') : '--'
+      gradeText = finalGradesHidden || !currentGradingPeriodId ? '--' : I18n.t('Not Graded')
       score = 0
     }
   }
@@ -122,7 +124,7 @@ export const GradeSummaryLine = ({
             <Text transform="uppercase">
               <Heading as="h2" level="h3" margin="small 0">
                 <Link
-                  href={courseUrl}
+                  href={courseUrl + window.location.hash}
                   display="inline-block"
                   isWithinText={false}
                   theme={{
@@ -191,7 +193,7 @@ GradeSummaryLine.propTypes = GradeSummaryShape
 
 const GradesSummary = ({courses}) => {
   return (
-    <View as="div" margin="medium 0">
+    <View as="div" margin="medium none none">
       {courses.map(course => (
         <GradeSummaryLine key={course.courseId} {...course} />
       ))}

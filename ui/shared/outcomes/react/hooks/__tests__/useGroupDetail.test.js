@@ -76,7 +76,7 @@ describe('groupDetailHook', () => {
     expect(result.current.group.outcomes.pageInfo.hasNextPage).toBe(false)
   })
 
-  it("should flash an error message and return the error when coudn't load", async () => {
+  it("should flash an error message and return the error when coudn't load by default", async () => {
     const {result} = renderHook(() => useGroupDetail({id: '2'}), {
       wrapper
     })

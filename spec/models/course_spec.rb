@@ -20,6 +20,7 @@
 
 require 'sharding_spec_helper'
 require 'lti2_course_spec_helper'
+require_relative '../helpers/k5_common'
 
 require 'csv'
 require 'socket'
@@ -697,6 +698,22 @@ describe Course do
       expect{course_model}.not_to raise_error
     end
 
+    it 'should not allow creating on site_admin' do
+      expect{course_model(account: Account.site_admin)}.to raise_error(ActiveRecord::RecordInvalid)
+    end
+
+    it 'should not expect site_admin to exist' do
+      allow(Account).to receive(:site_admin).and_return nil
+      course = Course.new(root_account_id: Account.default.id)
+      expect(course.validate_not_on_siteadmin).to be_nil
+    end
+
+    it 'should not allow updating account to site_admin' do
+      course = course_model
+      course.root_account = Account.site_admin
+      expect(course).to_not be_valid
+    end
+
     it "should require unique sis_source_id" do
       other_course = course_factory
       other_course.sis_source_id = "sisid"
@@ -1036,7 +1053,7 @@ describe Course do
       @course.root_account.enable_feature!(:granular_permissions_manage_courses)
       @role1 = custom_account_role('managecourses', :account => Account.default)
       @role2 = custom_account_role('managesis', :account => Account.default)
-      account_admin_user_with_role_changes(role: @role1, role_changes: {manage_courses_delete: true})
+      account_admin_user_with_role_changes(role: @role1, role_changes: {manage_courses_reset: true})
       @admin1 = @admin
       account_admin_user_with_role_changes(role: @role2, role_changes: {manage_sis: true})
       @admin2 = @admin
@@ -1063,7 +1080,7 @@ describe Course do
       expect(@course.grants_right?(@teacher, :reset_content)).to be_falsey
       expect(@course.grants_right?(@designer, :reset_content)).to be_falsey
       expect(@course.grants_right?(@ta, :reset_content)).to be_falsey
-      expect(@course.grants_right?(@admin1, :reset_content)).to be_falsey
+      expect(@course.grants_right?(@admin1, :reset_content)).to be_truthy
       expect(@course.grants_right?(@admin2, :reset_content)).to be_falsey
 
       # completed, non-sis course
@@ -1087,7 +1104,7 @@ describe Course do
       expect(@course.grants_right?(@teacher, :reset_content)).to be_falsey
       expect(@course.grants_right?(@designer, :reset_content)).to be_falsey
       expect(@course.grants_right?(@ta, :reset_content)).to be_falsey
-      expect(@course.grants_right?(@admin1, :reset_content)).to be_falsey
+      expect(@course.grants_right?(@admin1, :reset_content)).to be_truthy
       expect(@course.grants_right?(@admin2, :reset_content)).to be_falsey
     end
 
@@ -2604,6 +2621,32 @@ describe Course, "tabs_available" do
       course_with_teacher(:active_all => true)
     end
 
+    describe 'TAB_CONFERENCES' do
+      context 'when WebConferences are enabled' do
+        before do
+          allow(WebConference).to receive(:plugins).and_return(
+            [
+              web_conference_plugin_mock("big_blue_button", {:domain => "bbb.instructure.com", :secret_dec => "secret"}),
+              web_conference_plugin_mock("wimba", {:domain => "wimba.test"}),
+              web_conference_plugin_mock("broken_plugin", {:foor => :bar})
+            ]
+          )
+        end
+
+        it 'returns the plugin names' do
+          tabs = @course.tabs_available(@user)
+          expect(tabs.select{ |t| t[:css_class] == 'conferences' }[0][:label]).to eq("Big blue button Wimba (Formerly Conferences)")
+        end
+      end
+
+      context 'when WebConferences are not enabled' do
+        it "returns Conferences" do
+          tabs = @course.tabs_available(@user)
+          expect(tabs.select{ |t| t[:css_class] == 'conferences' }[0][:label]).to eq("Conferences")
+        end
+      end
+    end
+
     it "should return the defaults if nothing specified" do
       length = Course.default_tabs.length
       tab_ids = @course.tabs_available(@user).map{|t| t[:id] }
@@ -2753,16 +2796,18 @@ describe Course, "tabs_available" do
     end
 
     describe "with canvas_for_elementary account setting on" do
+      include K5Common
+
       context "homeroom course" do
         before :once do
-          @course.account.settings[:enable_as_k5_account] = {value: true}
+          toggle_k5_setting(@course.account)
           @course.homeroom_course = true
           @course.save!
         end
 
         it 'hides most tabs for homeroom courses' do
           tab_ids = @course.tabs_available(@user).map{|t| t[:id] }
-          expect(tab_ids).to eq [Course::TAB_ANNOUNCEMENTS, Course::TAB_SYLLABUS, Course::TAB_PEOPLE, Course::TAB_SETTINGS]
+          expect(tab_ids).to eq [Course::TAB_ANNOUNCEMENTS, Course::TAB_SYLLABUS, Course::TAB_PEOPLE, Course::TAB_FILES, Course::TAB_SETTINGS]
         end
 
         it 'renames the syllabus tab to important info' do
@@ -2784,14 +2829,13 @@ describe Course, "tabs_available" do
           )
           @course.tab_configuration = [{:id => Course::TAB_ANNOUNCEMENTS}, {:id => 'context_external_tool_8'}]
           tab_ids = @course.tabs_available(@user).map{|t| t[:id] }
-          expect(tab_ids).to eq [Course::TAB_ANNOUNCEMENTS, Course::TAB_SYLLABUS, Course::TAB_PEOPLE, Course::TAB_SETTINGS]
+          expect(tab_ids).to eq [Course::TAB_ANNOUNCEMENTS, Course::TAB_SYLLABUS, Course::TAB_PEOPLE, Course::TAB_FILES, Course::TAB_SETTINGS]
         end
       end
 
       context "subject course" do
         before :once do
-          @course.account.settings[:enable_as_k5_account] = {value: true}
-          @course.save!
+          toggle_k5_setting(@course.account)
         end
 
         it "returns default course tabs without home if course_subject_tabs option is not passed" do
@@ -2854,6 +2898,12 @@ describe Course, "tabs_available" do
             available_tabs = @course.tabs_available(@user, course_subject_tabs: true, include_external: true, for_reordering: true)
             expected_tab_ids = Course.course_subject_tabs.map{|t| t[:id]} + [t1.asset_string, t2.asset_string]
             expect(available_tabs.map{|t| t[:id]}).to eql(expected_tab_ids)
+          end
+
+          it "includes modules tab even if there's no modules" do
+            course_with_student_logged_in(:active_all => true)
+            tab_ids = @course.tabs_available(@student, course_subject_tabs: true).map{ |t| t[:id] }
+            expect(tab_ids).to eq [Course::TAB_HOME, Course::TAB_SCHEDULE, Course::TAB_MODULES, Course::TAB_GRADES]
           end
         end
       end
@@ -5039,12 +5089,6 @@ describe Course, "#sync_homeroom_enrollments" do
     @course.homeroom_course_id = @homeroom_course.id
     @course.save!
     expect(@course.sync_homeroom_enrollments).not_to eq(false)
-  end
-
-  it "returns false unless the homeroom_course_id is accessible within the account" do
-    @course.homeroom_course_id = 0
-    @course.save!
-    expect(@course.sync_homeroom_enrollments).to eq(false)
   end
 end
 

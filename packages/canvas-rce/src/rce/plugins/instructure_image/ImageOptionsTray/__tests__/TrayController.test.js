@@ -145,6 +145,18 @@ describe('RCE "Images" Plugin > ImageOptionsTray > TrayController', () => {
   describe('when saving image options', () => {
     let tray
 
+    describe('when the image url text is changing', () => {
+      it('updates the image element url', () => {
+        trayController.showTrayForEditor(editors[0])
+        tray = getTray()
+        tray.setUrl('https://www.fillmurray.com/140/100')
+        tray.$doneButton.click()
+        expect(editors[0].$container.querySelector('img').getAttribute('src')).toEqual(
+          'https://www.fillmurray.com/140/100'
+        )
+      })
+    })
+
     describe('when the image alt text is changing', () => {
       it('updates the image element alt text', () => {
         trayController.showTrayForEditor(editors[0])
@@ -170,17 +182,12 @@ describe('RCE "Images" Plugin > ImageOptionsTray > TrayController', () => {
           'presentation'
         )
       })
-
-      it('sets data-decorative because a11y-checker requires it', () => {
-        expect(editors[0].$container.querySelector('img').dataset.decorative).toEqual('true')
-      })
     })
 
     describe('when the image is unset as decorative', () => {
       beforeEach(() => {
         $images[0].alt = ''
         $images[0].setAttribute('role', 'presentation')
-        $images[0].setAttribute('data-decorative', 'true')
         trayController.showTrayForEditor(editors[0])
         tray = getTray()
         tray.setIsDecorativeImage(false)
@@ -196,10 +203,6 @@ describe('RCE "Images" Plugin > ImageOptionsTray > TrayController', () => {
 
       it('sets a role attribute to persist the option', () => {
         expect(editors[0].$container.querySelector('img').getAttribute('role')).toBeNull()
-      })
-
-      it('removes data-decorative', () => {
-        expect(editors[0].$container.querySelector('img').dataset.decorative).toBeUndefined()
       })
     })
 

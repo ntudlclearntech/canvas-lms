@@ -21,6 +21,7 @@ import PropTypes from 'prop-types'
 import {View} from '@instructure/ui-view'
 import {Heading} from '@instructure/ui-heading'
 import I18n from 'i18n!OutcomeManagement'
+import {Text} from '@instructure/ui-text'
 import OutcomeGroupHeader from './OutcomeGroupHeader'
 import {Spinner} from '@instructure/ui-spinner'
 import ManageOutcomeItem from './ManageOutcomeItem'
@@ -28,6 +29,7 @@ import OutcomeSearchBar from './OutcomeSearchBar'
 import {addZeroWidthSpace} from '@canvas/outcomes/addZeroWidthSpace'
 import InfiniteScroll from '@canvas/infinite-scroll'
 import {Flex} from '@instructure/ui-flex'
+import useCanvasContext from '@canvas/outcomes/react/hooks/useCanvasContext'
 
 const ManageOutcomesView = ({
   outcomeGroup,
@@ -39,13 +41,15 @@ const ManageOutcomesView = ({
   onSearchChangeHandler,
   onSearchClearHandler,
   loading,
-  loadMore
+  loadMore,
+  scrollContainer,
+  isRootGroup
 }) => {
   const groupTitle = outcomeGroup?.title
   const groupDescription = outcomeGroup?.description
   const outcomes = outcomeGroup?.outcomes
   const numOutcomes = outcomeGroup?.outcomesCount
-  const canManageGroup = outcomeGroup?.canEdit
+  const {canManage} = useCanvasContext()
 
   if (loading && !outcomeGroup) {
     return (
@@ -63,11 +67,12 @@ const ManageOutcomesView = ({
         hasMore={outcomes?.pageInfo?.hasNextPage}
         loadMore={loadMore}
         loader={<p>{I18n.t('Loading')} ...</p>}
+        scrollContainer={scrollContainer}
       >
         <OutcomeGroupHeader
           title={groupTitle}
           description={groupDescription}
-          canManage={canManageGroup}
+          canManage={isRootGroup ? false : canManage}
           minWidth="calc(50% + 4.125rem)"
           onMenuHandler={onOutcomeGroupMenuHandler}
         />
@@ -80,11 +85,11 @@ const ManageOutcomesView = ({
             onClearHandler={onSearchClearHandler}
           />
         </View>
-        <View as="div" padding="small 0">
+        <View as="div" padding="small 0" borderWidth="0 0 small">
           <Heading level="h4">
             <Flex>
               <Flex.Item shouldShrink>
-                <div style={{overflowWrap: 'break-word'}}>
+                <div style={{overflowWrap: 'break-word', padding: '0.375rem 0'}}>
                   {I18n.t(
                     {
                       one: '1 "%{groupTitle}" Outcome',
@@ -97,36 +102,41 @@ const ManageOutcomesView = ({
                   )}
                 </div>
               </Flex.Item>
-              <Flex.Item>
-                {searchString && loading ? (
+              <Flex.Item size="2.5rem">
+                {searchString && loading && (
                   <Spinner
                     renderTitle={I18n.t('Loading')}
                     size="x-small"
-                    margin="0 0 0 small"
+                    margin="0 0 0 x-small"
                     data-testid="search-loading"
                   />
-                ) : (
-                  ''
                 )}
               </Flex.Item>
             </Flex>
           </Heading>
         </View>
         <View as="div" data-testid="outcome-items-list">
-          {outcomes?.edges?.map(({canUnlink, node: {_id, title, description, canEdit}}, index) => (
-            <ManageOutcomeItem
-              key={_id}
-              id={_id}
-              title={title}
-              description={description}
-              canManageOutcome={canEdit}
-              canUnlink={canUnlink}
-              isFirst={index === 0}
-              isChecked={!!selectedOutcomes[_id]}
-              onMenuHandler={onOutcomeMenuHandler}
-              onCheckboxHandler={onSelectOutcomesHandler}
-            />
-          ))}
+          {outcomes?.edges?.length === 0 && searchString && !loading && (
+            <View as="div" textAlign="center" margin="small 0 0">
+              <Text color="secondary">{I18n.t('The search returned no results')}</Text>
+            </View>
+          )}
+          {outcomes?.edges?.map(
+            ({canUnlink, id: linkId, node: {_id, title, description, canEdit}}) => (
+              <ManageOutcomeItem
+                key={linkId}
+                _id={_id}
+                linkId={linkId}
+                title={title}
+                description={description}
+                canManageOutcome={canEdit}
+                canUnlink={canUnlink}
+                isChecked={!!selectedOutcomes[linkId]}
+                onMenuHandler={onOutcomeMenuHandler}
+                onCheckboxHandler={onSelectOutcomesHandler}
+              />
+            )
+          )}
         </View>
       </InfiniteScroll>
     </View>
@@ -139,7 +149,6 @@ ManageOutcomesView.propTypes = {
     title: PropTypes.string.isRequired,
     description: PropTypes.string,
     outcomesCount: PropTypes.number.isRequired,
-    canEdit: PropTypes.bool.isRequired,
     outcomes: PropTypes.shape({
       edges: PropTypes.arrayOf(
         PropTypes.shape({
@@ -168,7 +177,9 @@ ManageOutcomesView.propTypes = {
   onOutcomeMenuHandler: PropTypes.func.isRequired,
   onSearchChangeHandler: PropTypes.func.isRequired,
   onSearchClearHandler: PropTypes.func.isRequired,
-  loadMore: PropTypes.func.isRequired
+  loadMore: PropTypes.func.isRequired,
+  scrollContainer: PropTypes.instanceOf(Element),
+  isRootGroup: PropTypes.bool.isRequired
 }
 
 export default ManageOutcomesView

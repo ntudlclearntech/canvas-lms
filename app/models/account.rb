@@ -106,6 +106,11 @@ class Account < ActiveRecord::Base
            class_name: 'Auditors::ActiveRecord::GradeChangeRecord',
            dependent: :destroy,
            inverse_of: :root_account
+  has_many :auditor_feature_flag_records,
+           foreign_key: 'root_account_id',
+           class_name: 'Auditors::ActiveRecord::FeatureFlagRecord',
+           dependent: :destroy,
+           inverse_of: :root_account
   has_many :lti_resource_links,
            as: :context,
            inverse_of: :context,
@@ -249,6 +254,8 @@ class Account < ActiveRecord::Base
   add_setting :microsoft_sync_enabled, :root_only => true, :boolean => true, :default => false
   add_setting :microsoft_sync_tenant, :root_only => true
   add_setting :microsoft_sync_login_attribute, :root_only => true
+  add_setting :microsoft_sync_login_attribute_suffix, :root_only => true
+  add_setting :microsoft_sync_remote_attribute, :root_only => true
 
   # Help link settings
   add_setting :custom_help_links, :root_only => true
@@ -515,6 +522,10 @@ class Account < ActiveRecord::Base
     self.root_account_id ||= parent_account.root_account_id if parent_account && !parent_account.root_account?
     self.root_account_id ||= parent_account_id
     self.parent_account_id ||= self.root_account_id unless root_account?
+    unless root_account_id
+      Account.ensure_dummy_root_account
+      self.root_account_id = 0
+    end
     true
   end
 
@@ -546,6 +557,10 @@ class Account < ActiveRecord::Base
   end
 
   def check_downstream_caches
+    # dummy account has no downstream
+    return if dummy?
+    return if ActiveRecord::Base.in_migration
+
     keys_to_clear = []
     keys_to_clear << :account_chain if self.saved_change_to_parent_account_id? || self.saved_change_to_root_account_id?
     if self.saved_change_to_brand_config_md5? || (@old_settings && @old_settings[:sub_account_includes] != settings[:sub_account_includes])
@@ -554,13 +569,26 @@ class Account < ActiveRecord::Base
     keys_to_clear << :default_locale if self.saved_change_to_default_locale?
     if keys_to_clear.any?
       self.shard.activate do
-        delay_if_production.clear_downstream_caches(*keys_to_clear)
+        self.class.connection.after_transaction_commit do
+          delay_if_production(singleton: "Account#clear_downstream_caches/#{global_id}")
+            .clear_downstream_caches(*keys_to_clear, xlog_location: self.class.current_xlog_location)
+        end
       end
     end
   end
 
-  def clear_downstream_caches(*key_types)
+  def clear_downstream_caches(*key_types, xlog_location: nil, is_retry: false)
     self.shard.activate do
+      if xlog_location
+        timeout = Setting.get("account_cache_clear_replication_timeout", "60").to_i.seconds
+        unless self.class.wait_for_replication(start: xlog_location, timeout: timeout)
+          delay(run_at: Time.now + timeout, singleton: "Account#clear_downstream_caches/#{global_id}")
+            .clear_downstream_caches(*keys_to_clear, xlog_location: xlog_location, is_retry: true)
+          # we still clear, but only the first time; after that we just keep waiting
+          return if is_retry
+        end
+      end
+
       Account.clear_cache_keys([self.id] + Account.sub_account_ids_recursive(self.id), *key_types)
     end
   end
@@ -761,11 +789,13 @@ class Account < ActiveRecord::Base
 
     if @invalidations.present?
       shard.activate do
-        @invalidations.each do |key|
-          Rails.cache.delete([key, self.global_id].cache_key)
+        self.class.connection.after_transaction_commit do
+          @invalidations.each do |key|
+            Rails.cache.delete([key, self.global_id].cache_key)
+          end
+          Account.delay_if_production(singleton: "Account.invalidate_inherited_caches_#{global_id}").
+            invalidate_inherited_caches(self, @invalidations)
         end
-        Account.delay_if_production(singleton: "Account.invalidate_inherited_caches_#{global_id}").
-          invalidate_inherited_caches(self, @invalidations)
       end
     end
   end
@@ -969,10 +999,11 @@ class Account < ActiveRecord::Base
   end
 
   def account_chain(include_site_admin: false)
-    @account_chain ||= Account.account_chain(self)
-    result = @account_chain.dup
-    Account.add_site_admin_to_chain!(result) if include_site_admin
-    result
+    @account_chain ||= Account.account_chain(self).freeze
+    if include_site_admin
+      return @account_chain_with_site_admin ||= Account.add_site_admin_to_chain!(@account_chain.dup).freeze
+    end
+    @account_chain
   end
 
   def account_chain_ids
@@ -1205,9 +1236,7 @@ class Account < ActiveRecord::Base
       else
         Rails.cache.fetch_with_batched_keys(['account_users_for_user', user.cache_key(:account_users)].cache_key,
             batch_object: self, batched_keys: :account_chain, skip_cache_if_disabled: true) do
-          aus = account_users_for(user)
-          aus.each{|au| au.instance_variable_set(:@association_cache, {})}
-          aus
+          account_users_for(user).each(&:clear_association_cache)
         end
       end
     end
@@ -1251,6 +1280,7 @@ class Account < ActiveRecord::Base
     #################### Begin legacy permission block #########################
     given do |user|
       result = false
+      next false if user&.fake_student?
 
       if user && !root_account.feature_enabled?(:granular_permissions_manage_courses) && !root_account.site_admin?
         scope = root_account.enrollments.active.where(user_id: user)
@@ -1270,6 +1300,8 @@ class Account < ActiveRecord::Base
     # any logged in user with no active enrollments (i.e. FFT)
     # combined with root account setting that is enabled for Users with no enrollments
     given do |user|
+      next false if user&.fake_student?
+
       user && root_account.feature_enabled?(:granular_permissions_manage_courses) &&
         !root_account.site_admin? &&
         !root_account.enrollments.active.where(user_id: user).exists? &&
@@ -1332,7 +1364,7 @@ class Account < ActiveRecord::Base
   end
 
   def reload(*)
-    @account_chain = nil
+    @account_chain = @account_chain_with_site_admin = nil
     super
   end
 
@@ -1443,7 +1475,7 @@ class Account < ActiveRecord::Base
     self.course_template_id = nil if course_template_id == 0 && root_account?
     return if [nil, 0].include?(course_template_id)
 
-    unless course_template.root_account_id == [root_account_id, id].compact.first
+    unless course_template.root_account_id == resolved_root_account_id
       errors.add(:course_template_id, t('Course template must be in the same root account'))
     end
     unless course_template.template?
@@ -1965,6 +1997,7 @@ class Account < ActiveRecord::Base
   end
 
   scope :root_accounts, -> { where(root_account_id: [0, nil]).where.not(id: 0) }
+  scope :non_root_accounts, -> { where.not(root_account_id: [0, nil]) }
   scope :processing_sis_batch, -> { where("accounts.current_sis_batch_id IS NOT NULL").order(:updated_at) }
   scope :name_like, lambda { |name| where(wildcard('accounts.name', name)) }
   scope :active, -> { where("accounts.workflow_state<>'deleted'") }
@@ -2099,6 +2132,13 @@ class Account < ActiveRecord::Base
   end
   handle_asynchronously :update_user_dashboards, :priority => Delayed::LOW_PRIORITY, :max_attempts => 1
 
+  def clear_k5_cache
+    User.of_account(self).find_in_batches do |users|
+      User.clear_cache_keys(users.pluck(:id), :k5_user)
+    end
+  end
+  handle_asynchronously :clear_k5_cache, priority: Delayed::LOW_PRIORITY, :max_attempts => 1
+
   def process_external_integration_keys(params_keys, current_user, keys = ExternalIntegrationKey.indexed_keys_for(self))
     return unless params_keys
 
@@ -2156,7 +2196,18 @@ class Account < ActiveRecord::Base
   relation_delegate_class(ActiveRecord::AssociationRelation).prepend(DomainRootAccountCache)
 
   def self.ensure_dummy_root_account
-    Account.find_or_create_by!(id: 0) if Rails.env.test?
+    return unless Rails.env.test?
+
+    dummy = Account.find_by(id: 0)
+    return if dummy
+
+    # this needs to be thread safe because parallel specs might all try to create at once
+    transaction(requires_new: true) do
+      Account.create!(id: 0, workflow_state: 'deleted', name: "Dummy Root Account", root_account_id: 0)
+    rescue ActiveRecord::UniqueConstraintViolation
+      # somebody else created it. we don't even need to return it, just clean up the transaction
+      raise ActiveRecord::Rollback
+    end
   end
 
   def roles_with_enabled_permission(permission)

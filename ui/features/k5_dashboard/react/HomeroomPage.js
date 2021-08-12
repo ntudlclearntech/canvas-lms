@@ -18,7 +18,7 @@
 
 import React, {useState} from 'react'
 import PropTypes from 'prop-types'
-import I18n from 'i18n!k5_dashboard'
+import I18n from 'i18n!homeroom_page'
 
 import useImmediate from '@canvas/use-immediate-hook'
 import {Heading} from '@instructure/ui-heading'
@@ -27,17 +27,16 @@ import {IconButton} from '@instructure/ui-buttons'
 import {IconAddSolid} from '@instructure/ui-icons'
 import {Flex} from '@instructure/ui-flex'
 import {Tooltip} from '@instructure/ui-tooltip'
-import {Text} from '@instructure/ui-text'
-import {Img} from '@instructure/ui-img'
 
 import K5DashboardCard, {CARD_SIZE_PX} from './K5DashboardCard'
 import {createDashboardCards} from '@canvas/dashboard-card'
 import HomeroomAnnouncementsLayout from './HomeroomAnnouncementsLayout'
 import LoadingSkeleton from '@canvas/k5/react/LoadingSkeleton'
+import LoadingWrapper from '@canvas/k5/react/LoadingWrapper'
 import {CreateCourseModal} from './CreateCourseModal'
-import EmptyDashPandaUrl from '../images/empty-dashboard.svg'
+import EmptyDashboardState from '@canvas/k5/react/EmptyDashboardState'
 
-export const HomeroomPage = ({
+const HomeroomPage = ({
   cards,
   createPermissions,
   homeroomAnnouncements,
@@ -62,22 +61,24 @@ export const HomeroomPage = ({
     {deep: true}
   )
 
-  const NUM_CARD_SKELETONS = ENV?.INITIAL_NUM_K5_CARDS || 5
-  const skeletonCards = []
-  for (let i = 0; i < NUM_CARD_SKELETONS; i++) {
-    skeletonCards.push(
-      <div
-        className="ic-DashboardCard"
-        key={`card-${i}`}
-        style={{
-          height: `${CARD_SIZE_PX}px`,
-          minWidth: `${CARD_SIZE_PX}px`
-        }}
-      >
-        <LoadingSkeleton screenReaderLabel={I18n.t('Loading Card')} height="100%" width="100%" />
-      </div>
-    )
-  }
+  const skeletonCard = props => (
+    <div
+      {...props}
+      className="ic-DashboardCard"
+      style={{
+        height: `${CARD_SIZE_PX}px`,
+        minWidth: `${CARD_SIZE_PX}px`
+      }}
+    >
+      <LoadingSkeleton screenReaderLabel={I18n.t('Loading Card')} height="100%" width="100%" />
+    </div>
+  )
+
+  const skeletonCardsContainer = skeletons => (
+    <div className="ic-DashboardCard__box">
+      <div className="ic-DashboardCard__box__container">{skeletons}</div>
+    </div>
+  )
 
   const canCreateCourses = createPermissions === 'admin' || createPermissions === 'teacher'
 
@@ -100,10 +101,10 @@ export const HomeroomPage = ({
           </Flex.Item>
           {canCreateCourses && (
             <Flex.Item>
-              <Tooltip renderTip={I18n.t('Start a new course')}>
+              <Tooltip renderTip={I18n.t('Start a new subject')}>
                 <IconButton
                   data-testid="new-course-button"
-                  screenReaderLabel={I18n.t('Open new course modal')}
+                  screenReaderLabel={I18n.t('Open new subject modal')}
                   withBackground={false}
                   withBorder={false}
                   onClick={() => setCourseModalOpen(true)}
@@ -114,18 +115,15 @@ export const HomeroomPage = ({
             </Flex.Item>
           )}
         </Flex>
-        {!cards ? (
-          <div className="ic-DashboardCard__box">
-            <div className="ic-DashboardCard__box__container">{skeletonCards}</div>
-          </div>
-        ) : cards.length > 0 ? (
-          dashboardCards
-        ) : (
-          <Flex direction="column" alignItems="center" margin="x-large large">
-            <Img src={EmptyDashPandaUrl} margin="0 0 medium 0" data-testid="empty-dash-panda" />
-            <Text>{I18n.t("You don't have any active courses yet.")}</Text>
-          </Flex>
-        )}
+        <LoadingWrapper
+          id="course-cards"
+          isLoading={!cards}
+          skeletonsCount={ENV?.INITIAL_NUM_K5_CARDS || 5}
+          renderCustomSkeleton={skeletonCard}
+          renderSkeletonsContainer={skeletonCardsContainer}
+        >
+          {cards?.length > 0 ? dashboardCards : <EmptyDashboardState />}
+        </LoadingWrapper>
       </View>
       {courseModalOpen && (
         <CreateCourseModal

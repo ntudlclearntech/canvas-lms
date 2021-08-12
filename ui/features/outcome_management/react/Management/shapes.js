@@ -23,3 +23,10 @@ export const outcomeGroupShape = PropTypes.shape({
   title: PropTypes.string.isRequired,
   description: PropTypes.string
 })
+
+export const outcomeShape = PropTypes.shape({
+  _id: PropTypes.string.isRequired,
+  linkId: PropTypes.string.isRequired,
+  title: PropTypes.string.isRequired,
+  canUnlink: PropTypes.bool.isRequired
+})
