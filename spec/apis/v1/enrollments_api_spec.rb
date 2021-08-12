@@ -98,6 +98,41 @@ describe EnrollmentsApiController, type: :request do
         expect(new_enrollment).to be_an_instance_of StudentEnrollment
       end
 
+      it "does not allow enrolling a student view student" do
+        c2 = Account.default.courses.create!
+        user = c2.student_view_student
+
+        json = api_call :post, @path, @path_options,
+          {
+            :enrollment => {
+              :user_id                            => user.id,
+              :type                               => 'StudentEnrollment',
+              :enrollment_state                   => 'active',
+              :course_section_id                  => @section.id,
+              :limit_privileges_to_course_section => true,
+              :start_at                           => nil,
+              :end_at                             => nil
+            }
+          }, {}, expected_status: 400
+          expect(@section.enrollments.count).to eq 0
+      end
+
+      it "does not allow enrolling a user as a student view student" do
+        json = api_call :post, @path, @path_options,
+          {
+            :enrollment => {
+              :user_id                            => @unenrolled_user.id,
+              :type                               => 'StudentViewEnrollment',
+              :enrollment_state                   => 'active',
+              :course_section_id                  => @section.id,
+              :limit_privileges_to_course_section => true,
+              :start_at                           => nil,
+              :end_at                             => nil
+            }
+          }, {}, expected_status: 400
+          expect(@section.enrollments.count).to eq 0
+      end
+
       it "accepts sis_section_id" do
         @section.update_attribute(:sis_source_id, 'sis_id')
         json = api_call :post, @path, @path_options,
@@ -135,6 +170,7 @@ describe EnrollmentsApiController, type: :request do
 
       it "should be unauthorized for users without add_student_to_course permission (granular)" do
         @course.root_account.enable_feature!(:granular_permissions_manage_users)
+        @course.account.role_overrides.create!(role: admin_role, enabled: false, permission: :manage_students)
         @course.account.role_overrides.create!(role: admin_role, enabled: false, permission: :add_student_to_course)
         json = api_call :post, @path, @path_options,
                         {
@@ -813,7 +849,6 @@ describe EnrollmentsApiController, type: :request do
     end
 
     it "should deterministically order enrollments for pagination" do
-      Account.default.enable_feature!(:bookmarking_for_enrollments_index)
       enrollment_num = 10
       enrollment_num.times do
         u = user_with_pseudonym(name: "John Smith", sortable_name: "Smith, John")
@@ -1536,7 +1571,7 @@ describe EnrollmentsApiController, type: :request do
         enrollments = %w{observer student ta teacher}.inject([]) do |res, type|
           res + @course.send("#{type}_enrollments").eager_load(:user).order(User.sortable_name_order_by_clause("users"))
         end
-        expect(json).to eq enrollments.map { |e|
+        expect(json).to match_array enrollments.map { |e|
           h = {
             'root_account_id' => e.root_account_id,
             'limit_privileges_to_course_section' => e.limit_privileges_to_course_section,
@@ -2271,6 +2306,7 @@ describe EnrollmentsApiController, type: :request do
             ) if e.user == @user
             h
           end
+
           link_header = response.headers['Link'].split(',')
           expect(link_header[0]).to match /page=1&per_page=1/ # current page
           expect(link_header[1]).to match /page=2&per_page=1/ # next page
@@ -2334,38 +2370,23 @@ describe EnrollmentsApiController, type: :request do
             h
           end
           link_header = response.headers['Link'].split(',')
-          expect(link_header[0]).to match /page=first&per_page=1/ # current page
-          md = link_header[1].match(/page=(bookmark.*)&per_page=1/)  # next page
+          expect(link_header[0]).to match /page=1&per_page=1/ # current page
+          md = link_header[1].match(/page=(.*)&per_page=1/)  # next page
           bookmark = md[1]
           expect(bookmark).to be_present
-          expect(link_header[2]).to match /page=first&per_page=1/ # first page
+          expect(link_header[2]).to match /page=1&per_page=1/ # first page
           expect(json).to eql [enrollments[0]]
 
           json = api_call(:get, "#{@path}?page=#{bookmark}&per_page=1", @params.merge(:page => bookmark, :per_page => 1.to_param))
           link_header = response.headers['Link'].split(',')
           expect(link_header[0]).to match /page=#{bookmark}&per_page=1/ # current page
-          expect(link_header[1]).to match /page=first&per_page=1/ # first page
-          expect(link_header[2]).to match /page=#{bookmark}&per_page=1/ # last page
+          expect(link_header[1]).to match /page=1&per_page=1/ # first page
+          expect(link_header[2]).to match /page=.*&per_page=1/ # last page
           expect(json).to eql [enrollments[1]]
         end
       end
 
       context 'with normal settings' do
-        it_behaves_like 'numeric pagination'
-
-        context 'with developer key pagination override' do
-          before do
-            global_id = Shard.global_id_for(DeveloperKey.default.id)
-            Setting.set("pagination_override_key_list", global_id.to_s)
-          end
-
-          it_behaves_like 'numeric pagination'
-        end
-      end
-
-      context 'with bookmark flag enabled' do
-        before { Account.default.enable_feature!(:bookmarking_for_enrollments_index) }
-
         it_behaves_like 'bookmarked pagination'
 
         context 'with developer key pagination override' do

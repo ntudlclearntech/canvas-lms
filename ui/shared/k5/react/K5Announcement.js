@@ -17,7 +17,7 @@
  */
 
 import React from 'react'
-import I18n from 'i18n!k5_dashboard'
+import I18n from 'i18n!k5_announcement'
 import tz from '@canvas/timezone'
 import PropTypes from 'prop-types'
 
@@ -66,7 +66,9 @@ export default function K5Announcement({
 
   const renderAnnouncementTitle = () => (
     <Heading level="h3" margin="x-small 0 0">
-      {title}
+      <Link href={url} isWithinText={false}>
+        {title}
+      </Link>
     </Heading>
   )
 
@@ -74,7 +76,7 @@ export default function K5Announcement({
     <View>
       {showCourseDetails &&
         renderWithEditButton(
-          <Heading level="h3" as="h2">
+          <Heading level="h2">
             {canEdit ? (
               <Link href={courseUrl} isWithinText={false}>
                 {courseName}

@@ -18,100 +18,202 @@
 
 import I18n from 'i18n!discussion_posts'
 import PropTypes from 'prop-types'
-import React from 'react'
+import React, {useContext} from 'react'
 
 import {Avatar} from '@instructure/ui-avatar'
 import {Badge} from '@instructure/ui-badge'
-import {Byline} from '@instructure/ui-byline'
+import {Flex} from '@instructure/ui-flex'
 import {ScreenReaderContent} from '@instructure/ui-a11y-content'
 import {Text} from '@instructure/ui-text'
 import {View} from '@instructure/ui-view'
 import {DiscussionEdit} from '../DiscussionEdit/DiscussionEdit'
+import {SearchSpan} from '../SearchSpan/SearchSpan'
 import {Heading} from '@instructure/ui-heading'
 import {RolePillContainer} from '../RolePillContainer/RolePillContainer'
+import {SearchContext} from '../../utils/constants'
+import {Tooltip} from '@instructure/ui-tooltip'
+import {InlineList} from '@instructure/ui-list'
 
 export function PostMessage({...props}) {
+  const {searchTerm} = useContext(SearchContext)
+
+  let editText = null
+  if (props.editedTimingDisplay) {
+    editText = props.editorName
+      ? I18n.t('Edited by %{editorName} %{editedTimingDisplay}', {
+          editorName: props.editorName,
+          editedTimingDisplay: props.editedTimingDisplay
+        })
+      : I18n.t('Edited %{editedTimingDisplay}', {
+          editedTimingDisplay: props.editedTimingDisplay
+        })
+  }
+
+  const createdTooltip = I18n.t('Created %{timingDisplay}', {
+    timingDisplay: props.timingDisplay
+  })
+
   return (
-    <Byline
-      title={
-        <>
-          <View padding="none small none none">
-            <Text weight="bold">{props.authorName}</Text>
-          </View>
-          {!!props.discussionRoles && (
-            <RolePillContainer
-              discussionRoles={props.discussionRoles}
-              data-testid="pill-container"
+    <Flex padding="0 0 medium 0">
+      <Flex.Item align="start">
+        {props.isUnread && (
+          <div
+            style={{
+              float: 'left',
+              marginLeft: '-24px',
+              marginTop: '13px'
+            }}
+            data-testid="is-unread"
+            data-isforcedread={props.isForcedRead}
+          >
+            <Badge
+              type="notification"
+              placement="start center"
+              standalone
+              formatOutput={() => (
+                <ScreenReaderContent>{I18n.t('Unread post')}</ScreenReaderContent>
+              )}
             />
-          )}
-          <View display="inline-flex" padding="none small none none">
-            <Text color="secondary">{props.timingDisplay}</Text>
-            <Text color="secondary">
-              {!!props.lastReplyAtDisplayText &&
-                I18n.t(', last reply %{lastReplyAtDisplayText}', {
-                  lastReplyAtDisplayText: props.lastReplyAtDisplayText
-                })}
-            </Text>
-          </View>
-        </>
-      }
-      description={
-        <>
-          {props.title && (
-            <>
-              <Heading level="h1">
-                <ScreenReaderContent>Discussion Topic: {props.title}</ScreenReaderContent>
-              </Heading>
-              <View as="div" margin="medium none">
-                <Text size="x-large">{props.title}</Text>
-              </View>
-            </>
-          )}
-          {props.isEditing ? (
-            <View display="inline-block" margin="small none none none" width="100%">
-              <DiscussionEdit
-                onCancel={props.onCancel}
-                value={props.message}
-                onSubmit={props.onSave}
-              />
-            </View>
-          ) : (
-            <>
-              <div dangerouslySetInnerHTML={{__html: props.message}} />
-              <View display="block" margin="small none none none">
-                {props.children}
-              </View>
-            </>
-          )}
-        </>
-      }
-      alignContent="top"
-      margin="0 0 medium 0"
-    >
-      {props.isUnread && (
-        <div
-          style={{
-            float: 'left',
-            marginLeft: '-24px',
-            marginTop: '13px'
-          }}
-          data-testid="is-unread"
-          data-isforcedread={props.isForcedRead}
-        >
-          <Badge
-            type="notification"
-            placement="start center"
-            standalone
-            formatOutput={() => <ScreenReaderContent>{I18n.t('Unread post')}</ScreenReaderContent>}
+          </div>
+        )}
+        {props.hasAuthor && (
+          <Avatar
+            name={props.authorName}
+            src={props.avatarUrl}
+            margin="0 small 0 0"
+            data-testid="author_avatar"
           />
-        </div>
-      )}
-      <Avatar name={props.authorName} src={props.avatarUrl} margin="0 0 0 0" />
-    </Byline>
+        )}
+      </Flex.Item>
+      <Flex.Item shouldGrow shouldShrink>
+        <Flex direction="column">
+          <Flex.Item>
+            <Flex direction="column" width="1">
+              <Flex.Item shouldGrow>
+                <Flex shouldGrow width="100">
+                  <Flex.Item
+                    align="start"
+                    shouldGrow
+                    shouldShrink
+                    padding="xx-small none xx-small none"
+                  >
+                    {props.hasAuthor && (
+                      <View padding="none small none small">
+                        <Text weight="bold" data-testid="author_name">
+                          <SearchSpan
+                            isIsolatedView={props.isIsolatedView}
+                            searchTerm={searchTerm}
+                            text={props.authorName}
+                          />
+                        </Text>
+                      </View>
+                    )}
+                    {props.discussionRoles?.length > 0 && (
+                      <RolePillContainer
+                        discussionRoles={props.discussionRoles}
+                        data-testid="pill-container"
+                      />
+                    )}
+                  </Flex.Item>
+                  <Flex.Item align="end" padding="xx-small small xx-small none">
+                    {props.postUtilities}
+                  </Flex.Item>
+                </Flex>
+              </Flex.Item>
+              {props.timingDisplay && (
+                <Flex.Item shouldShrink padding="0 0 0 small">
+                  <InlineList>
+                    {!props.showCreatedAsTooltip && (
+                      <InlineList.Item>
+                        <Text color="primary" size="small">
+                          {props.timingDisplay}
+                        </Text>
+                      </InlineList.Item>
+                    )}
+                    {props.showCreatedAsTooltip && !!editText ? (
+                      <InlineList.Item data-testid="created-tooltip">
+                        <Tooltip renderTip={createdTooltip}>
+                          {/* eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex */}
+                          <span tabIndex="0">
+                            <Text color="primary" size="small">
+                              {editText}
+                            </Text>
+                          </span>
+                          <ScreenReaderContent>{createdTooltip}</ScreenReaderContent>
+                        </Tooltip>
+                      </InlineList.Item>
+                    ) : (
+                      !!editText && (
+                        <InlineList.Item>
+                          <Text color="primary" size="small">
+                            {editText}
+                          </Text>
+                        </InlineList.Item>
+                      )
+                    )}
+                    {!!props.lastReplyAtDisplayText && (
+                      <InlineList.Item>
+                        <Text color="primary" size="small">
+                          {I18n.t(`Last reply %{lastReplyAtDisplayText}`, {
+                            lastReplyAtDisplayText: props.lastReplyAtDisplayText
+                          })}
+                        </Text>
+                      </InlineList.Item>
+                    )}
+                  </InlineList>
+                </Flex.Item>
+              )}
+            </Flex>
+          </Flex.Item>
+          <Flex.Item padding={props.hasAuthor ? 'small' : '0 small small small'} overflowY="hidden">
+            <>
+              {props.title && (
+                <>
+                  <Heading level="h1">
+                    <ScreenReaderContent>Discussion Topic: {props.title}</ScreenReaderContent>
+                  </Heading>
+                  <View
+                    as="div"
+                    margin={props.hasAuthor ? 'medium none medium none' : '0 0 medium 0'}
+                  >
+                    <Text size="x-large">{props.title}</Text>
+                  </View>
+                </>
+              )}
+              {props.isEditing ? (
+                <View display="inline-block" margin="small none none none" width="100%">
+                  <DiscussionEdit
+                    onCancel={props.onCancel}
+                    value={props.message}
+                    onSubmit={props.onSave}
+                    isEdit
+                  />
+                </View>
+              ) : (
+                <>
+                  <SearchSpan
+                    isIsolatedView={props.isIsolatedView}
+                    searchTerm={searchTerm}
+                    text={props.message}
+                  />
+                  <View display="block" margin="small none none none">
+                    {props.children}
+                  </View>
+                </>
+              )}
+            </>
+          </Flex.Item>
+        </Flex>
+      </Flex.Item>
+    </Flex>
   )
 }
 
 PostMessage.propTypes = {
+  /**
+   * Boolean to define if the PostMessage has an author or not.
+   */
+  hasAuthor: PropTypes.bool,
   /**
    * Display name for the author of the message
    */
@@ -121,6 +223,10 @@ PostMessage.propTypes = {
    */
   avatarUrl: PropTypes.string,
   /**
+   * Name of person who last edited
+   */
+  editorName: PropTypes.string,
+  /**
    * Children to be directly rendered below the PostMessage
    */
   children: PropTypes.node,
@@ -128,6 +234,13 @@ PostMessage.propTypes = {
    * Last Reply Date if there are discussion replies
    */
   lastReplyAtDisplayText: PropTypes.string,
+  /**
+   * Denotes time of last edit.
+   * Display text for the relative time information. This prop is expected
+   * to be provided as a string of the exact text to be displayed, not a
+   * timestamp to be formatted.
+   */
+  editedTimingDisplay: PropTypes.string,
   /**
    * Display text for the relative time information. This prop is expected
    * to be provided as a string of the exact text to be displayed, not a
@@ -166,7 +279,15 @@ PostMessage.propTypes = {
   /**
    * Marks whether an unread message has a forcedReadState
    */
-  isForcedRead: PropTypes.bool
+  isForcedRead: PropTypes.bool,
+  postUtilities: PropTypes.node,
+  isIsolatedView: PropTypes.bool,
+  showCreatedAsTooltip: PropTypes.bool
+}
+
+PostMessage.defaultProps = {
+  hasAuthor: true,
+  isIsolatedView: false
 }
 
 export default PostMessage

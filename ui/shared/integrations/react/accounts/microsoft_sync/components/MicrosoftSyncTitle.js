@@ -26,7 +26,7 @@ import React from 'react'
 
 export default function MicrosoftSyncTitle(props) {
   return (
-    <Flex justifyItems="space-between">
+    <Flex margin="auto small" justifyItems="space-between">
       <Flex.Item shouldShrink>
         <Heading value="h2">{I18n.t('Microsoft Teams Sync')}</Heading>
       </Flex.Item>
@@ -34,10 +34,12 @@ export default function MicrosoftSyncTitle(props) {
         <Checkbox
           size="medium"
           variant="toggle"
-          id="microsoft_sync_toggle_button"
+          id="microsoft_teams_sync_toggle_button"
           checked={props.syncEnabled}
           label={
-            <ScreenReaderContent>{I18n.t('Microsoft Sync Toggle Button')}</ScreenReaderContent>
+            <ScreenReaderContent>
+              {I18n.t('Allows syncing of Canvas course members to a Microsoft Team')}
+            </ScreenReaderContent>
           }
           labelPlacement="start"
           onChange={props.handleClick}

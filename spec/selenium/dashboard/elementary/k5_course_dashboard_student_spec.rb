@@ -19,11 +19,19 @@
 
 require_relative '../../common'
 require_relative '../pages/k5_dashboard_page'
+require_relative '../pages/k5_dashboard_common_page'
+require_relative '../pages/k5_grades_tab_page'
+require_relative '../pages/k5_modules_tab_page'
+require_relative '../pages/k5_resource_tab_page'
 require_relative '../../../helpers/k5_common'
 
 describe "student k5 course dashboard" do
   include_context "in-process server selenium tests"
-  include K5PageObject
+  include K5DashboardPageObject
+  include K5DashboardCommonPageObject
+  include K5GradesTabPageObject
+  include K5ModulesTabPageObject
+  include K5ResourceTabPageObject
   include K5Common
 
   before :once do
@@ -66,17 +74,53 @@ describe "student k5 course dashboard" do
       expect(front_page_info.text).to eq(wiki_page_data)
     end
 
-    it 'only displays the modules tab if a published module exists' do
+    it 'displays modules empty state if no published module exists' do
       get "/courses/#{@subject_course.id}#modules"
-      expect(modules_tab_exists?).to be false
+      expect(modules_tab).to be_displayed
+      expect(empty_modules_image).to be_displayed
 
       create_course_module('unpublished')
       get "/courses/#{@subject_course.id}#modules"
-      expect(modules_tab_exists?).to be false
-
-      @course_module.publish
-      get "/courses/#{@subject_course.id}#modules"
       expect(modules_tab).to be_displayed
+      expect(empty_modules_image).to be_displayed
+    end
+
+    it 'displays the latest announcement on the Home tab' do
+      new_announcement(@subject_course, "Let's do science", "it's fun!")
+
+      announcement_heading = "Happy Monday!"
+      announcement_content = "Let's get to work"
+      new_announcement(@subject_course, announcement_heading, announcement_content)
+
+      get "/courses/#{@subject_course.id}"
+
+      expect(course_dashboard_title).to include_text("Science")
+      expect(announcement_title(announcement_heading)).to be_displayed
+      expect(announcement_content_text(announcement_content)).to be_displayed
+    end
+
+    it 'opens up the announcement when announcement title is clicked' do
+      announcement_title = "Happy Monday!"
+      announcement = new_announcement(@subject_course, announcement_title, "Let's get to work")
+
+      get "/courses/#{@subject_course.id}"
+
+      click_announcement_title(announcement_title)
+      wait_for_ajaximations
+
+      expect(driver.current_url).to include("/courses/#{@subject_course.id}/discussion_topics/#{announcement.id}")
+    end
+
+    it 'does not display old announcements on the Home tab' do
+      announcement_heading = "Do science"
+      announcement = new_announcement(@subject_course, announcement_heading, "it's fun!")
+
+      announcement.posted_at = 15.days.ago
+      announcement.save!
+
+      get "/courses/#{@subject_course.id}"
+
+      expect(announcement_title_exists?(announcement_heading)).to be_falsey
     end
   end
 

@@ -19,12 +19,16 @@
 
 require_relative '../../common'
 require_relative '../pages/k5_dashboard_page'
+require_relative '../pages/k5_dashboard_common_page'
+require_relative '../pages/k5_grades_tab_page'
 require_relative '../../../helpers/k5_common'
 require_relative '../../grades/setup/gradebook_setup'
 
 describe "student k5 course grades tab" do
   include_context "in-process server selenium tests"
-  include K5PageObject
+  include K5DashboardPageObject
+  include K5GradesTabPageObject
+  include K5DashboardCommonPageObject
   include K5Common
   include GradebookSetup
 
@@ -212,6 +216,30 @@ describe "student k5 course grades tab" do
       refresh_page
 
       expect(new_grade_badge).to be_displayed
+    end
+  end
+
+  context 'learning mastery gradebook' do
+    before :once do
+      turn_on_learning_mastery_gradebook
+      add_and_assess_rubric_assignment
+    end
+
+    it 'shows learning mastery gradebook tab on student subject grades tab when enabled' do
+      get "/courses/#{@subject_course.id}#grades"
+
+      expect(learning_mastery_tab).to be_displayed
+      expect(assignments_tab).to be_displayed
+    end
+
+    it 'brings up learning mastery grades when tab is clicked' do
+      get "/courses/#{@subject_course.id}#grades"
+
+      click_learning_mastery_tab
+
+      expect(outcomes_group).to be_displayed
+      expect(outcomes_group).to include_text(@subject_course.name)
+      expect(outcomes_group).to include_text("1 OF 1 MASTERED")
     end
   end
 end

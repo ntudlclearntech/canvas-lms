@@ -56,6 +56,8 @@ class Course < ActiveRecord::Base
   has_many :templated_courses, :class_name => 'Course', :foreign_key => 'template_course_id'
   has_many :templated_accounts, class_name: 'Account', foreign_key: 'course_template_id'
 
+  belongs_to :linked_homeroom_course, class_name: 'Course', foreign_key: 'homeroom_course_id'
+
   has_many :course_sections
   has_many :active_course_sections, -> { where(workflow_state: 'active') }, class_name: 'CourseSection'
   has_many :enrollments, -> { where("enrollments.workflow_state<>'deleted'") }, inverse_of: :course
@@ -228,6 +230,7 @@ class Course < ActiveRecord::Base
   has_one :outcome_calculation_method, as: :context, inverse_of: :context, dependent: :destroy
 
   has_one :microsoft_sync_group, class_name: "MicrosoftSync::Group", dependent: :destroy, inverse_of: :course
+  has_many :microsoft_sync_partial_sync_changes, :class_name => 'MicrosoftSync::PartialSyncChange', dependent: :destroy, inverse_of: :course
 
   has_many :comment_bank_items, inverse_of: :course
 
@@ -258,6 +261,7 @@ class Course < ActiveRecord::Base
   validate :validate_course_image
   validate :validate_default_view
   validate :validate_template
+  validate :validate_not_on_siteadmin
   validates :sis_source_id, uniqueness: {scope: :root_account}, allow_nil: true
   validates_presence_of :account_id, :root_account_id, :enrollment_term_id, :workflow_state
   validates_length_of :syllabus_body, :maximum => maximum_long_text_length, :allow_nil => true, :allow_blank => true
@@ -310,8 +314,8 @@ class Course < ActiveRecord::Base
   end
 
   def self.ensure_dummy_course
-    Account.ensure_dummy_root_account
-    Course.create_with(account_id: 0, root_account_id: 0, workflow_state: 'deleted').find_or_create_by!(id: 0)
+    EnrollmentTerm.ensure_dummy_enrollment_term
+    create_with(account_id: 0, root_account_id: 0, enrollment_term_id: 0, workflow_state: 'deleted').find_or_create_by!(id: 0)
   end
 
   def self.skip_updating_account_associations(&block)
@@ -493,6 +497,12 @@ class Course < ActiveRecord::Base
       errors.add(:template, t("Courses with enrollments can't become templates"))
     elsif !template? && !can_stop_being_template?
       errors.add(:template, t("Courses that are set as a template in any account can't stop being templates"))
+    end
+  end
+
+  def validate_not_on_siteadmin
+    if root_account_id_changed? && root_account_id == Account.site_admin&.id
+      self.errors.add(:root_account_id, t("Courses cannot be created on the site_admin account."))
     end
   end
 
@@ -822,7 +832,8 @@ class Course < ActiveRecord::Base
 
   scope :templates, -> { where(template: true) }
 
-  scope :sync_homeroom_enrollments_enabled, -> { where('settings LIKE ?', '%sync_enrollments_from_homeroom: true%') }
+  scope :homeroom, -> { where(homeroom_course: true) }
+  scope :sync_homeroom_enrollments_enabled, -> { where(sync_enrollments_from_homeroom: true) }
 
   def potential_collaborators
     current_users
@@ -1390,6 +1401,11 @@ class Course < ActiveRecord::Base
     workflow_state
   end
 
+  def reload(*)
+    @account_chain = @account_chain_with_site_admin = nil
+    super
+  end
+
   alias destroy_permanently! destroy
   def destroy
     return false if template?
@@ -1600,7 +1616,7 @@ class Course < ActiveRecord::Base
         user && !self.deleted? &&
         fetch_on_enrollments('active_content_admin_enrollments', user) {
           enrollments.for_user(user).of_content_admins.active_by_date.to_a
-        }.any? {|e| e.has_permission_to?(:manage_courses_delete) }
+        }.any? {|e| e.has_permission_to?(:manage_courses_reset) }
     end
     can :reset_content
 
@@ -1707,19 +1723,19 @@ class Course < ActiveRecord::Base
     can :manage and can :update and can :use_student_view and can :manage_feature_flags and
     can :view_feature_flags
 
+    # reset course content
+    given do |user|
+      self.root_account.feature_enabled?(:granular_permissions_manage_courses) &&
+        self.account_membership_allows(user, :manage_courses_reset)
+    end
+    can :reset_content
+
     # delete and undelete manually created course
     given do |user|
       self.root_account.feature_enabled?(:granular_permissions_manage_courses) && !template? &&
         !self.sis_source_id && self.account_membership_allows(user, :manage_courses_delete)
     end
     can :delete
-
-    # reset manually created course
-    given do |user|
-      self.root_account.feature_enabled?(:granular_permissions_manage_courses) &&
-        !self.sis_source_id && self.account_membership_allows(user, :manage_courses_delete)
-    end
-    can :reset_content
 
     # delete course managed by SIS
     given do |user|
@@ -1728,14 +1744,6 @@ class Course < ActiveRecord::Base
         self.account_membership_allows(user, :manage_courses_delete)
     end
     can :delete
-
-    # reset course managed by SIS
-    given do |user|
-      self.root_account.feature_enabled?(:granular_permissions_manage_courses) && !self.deleted? &&
-        self.sis_source_id && self.account_membership_allows(user, :manage_sis) &&
-        self.account_membership_allows(user, :manage_courses_delete)
-    end
-    can :reset_content
 
     given { |user| self.account_membership_allows(user, :read_course_content) }
     can :read and can :read_outcomes
@@ -1767,9 +1775,7 @@ class Course < ActiveRecord::Base
     active_enrollments = fetch_on_enrollments("active_enrollments_for_permissions2", user, is_unpublished) do
       scope = self.enrollments.for_user(user).active_or_pending_by_date.select("enrollments.*, enrollment_states.state AS date_based_state_in_db")
       scope = scope.where(:type => ['TeacherEnrollment', 'TaEnrollment', 'DesignerEnrollment', 'StudentViewEnrollment']) if is_unpublished
-      ens = scope.to_a
-      ens.each{|e| e.instance_variable_set(:@association_cache, {})}
-      ens
+      scope.to_a.each(&:clear_association_cache)
     end
     active_enrollments.each{|e| e.course = self} # set association so we don't requery
     active_enrollments.any? {|e| (allow_future || e.date_based_state_in_db == 'active') && e.has_permission_to?(permission) }
@@ -1822,10 +1828,11 @@ class Course < ActiveRecord::Base
   end
 
   def account_chain(include_site_admin: false)
-    @account_chain ||= Account.account_chain(account_id)
-    result = @account_chain.dup
-    Account.add_site_admin_to_chain!(result) if include_site_admin
-    result
+    @account_chain ||= Account.account_chain(account_id).freeze
+    if include_site_admin
+      return @account_chain_with_site_admin ||= Account.add_site_admin_to_chain!(@account_chain.dup).freeze
+    end
+    @account_chain
   end
 
   def account_chain_ids
@@ -1855,9 +1862,7 @@ class Course < ActiveRecord::Base
     @account_users[user.global_id] ||= begin
       key = ['account_users_for_course_and_user', user.cache_key(:account_users), Account.cache_key_for_id(account_id, :account_chain)].cache_key
       Rails.cache.fetch_with_batched_keys(key, batch_object: self, batched_keys: :account_associations, skip_cache_if_disabled: true) do
-        aus = account_users_for(user)
-        aus.each{|au| au.instance_variable_set(:@association_cache, {})}
-        aus
+        account_users_for(user).each(&:clear_association_cache)
       end
     end
   end
@@ -2561,7 +2566,7 @@ class Course < ActiveRecord::Base
       :organize_epub_by_content_type, :show_announcements_on_home_page,
       :home_page_announcement_limit, :enable_offline_web_export, :usage_rights_required,
       :restrict_student_future_view, :restrict_student_past_view, :restrict_enrollments_to_course_dates,
-      :homeroom_course, :course_color, :sync_enrollments_from_homeroom, :homeroom_course_id
+      :homeroom_course, :course_color
     ]
   end
 
@@ -2917,7 +2922,7 @@ class Course < ActiveRecord::Base
       :href => :course_context_modules_path
     }, {
       :id => TAB_CONFERENCES,
-      :label => t('#tabs.conferences', "Conferences"),
+      :label => WebConference.conference_tab_name,
       :css_class => 'conferences',
       :href => :course_conferences_path
     }, {
@@ -2945,6 +2950,7 @@ class Course < ActiveRecord::Base
     syllabus_tab[:label] = t("Important Info")
     homeroom_tabs << syllabus_tab
     homeroom_tabs << default_tabs.find {|tab| tab[:id] == TAB_PEOPLE}
+    homeroom_tabs << default_tabs.find {|tab| tab[:id] == TAB_FILES}
     homeroom_tabs << default_tabs.find {|tab| tab[:id] == TAB_SETTINGS}
     homeroom_tabs.compact
   end
@@ -3089,6 +3095,11 @@ class Course < ActiveRecord::Base
         {id: TAB_DISCUSSIONS, relation: :discussions, additional_check: -> { allow_student_discussion_topics }}
       ].select{ |hidable_tab| tabs.any?{ |t| t[:id] == hidable_tab[:id] } }
 
+      # Show modules tab in k5 even if there's no modules (but not if its hidden)
+      if course_subject_tabs
+        tabs_that_can_be_marked_hidden_unused.reject!{ |t| t[:id] == TAB_MODULES }
+      end
+
       if tabs_that_can_be_marked_hidden_unused.present?
         ar_types = active_record_types(only_check: tabs_that_can_be_marked_hidden_unused.map{|t| t[:relation]})
         tabs_that_can_be_marked_hidden_unused.each do |t|
@@ -3126,14 +3137,9 @@ class Course < ActiveRecord::Base
         delete_unless.call([TAB_SETTINGS], :read_as_admin)
         delete_unless.call([TAB_ANNOUNCEMENTS], :read_announcements)
         delete_unless.call([TAB_RUBRICS], :read_rubrics, :manage_rubrics)
+        delete_unless.call([TAB_FILES], :read, *RoleOverride::GRANULAR_FILE_PERMISSIONS)
 
         tabs -= [item_banks_tab] if item_banks_tab && !check_for_permission.call(:manage_content, :manage_assignments)
-
-        if self.root_account.feature_enabled?(:granular_permissions_course_files)
-          delete_unless.call([TAB_FILES], :read, *RoleOverride::GRANULAR_FILE_PERMISSIONS)
-        else
-          delete_unless.call([TAB_FILES], :read, :manage_files)
-        end
 
         # remove outcomes tab for logged-out users or non-students
         outcome_tab = tabs.detect { |t| t[:id] == TAB_OUTCOMES }
@@ -3146,13 +3152,9 @@ class Course < ActiveRecord::Base
           TAB_QUIZZES => [:manage_content, :manage_assignments],
           TAB_GRADES => [:view_all_grades, :manage_grades],
           TAB_PEOPLE => [:manage_students, :manage_admin_users],
-          TAB_FILES => [:manage_files],
+          TAB_FILES => RoleOverride::GRANULAR_FILE_PERMISSIONS,
           TAB_DISCUSSIONS => [:moderate_forum]
         }
-
-        if self.root_account.feature_enabled?(:granular_permissions_course_files)
-          additional_checks[TAB_FILES] = RoleOverride::GRANULAR_FILE_PERMISSIONS
-        end
 
         if self.root_account.feature_enabled?(:granular_permissions_manage_users)
           additional_checks[TAB_PEOPLE] = RoleOverride::GRANULAR_MANAGE_USER_PERMISSIONS
@@ -3285,9 +3287,6 @@ class Course < ActiveRecord::Base
 
   add_setting :usage_rights_required, :boolean => true, :default => false, :inherited => true
 
-  add_setting :homeroom_course, :boolean => true, :default => false
-  add_setting :sync_enrollments_from_homeroom, :boolean => true, :default => false
-  add_setting :homeroom_course_id
   add_setting :course_color
 
   def elementary_enabled?
@@ -3299,7 +3298,7 @@ class Course < ActiveRecord::Base
   end
 
   def elementary_subject_course?
-    !homeroom_course && elementary_enabled?
+    !homeroom_course? && elementary_enabled?
   end
 
   def lock_all_announcements?
@@ -3311,13 +3310,10 @@ class Course < ActiveRecord::Base
   end
 
   def sync_homeroom_enrollments(progress=nil)
-    return false unless elementary_subject_course? && sync_enrollments_from_homeroom && homeroom_course_id.present?
+    return false unless elementary_subject_course? && sync_enrollments_from_homeroom && linked_homeroom_course
 
-    homeroom_course = account.courses.find_by(id: homeroom_course_id)
-    return false if homeroom_course.nil?
-
-    progress&.calculate_completion!(0, homeroom_course.enrollments.size)
-    homeroom_course.all_enrollments.find_each do |enrollment|
+    progress&.calculate_completion!(0, linked_homeroom_course.enrollments.size)
+    linked_homeroom_course.all_enrollments.find_each do |enrollment|
       course_enrollment = all_enrollments.find_or_initialize_by(type: enrollment.type, user_id: enrollment.user_id, role_id: enrollment.role_id)
       course_enrollment.workflow_state = enrollment.workflow_state
       course_enrollment.start_at = enrollment.start_at
@@ -3884,7 +3880,6 @@ class Course < ActiveRecord::Base
         initiated_source: :course_template
       )
       content_migration.migration_settings[:source_course_id] = template.id
-      content_migration.migration_settings[:import_quizzes_next] = true
 
       content_migration.migration_settings[:import_immediately] = true
       content_migration.copy_options = { everything: true }

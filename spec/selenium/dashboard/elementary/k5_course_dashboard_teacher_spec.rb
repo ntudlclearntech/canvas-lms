@@ -19,12 +19,20 @@
 
 require_relative '../../common'
 require_relative '../pages/k5_dashboard_page'
+require_relative '../pages/k5_dashboard_common_page'
+require_relative '../pages/k5_grades_tab_page'
+require_relative '../pages/k5_modules_tab_page'
+require_relative '../pages/k5_resource_tab_page'
 require_relative '../../../helpers/k5_common'
 require_relative '../../courses/pages/course_settings_page'
 
 describe "teacher k5 course dashboard" do
   include_context "in-process server selenium tests"
-  include K5PageObject
+  include K5DashboardPageObject
+  include K5DashboardCommonPageObject
+  include K5GradesTabPageObject
+  include K5ModulesTabPageObject
+  include K5ResourceTabPageObject
   include K5Common
   include CourseSettingsPage
 
@@ -90,6 +98,16 @@ describe "teacher k5 course dashboard" do
       get "/courses/#{@subject_course.id}/settings"
 
       expect(important_info_link).to include_text("Important Info")
+    end
+
+    it 'goes to acting student course home when student view button is clicked' do
+      get "/courses/#{@subject_course.id}#modules"
+
+      expect(student_view_button).to be_displayed
+
+      click_student_view_button
+
+      expect(leave_student_view).to include_text("Leave Student View")
     end
   end
 
@@ -201,7 +219,7 @@ describe "teacher k5 course dashboard" do
 
       get "/courses/#{@subject_course.id}"
 
-      expect(k5_tablist).to include_text("Schedule\nHome\nGrades\nModules\nResources")
+      expect(k5_tablist).to include_text("Math Schedule\nSchedule\nMath Home\nHome\nMath Grades\nGrades\nMath Modules\nModules\nMath Resources\nResources")
     end
 
     it 'has tabs that are hidden from the subject page' do
@@ -211,7 +229,7 @@ describe "teacher k5 course dashboard" do
 
       get "/courses/#{@subject_course.id}"
 
-      expect(k5_tablist).to include_text("Schedule\nGrades\nModules\nResources")
+      expect(k5_tablist).to include_text("Math Schedule\nSchedule\nMath Grades\nGrades\nMath Modules\nModules\nMath Resources\nResources")
     end
 
     it 'has ltis that are rearranged in new order on the resources page' do
@@ -237,13 +255,22 @@ describe "teacher k5 course dashboard" do
     end
   end
 
+  context 'course grades tab' do
+    it 'shows image and view grades button for teacher' do
+      get "/courses/#{@subject_course.id}#grades"
+
+      expect(empty_grades_image).to be_displayed
+      expect(view_grades_button(@subject_course.id)).to be_displayed
+    end
+  end
+
   context 'course resources tab' do
     it 'shows the Important Info for subject resources tab' do
       important_info_text = "Show me what you can do"
       create_important_info_content(@subject_course, important_info_text)
       create_lti_resource("fake LTI")
       get "/courses/#{@subject_course.id}#resources"
-      
+
       expect(important_info_content).to include_text(important_info_text)
     end
   end

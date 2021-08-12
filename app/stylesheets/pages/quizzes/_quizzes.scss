@@ -1214,6 +1214,11 @@ ul#question_list {
   }
 }
 
+.alert-header {
+  font-size: inherit;
+  display: inline;
+}
+
 ul#quiz_versions {
   margin-top: 5px;
   .quiz_version {

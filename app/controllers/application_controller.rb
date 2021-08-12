@@ -166,8 +166,9 @@ class ApplicationController < ActionController::Base
           DOMAIN_ROOT_ACCOUNT_ID: @domain_root_account&.global_id,
           k12: k12?,
           use_responsive_layout: use_responsive_layout?,
-          use_rce_enhancements: (@context.is_a?(User) ? @domain_root_account : @context).try(:feature_enabled?, :rce_enhancements),
+          use_rce_enhancements: (@context.blank? || @context.is_a?(User) ? @domain_root_account : @context).try(:feature_enabled?, :rce_enhancements),
           rce_auto_save: @context.try(:feature_enabled?, :rce_auto_save),
+          use_rce_a11y_checker_notifications: @context.try(:feature_enabled?, :rce_a11y_checker_notifications),
           help_link_name: help_link_name,
           help_link_icon: help_link_icon,
           use_high_contrast: @current_user&.prefers_high_contrast?,
@@ -233,11 +234,11 @@ class ApplicationController < ActionController::Base
   # so altogether we can get them faster the vast majority of the time
   JS_ENV_SITE_ADMIN_FEATURES = [
     :cc_in_rce_video_tray, :featured_help_links, :rce_pretty_html_editor, :rce_better_file_downloading, :rce_better_file_previewing,
-    :strip_origin_from_quiz_answer_file_references, :rce_buttons_and_icons
+    :strip_origin_from_quiz_answer_file_references, :rce_buttons_and_icons, :important_dates
   ].freeze
   JS_ENV_ROOT_ACCOUNT_FEATURES = [
     :responsive_awareness, :responsive_misc, :product_tours, :module_dnd, :files_dnd, :unpublished_courses,
-    :usage_rights_discussion_topics, :inline_math_everywhere, :granular_permissions_manage_users
+    :usage_rights_discussion_topics, :inline_math_everywhere, :granular_permissions_manage_users, :rce_limit_init_render_on_page
   ].freeze
   JS_ENV_BRAND_ACCOUNT_FEATURES = [
     :embedded_release_notes
@@ -264,7 +265,7 @@ class ApplicationController < ActionController::Base
 
   def add_to_js_env(hash, jsenv, overwrite)
     hash.each do |k,v|
-      if jsenv[k] && !overwrite
+      if jsenv[k] && jsenv[k] != v && !overwrite
         raise "js_env key #{k} is already taken"
       else
         jsenv[k] = v
@@ -405,6 +406,7 @@ class ApplicationController < ActionController::Base
   helper_method :set_master_course_js_env_data
 
   def load_blueprint_courses_ui
+    return if js_env[:BLUEPRINT_COURSES_DATA]
     return unless @context && @context.is_a?(Course) && @context.grants_right?(@current_user, :manage)
 
     is_child = MasterCourses::ChildSubscription.is_child_course?(@context)
@@ -1849,7 +1851,8 @@ class ApplicationController < ActionController::Base
             launch_url: @tool.login_or_launch_url(content_tag_uri: @resource_url),
             link_code: @opaque_id,
             overrides: {'resource_link_title' => @resource_title},
-            domain: HostUrl.context_host(@domain_root_account, request.host)
+            domain: HostUrl.context_host(@domain_root_account, request.host),
+            include_module_context: Account.site_admin.feature_enabled?(:new_quizzes_in_module_progression)
         }
         variable_expander = Lti::VariableExpander.new(@domain_root_account, @context, self,{
                                                         current_user: @current_user,
@@ -1889,7 +1892,7 @@ class ApplicationController < ActionController::Base
           return unless require_user
           add_crumb(@resource_title)
           @mark_done = MarkDonePresenter.new(self, @context, params["module_item_id"], @current_user, @assignment)
-          @prepend_template = 'assignments/lti_header' unless render_external_tool_full_width?
+          @prepend_template = 'assignments/lti_header' if render_external_tool_prepend_template?
           begin
             @lti_launch.params = lti_launch_params(adapter)
           rescue Lti::Ims::AdvantageErrors::InvalidLaunchError
@@ -1907,7 +1910,7 @@ class ApplicationController < ActionController::Base
         @lti_launch.link_text = @resource_title
         @lti_launch.analytics_id = @tool.tool_id
 
-        @append_template = 'context_modules/tool_sequence_footer' unless render_external_tool_full_width?
+        @append_template = 'context_modules/tool_sequence_footer' if render_external_tool_append_template?
         render Lti::AppUtil.display_template(external_tool_redirect_display_type)
       end
     else
@@ -1955,14 +1958,25 @@ class ApplicationController < ActionController::Base
   private :lti_launch_params
 
   def external_tool_redirect_display_type
-    params['display'] || @tool&.extension_setting(:assignment_selection)&.dig('display_type')
+    if params['display'].present?
+      params['display']
+    elsif Account.site_admin.feature_enabled?(:new_quizzes_in_module_progression) && @assignment&.quiz_lti? && @module_tag
+      'in_nav_context'
+    else
+      @tool&.extension_setting(:assignment_selection)&.dig('display_type')
+    end
   end
   private :external_tool_redirect_display_type
 
-  def render_external_tool_full_width?
-    external_tool_redirect_display_type == 'full_width'
+  def render_external_tool_prepend_template?
+    !%w[full_width in_nav_context].include?(external_tool_redirect_display_type)
   end
-  private :render_external_tool_full_width?
+  private :render_external_tool_prepend_template?
+
+  def render_external_tool_append_template?
+    external_tool_redirect_display_type != 'full_width'
+  end
+  private :render_external_tool_append_template?
 
   # pass it a context or an array of contexts and it will give you a link to the
   # person's calendar with only those things checked.
@@ -2088,8 +2102,6 @@ class ApplicationController < ActionController::Base
         !!CanvasKaltura::ClientV3.config
       elsif feature == :web_conferences
         !!WebConference.config
-      elsif feature == :crocodoc
-        !!Canvas::Crocodoc.config
       elsif feature == :vericite
         Canvas::Plugin.find(:vericite).try(:enabled?)
       elsif feature == :lockdown_browser
@@ -2609,6 +2621,7 @@ class ApplicationController < ActionController::Base
         permissions[:manage] && 'module_ids'
       ].reject(&:blank?),
       exclude_response_fields: ['description', 'rubric'],
+      exclude_assignment_submission_types: ['wiki_page'],
       override_assignment_dates: !permissions[:manage],
       per_page: ASSIGNMENT_GROUPS_TO_FETCH_PER_PAGE_ON_ASSIGNMENTS_INDEX
     ), id: 'assignment_groups_url')
@@ -2792,7 +2805,7 @@ class ApplicationController < ActionController::Base
       false
     else
       return value_to_boolean(params[:force_stream]) if params.key?(:force_stream)
-      ::Canvas::DynamicSettings.find(tree: :private)["enable_template_streaming"] &&
+      ::Canvas::DynamicSettings.find(tree: :private)["enable_template_streaming", failsafe: false] &&
         Setting.get("disable_template_streaming_for_#{controller_name}/#{action_name}", "false") != "true"
     end
   end
@@ -2837,22 +2850,34 @@ class ApplicationController < ActionController::Base
       # See if the user has associations with any k5-enabled accounts
       k5_accounts = @domain_root_account.settings[:k5_accounts]
       return false if k5_accounts.blank?
-
-      @current_user.user_account_associations.shard(@domain_root_account).where(account_id: k5_accounts).exists?
+      enrolled_course_ids = @current_user.enrollments.shard(@domain_root_account).new_or_active_by_date.select(:course_id)
+      enrolled_account_ids = Course.where(id: enrolled_course_ids).distinct.pluck(:account_id)
+      enrolled_account_ids += @current_user.account_users.shard(@domain_root_account).active.pluck(:account_id)
+      enrolled_account_chain_ids = Account.multi_account_chain_ids(enrolled_account_ids)
+      (enrolled_account_chain_ids & k5_accounts).any?
     else
       # Default to classic canvas if the user isn't logged in
       false
     end
   end
 
-  def k5_user?
-    if @current_user
-      # This key is also invalidated when the k5 setting is toggled at the account level or when enrollments change
-      Rails.cache.fetch_with_batched_keys(["k5_user", Shard.current].cache_key, batch_object: @current_user, batched_keys: [:k5_user], expires_in: 1.hour) do
+  def k5_disabled?
+    # Only admins and teachers can opt-out of being considered a k5 user
+    can_disable = @current_user.roles(@domain_root_account).any? { |role| %w[admin teacher].include?(role) }
+    can_disable && @current_user.elementary_dashboard_disabled?
+  end
+
+  def k5_user?(check_disabled = true)
+    RequestCache.cache('k5_user', @current_user, @domain_root_account, check_disabled, @current_user&.elementary_dashboard_disabled?) do
+      if @current_user
+        next false if check_disabled && k5_disabled?
+        # This key is also invalidated when the k5 setting is toggled at the account level or when enrollments change
+        Rails.cache.fetch_with_batched_keys(["k5_user", Shard.current].cache_key, batch_object: @current_user, batched_keys: [:k5_user], expires_in: 1.hour) do
+          uncached_k5_user?
+        end
+      else
         uncached_k5_user?
       end
-    else
-      uncached_k5_user?
     end
   end
   helper_method :k5_user?

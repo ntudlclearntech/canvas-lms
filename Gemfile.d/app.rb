@@ -20,15 +20,15 @@
 # Note: Indented gems are meant to indicate transient dependencies of parent gems
 
 if CANVAS_RAILS6_0
-  gem 'rails', '6.0.3.7'
+  gem 'rails', '6.0.4'
     gem 'tzinfo', '1.2.7'
-  gem 'switchman', '2.0.9'
+  gem 'switchman', '2.1.5'
     gem 'guardrail', '2.0.1'
   gem 'switchman-inst-jobs', '3.1.2'
 else
-  gem 'rails', '6.1.3.2'
+  gem 'rails', '6.1.4'
     gem 'tzinfo', '2.0.4'
-  gem 'switchman', '3.0.1'
+  gem 'switchman', '3.0.5'
     gem 'guardrail', '3.0.0'
   gem 'switchman-inst-jobs', '4.0.0'
 end
@@ -39,6 +39,7 @@ gem 'academic_benchmarks', '1.1.1', require: false
 gem 'active_model-better_errors', '1.6.7', require: 'active_model/better_errors'
 gem 'active_model_serializers', '0.9.0alpha1',
   github: 'rails-api/active_model_serializers', ref: '61882e1e4127facfe92e49057aec71edbe981829'
+gem 'activerecord-pg-extensions', '0.2.3'
 gem 'addressable', '2.7.0', require: false
 gem 'after_transaction_commit', '2.2.2'
 gem 'authlogic', '6.4.1'
@@ -68,6 +69,7 @@ gem 'encrypted_cookie_store-instructure', '1.2.11', require: 'encrypted_cookie_s
 gem 'folio-pagination', '0.0.12', require: 'folio/rails'
 gem 'ffi', '1.13.1', require: false
 gem 'gepub', '1.0.13'
+gem 'apollo-federation', '1.1.5'
 gem 'graphql', '1.9.17'
 gem 'graphql-batch', '0.4.3'
 gem 'hashery', '2.1.2', require: false
@@ -80,11 +82,11 @@ gem 'i18nliner', '0.1.2'
 gem 'icalendar', '2.7.0', require: false
 gem 'diplomat', '2.5.1', require: false
 gem 'ims-lti', '2.3.0', require: 'ims'
-gem 'inst_statsd', '2.1.6'
+gem 'inst_statsd', '2.2.0'
   gem 'statsd-ruby', '1.4.0', require: false
   gem 'aroi', '0.0.7', require: false
   gem 'dogstatsd-ruby', '4.8.2'
-gem 'inst-jobs', '2.3.1'
+gem 'inst-jobs', '2.3.3'
   gem 'fugit', '1.4.0', require: false
     gem 'et-orbi', '1.2.4', require: false
 gem 'inst-jobs-autoscaling', '2.1.0'
@@ -129,7 +131,7 @@ gem 'ruby2_keywords', '0.0.3'
 gem 'rubycas-client', '2.3.9', require: false
 gem 'rubyzip', '2.3.0', require: 'zip'
 gem 'safe_yaml', '1.0.5', require: false
-gem 'saml2', '3.0.11'
+gem 'saml2', '3.1.0'
   gem 'nokogiri-xmlsec-instructure', '0.10.1', require: false
 gem 'sanitize', '5.2.3', require: false
 gem 'sentry-raven', '2.13.0', require: false

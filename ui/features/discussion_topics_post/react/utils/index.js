@@ -19,7 +19,7 @@
 import {Discussion} from '../../graphql/Discussion'
 import {DiscussionEntry} from '../../graphql/DiscussionEntry'
 import {DISCUSSION_SUBENTRIES_QUERY} from '../../graphql/Queries'
-import {PER_PAGE} from './constants'
+import {ISOLATED_VIEW_INITIAL_PAGE_SIZE} from './constants'
 
 export const isGraded = (assignment = null) => {
   return assignment !== null
@@ -47,6 +47,10 @@ export const getGroupDiscussionUrl = (groupId, childDiscussionId) => {
   return `/groups/${groupId}/discussion_topics/${childDiscussionId}`
 }
 
+export const getReviewLinkUrl = (courseId, assignmentId, revieweeId) => {
+  return `/courses/${courseId}/assignments/${assignmentId}/submissions/${revieweeId}`
+}
+
 export const addReplyToDiscussion = (cache, discussionTopicGraphQLId) => {
   const options = {
     id: discussionTopicGraphQLId,
@@ -65,41 +69,15 @@ export const addReplyToDiscussion = (cache, discussionTopicGraphQLId) => {
   }
 }
 
-export const addReplyToDiscussionEntry = (cache, discussionEntryGraphQLId, newDiscussionEntry) => {
-  const options = {
-    id: discussionEntryGraphQLId,
-    fragment: DiscussionEntry.fragment,
-    fragmentName: 'DiscussionEntry'
-  }
-  const data = JSON.parse(JSON.stringify(cache.readFragment(options)))
-
-  if (data) {
-    // On nested-replies we don't have rootEntryParticipantCounts or a last reply.
-    if (data.rootEntryParticipantCounts) {
-      data.rootEntryParticipantCounts.unreadCount += 1
-      data.rootEntryParticipantCounts.repliesCount += 1
-      data.lastReply = {
-        createdAt: newDiscussionEntry.createdAt,
-        __typename: 'DiscussionEntry'
-      }
-    }
-
-    data.subentriesCount += 1
-
-    cache.writeFragment({
-      ...options,
-      data
-    })
-  }
-}
-export const addReplyToSubentries = (cache, discussionEntryId, sort, newDiscussionEntry) => {
+export const addReplyToDiscussionEntry = (cache, perPage, newDiscussionEntry, courseID) => {
   try {
     const options = {
       query: DISCUSSION_SUBENTRIES_QUERY,
       variables: {
-        discussionEntryID: discussionEntryId,
-        perPage: PER_PAGE,
-        sort
+        discussionEntryID: newDiscussionEntry.parent.id,
+        last: ISOLATED_VIEW_INITIAL_PAGE_SIZE,
+        sort: 'asc',
+        courseID
       }
     }
     const currentSubentries = JSON.parse(JSON.stringify(cache.readQuery(options)))
@@ -114,4 +92,11 @@ export const addReplyToSubentries = (cache, discussionEntryId, sort, newDiscussi
     }
     // eslint-disable-next-line no-empty
   } catch (e) {}
+}
+
+export const resolveAuthorRoles = (isAuthor, discussionRoles) => {
+  if (isAuthor) {
+    return discussionRoles.concat('Author')
+  }
+  return discussionRoles
 }

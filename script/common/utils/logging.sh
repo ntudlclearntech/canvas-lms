@@ -18,6 +18,7 @@
 
 BOLD="$(tput bold)"
 NORMAL="$(tput sgr0)"
+YELLOW=$(tput setaf 3)
 
 function is_logfile_enabled() {
   [[ -n "${LOG:-}" ]] && touch "$LOG"
@@ -57,8 +58,16 @@ function message {
   echo_console_and_log "$BOLD> $*$NORMAL"
 }
 
+function warning_message {
+  echo_console_and_log ''
+  echo_console_and_log "$BOLD$YELLOW> $*$NORMAL"
+}
+
 function prompt {
-  read -r -p "$1 " "$2"
+  # for some reason read output is sent to stderr
+  # to avoid conflicts with untracked failure detection
+  # redirect the stderr to stdout for the read command
+  read -r -p "$1 " "$2" 2>&1
 }
 
 function print_missing_dependencies {
@@ -130,7 +139,7 @@ function display_next_steps {
     Vimeo channel: https://vimeo.com/canvaslms
     API docs:      https://canvas.instructure.com/doc/api/index.html
     Mailing list:  http://groups.google.com/group/canvas-lms-users
-    IRC:           http://webchat.freenode.net/?channels=canvas-lms
+    IRC:           https://web.libera.chat/#canvas-lms
 
     Please do not open a GitHub issue until you have tried asking for help on
     the mailing list or IRC - GitHub issues are for verified bugs only.

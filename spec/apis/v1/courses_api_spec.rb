@@ -631,9 +631,8 @@ describe CoursesController, type: :request do
     ])
   end
 
-  it "should include files tab if requested (granular)" do
+  it "should include files tab if requested" do
     course_with_teacher(active_all: true)
-    @course.root_account.enable_feature!(:granular_permissions_course_files)
 
     json = api_call(:get, "/api/v1/courses.json", controller: 'courses', action: 'index', format: 'json', include: ['tabs'])
     expect(json.first['tabs']).to include(a_hash_including({"id" => "files"}))
@@ -726,6 +725,17 @@ describe CoursesController, type: :request do
                                 :format => 'json' })
       entry = json.detect { |course| course['id'] == @course.id }
       expect(entry['name']).to eq 'meh'
+    end
+
+    it "limits the response to homeroom courses if requested" do
+      c1 = course_with_teacher(course_name: 'not homeroom', active_all: true).course
+      c2 = course_with_teacher(user: @teacher, course_name: 'homeroom frd', active_all: true).course
+      c2.homeroom_course = true
+      c2.save!
+      json = api_call_as_user(@teacher, :get, "/api/v1/users/self/courses?homeroom=true",
+                              user_id: 'self', controller: 'courses', action: 'user_index', homeroom: 'true',
+                              format: 'json')
+      expect(json.map{|c|c['name']}).to eq(['homeroom frd'])
     end
   end
 
@@ -1764,7 +1774,7 @@ describe CoursesController, type: :request do
         @course.root_account.enable_feature!(:granular_permissions_manage_courses)
         @course.root_account.role_overrides.create!(
           role: teacher_role,
-          permission: 'manage_courses_delete',
+          permission: 'manage_courses_reset',
           enabled: true
         )
         expect(Auditors::Course).to receive(:record_reset).once.
