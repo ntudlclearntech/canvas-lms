@@ -119,9 +119,9 @@ export default function ProfileTray(props) {
     type: "internal"
   }
   */
-  const video_external_tool_tab_id = `context_external_tool_${ntuCoolLmsId || 0}`
+  const video_external_tool_tab_id = `context_external_tool_${typeof ntuCoolLmsId !== 'undefined' ? ntuCoolLmsId : 0}`
   tabs = moveTabToUnderTarget(tabs, video_external_tool_tab_id, 'notifications')
-  const announcements_external_tool_tab_id = `context_external_tool_${announcementId || 0}`
+  const announcements_external_tool_tab_id = `context_external_tool_${typeof announcementId !== 'undefined' ? announcementId : 0}`
   tabs = moveTabToUnderTarget(tabs, announcements_external_tool_tab_id, 'past_global_announcements')
 
   return (
