@@ -500,10 +500,6 @@ class CoursesController < ApplicationController
 
           set_k5_mode(require_k5_theme: true)
 
-          # Set show_left_side to false to fix spaces bug #172
-          # And remove it in the next upgrade #181
-          @show_left_side = false
-
           if @current_user
             content_for_head helpers.auto_discovery_link_tag(:atom, feeds_user_format_path(@current_user.feed_code, :atom), {:title => t('titles.rss.course_announcements', "Course Announcements Atom Feed")})
           end
