@@ -1485,10 +1485,9 @@
     "@instructure/ui-theme-tokens" "^7.7.1"
     "@instructure/ui-themeable" "^7.7.1"
 
-"@instructure/canvas-rce-old@4.1.5":
+"@instructure/canvas-rce-old@https://gitlab.dlc.ntu.edu.tw/ntu-cool/canvas-rce-old.git#a3def08b":
   version "4.1.5"
-  resolved "https://registry.yarnpkg.com/@instructure/canvas-rce-old/-/canvas-rce-old-4.1.5.tgz#20482cd317e660f5e8a5c3e1a1c0fa313e4a707d"
-  integrity sha512-Q+NJm0tbq1FY8FEo/QR2plhhcj5jdgK/vTqmT2tfwdZIrzWTNwhS/dIgYaT6ALWMqDllMRUqzO031Mi3LYNe0A==
+  resolved "https://gitlab.dlc.ntu.edu.tw/ntu-cool/canvas-rce-old.git#a3def08beb8643f4b785c0152daa6f061c8e1109"
   dependencies:
     "@instructure/ui-a11y" "^5"
     "@instructure/ui-alerts" "^5"
