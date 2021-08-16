@@ -20,6 +20,7 @@ import I18n from 'i18n!dashcards'
 import React from 'react'
 import PropTypes from 'prop-types'
 import {Text} from '@instructure/ui-text'
+import {Button} from '@instructure/ui-buttons'
 
 import DraggableDashboardCard from './DraggableDashboardCard'
 import DashboardCardBackgroundStore from './DashboardCardBackgroundStore'
@@ -187,9 +188,14 @@ export default class DashboardCardBox extends React.Component {
       <div className="unpublished_courses_redesign">
         <div className="ic-DashboardCard__box">
           <HeadingElement className="ic-DashboardCard__box__header">
-            {I18n.t(`Published Courses (%{count})`, {
-              count: I18n.n(publishedCourses.length)
-            })}
+            <span>
+              {I18n.t(`Published Courses (%{count})`, {
+                count: I18n.n(publishedCourses.length)
+              })}
+            </span>
+            <Button color="primary" margin="0 0 xxSmall 0" onClick={() => goToCourseBuilder()}>
+              {"+ " + I18n.t("Course")}
+            </Button>
           </HeadingElement>
           {publishedCourses.length > 0 ? (
             <div className="ic-DashboardCard__box__container">{publishedCourses}</div>
@@ -199,9 +205,14 @@ export default class DashboardCardBox extends React.Component {
         </div>
         <div className="ic-DashboardCard__box">
           <HeadingElement className="ic-DashboardCard__box__header">
-            {I18n.t(`Unpublished Courses (%{count})`, {
-              count: I18n.n(unpublishedCourses.length)
-            })}
+            <span>
+              {I18n.t(`Unpublished Courses (%{count})`, {
+                count: I18n.n(unpublishedCourses.length)
+              })}
+            </span>
+            <Button color="primary" margin="0 0 xxSmall 0" onClick={() => goToCourseBuilder()}>
+              {"+ " + I18n.t("Course")}
+            </Button>
           </HeadingElement>
           {unpublishedCourses.length > 0 ? (
             <div className="ic-DashboardCard__box__container">{unpublishedCourses}</div>
