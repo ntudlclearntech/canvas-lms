@@ -85,10 +85,6 @@ if (ENV.use_high_contrast) {
       ...brandvars,
       typography: {
         fontFamily: 'LatoWeb, "Lato Extended", Lato, "Helvetica Neue", Helvetica, Arial, sans-serif'
-      },
-      colors: {
-        textSuccess: "#009900",
-        textDarkest: "#333333"
       }
     }
   })
