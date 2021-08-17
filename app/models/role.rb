@@ -176,7 +176,7 @@ class Role < ActiveRecord::Base
         self.name
       end
     else
-      self.name
+      RoleOverride.get_custom_role_label(self)
     end
   end
 
