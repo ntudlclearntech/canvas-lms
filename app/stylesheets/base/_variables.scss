@@ -51,7 +51,7 @@
 //====================================
 $electric:                  #008EE2; // blue
 @if $use_high_contrast {    $electric: #0770A3; }
-$shamrock:                  #009900; // green
+$shamrock:                  #00AC18; // green
 @if $use_high_contrast {    $shamrock: #127A1B; }
 $barney:                    #BF32A4; // magenta
 @if $use_high_contrast {    $barney: #B8309E; }
@@ -72,7 +72,7 @@ $ic-color-alert:            $fire;
 // Gray-ish Scale
 //====================================
 
-$ic-color-dark:              #333333; // licorice
+$ic-color-dark:              #2D3B45; // licorice
 $ic-color-medium-darker:     #394B58; // oxford
 $ic-color-medium:            #73818C; // slate
 @if $use_high_contrast {     $ic-color-medium: #556572; }
