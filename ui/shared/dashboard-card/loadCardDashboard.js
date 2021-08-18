@@ -34,7 +34,7 @@ export function createDashboardCards(dashboardCards, cardComponent = DashboardCa
 
   return (
     <Box
-      showSplitDashboardView={window.ENV?.FEATURES?.unpublished_courses && isTeacher}
+      showSplitDashboardView={window.ENV?.FEATURES?.unpublished_courses}
       courseCards={dashboardCards}
       hideColorOverlays={window.ENV?.PREFERENCES?.hide_dashcard_color_overlays}
       cardComponent={cardComponent}

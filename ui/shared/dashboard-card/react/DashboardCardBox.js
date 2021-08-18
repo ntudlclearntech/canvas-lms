@@ -26,6 +26,7 @@ import DraggableDashboardCard from './DraggableDashboardCard'
 import DashboardCardBackgroundStore from './DashboardCardBackgroundStore'
 import MovementUtils from './MovementUtils'
 import {showNoFavoritesAlert} from './ConfirmUnfavoriteCourseModal'
+import {isStaff} from '@canvas/util/checkRole'
 
 export default class DashboardCardBox extends React.Component {
   static propTypes = {
@@ -193,9 +194,11 @@ export default class DashboardCardBox extends React.Component {
                 count: I18n.n(publishedCourses.length)
               })}
             </span>
-            <Button color="primary" margin="0 0 xxSmall 0" onClick={() => goToCourseBuilder()}>
-              {"+ " + I18n.t("Course")}
-            </Button>
+            {isStaff && (
+              <Button color="primary" margin="0 0 xxSmall 0" onClick={() => goToCourseBuilder()}>
+                {"+ " + I18n.t("Course")}
+              </Button>
+            )}
           </HeadingElement>
           {publishedCourses.length > 0 ? (
             <div className="ic-DashboardCard__box__container">{publishedCourses}</div>
@@ -210,9 +213,11 @@ export default class DashboardCardBox extends React.Component {
                 count: I18n.n(unpublishedCourses.length)
               })}
             </span>
-            <Button color="primary" margin="0 0 xxSmall 0" onClick={() => goToCourseBuilder()}>
-              {"+ " + I18n.t("Course")}
-            </Button>
+            {isStaff && (
+              <Button color="primary" margin="0 0 xxSmall 0" onClick={() => goToCourseBuilder()}>
+                {"+ " + I18n.t("Course")}
+              </Button>
+            )}
           </HeadingElement>
           {unpublishedCourses.length > 0 ? (
             <div className="ic-DashboardCard__box__container">{unpublishedCourses}</div>
