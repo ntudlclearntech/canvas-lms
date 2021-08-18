@@ -21,6 +21,7 @@ import canvasHighContrastTheme from '@instructure/canvas-high-contrast-theme'
 import moment from 'moment'
 import tz from '@canvas/timezone'
 import './initializers/fakeRequireJSFallback.js'
+import {themeColors} from './themeColors'
 
 // we already put a <script> tag for the locale corresponding ENV.MOMENT_LOCALE
 // on the page from rails, so this should not cause a new network request.
@@ -85,6 +86,53 @@ if (ENV.use_high_contrast) {
       ...brandvars,
       typography: {
         fontFamily: 'LatoWeb, "Lato Extended", Lato, "Helvetica Neue", Helvetica, Arial, sans-serif'
+      },
+      colors: {
+        ...canvasBaseTheme.colors,
+        /**
+         * Colors - Text
+         */
+        textDarkest: themeColors.gray20,
+        textDark: themeColors.ash,
+        // textLight: themeColors.porcelain,
+        // textLightest: themeColors.white,
+        textBrand: themeColors.brand,
+        textLink: themeColors.brand,
+        textAlert: themeColors.barney,
+        textInfo: themeColors.brand,
+        textSuccess: themeColors.shamrock,
+        textDanger: themeColors.crimson,
+        textWarning: themeColors.orange,
+        /**
+         * Colors - Background
+         */
+        backgroundDarkest: themeColors.midnightBlue,
+        backgroundDark: themeColors.ash,
+        backgroundMedium: themeColors.tiara,
+        // backgroundLight: themeColors.porcelain,
+        // backgroundLightest: themeColors.white,
+        backgroundBrand: themeColors.brand,
+        backgroundBrandSecondary: themeColors.gray20,
+        backgroundAlert: themeColors.barney,
+        backgroundInfo: themeColors.brand,
+        backgroundSuccess: themeColors.shamrock,
+        backgroundDanger: themeColors.crimson,
+        backgroundWarning: themeColors.orange,
+        /**
+         * Colors - Border
+         */
+        // borderLightest: themeColors.white,
+        // borderLight: themeColors.porcelain,
+        borderMedium: themeColors.tiara,
+        borderDark: themeColors.ash,
+        borderDarkest: themeColors.midnightBlue,
+        borderBrand: themeColors.brand,
+        borderAlert: themeColors.barney,
+        borderInfo: themeColors.brand,
+        borderSuccess: themeColors.shamrock,
+        borderDanger: themeColors.crimson,
+        borderWarning: themeColors.orange,
+        borderDebug: themeColors.crimson,
       }
     }
   })
