@@ -20425,8 +20425,8 @@ zh-Hant:
       multi_answer: 
         choose_answer: 選擇
       muted: 
-        muted_quiz_description: 您的測驗分數不可用，因為您的導師還沒有完成對其的評分。當您的導師完成對此測驗的評分時，您的分數將出現在此頁面上。
-        muted_quiz_header: 您的測驗已取消提醒
+        muted_quiz_description: 由於教師尚未公布成績，因此您目前無法檢視此測驗的分數。當教師公布評分結果後，您將可以在此頁面查看您的測驗分數。
+        muted_quiz_header: 您的測驗成績尚未公布
       new: 
         allowed_attempts: 允許的作答次數
         anonymous_submissions: 保持提交項目匿名
