@@ -21,15 +21,13 @@ export default class CoolActivityDescModal extends React.Component {
           <Heading>{I18n.t('modal_head', '"Activity Compared to Class" explanation')}</Heading>
         </Modal.Header>
         <Modal.Body>
-          <Text size="large" weight="bold">{I18n.t('modal_body.page_view', 'Page View')}</Text>
+          <Text size="large" weight="bold">{I18n.t('modal_body.page_views', 'Page Views')}</Text>
           <br />
-          <Text>{I18n.t('modal_body.page_view_explanation', 'A view is counted each time a user navigates to a course page.')}</Text>
+          <Text>{I18n.t('modal_body.page_views_explanation', 'A view is counted each time a user navigates to a course page.')}</Text>
           <br /><br />
-          <Text size="large" weight="bold">{I18n.t('modal_body.participation', 'Participation')}</Text>
+          <Text size="large" weight="bold">{I18n.t('modal_body.course_activities', 'Course Activities')}</Text>
           <br />
-          <Text>{I18n.t('modal_body.participation_explanation_1', 'The sum of page views and the times students taking parts in course activities.')}</Text>
-          <br />
-          <Text>{I18n.t('modal_body.participation_explanation_2', 'User actions will generate analytics course participation, such as  loads a collaboration to view/edit the document, posts a new comment to a discussion or an announcement, starts taking and submits a quiz, submits an assignment and creates a wiki page etc.')}</Text>
+          <Text>{I18n.t('modal_body.course_activities_explanation', 'User actions will generate analytics course participation, such as posting a new comment to a discussion or an announcement, taking a quiz, submitting an assignment, and creating a wiki page etc.')}</Text>
           <br /><br />
           <Text size="large" weight="bold">{I18n.t('modal_body.calculation_rules', 'Calculation Rules')}</Text>
           <br />
@@ -49,7 +47,7 @@ export default class CoolActivityDescModal extends React.Component {
             <IconStarLightSolid style={{ color: '#008EE2', paddingRight: '0.2rem' }} />
             <IconStarLightSolid style={{ color: '#008EE2', paddingRight: '0.2rem' }} />
             <IconStarLightSolid style={{ color: '#008EE2', paddingRight: '0.2rem' }} />
-            <Text>{I18n.t('modal_body.zero_star', 'Student with no page views and no participation in any course activities.')}</Text>
+            <Text>{I18n.t('modal_body.zero_star', 'Student with no page views or no participation in any course activities.')}</Text>
             <br />
             <IconStarSolid style={{ color: '#008EE2', paddingRight: '0.2rem' }} />
             <Text>{I18n.t('modal_body.one_star', 'Students whose participation falls in the lowest quartile of course activity.')}</Text>
