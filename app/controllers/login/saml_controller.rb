@@ -134,7 +134,7 @@ class Login::SamlController < ApplicationController
       aac.apply_federated_attributes(pseudonym, provider_attributes)
     end
 
-    sis_user_id = subject_name_id&.id.downcase
+    sis_user_id = subject_name_id&.id&.downcase
     sis_user_id += /^[a-zA-Z0-9]{9}$/.match(sis_user_id) ? "@ntu.edu.tw" : ""
     old_sis_user_id = pseudonym['sis_user_id']
 
