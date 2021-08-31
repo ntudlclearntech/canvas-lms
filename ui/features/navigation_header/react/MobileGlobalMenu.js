@@ -47,6 +47,7 @@ import HelpDialog from './HelpDialog/index'
 import LogoutButton from './LogoutButton'
 import HighContrastModeToggle from './trays/HighContrastModeToggle'
 import HistoryList from './HistoryList'
+import {isStaff} from '@canvas/util/checkRole'
 
 function ActiveText({children, url}) {
   return window.location.pathname.startsWith(url) ? <Text weight="bold">{children}</Text> : children
@@ -86,7 +87,7 @@ export default class MobileGlobalMenu extends React.Component {
     // this is all the stuff that relies on the DOM of the desktop global nav
     const showGroups = !!document.getElementById('global_nav_groups_link')
 
-    const externalTools = [...document.querySelectorAll('.globalNavExternalTool')].map(el => {
+    let externalTools = [...document.querySelectorAll('.globalNavExternalTool')].map(el => {
       const svg = el.querySelector('svg')
       return {
         href: el.querySelector('a').getAttribute('href'),
@@ -95,6 +96,13 @@ export default class MobileGlobalMenu extends React.Component {
         ...(svg ? {svgPath: svg.innerHTML} : {imgSrc: el.querySelector('img').getAttribute('src')})
       }
     })
+
+    // Hide if not a staff
+    if (!isStaff) {
+      const courseBuilderExternalToolId = typeof courseBuilderId !== 'undefined' ? courseBuilderId : 0;
+      externalTools = externalTools.filter((externalTool) => externalTool?.href !== `/accounts/1/external_tools/${courseBuilderExternalToolId}?launch_type=global_navigation`);
+    }
+
     this.setState({externalTools, showGroups})
   }
 
