@@ -19667,20 +19667,20 @@ zh-Hant:
       table_view: 檢視表格
     event_stream: 
       headers: 
-        action_log: 動作日誌
+        action_log: 作答行為紀錄
       notices: 
         no_events_available: 進行測驗期間未記錄任何事件。
-      page_blurred: "已停止檢視 Canvas 測驗頁面…"
-      page_focused: 已恢復。
+      page_blurred: 停止檢視測驗畫面
+      page_focused: 恢復檢視測驗畫面
       question_answered: 
-        one: 已回答如下問題：
-        other: 已回答如下問題：
+        one: 回答問題：
+        other: 回答問題：
       question_flagged: 已標記的問題：
       question_unflagged: 未標記的問題：
       question_viewed: 
-        one: 已檢視（並可能閱讀）如下問題：
-        other: 已檢視（並可能閱讀）如下問題：
-      session_started: 學期已開始
+        one: 檢視問題：
+        other: 檢視問題：
+      session_started: 開始作答
     inverted_table_view: 
       headers: 
         question: 問題
@@ -19693,20 +19693,34 @@ zh-Hant:
         question: "問題 %{position}"
       questions: 問題
     no_answer: 無答案
-    page_header: 會話資訊
+    page_header: 作答資訊
     question_answers: 
       essay: 
         view_html_answer: "檢視 HTML"
         view_plain_answer: 打開新視窗
     question_header: "問題 #%{position}"
     question_response_count: 
-      one: 此問題已回答過一次。
-      other: "此問題已回答過 %{count} 次。"
-      zero: 此問題未曾回答過。
+      one: 此問題有 1 次作答紀錄。
+      other: "此問題有 %{count} 次作答紀錄。"
+      zero: 此問題有 0 次作答紀錄。
     question_type: "%{type}"
+    question_types:
+      calculated: 計算題
+      essay: 問答題
+      file_upload: 文件上傳題
+      fill_in_multiple_blanks: 填寫多個空格
+      matching: 配合題
+      missing_word: 遺漏的字
+      multiple_answers: 多選題 
+      multiple_choice: 單選題
+      multiple_dropdowns: 下拉式清單選擇題
+      numerical: 數字填答
+      short_answer: 填空題
+      text_only: 文字引言(不用作答)
+      true_false: 是非題
     session_table_headers: 
-      attempt: 嘗試
-      started_at: 已開始於
+      attempt: 作答次數
+      started_at: 開始作答時間
     table_view: 
       buttons: 
         go_to_stream: 檢視媒體流
@@ -20083,7 +20097,7 @@ zh-Hant:
         quiz_log_auditing_required: 需要為該課程啟用測驗記錄稽核功能。
       index: 
         page_title: 事件記錄
-      log_crumb: 日誌
+      log_crumb: 檢視作答紀錄
     quiz_submission_users: 
       created: 已建立
     quiz_submissions: 
@@ -20288,7 +20302,7 @@ zh-Hant:
           essay: 問答題
           file_upload: 文件上傳題
           fill_in_multiple_blanks: 填寫多個空格
-          matching: 比較選擇
+          matching: 配合題
           missing_word: 遺漏的字
           multiple_answers: 多選題 
           multiple_choice: 單選題
@@ -20341,7 +20355,7 @@ zh-Hant:
           submission_needs_review: 此提交項目需要檢閱
         unnamed_quiz_results: "%{user} 的測驗結果"
         unnamed_survey_results: "%{user} 的調查結果"
-        view_log: 檢視日誌
+        view_log: 檢視作答紀錄
       index: 
         page_titles: 測驗
       invalid_ip: 
@@ -20616,7 +20630,7 @@ zh-Hant:
         until: 關閉時間
         view_responses: 讓學生看見他們的測驗結果
       quiz_submission: 
-        attempt_duration: "此作答持續 %{duration}。"
+        attempt_duration: "作答時間 %{duration}。"
         buttons: 
           update_scores: 更新分數
         labels: 
@@ -20625,7 +20639,7 @@ zh-Hant:
           fudge_points_changed_points_quiz: "自 %{user} 參加此測驗以來，可能的分數已變化 %{difference}。您可以調整此變化，並使用此方框手動添加正分或負分。"
           fudge_points_changed_points_survey: "自 %{user} 參加此調查以來，可能的分數已變化 %{difference}。您可以調整此變化，並使用此方框手動添加正分或負分。"
           fudge_points_generic_explanation: 您可以透過添加正分或負分至此方框，手動調整分數。
-          questions_need_review: 以下問題需要檢閱
+          questions_need_review: "以下題目需要重新檢視、確認分數"
           quiz_score: 測驗分數
           score_for_attempt: 此作答紀錄的分數
           score_for_quiz: 此測驗的分數
@@ -20637,7 +20651,7 @@ zh-Hant:
         quiz_fudged_negative: "此測驗分數已手動調整 %{fudge} 分。"
         quiz_fudged_positive: "此測驗分數已手動調整 +%{fudge} 分。"
         quiz_not_yet_taken: 此測驗尚未進行。
-        quiz_submission_needs_review: 自此提交項目被提交以來，測驗已被顯著更改。此提交件可能需要重新評分。
+        quiz_submission_needs_review: 這位學生的測驗結果可能需要被重新評分，因為在學生繳交測驗後，這份測驗題目、答案、評分標準等設定曾被修改過。
         requires_lockdown: "需要使用 Respondus LockDown 瀏覽器檢視您的測驗結果。"
         submitted_at: "已提交%{when}"
         survey_fudged_negative: "此調查分數已手動調整 %{fudge} 分。"
