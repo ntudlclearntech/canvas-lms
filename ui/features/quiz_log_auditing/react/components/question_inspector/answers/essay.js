@@ -27,7 +27,7 @@ class Essay extends React.Component {
   }
 
   state = {
-    htmlView: false
+    htmlView: true
   }
 
   render() {
