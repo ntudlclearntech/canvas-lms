@@ -19697,7 +19697,7 @@ zh-Hant:
     question_answers: 
       essay: 
         view_html_answer: "檢視 HTML"
-        view_plain_answer: 打開新視窗
+        view_plain_answer: 檢視原始碼
     question_header: "問題 #%{position}"
     question_response_count: 
       one: 此問題有 1 次作答紀錄。
