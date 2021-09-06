@@ -739,7 +739,7 @@ class Attachment < ActiveRecord::Base
           quota = Setting.get('context_default_quota', 50.megabytes.to_s).to_i
           quota = context.quota if (context.respond_to?("quota") && context.quota)
 
-          attachment_scope = context.attachments.active.where(root_attachment_id: nil)
+          attachment_scope = context.attachments.active
 
           if context.is_a?(User) || context.is_a?(Group)
             excluded_attachment_ids = []
