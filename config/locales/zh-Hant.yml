@@ -14159,7 +14159,7 @@ zh-Hant:
   login: 
     canvas: 
       forgot_password_link: 
-        dont_know_password: 忘記密碼？
+        dont_know_password: 忘記密碼
       legacy_login_content: 
         back_to_login: 返回登入
         browse_courses: 瀏覽課程
@@ -14202,6 +14202,8 @@ zh-Hant:
         browse_courses: 瀏覽課程
         buttons: 
           request_password: 要求密碼
+        external_user_link: 校外人士帳號申請
+        external_user_link_url: "https://drive.google.com/file/d/1nBuMhCO5pFoWFjhdW91iVLAUlCh4bjSD/view?usp=sharing"
         labels: 
           password: 密碼
           remember_me: 保持登入
