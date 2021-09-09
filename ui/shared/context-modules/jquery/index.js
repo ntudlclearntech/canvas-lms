@@ -1856,11 +1856,11 @@ modules.initModuleManagement = function() {
       const midSizeModal = window.matchMedia('(min-width: 500px)').matches
       const fullSizeModal = window.matchMedia('(min-width: 770px)').matches
       const responsiveWidth = fullSizeModal ? 770 : midSizeModal ? 500 : 320
-      options.select_button_text = I18n.t('buttons.add_item', 'Add Item')
+      options.select_button_text = I18n.t('buttons.add_item', 'Confirm')
       options.holder_name = name
       options.height = 550
       options.width = responsive_misc ? responsiveWidth : 770
-      options.dialog_title = I18n.t('titles.add_item', 'Add Item to %{module}', {module: name})
+      options.dialog_title = I18n.t('titles.add_item', 'Add Item', {module: name})
       options.close = function() {
         $trigger.focus()
       }

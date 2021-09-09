@@ -6677,7 +6677,7 @@ zh-Hant:
   context_modulespublic: 
     buttons: 
       add: 添加單元
-      add_item: 添加項目
+      add_item: 確認
       update: 更新單元
     confirm: 
       delete: 您是否確定要刪除此單元？
@@ -6694,7 +6694,7 @@ zh-Hant:
     points_possible_short: "%{points} 分"
     titles: 
       add: 添加單元
-      add_item: "添加項目至 %{module}"
+      add_item: "添加項目"
       add_prerequisite: "添加先決條件至 %{module}"
       edit: 編輯單元設定
       edit_item: 編輯項目詳細資料
