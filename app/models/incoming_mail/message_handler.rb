@@ -38,6 +38,9 @@ module IncomingMail
           raise IncomingMail::Errors::UnknownAddress unless valid_user_and_context?(context, user)
           from_channel = sent_from_channel(user, incoming_message)
           raise IncomingMail::Errors::UnknownSender unless from_channel
+          raise IncomingMail::Errors::MessageTooLong if body.length > ActiveRecord::Base.maximum_text_length
+          raise IncomingMail::Errors::MessageTooLong if html_body.length > ActiveRecord::Base.maximum_text_length
+
           Rails.cache.fetch(['incoming_mail_reply_from', context, incoming_message.message_id].cache_key, expires_in: 7.days) do
             context.reply_from({
                                  :purpose => 'general',
@@ -120,8 +123,8 @@ module IncomingMail
           BODY
         when IncomingMail::Errors::UnknownSender
           ndr_subject = I18n.t("Undelivered message")
-          ndr_body = I18n.t(<<-BODY, :subject => subject).gsub(/^ +/, '')
-          The message you sent with the subject line "%{subject}" was not delivered. To reply to Canvas messages from this email, it must first be a confirmed communication channel in your Canvas profile. Please visit your profile and resend the confirmation email for this email address. You may also contact this person via the Canvas Inbox. For help, please see the Inbox chapter for your user role in the Canvas Guides. [See https://community.canvaslms.com/t5/Canvas/ct-p/canvas].
+          ndr_body = I18n.t(<<-BODY, :subject => subject, :link => I18n.t(:'community.guides_home')).gsub(/^ +/, '')
+          The message you sent with the subject line "%{subject}" was not delivered. To reply to Canvas messages from this email, it must first be a confirmed communication channel in your Canvas profile. Please visit your profile and resend the confirmation email for this email address. You may also contact this person via the Canvas Inbox. For help, please see the Inbox chapter for your user role in the Canvas Guides. [See %{link}].
 
           Thank you,
           Canvas Support

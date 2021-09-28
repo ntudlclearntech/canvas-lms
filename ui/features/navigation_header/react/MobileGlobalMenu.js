@@ -134,7 +134,7 @@ export default class MobileGlobalMenu extends React.Component {
             <Heading>
               <a className="ic-brand-mobile-global-nav-logo" href="/">
                 <span className="screenreader-only">
-                  {this.props.k5User ? I18n.t('Homeroom') : I18n.t('My Dashboard')}
+                  {this.props.k5User ? I18n.t('Home') : I18n.t('My Dashboard')}
                 </span>
               </a>
             </Heading>
@@ -153,7 +153,7 @@ export default class MobileGlobalMenu extends React.Component {
                 </Flex.Item>
                 <Flex.Item>
                   <Text size="medium">
-                    {this.props.k5User ? I18n.t('Homeroom') : I18n.t('Dashboard')}
+                    {this.props.k5User ? I18n.t('Home') : I18n.t('Dashboard')}
                   </Text>
                 </Flex.Item>
               </Flex>

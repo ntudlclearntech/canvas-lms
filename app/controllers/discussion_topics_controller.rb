@@ -635,18 +635,53 @@ class DiscussionTopicsController < ApplicationController
     @topic = @context.all_discussion_topics.find(params[:id])
     # we still need the lock info even if the current user policies unlock the topic. check the policies manually later if you need to override the lockout.
     @locked = @topic.locked_for?(@current_user, :check_policies => true, :deep_check_if_needed => true)
-    # Render updated Post UI if feature flag is enabled
-    if @context.feature_enabled?(:react_discussions_post) && (!@topic.for_group_discussion? || @context.grants_right?(@current_user, session, :read_as_admin))
-      add_discussion_or_announcement_crumb
-      add_crumb(@topic.title, named_context_url(@context, :context_discussion_topic_url, @topic.id))
+
+    @context_module_tag = ContextModuleItem.find_tag_with_preferred([@topic, @topic.root_topic, @topic.assignment], params[:module_item_id])
+    @sequence_asset = @context_module_tag.try(:content)
+    add_discussion_or_announcement_crumb
+    add_crumb(@topic.title, named_context_url(@context, :context_discussion_topic_url, @topic.id))
+
+    if @topic.deleted?
+      flash[:notice] = I18n.t :deleted_topic_notice, "That topic has been deleted"
+      redirect_to named_context_url(@context, :context_discussion_topics_url)
+      return
+    end
+
+    if (can_read_and_visible = @topic.grants_right?(@current_user, session, :read) && @topic.visible_for?(@current_user))
       @topic.change_read_state('read', @current_user) unless @locked.is_a?(Hash) && !@locked[:can_view]
+    end
+
+    if @context.is_a?(Course) && @context.grants_right?(@current_user, session, :manage)
+      set_student_context_cards_js_env
+    end
+
+    # Render updated Post UI if feature flag is enabled
+    if @context.feature_enabled?(:react_discussions_post)
+      topics = groups_and_group_topics if @topic.for_group_discussion?
+      if topics && topics.length == 1 && !@topic.grants_right?(@current_user, session, :update)
+        redirect_params = { root_discussion_topic_id: @topic.id }
+        redirect_params[:module_item_id] = params[:module_item_id] if params[:module_item_id].present?
+        redirect_to named_context_url(topics[0].context, :context_discussion_topics_url, redirect_params)
+        return
+      end
+      log_asset_access(@topic, 'topics', 'topics')
+
+      if @sequence_asset
+        js_env({SEQUENCE: {
+          :ASSET_TYPE => @sequence_asset.is_a?(Assignment) ? 'Assignment' : 'Discussion',
+          :ASSET_ID => @sequence_asset.id,
+          :COURSE_ID => @sequence_asset.context.id,
+        }})
+      end
       js_env({
                course_id: params[:course_id],
                discussion_topic_id: params[:id],
                manual_mark_as_read: @current_user&.manual_mark_as_read?,
                discussion_topic_menu_tools: external_tools_display_hashes(:discussion_topic_menu),
                rce_mentions_in_discussions: Account.site_admin.feature_enabled?(:rce_mentions_in_discussions),
-               isolated_view: Account.site_admin.feature_enabled?(:isolated_view)
+               isolated_view: Account.site_admin.feature_enabled?(:isolated_view),
+               should_show_deeply_nested_alert: @current_user&.should_show_deeply_nested_alert?,
+               DISCUSSION: {GRADED_RUBRICS_URL: @topic.assignment ? context_url(@topic.assignment.context, :context_assignment_rubric_url, @topic.assignment.id) : nil}
              })
       js_bundle :discussion_topics_post
       css_bundle :discussions_index
@@ -654,59 +689,14 @@ class DiscussionTopicsController < ApplicationController
       return
     end
 
-    parent_id = params[:parent_id]
     @presenter = DiscussionTopicPresenter.new(@topic, @current_user)
-    @assignment = if @topic.for_assignment?
-      AssignmentOverrideApplicator.assignment_overridden_for(@topic.assignment, @current_user)
-    else
-      nil
-    end
+    @assignment = @topic.for_assignment? ? AssignmentOverrideApplicator.assignment_overridden_for(@topic.assignment, @current_user) : nil
     @context.require_assignment_group rescue nil
-    add_discussion_or_announcement_crumb
-    add_crumb(@topic.title, named_context_url(@context, :context_discussion_topic_url, @topic.id))
 
-    if @topic.deleted?
-      flash[:notice] = t :deleted_topic_notice, "That topic has been deleted"
-      redirect_to named_context_url(@context, :context_discussion_topics_url)
-      return
-    end
-
-    unless @topic.grants_right?(@current_user, session, :read) && @topic.visible_for?(@current_user)
-      return render_unauthorized_action unless @current_user
-      respond_to do |format|
-        if @topic.is_announcement
-          flash[:error] = t 'You do not have access to the requested announcement.'
-          format.html { redirect_to named_context_url(@context, :context_announcements_url) }
-        else
-          flash[:error] = t 'You do not have access to the requested discussion.'
-          format.html { redirect_to named_context_url(@context, :context_discussion_topics_url) }
-        end
-      end
-    else
+    if can_read_and_visible
       @headers = !params[:headless]
       @unlock_at = @topic.available_from_for(@current_user)
-      @topic.change_read_state('read', @current_user) unless @locked.is_a?(Hash) && !@locked[:can_view]
-      if @topic.for_group_discussion?
-        @groups = @topic.group_category.groups.active
-        if @topic.for_assignment? && @topic.assignment.only_visible_to_overrides?
-          override_groups = @groups.joins("INNER JOIN #{AssignmentOverride.quoted_table_name}
-            ON assignment_overrides.set_type = 'Group' AND assignment_overrides.set_id = groups.id").
-            merge(AssignmentOverride.active).
-            where(assignment_overrides: {assignment_id: @topic.assignment_id})
-          if override_groups.present?
-            @groups = override_groups
-          end
-        end
-        topics = @topic.child_topics
-        unless @context.grants_right?(@current_user, session, :read_as_admin)
-          @groups = @groups.joins(:group_memberships).merge(GroupMembership.active).where(group_memberships: {user_id: @current_user})
-          topics = topics.where(context_type: 'Group', context_id: @groups)
-        end
-
-        @group_topics = @groups.order(:id).map do |group|
-          {:group => group, :topic => topics.find{|t| t.context == group} }
-        end
-      end
+      topics = groups_and_group_topics if @topic.for_group_discussion?
 
       @initial_post_required = @topic.initial_post_required?(@current_user, session)
 
@@ -722,8 +712,6 @@ class DiscussionTopicsController < ApplicationController
           format.html do
 
             @discussion_topic_menu_tools = external_tools_display_hashes(:discussion_topic_menu)
-            @context_module_tag = ContextModuleItem.find_tag_with_preferred([@topic, @topic.root_topic, @topic.assignment], params[:module_item_id])
-            @sequence_asset = @context_module_tag.try(:content)
 
             if @context.is_a?(Course) && @topic.is_section_specific
               user_counts = Enrollment.where(:course_section_id => @topic.course_sections,
@@ -823,9 +811,6 @@ class DiscussionTopicsController < ApplicationController
             end
             js_hash[:COURSE_ID] = @context.id if @context.is_a?(Course)
             js_hash[:CONTEXT_ACTION_SOURCE] = :discussion_topic
-            if @context.is_a?(Course) && @context.grants_right?(@current_user, session, :manage)
-              set_student_context_cards_js_env
-            end
 
             append_sis_data(js_hash)
             js_env(js_hash)
@@ -848,6 +833,17 @@ class DiscussionTopicsController < ApplicationController
 
             render stream: can_stream_template?
           end
+        end
+      end
+    else
+      return render_unauthorized_action unless @current_user
+      respond_to do |format|
+        if @topic.is_announcement
+          flash[:error] = t 'You do not have access to the requested announcement.'
+          format.html { redirect_to named_context_url(@context, :context_announcements_url) }
+        else
+          flash[:error] = t 'You do not have access to the requested discussion.'
+          format.html { redirect_to named_context_url(@context, :context_discussion_topics_url) }
         end
       end
     end
@@ -1540,5 +1536,28 @@ class DiscussionTopicsController < ApplicationController
         hash[:assignment][:assignment_group_id] = params[:assignment_group_id] if params[:assignment_group_id]
       end
     end
+  end
+
+  private
+
+  def groups_and_group_topics
+    @groups = @topic.group_category.groups.active
+    if @topic.for_assignment? && @topic.assignment.only_visible_to_overrides?
+      override_groups = @groups.joins("INNER JOIN #{AssignmentOverride.quoted_table_name}
+            ON assignment_overrides.set_type = 'Group' AND assignment_overrides.set_id = groups.id")
+        .merge(AssignmentOverride.active)
+        .where(assignment_overrides: { assignment_id: @topic.assignment_id })
+      @groups = override_groups if override_groups.present?
+    end
+    topics = @topic.child_topics
+    unless @context.grants_right?(@current_user, session, :read_as_admin)
+      @groups = @groups.joins(:group_memberships).merge(GroupMembership.active).where(group_memberships: { user_id: @current_user })
+      topics = topics.where(context_type: 'Group', context_id: @groups)
+    end
+
+    @group_topics = @groups.order(:id).map do |group|
+      { group: group, topic: topics.find { |t| t.context == group } }
+    end
+    topics
   end
 end

@@ -18,7 +18,7 @@
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-require File.expand_path(File.dirname(__FILE__) + '/../../../spec_helper.rb')
+require 'spec_helper'
 
 describe SIS::CSV::ImportRefactored do
 
@@ -335,19 +335,57 @@ describe SIS::CSV::ImportRefactored do
   end
 
   it "should not invalidly break up UTF-8 characters" do
-    expect {process_csv_data_cleanly(
-      File.read(File.expand_path(File.dirname(__FILE__) + '/../../../fixtures/sis/utf8.csv'))
-    )}.not_to raise_error
+    expect {
+      process_csv_data_cleanly(
+        File.read(File.expand_path("#{File.dirname(__FILE__)}/../../../fixtures/sis/utf8.csv"))
+      )
+    }.not_to raise_error
+  end
+
+  it "should ignore BOM chars" do
+    expect do
+      process_csv_data_cleanly(
+        File.read(File.expand_path("#{File.dirname(__FILE__)}/../../../fixtures/sis/with_bom.csv"))
+      )
+    end.not_to raise_error
   end
 
   it 'should not fail on mac zip files' do
-    importer = process_csv_data(files: File.expand_path(File.dirname(__FILE__) + '/../../../fixtures/sis/mac_sis_batch.zip'))
+    path = File.expand_path("#{File.dirname(__FILE__)}/../../../fixtures/sis/mac_sis_batch.zip")
+    importer = process_csv_data(files: path)
     expect(importer.errors).to eq []
   end
 
   describe "parallel imports" do
-    it 'should retry an importer once' do
+    it 'should retry an importer once locally' do
       expect_any_instance_of(SIS::CSV::ImportRefactored).to receive(:run_parallel_importer).twice.and_call_original
+      expect_any_instance_of(SIS::CSV::ImportRefactored).to receive(:try_importing_segment).twice.and_call_original
+      # don't actually run the job.
+      expect_any_instance_of(SIS::CSV::ImportRefactored).to receive(:delay).once
+      expect_any_instance_of(SIS::CSV::ImportRefactored).to receive(:fail_with_error!).once.and_call_original
+      allow_any_instance_of(SIS::CSV::TermImporter).to receive(:process).and_raise("error")
+      process_csv_data(
+        "term_id,name,status",
+        "T001,Winter13,active"
+      )
+    end
+
+    it 'should also retry in a new job' do
+      Setting.set('number_of_tries_before_failing', 2)
+      allow(InstStatsd::Statsd).to receive(:increment)
+      expect_any_instance_of(SIS::CSV::ImportRefactored).to receive(:run_parallel_importer).exactly(6).and_call_original
+      expect_any_instance_of(SIS::CSV::ImportRefactored).to receive(:try_importing_segment).exactly(6).and_call_original
+      # now *do* run the job
+      expect_any_instance_of(SIS::CSV::ImportRefactored).to receive(:delay).twice.and_call_original
+      expect_any_instance_of(SIS::CSV::ImportRefactored).to receive(:fail_with_error!).once.and_call_original
+      expect_any_instance_of(SIS::CSV::ImportRefactored).to receive(:job_args).once.with(:term, attempt: 1).and_call_original
+      expect_any_instance_of(SIS::CSV::ImportRefactored).to receive(:job_args).once.with(:term, attempt: 2).and_call_original
+      [0, 1, 2].each do |i|
+        expect(InstStatsd::Statsd).to receive(:increment).once.with('sis_parallel_worker',
+                                                                    tags: { attempt: i, retry: false})
+        expect(InstStatsd::Statsd).to receive(:increment).once.with('sis_parallel_worker',
+                                                                    tags: { attempt: i, retry: true})
+      end
       allow_any_instance_of(SIS::CSV::TermImporter).to receive(:process).and_raise("error")
       process_csv_data(
         "term_id,name,status",

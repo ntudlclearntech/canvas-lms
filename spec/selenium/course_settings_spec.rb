@@ -35,14 +35,29 @@ describe "course settings" do
 
   context "k5 courses" do
     before(:each) do
-      @account.settings[:enable_as_k5_account] = {value: true}
-      @account.save!
+      @account.enable_as_k5_account!
     end
 
     it "should show a Back to Subject button that sends the user to the course home path" do
       get "/courses/#{@course.id}/settings"
       expect(f('#back_to_subject')).to be_displayed
       expect(f('#back_to_subject')).to have_attribute("href", course_path(@course.id))
+    end
+
+    it "should show the course name" do
+      get "/courses/#{@course.id}/settings"
+      name = f('.k5-heading-course-name')
+      expect(name).to be_displayed
+      expect(name.text).to eq @course.name
+    end
+
+    it "should show the course alt name if it exists" do
+      @course.alt_name = "the alt name"
+      @course.save!
+      get "/courses/#{@course.id}/settings"
+      name = f('.k5-heading-course-name')
+      expect(name).to be_displayed
+      expect(name.text).to eq @course.alt_name
     end
 
     it 'should provide sync to homeroom and homeroom selection' do
@@ -73,8 +88,7 @@ describe "course settings" do
 
   context "considering homeroom courses" do
     before(:each) do
-      @account.settings[:enable_as_k5_account] = {value: true}
-      @account.save!
+      @account.enable_as_k5_account!
       @course.homeroom_course = true
       @course.save!
     end
@@ -220,6 +234,43 @@ describe "course settings" do
       expect(home_page_announcement_limit).not_to be_disabled
     end
 
+    describe "pace plans setting" do
+      describe "when the pace plans feature flag is enabled" do
+        before(:each) do
+          @account.enable_feature!(:pace_plans)
+        end
+
+        it "should display the pace plans setting (and if checked, the caution text)" do
+          get "/courses/#{@course.id}/settings"
+
+          expect(element_exists?('.pace-plans-row')).to be_truthy
+
+          caution_text = "Pace Plans is in active development."
+          pace_plans_checkbox = f('#course_enable_pace_plans')
+
+          pace_plans_checkbox.click
+          wait_for_ajaximations
+          expect(f('.pace-plans-row')).to include_text caution_text
+
+          pace_plans_checkbox.click
+          wait_for_ajaximations
+          expect(f('.pace-plans-row')).not_to include_text caution_text
+        end
+      end
+
+      describe "when the pace plans feature flag is disabled" do
+        before(:each) do
+          @account.disable_feature!(:pace_plans)
+        end
+
+        it "should not display the pace plans setting" do
+          get "/courses/#{@course.id}/settings"
+
+          expect(element_exists?('.pace-plans-row')).to be_falsey
+        end
+      end
+    end
+
     it "should show participation by default" do
       get "/courses/#{@course.id}/settings"
 
@@ -228,8 +279,7 @@ describe "course settings" do
     end
 
     it "should check if it is a k5 course should not show the fields" do
-      @account.settings[:enable_as_k5_account] = {value: true}
-      @account.save!
+      @account.enable_as_k5_account!
       get "/courses/#{@course.id}/settings"
 
       more_options_link = f('.course_form_more_options_link')
@@ -238,7 +288,6 @@ describe "course settings" do
 
       expect(element_exists?('#course_show_announcements_on_home_page')).to be_falsey
       expect(element_exists?('#course_allow_student_discussion_topics')).to be_falsey
-      expect(element_exists?('#course_allow_student_organized_groups')).to be_falsey
       expect(element_exists?('#course_hide_distribution_graphs')).to be_falsey
       expect(element_exists?('#course_lock_all_announcements')).to be_falsey
     end
@@ -408,8 +457,7 @@ describe "course settings" do
     end
 
     it "should show publish/unpublish buttons for k5 subject courses", ignore_js_errors: true do
-      @account.settings[:enable_as_k5_account] = {value: true}
-      @account.save!
+      @account.enable_as_k5_account!
       course_with_teacher_logged_in(:active_all => true)
       get "/courses/#{@course.id}/settings"
       expect(f("#course_status_form")).to be_present

@@ -153,12 +153,11 @@ class Login::SamlController < ApplicationController
       end
     end
 
-    if pseudonym
+    if pseudonym && (user = pseudonym.login_assertions_for_user)
       # Successful login and we have a user
       @domain_root_account.pseudonyms.scoping do
         PseudonymSession.create!(pseudonym, false)
       end
-      user = pseudonym.login_assertions_for_user
 
       if debugging
         aac.debug_set(:login_to_canvas_success, 'true')

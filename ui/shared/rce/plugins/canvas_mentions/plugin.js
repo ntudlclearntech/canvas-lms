@@ -20,8 +20,8 @@
 import tinymce from '@instructure/canvas-rce/es/rce/tinyRCE'
 import mentionWasInitiated from './mentionWasInitiated'
 import {makeMarkerEditable} from './contentEditable'
-import {onKeyDown, onSetContent, onMouseDown} from './events'
-import {MARKER_SELECTOR, MARKER_ID} from './constants'
+import {onKeyDown, onKeyUp, onSetContent, onMouseDown, onMentionsExit} from './events'
+import {ARIA_ID_TEMPLATES, MARKER_SELECTOR, MARKER_ID} from './constants'
 
 export const name = 'canvas_mentions'
 
@@ -30,30 +30,30 @@ function onInputChange(_e, ed = false) {
   const editor = ed || tinymce.activeEditor
   const tinySelection = editor.selection
 
-  if (mentionWasInitiated(tinySelection.getSel())) {
+  if (mentionWasInitiated(tinySelection.getSel(), tinySelection.getNode())) {
     // Insert a "marker" node so we can find the cursor position
-    // TODO: Add ARIA attributes to this span
     // xsslint safeString.identifier MARKER_ID
     editor.execCommand(
       'mceInsertContent',
       false,
-      `<span id="${MARKER_ID}" data-testid="${MARKER_ID}" aria-autocomplete="list" aria-controls="" aria-activedescendant=""></span>`
+      `<span role="textbox" id="${MARKER_ID}" data-testid="${MARKER_ID}" aria-autocomplete="list" aria-controls="${ARIA_ID_TEMPLATES.ariaControlTemplate(
+        editor.id
+      )}" aria-activedescendant=""></span>`
     )
 
-    // Make the mentions marker editable for A11y
-    makeMarkerEditable(editor, MARKER_SELECTOR)
-
-    // TODO: Render the mentions component at that position
+    makeMarkerEditable(editor, MARKER_SELECTOR) // Make the mentions marker editable for A11y
   }
 }
 
 export const pluginDefinition = {
   init(editor) {
-    // TODO: Remove console log
     editor.on('input', onInputChange)
     editor.on('SetContent', onSetContent)
     editor.on('KeyDown', onKeyDown)
+    editor.on('KeyUp', onKeyUp)
     editor.on('MouseDown', onMouseDown)
+    editor.on('Remove', e => onMentionsExit(e.target))
+    editor.on('ViewChange', e => onMentionsExit(e.target))
   }
 }
 

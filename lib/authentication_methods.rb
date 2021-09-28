@@ -41,44 +41,44 @@ module AuthenticationMethods
     request.session[:user_id]
   end
 
-  def load_pseudonym_from_inst_id(token_string)
-    return false unless InstID.is_inst_id?(token_string)
+  def load_pseudonym_from_inst_access_token(token_string)
+    return false unless InstAccess::Token.is_token?(token_string)
 
     begin
-      inst_id = InstID.from_token(token_string)
-    rescue InstID::InvalidToken, # token didn't pass signature verification
-           InstID::TokenExpired # token passed signature verification, but is expired
+      token = InstAccess::Token.from_token_string(token_string)
+    rescue InstAccess::InvalidToken, # token didn't pass signature verification
+           InstAccess::TokenExpired # token passed signature verification, but is expired
       raise AccessTokenError
-    rescue InstID::ConfigError => exception
-      # InstID isn't configured. A human should fix that, but this method
+    rescue InstAccess::ConfigError => exception
+      # InstAccess isn't configured. A human should fix that, but this method
       # should recover gracefully.
-      Canvas::Errors.capture_exception(:inst_id, exception, :warn)
+      Canvas::Errors.capture_exception(:inst_access, exception, :warn)
       return true
     end
 
-    @current_user = User.find_by(uuid: inst_id.user_uuid)
+    @current_user = User.find_by(uuid: token.user_uuid)
     @current_pseudonym = SisPseudonym.for(
       @current_user, @domain_root_account, type: :implicit, require_sis: false
     )
     raise AccessTokenError unless @current_user && @current_pseudonym
 
-    if inst_id.masquerading_user_uuid && inst_id.masquerading_user_shard_id
-      Shard.lookup(inst_id.masquerading_user_shard_id).activate do
-        @real_current_user = User.find_by!(uuid: inst_id.masquerading_user_uuid)
+    if token.masquerading_user_uuid && token.masquerading_user_shard_id
+      Shard.lookup(token.masquerading_user_shard_id).activate do
+        @real_current_user = User.find_by!(uuid: token.masquerading_user_uuid)
         @real_current_pseudonym = SisPseudonym.for(
           @real_current_user, @domain_root_account, type: :implicit, require_sis: false
         )
         logger.warn "[AUTH] #{@real_current_user.name}(#{@real_current_user.id}) impersonating #{@current_user.name} on page #{request.url}"
       end
     end
-    @authenticated_with_jwt = true
+    @authenticated_with_jwt = @authenticated_with_inst_access_token = true
   end
 
   def load_pseudonym_from_jwt
     return unless api_request?
     token_string = AuthenticationMethods.access_token(request)
     return unless token_string.present?
-    return if load_pseudonym_from_inst_id(token_string)
+    return if load_pseudonym_from_inst_access_token(token_string)
 
     begin
       services_jwt = Canvas::Security::ServicesJwt.new(token_string)
@@ -100,11 +100,6 @@ module AuthenticationMethods
       # and for some normal use cases (old token, access token),
       # so we can return and move on
       return
-    rescue Diplomat::KeyNotFound => exception
-      # Something went wrong in the Network
-      # these are indications of infrastructure or data problems
-      # so we should log them for resolution, but recover gracefully
-      Canvas::Errors.capture_exception(:jwt_check, exception, :warn)
     end
   end
 
@@ -154,9 +149,7 @@ module AuthenticationMethods
 
     if token_string
       @access_token = AccessToken.authenticate(token_string)
-      if !@access_token
-        raise AccessTokenError
-      end
+      raise AccessTokenError unless @access_token
 
       account = access_token_account(@domain_root_account, @access_token)
       raise AccessTokenError unless @access_token.authorized_for_account?(account)
@@ -165,10 +158,10 @@ module AuthenticationMethods
       @real_current_user = @access_token.real_user
       @real_current_pseudonym = SisPseudonym.for(@real_current_user, @domain_root_account, type: :implicit, require_sis: false) if @real_current_user
       @current_pseudonym = SisPseudonym.for(@current_user, @domain_root_account, type: :implicit, require_sis: false)
+      @current_pseudonym = nil if (@current_pseudonym&.suspended? && !@real_current_pseudonym) || @real_current_pseudonym&.suspended?
 
-      unless @current_user && @current_pseudonym
-        raise AccessTokenError
-      end
+      raise AccessTokenError unless @current_user && @current_pseudonym
+
       validate_scopes
       @access_token.used!
 
@@ -195,7 +188,7 @@ module AuthenticationMethods
     load_pseudonym_from_jwt
     load_pseudonym_from_access_token unless @current_pseudonym.present?
 
-    if !@current_pseudonym
+    unless @current_pseudonym
       if @policy_pseudonym_id
         @current_pseudonym = Pseudonym.where(id: @policy_pseudonym_id).first
       else
@@ -216,11 +209,8 @@ module AuthenticationMethods
             session_refreshed_at < invalid_before
 
             logger.info "[AUTH] Invalidating session: Session created before user logged out."
-            destroy_session
-            @current_pseudonym = nil
-            if api_request? || request.format.json?
-              raise LoggedOutError
-            end
+            invalidate_session
+            return
           end
 
           if @current_pseudonym &&
@@ -228,12 +218,14 @@ module AuthenticationMethods
             @current_pseudonym.cas_ticket_expired?(session[:cas_session])
 
             logger.info "[AUTH] Invalidating session: CAS ticket expired - #{session[:cas_session]}."
-            destroy_session
-            @current_pseudonym = nil
+            invalidate_session
+            return
+          end
 
-            raise LoggedOutError if api_request? || request.format.json?
-
-            redirect_to_login
+          if @current_pseudonym.suspended?
+            logger.info "[AUTH] Invalidating session: Pseudonym is suspended."
+            invalidate_session
+            return
           end
         end
       end
@@ -422,5 +414,14 @@ module AuthenticationMethods
     keys.each { |k| saved[k] = session[k] if session[k] }
     reset_session
     saved.each_pair { |k, v| session[k] = v }
+  end
+
+  def invalidate_session
+    destroy_session
+    @current_pseudonym = nil
+
+    raise LoggedOutError if api_request? || request.format.json?
+
+    redirect_to_login unless params[:controller]&.start_with?('login') && params[:action] == 'new'
   end
 end

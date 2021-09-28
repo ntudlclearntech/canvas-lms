@@ -35,6 +35,9 @@
     "announcements_a4b8ed4a": {
         "message": "הכרזות"
     },
+    "apply_781a2546": {
+        "message": "החל"
+    },
     "apps_54d24a47": {
         "message": "אפליקציות"
     },
@@ -91,6 +94,9 @@
     },
     "calendar_event_89aadc1c": {
         "message": "אירוע יומן"
+    },
+    "cancel_caeb1e68": {
+        "message": "ביטול"
     },
     "canvas_planner_98ed106": {
         "message": "מתכנן קנבס"
@@ -341,6 +347,9 @@
     "items_completed_items_plural_1_item_other_items_717d579f": {
         "message": "{ items } completed { items, plural,\n     =1 {item}\n  other {items}\n}"
     },
+    "join_6cafecca": {
+        "message": "הצטרפות"
+    },
     "jump_to_today_254ccf41": {
         "message": "עבור להיום"
     },
@@ -415,6 +424,9 @@
     },
     "my_grades_98834476": {
         "message": "הציונים שלי"
+    },
+    "name_1aed4a1b": {
+        "message": "שם"
     },
     "new_13daf639": {
         "message": "חדש"

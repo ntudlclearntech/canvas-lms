@@ -109,6 +109,10 @@ module K5DashboardPageObject
     "[data-testid = 'empty-dash-panda']:visible"
   end
 
+  def empty_subject_home_selector
+    "[data-testid = 'empty-home-panda']:visible"
+  end
+
   def enable_homeroom_checkbox_selector
     '#course_homeroom_course'
   end
@@ -157,6 +161,10 @@ module K5DashboardPageObject
     "[data-testid = 'manage-button']"
   end
 
+  def manage_home_button_selector
+    "[data-testid = 'manage-home-button'"
+  end
+
   def missing_item_href_selector(course_id, assignment_id)
     "//*[contains(@href, '/courses/#{course_id}/assignments/#{assignment_id}')]"
   end
@@ -189,8 +197,24 @@ module K5DashboardPageObject
     "[aria-label='Create Subject']"
   end
 
+  def next_announcement_button_selector
+    "button:contains('Next announcement')"
+  end
+
+  def no_recent_announcements_selector
+    "[data-testid='no-recent-announcements']"
+  end
+
   def nothing_due_selector(subject_course_title)
     "//*[@aria-label = '#{subject_course_title}']//*[text() = 'Nothing due today']"
+  end
+
+  def observed_student_label_selector
+    "[data-testid='observed-student-label']"
+  end
+
+  def observed_student_dropdown_selector
+    "[data-testid='observed-student-dropdown']"
   end
 
   def pink_color_button_selector
@@ -199,6 +223,10 @@ module K5DashboardPageObject
 
   def planner_assignment_header_selector
     ".Grouping-styles__overlay"
+  end
+
+  def previous_announcement_button_selector
+    "button:contains('Previous announcement')"
   end
 
   def resources_tab_selector
@@ -323,6 +351,10 @@ module K5DashboardPageObject
     fj(empty_dashboard_selector)
   end
 
+  def empty_subject_home
+    fj(empty_subject_home_selector)
+  end
+
   def enable_homeroom_checkbox
     f(enable_homeroom_checkbox_selector)
   end
@@ -367,6 +399,10 @@ module K5DashboardPageObject
     f(manage_button_selector)
   end
 
+  def manage_home_button
+    f(manage_home_button_selector)
+  end
+
   def modules_tab
     f(modules_tab_selector)
   end
@@ -395,12 +431,32 @@ module K5DashboardPageObject
     fxpath(new_course_modal_create_selector)
   end
 
+  def next_announcement_button
+    ffj(next_announcement_button_selector)
+  end
+
+  def no_recent_announcements
+    f(no_recent_announcements_selector)
+  end
+
   def nothing_due(subject_course_title)
     fxpath(nothing_due_selector(subject_course_title))
   end
 
+  def observed_student_label
+    f(observed_student_label_selector)
+  end
+
+  def observed_student_dropdown
+    f(observed_student_dropdown_selector)
+  end
+
   def pink_color_button
     fxpath(pink_color_button_selector)
+  end
+
+  def previous_announcement_button
+    ffj(previous_announcement_button_selector)
   end
 
   def resources_tab
@@ -504,8 +560,20 @@ module K5DashboardPageObject
     new_course_modal_create.click
   end
 
+  def click_next_announcement_button(button_number)
+    next_announcement_button[button_number].click
+  end
+
+  def click_observed_student_option(student_name)
+    click_option(observed_student_dropdown_selector, student_name)
+  end
+
   def click_pink_color_button
     pink_color_button.click
+  end
+
+  def click_previous_announcement_button(button_number)
+    previous_announcement_button[button_number].click
   end
 
   def click_student_view_button

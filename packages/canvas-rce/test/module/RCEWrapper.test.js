@@ -241,6 +241,18 @@ describe('RCEWrapper', () => {
       assert.equal(element.getCode(), 'Some Input HTML')
     })
 
+    it('emits "ViewChange" on view changes', () => {
+      const fireSpy = sinon.spy()
+      const fire = element.mceInstance().fire
+
+      element.mceInstance().fire = fireSpy
+      element.toggleView()
+
+      assert(fireSpy.calledWith('ViewChange'))
+
+      element.mceInstance().fire = fire
+    })
+
     it('calls focus on its tinyMCE instance', () => {
       element = createBasicElement({textareaId: 'myOtherUniqId'})
       element.focus()
@@ -586,6 +598,17 @@ describe('RCEWrapper', () => {
         sinon.stub(contentInsertion, 'insertImage').returns(null)
         instance.insertImage({})
         contentInsertion.insertImage.restore()
+      })
+
+      it("removes TinyMCE's caret &nbsp; when element is returned from content insertion", () => {
+        const container = document.createElement('div')
+        container.innerHTML = '<div><img src="image.jpg" alt="test" />&nbsp;</div>'
+        const element = container.querySelector('img')
+        const removeSpy = sinon.spy(element.nextSibling, 'remove')
+        sinon.stub(contentInsertion, 'insertImage').returns(element)
+        instance.insertImage({})
+        contentInsertion.insertImage.restore()
+        assert(removeSpy.called)
       })
     })
 

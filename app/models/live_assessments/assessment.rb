@@ -33,8 +33,23 @@ module LiveAssessments
     scope :for_context, lambda { |context| where(:context_id => context, :context_type => context.class.to_s) }
 
     set_policy do
-      given { |user, session| self.context.grants_right?(user, session, :manage_assignments) }
+      given do |user, session|
+        !self.context.root_account.feature_enabled?(:granular_permissions_manage_assignments) &&
+          self.context.grants_right?(user, session, :manage_assignments)
+      end
       can :create and can :update
+
+      given do |user, session|
+        self.context.root_account.feature_enabled?(:granular_permissions_manage_assignments) &&
+          self.context.grants_right?(user, session, :manage_assignments_add)
+      end
+      can :create
+
+      given do |user, session|
+        self.context.root_account.feature_enabled?(:granular_permissions_manage_assignments) &&
+          self.context.grants_right?(user, session, :manage_assignments_edit)
+      end
+      can :update
 
       given { |user, session| self.context.grants_right?(user, session, :view_all_grades) }
       can :read

@@ -77,7 +77,7 @@ const GradeDetails = ({
     forceResult: loadingGradingPeriods ? [] : undefined,
     fetchAllPages: true,
     params: {
-      include: ['assignments', 'submission', 'read_state'],
+      include: ['assignments', 'submission', 'read_state', 'submission_comments'],
       ...gradingPeriodParam
     }
   })
@@ -197,15 +197,16 @@ const GradeDetails = ({
         </>
       )}
       <LoadingWrapper
-        id="grades"
+        id={`course-${courseId}-grades`}
         isLoading={loadingAssignmentGroups || loadingGradingPeriods}
-        skeletonsCount={NUM_GRADE_SKELETONS}
+        skeletonsNum={grades.length}
+        defaultSkeletonsNum={NUM_GRADE_SKELETONS}
         renderCustomSkeleton={gradeRowSkeleton}
         renderSkeletonsContainer={gradesDetailsTable}
         renderLoadedContainer={gradesDetailsTable}
       >
         {grades.map(assignment => (
-          <GradeRow key={assignment.id} {...assignment} />
+          <GradeRow key={assignment.id} currentUserId={currentUser.id} {...assignment} />
         ))}
       </LoadingWrapper>
     </>

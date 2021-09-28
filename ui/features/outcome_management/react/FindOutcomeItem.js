@@ -28,54 +28,63 @@ import {
   IconArrowOpenDownLine,
   IconArrowOpenEndSolid,
   IconArrowOpenDownSolid,
-  IconAddLine
+  IconAddSolid
 } from '@instructure/ui-icons'
 import I18n from 'i18n!OutcomeManagement'
 import OutcomeDescription from './Management/OutcomeDescription'
 import {addZeroWidthSpace} from '@canvas/outcomes/addZeroWidthSpace'
 import useCanvasContext from '@canvas/outcomes/react/hooks/useCanvasContext'
+import {Spinner} from '@instructure/ui-spinner'
+import {IMPORT_PENDING, IMPORT_COMPLETED} from '@canvas/outcomes/react/hooks/useOutcomesImport'
 
-const FindOutcomeItem = ({id, title, description, isAdded, onAddClickHandler}) => {
+const FindOutcomeItem = ({
+  id,
+  title,
+  description,
+  isImported,
+  importGroupStatus,
+  importOutcomeStatus,
+  sourceContextId,
+  sourceContextType,
+  importOutcomeHandler
+}) => {
   const [truncate, setTruncate] = useState(true)
-  // NOTE: addedOutcome state will not be needed once refetching of groups/outcomes
-  // is completed.  See OUT-4521 & OUT-4559
-  const [addedOutcome, setAddedOutcome] = useState(isAdded)
-  const [buttonMessage, setButtonMessage] = useState(isAdded ? I18n.t('Added') : I18n.t('Add'))
   const onClickHandler = () => description && setTruncate(prevState => !prevState)
   const {isMobileView} = useCanvasContext()
   const IconArrowOpenEnd = isMobileView ? IconArrowOpenEndSolid : IconArrowOpenEndLine
   const IconArrowOpenDown = isMobileView ? IconArrowOpenDownSolid : IconArrowOpenDownLine
-
-  const onButtonClick = () => {
-    setAddedOutcome(true)
-    setButtonMessage(I18n.t('Added'))
-    onAddClickHandler(id)
-  }
+  const importStatus = [importGroupStatus, importOutcomeStatus]
+  const shouldShowSpinner =
+    !isImported && importOutcomeStatus !== IMPORT_COMPLETED && importStatus.includes(IMPORT_PENDING)
+  const isOutcomeImported = isImported || importStatus.includes(IMPORT_COMPLETED)
+  const onAddHandler = () => importOutcomeHandler(id, 1, false, sourceContextId, sourceContextType)
 
   const checkbox = (
-    <Flex.Item size={isMobileView ? '' : '5rem'} alignSelf="end">
+    <Flex.Item size={isMobileView ? '' : '6.75rem'} alignSelf="end">
       <div
         style={{
-          padding: isMobileView
-            ? '0'
-            : description && addedOutcome
-            ? '1.2815rem 0 0 0'
-            : description
-            ? '1.2815rem 0 0 1rem'
-            : addedOutcome
-            ? '0.313rem 0 0 0'
-            : '0.313rem 0 0 1rem'
+          padding: isMobileView ? '0' : description ? '1.2815rem 0 0' : '0.313rem 0 0',
+          marginRight: isMobileView ? '-0.5rem' : '0',
+          display: 'flex',
+          flexFlow: 'row-reverse nowrap'
         }}
       >
-        <Button
-          interaction={addedOutcome ? 'disabled' : 'enabled'}
-          size="small"
-          margin={isMobileView ? '0' : '0 x-small 0 0'}
-          renderIcon={IconAddLine}
-          onClick={onButtonClick}
-        >
-          {buttonMessage}
-        </Button>
+        {shouldShowSpinner ? (
+          <View as="div" margin="0 medium" data-testid="outcome-import-pending">
+            <Spinner renderTitle={I18n.t('Loading')} size="x-small" />
+          </View>
+        ) : (
+          <Button
+            interaction={isOutcomeImported ? 'disabled' : 'enabled'}
+            size="small"
+            margin={isMobileView ? '0' : '0 x-small 0 0'}
+            renderIcon={IconAddSolid}
+            onClick={onAddHandler}
+            data-testid="add-find-outcome-item"
+          >
+            {isOutcomeImported ? I18n.t('Added') : I18n.t('Add')}
+          </Button>
+        )}
       </div>
     </Flex.Item>
   )
@@ -83,7 +92,12 @@ const FindOutcomeItem = ({id, title, description, isAdded, onAddClickHandler}) =
   if (!title) return null
 
   return (
-    <View as="div" padding={isMobileView ? 'small 0 x-small' : 'small 0'} borderWidth="0 0 small">
+    <View
+      as="div"
+      padding={isMobileView ? 'small 0 x-small' : 'small 0'}
+      borderWidth="0 0 small"
+      data-testid="find-outcome-item"
+    >
       <Flex as="div" alignItems="start">
         <Flex.Item as="div" size={isMobileView ? '' : '3rem'}>
           <Flex as="div" alignItems="start" justifyItems="center">
@@ -155,8 +169,12 @@ FindOutcomeItem.propTypes = {
   id: PropTypes.string.isRequired,
   title: PropTypes.string,
   description: PropTypes.string,
-  isAdded: PropTypes.bool.isRequired,
-  onAddClickHandler: PropTypes.func.isRequired
+  isImported: PropTypes.bool.isRequired,
+  importGroupStatus: PropTypes.string.isRequired,
+  importOutcomeStatus: PropTypes.string,
+  sourceContextId: PropTypes.string,
+  sourceContextType: PropTypes.string,
+  importOutcomeHandler: PropTypes.func.isRequired
 }
 
 export default memo(FindOutcomeItem)

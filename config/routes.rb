@@ -26,7 +26,10 @@ Dir["{gems,vendor}/plugins/*/config/pre_routes.rb"].each { |pre_routes|
 
 CanvasRails::Application.routes.draw do
   post "/api/graphql", to: "graphql#execute"
-  # get 'graphiql', to: 'graphql#graphiql'
+  post "/api/graphql/subgraph", to: "graphql#subgraph_execute"
+  # The subgraph endpoint is for use only with the federated API Gateway. See
+  # `app/graphql/README.md` for details.
+  #get 'graphiql', to: 'graphql#graphiql'
 
   resources :submissions, only: [] do
     resources :submission_comments, path: :comments, only: :index, defaults: { format: :pdf }
@@ -166,12 +169,12 @@ CanvasRails::Application.routes.draw do
 
   concern :conferences do
     resources :conferences do
-      # rubocop:disable SymbolArray
+      # rubocop:disable Style/SymbolArray
       match :join, via: [:get, :post]
       match :close, via: [:get, :post]
       match :recording, via: [:get]
       match :recording, via: [:delete], to: 'conferences#delete_recording', as: :delete_recording
-      # rubocop:enable SymbolArray
+      # rubocop:enable Style/SymbolArray
       get :settings
     end
   end
@@ -238,7 +241,7 @@ CanvasRails::Application.routes.draw do
       end
     end
 
-    resource :gradebook_csv, only: [:show]
+    resource :gradebook_csv, only: [:create]
 
     # DEPRECATED old migration emails pointed the user to this url, leave so the controller can redirect
     get 'imports/list' => 'content_imports#index', as: :import_list
@@ -452,6 +455,8 @@ CanvasRails::Application.routes.draw do
         get :progressions
       end
     end
+
+    get 'pace_plans' => 'pace_plans#show'
 
     post 'collapse_all_modules' => 'context_modules#toggle_collapse_all'
     resources :content_exports, only: [:create, :index, :destroy, :show]
@@ -870,8 +875,6 @@ CanvasRails::Application.routes.draw do
 
   get 'account_notifications' => 'account_notifications#render_past_global_announcements'
 
-  resource :trophy_case, controller: :user_trophies, only: [:show]
-
   scope '/profile' do
     post 'toggle_disable_inbox' => 'profile#toggle_disable_inbox'
     get 'profile_pictures' => 'profile#profile_pics', as: :profile_pics
@@ -1005,6 +1008,7 @@ CanvasRails::Application.routes.draw do
       get 'courses/:course_id/content_share_users', action: :content_share_users, as: 'course_content_share_users'
       get 'courses/:course_id/activity_stream', action: :activity_stream, as: 'course_activity_stream'
       get 'courses/:course_id/activity_stream/summary', action: :activity_stream_summary, as: 'course_activity_stream_summary'
+      get 'courses/:course_id/bulk_user_progress', action: :bulk_user_progress, as: 'course_bulk_user_progress'
       get 'courses/:course_id/todo', action: :todo_items, as: 'course_todo_list_items'
       post 'courses/:course_id/preview_html', action: :preview_html
       post 'courses/:course_id/course_copy', controller: :content_imports, action: :copy_course_content
@@ -1015,6 +1019,7 @@ CanvasRails::Application.routes.draw do
       post 'courses/:course_id/folders', controller: :folders, action: :create
       get 'courses/:course_id/folders/by_path/*full_path', controller: :folders, action: :resolve_path
       get 'courses/:course_id/folders/by_path', controller: :folders, action: :resolve_path
+      get 'courses/:course_id/folders/buttons_and_icons', controller: :folders, action: :buttons_and_icons_folder
       get 'courses/:course_id/folders/media', controller: :folders, action: :media_folder
       get 'courses/:course_id/folders/:id', controller: :folders, action: :show, as: 'course_folder'
       get 'media_objects', controller: 'media_objects', action: :index, as: :media_objects
@@ -2198,8 +2203,8 @@ CanvasRails::Application.routes.draw do
       post 'jwts/refresh', action: :refresh
     end
 
-    scope(controller: :inst_ids) do
-      post 'inst_ids', action: :create
+    scope(controller: :inst_access_tokens) do
+      post 'inst_access_tokens', action: :create
     end
 
     scope(controller: :gradebook_settings) do
@@ -2346,6 +2351,12 @@ CanvasRails::Application.routes.draw do
 
     scope(controller: :gradebooks) do
       put "courses/:course_id/update_final_grade_overrides", action: "update_final_grade_overrides"
+    end
+
+    scope(controller: :pace_plans) do
+      post 'courses/:course_id/pace_plans', action: :create
+      get 'courses/:course_id/pace_plans/:id', action: :api_show
+      put 'courses/:course_id/pace_plans/:id', action: :update
     end
   end
 

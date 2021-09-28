@@ -68,7 +68,7 @@ class Quizzes::QuizzesController < ApplicationController
       return unless authorized_action(@context, @current_user, :read)
       return unless tab_enabled?(@context.class::TAB_QUIZZES)
 
-      can_manage = @context.grants_right?(@current_user, session, :manage_assignments)
+      can_manage = @context.grants_any_right?(@current_user, session, :manage_assignments, :manage_assignments_edit)
 
       quiz_options = Rails.cache.fetch(
         [
@@ -572,7 +572,7 @@ class Quizzes::QuizzesController < ApplicationController
   end
 
   def publish
-    if authorized_action(@context, @current_user, :manage_assignments)
+    if authorized_action(@context, @current_user, [:manage_assignments, :manage_assignments_edit])
       @quizzes = @context.quizzes.active.where(id: params[:quizzes])
       @quizzes.each(&:publish!)
 
@@ -590,7 +590,7 @@ class Quizzes::QuizzesController < ApplicationController
   end
 
   def unpublish
-    if authorized_action(@context, @current_user, :manage_assignments)
+    if authorized_action(@context, @current_user, [:manage_assignments, :manage_assignments_edit])
       @quizzes = @context.quizzes.active.where(id: params[:quizzes]).select{|q| q.available? }
       @quizzes.each(&:unpublish!)
 
@@ -826,7 +826,7 @@ class Quizzes::QuizzesController < ApplicationController
   end
 
   def get_submission
-    submission = @quiz.quiz_submissions.where(user_id: @current_user).order(:created_at).first
+    submission = @quiz.quiz_submissions.where(user_id: @current_user).order(:created_at).first if @current_user
     if !@current_user || (params[:preview] && can_preview?)
       user_code = temporary_user_code
       submission = @quiz.quiz_submissions.where(temporary_user_code: user_code).first

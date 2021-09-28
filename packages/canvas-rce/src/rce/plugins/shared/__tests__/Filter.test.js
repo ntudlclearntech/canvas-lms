@@ -73,6 +73,18 @@ describe('RCE Plugins > Filter', () => {
     fireEvent.click(component.getByText(sortByLabel))
   }
 
+  it('does not render "Buttons and Icons" option when the feature is disabled', () => {
+    renderComponent({use_rce_buttons_and_icons: false})
+    fireEvent.click(getContentSubtypeField())
+    expect(component.queryByText('Buttons and Icons')).toBeNull()
+  })
+
+  it('renders "Buttons and Icons" option when the feature is enabled', () => {
+    renderComponent({use_rce_buttons_and_icons: true})
+    fireEvent.click(getContentSubtypeField())
+    expect(component.queryByText('Buttons and Icons')).toBeInTheDocument()
+  })
+
   describe('initially', () => {
     beforeEach(() => {
       renderComponent()
@@ -181,7 +193,7 @@ describe('RCE Plugins > Filter', () => {
 
   describe('"Content Subtype" field', () => {
     beforeEach(() => {
-      renderComponent({userContextType: 'course'})
+      renderComponent({userContextType: 'course', use_rce_buttons_and_icons: true})
       selectContentType('User Files')
     })
 
@@ -229,6 +241,28 @@ describe('RCE Plugins > Filter', () => {
       expect(currentFilterSettings.sortValue).toEqual('date_added')
       selectContentSubtype('Media')
       expect(currentFilterSettings.sortValue).toEqual('date_added')
+    })
+
+    describe('when "Buttons and Icons" is selected', () => {
+      beforeEach(() => {
+        selectContentSubtype('Buttons and Icons')
+      })
+
+      it('sets the content subtype to "buttons_and_icons"', () => {
+        expect(currentFilterSettings.contentSubtype).toEqual('buttons_and_icons')
+      })
+
+      it('sets the content type to "course_files"', () => {
+        expect(currentFilterSettings.contentType).toEqual('course_files')
+      })
+
+      it('does not render "User Files" content type', () => {
+        expect(component.queryByTitle('User Files')).toBeNull()
+      })
+
+      it('renders the "Course Files" content type', () => {
+        expect(component.getByTitle('Course Files')).toBeInTheDocument()
+      })
     })
   })
 
