@@ -1,9 +1,10 @@
 GIT
-  remote: https://github.com/instructure/test-queue.git
-  revision: d35166408df3a5396cd809e85dcba175136a69ba
-  ref: d35166408df3a5396cd809e85dcba175136a69ba
+  remote: https://github.com/erickguan/ffi-icu.git
+  revision: 0c6f8b201f3994fa10c741ff5dbb146cb83f4a9d
+  ref: 0c6f8b201f3994fa10c741ff5dbb146cb83f4a9d
   specs:
-    test-queue (0.2.13)
+    ffi-icu (0.4.0)
+      ffi (~> 1.0, >= 1.0.9)
 
 GIT
   remote: https://github.com/instructure/week-of-month.git
@@ -20,6 +21,17 @@ GIT
     cassandra-cql (1.2.3)
       simple_uuid (>= 0.2.0)
       thrift_client (>= 0.7.1, < 0.10)
+
+GIT
+  remote: https://github.com/kyler-instructure/rspecq.git
+  revision: b5a638f114fe66521fc46826e0afe5bd41258b0f
+  branch: rspec-args
+  specs:
+    rspecq (0.7.1)
+      redis
+      rspec-core
+      rspec_junit_formatter
+      sentry-raven
 
 GIT
   remote: https://github.com/rails-api/active_model_serializers.git
@@ -47,6 +59,43 @@ GIT
   specs:
     thrift_client (0.9.3)
       thrift (~> 0.9.0)
+
+PATH
+  remote: engines
+  specs:
+    audits (0.1.0)
+      canvas_cassandra
+      dynamic_settings
+      event_stream
+      rails (>= 5.2.4.5)
+      switchman (>= 2.0.3)
+
+PATH
+  remote: gems/canvas_cassandra
+  specs:
+    canvas_cassandra (0.1.0)
+      cassandra-cql (~> 1.2.2)
+      config_file
+      rails (>= 5.0)
+
+PATH
+  remote: gems/i18n_extraction
+  specs:
+    i18n_extraction (0.0.1)
+      activesupport (>= 3.2)
+      i18nliner (~> 0.1)
+      ruby_parser (~> 3.7)
+      sexp_processor (~> 4.14, >= 4.14.1)
+
+PATH
+  remote: gems/i18n_tasks
+  specs:
+    i18n_tasks (0.0.1)
+      activesupport (>= 3.2)
+      i18n (>= 0.7, < 2)
+      i18n_extraction
+      ruby_parser (~> 3.7)
+      utf8_cleaner
 
 PATH
   remote: gems/plugins/academic_benchmark
@@ -96,48 +145,13 @@ PATH
       rails (>= 3.2)
 
 PATH
-  remote: engines
-  specs:
-    audits (0.1.0)
-      canvas_cassandra
-      dynamic_settings
-      event_stream
-      rails (>= 5.2.4.5)
-      switchman (>= 2.0.3)
-
-PATH
-  remote: gems/canvas_cassandra
-  specs:
-    canvas_cassandra (0.1.0)
-      cassandra-cql (~> 1.2.2)
-      config_file
-      rails (>= 5.0)
-
-PATH
-  remote: gems/i18n_extraction
-  specs:
-    i18n_extraction (0.0.1)
-      activesupport (>= 3.2)
-      i18nliner (~> 0.1)
-      ruby_parser (~> 3.7)
-      sexp_processor (~> 4.14, >= 4.14.1)
-
-PATH
-  remote: gems/i18n_tasks
-  specs:
-    i18n_tasks (0.0.1)
-      activesupport (>= 3.2)
-      i18n (>= 0.7, < 2)
-      i18n_extraction
-      ruby_parser (~> 3.7)
-      utf8_cleaner
-
-PATH
   remote: gems/rubocop-canvas
   specs:
     rubocop-canvas (1.0.0)
+      activesupport (~> 6.0)
       jira_ref_parser (= 1.0.1)
-      rubocop (~> 0.68.0)
+      outrigger (~> 2.1)
+      rubocop (~> 1.19)
 
 PATH
   remote: gems
@@ -293,61 +307,61 @@ GEM
     academic_benchmarks (1.1.1)
       activesupport (>= 3.2.22, < 6.2)
       httparty (~> 0.13)
-    actioncable (6.0.4)
-      actionpack (= 6.0.4)
+    actioncable (6.0.4.1)
+      actionpack (= 6.0.4.1)
       nio4r (~> 2.0)
       websocket-driver (>= 0.6.1)
-    actionmailbox (6.0.4)
-      actionpack (= 6.0.4)
-      activejob (= 6.0.4)
-      activerecord (= 6.0.4)
-      activestorage (= 6.0.4)
-      activesupport (= 6.0.4)
+    actionmailbox (6.0.4.1)
+      actionpack (= 6.0.4.1)
+      activejob (= 6.0.4.1)
+      activerecord (= 6.0.4.1)
+      activestorage (= 6.0.4.1)
+      activesupport (= 6.0.4.1)
       mail (>= 2.7.1)
-    actionmailer (6.0.4)
-      actionpack (= 6.0.4)
-      actionview (= 6.0.4)
-      activejob (= 6.0.4)
+    actionmailer (6.0.4.1)
+      actionpack (= 6.0.4.1)
+      actionview (= 6.0.4.1)
+      activejob (= 6.0.4.1)
       mail (~> 2.5, >= 2.5.4)
       rails-dom-testing (~> 2.0)
-    actionpack (6.0.4)
-      actionview (= 6.0.4)
-      activesupport (= 6.0.4)
+    actionpack (6.0.4.1)
+      actionview (= 6.0.4.1)
+      activesupport (= 6.0.4.1)
       rack (~> 2.0, >= 2.0.8)
       rack-test (>= 0.6.3)
       rails-dom-testing (~> 2.0)
       rails-html-sanitizer (~> 1.0, >= 1.2.0)
-    actiontext (6.0.4)
-      actionpack (= 6.0.4)
-      activerecord (= 6.0.4)
-      activestorage (= 6.0.4)
-      activesupport (= 6.0.4)
+    actiontext (6.0.4.1)
+      actionpack (= 6.0.4.1)
+      activerecord (= 6.0.4.1)
+      activestorage (= 6.0.4.1)
+      activesupport (= 6.0.4.1)
       nokogiri (>= 1.8.5)
-    actionview (6.0.4)
-      activesupport (= 6.0.4)
+    actionview (6.0.4.1)
+      activesupport (= 6.0.4.1)
       builder (~> 3.1)
       erubi (~> 1.4)
       rails-dom-testing (~> 2.0)
       rails-html-sanitizer (~> 1.1, >= 1.2.0)
     active_model-better_errors (1.6.7)
       activemodel (>= 3.0)
-    activejob (6.0.4)
-      activesupport (= 6.0.4)
+    activejob (6.0.4.1)
+      activesupport (= 6.0.4.1)
       globalid (>= 0.3.6)
-    activemodel (6.0.4)
-      activesupport (= 6.0.4)
-    activerecord (6.0.4)
-      activemodel (= 6.0.4)
-      activesupport (= 6.0.4)
+    activemodel (6.0.4.1)
+      activesupport (= 6.0.4.1)
+    activerecord (6.0.4.1)
+      activemodel (= 6.0.4.1)
+      activesupport (= 6.0.4.1)
     activerecord-pg-extensions (0.2.3)
       activerecord (>= 6.0, < 6.2)
       railties (>= 6.0, < 6.2)
-    activestorage (6.0.4)
-      actionpack (= 6.0.4)
-      activejob (= 6.0.4)
-      activerecord (= 6.0.4)
+    activestorage (6.0.4.1)
+      actionpack (= 6.0.4.1)
+      activejob (= 6.0.4.1)
+      activerecord (= 6.0.4.1)
       marcel (~> 1.0.0)
-    activesupport (6.0.4)
+    activesupport (6.0.4.1)
       concurrent-ruby (~> 1.0, >= 1.0.2)
       i18n (>= 0.7, < 2)
       minitest (~> 5.1)
@@ -378,7 +392,7 @@ GEM
       extlib (>= 0.9.15)
       multi_json (>= 1.0.0)
     awesome_print (1.9.2)
-    aws-eventstream (1.1.1)
+    aws-eventstream (1.2.0)
     aws-partitions (1.393.0)
     aws-sdk-applicationautoscaling (1.49.0)
       aws-sdk-core (~> 3, >= 3.109.0)
@@ -458,8 +472,8 @@ GEM
     colored (1.2)
     colorize (0.8.1)
     concurrent-ruby (1.1.9)
-    crack (0.4.3)
-      safe_yaml (~> 1.0.0)
+    crack (0.4.5)
+      rexml
     crass (1.0.6)
     crocodoc-ruby (0.0.1)
       json
@@ -509,12 +523,10 @@ GEM
     ffi-compiler (1.0.1)
       ffi (>= 1.0.0)
       rake
-    ffi-icu (0.3.0)
-      ffi (~> 1.0, >= 1.0.9)
     filelock (1.1.1)
     find_a_port (1.0.1)
-    flakey_spec_catcher (0.9.8)
-      rspec (~> 3.8)
+    flakey_spec_catcher (0.10.0)
+      rspec (~> 3.10)
     folio-pagination (0.0.12)
     fugit (1.4.0)
       et-orbi (~> 1.1, >= 1.1.8)
@@ -522,7 +534,7 @@ GEM
     gepub (1.0.13)
       nokogiri (>= 1.8.2, < 1.12)
       rubyzip (> 1.1.1, < 2.4)
-    gergich (1.2.1)
+    gergich (1.2.3)
       httparty (~> 0.17)
       sqlite3 (~> 1.4)
     git-version-bump (0.17.1)
@@ -539,8 +551,8 @@ GEM
       multi_json (~> 1.10)
       retriable (~> 1.4)
       signet (~> 0.6)
-    google-protobuf (3.17.3-x86_64-linux)
-    graphql (1.9.17)
+    google-protobuf (3.18.0-x86_64-linux)
+    graphql (1.12.14)
     graphql-batch (0.4.3)
       graphql (>= 1.3, < 2)
       promise.rb (~> 0.7.2)
@@ -605,7 +617,6 @@ GEM
     irb (1.3.5)
       reline (>= 0.1.5)
     iso8601 (0.13.0)
-    jaro_winkler (1.5.4)
     jira_ref_parser (1.0.1)
     jmespath (1.4.0)
     json (2.5.1)
@@ -613,6 +624,8 @@ GEM
       activesupport (>= 4.2)
       aes_key_wrap
       bindata
+    json-schema (2.8.1)
+      addressable (>= 2.4)
     jwt (2.2.3)
     launchy (2.5.0)
       addressable (~> 2.7)
@@ -625,14 +638,14 @@ GEM
     luminosity_contrast (0.2.1)
     mail (2.7.1)
       mini_mime (>= 0.1.1)
-    marcel (1.0.1)
+    marcel (1.0.2)
     marginalia (1.9.0)
       actionpack (>= 2.3)
       activerecord (>= 2.3)
     method_source (1.0.0)
     mime-types (3.3.1)
       mime-types-data (~> 3.2015)
-    mime-types-data (3.2021.0704)
+    mime-types-data (3.2021.0901)
     mini_magick (4.11.0)
     mini_mime (1.0.2)
     minitest (5.14.4)
@@ -704,7 +717,7 @@ GEM
       term-ansicolor (~> 1.7)
       thor (>= 0.20, < 2.0)
     parallel (1.20.0)
-    parallel_tests (3.7.0)
+    parallel_tests (3.7.3)
       parallel
     parser (3.0.2.0)
       ast (~> 2.4.1)
@@ -737,20 +750,20 @@ GEM
       rack (>= 1.4)
     rack-test (1.1.0)
       rack (>= 1.0, < 3)
-    rails (6.0.4)
-      actioncable (= 6.0.4)
-      actionmailbox (= 6.0.4)
-      actionmailer (= 6.0.4)
-      actionpack (= 6.0.4)
-      actiontext (= 6.0.4)
-      actionview (= 6.0.4)
-      activejob (= 6.0.4)
-      activemodel (= 6.0.4)
-      activerecord (= 6.0.4)
-      activestorage (= 6.0.4)
-      activesupport (= 6.0.4)
+    rails (6.0.4.1)
+      actioncable (= 6.0.4.1)
+      actionmailbox (= 6.0.4.1)
+      actionmailer (= 6.0.4.1)
+      actionpack (= 6.0.4.1)
+      actiontext (= 6.0.4.1)
+      actionview (= 6.0.4.1)
+      activejob (= 6.0.4.1)
+      activemodel (= 6.0.4.1)
+      activerecord (= 6.0.4.1)
+      activestorage (= 6.0.4.1)
+      activesupport (= 6.0.4.1)
       bundler (>= 1.3.0)
-      railties (= 6.0.4)
+      railties (= 6.0.4.1)
       sprockets-rails (>= 2.0.0)
     rails-controller-testing (1.0.5)
       actionpack (>= 5.0.1.rc1)
@@ -759,13 +772,13 @@ GEM
     rails-dom-testing (2.0.3)
       activesupport (>= 4.2.0)
       nokogiri (>= 1.6)
-    rails-html-sanitizer (1.3.0)
+    rails-html-sanitizer (1.4.2)
       loofah (~> 2.3)
     rails-observers (0.1.5)
       activemodel (>= 4.0)
-    railties (6.0.4)
-      actionpack (= 6.0.4)
-      activesupport (= 6.0.4)
+    railties (6.0.4.1)
+      actionpack (= 6.0.4.1)
+      activesupport (= 6.0.4.1)
       method_source
       rake (>= 0.8.7)
       thor (>= 0.20.3, < 2.0)
@@ -792,6 +805,7 @@ GEM
       mime-types (>= 1.16, < 4.0)
       netrc (~> 0.8)
     retriable (1.4.1)
+    rexml (3.2.5)
     rice (2.2.0)
     ritex (1.0.1)
     rotp (6.2.0)
@@ -799,20 +813,20 @@ GEM
       chunky_png (~> 1.0)
       rqrcode_core (~> 0.2)
     rqrcode_core (0.2.0)
-    rspec (3.9.0)
-      rspec-core (~> 3.9.0)
-      rspec-expectations (~> 3.9.0)
-      rspec-mocks (~> 3.9.0)
+    rspec (3.10.0)
+      rspec-core (~> 3.10.0)
+      rspec-expectations (~> 3.10.0)
+      rspec-mocks (~> 3.10.0)
     rspec-collection_matchers (1.2.0)
       rspec-expectations (>= 2.99.0.beta1)
-    rspec-core (3.9.1)
-      rspec-support (~> 3.9.1)
-    rspec-expectations (3.9.0)
+    rspec-core (3.10.1)
+      rspec-support (~> 3.10.0)
+    rspec-expectations (3.10.1)
       diff-lcs (>= 1.2.0, < 2.0)
-      rspec-support (~> 3.9.0)
-    rspec-mocks (3.9.1)
+      rspec-support (~> 3.10.0)
+    rspec-mocks (3.10.2)
       diff-lcs (>= 1.2.0, < 2.0)
-      rspec-support (~> 3.9.0)
+      rspec-support (~> 3.10.0)
     rspec-rails (4.0.1)
       actionpack (>= 4.2)
       activesupport (>= 4.2)
@@ -821,22 +835,32 @@ GEM
       rspec-expectations (~> 3.9)
       rspec-mocks (~> 3.9)
       rspec-support (~> 3.9)
-    rspec-support (3.9.2)
+    rspec-support (3.10.2)
     rspec_around_all (0.2.0)
       rspec (>= 2.0)
     rspec_junit_formatter (0.4.1)
       rspec-core (>= 2, < 4, != 2.12.0)
-    rubocop (0.68.0)
-      jaro_winkler (~> 1.5.1)
+    rubocop (1.19.1)
       parallel (~> 1.10)
-      parser (>= 2.5, != 2.5.1.1)
+      parser (>= 3.0.0.0)
       rainbow (>= 2.2.2, < 4.0)
+      regexp_parser (>= 1.8, < 3.0)
+      rexml
+      rubocop-ast (>= 1.9.1, < 2.0)
       ruby-progressbar (~> 1.7)
-      unicode-display_width (>= 1.4.0, < 1.6)
-    rubocop-performance (1.3.0)
-      rubocop (>= 0.68.0)
-    rubocop-rspec (1.33.0)
-      rubocop (>= 0.60.0)
+      unicode-display_width (>= 1.4.0, < 3.0)
+    rubocop-ast (1.12.0)
+      parser (>= 3.0.1.1)
+    rubocop-performance (1.11.5)
+      rubocop (>= 1.7.0, < 2.0)
+      rubocop-ast (>= 0.4.0)
+    rubocop-rails (2.11.3)
+      activesupport (>= 4.2.0)
+      rack (>= 1.1)
+      rubocop (>= 1.7.0, < 2.0)
+    rubocop-rspec (2.4.0)
+      rubocop (~> 1.0)
+      rubocop-ast (>= 1.1.0)
     ruby-duration (3.2.3)
       activesupport (>= 3.0.0)
       i18n
@@ -851,7 +875,6 @@ GEM
     rubycas-client (2.3.9)
       activesupport
     rubyzip (2.3.0)
-    safe_yaml (1.0.5)
     saml2 (3.1.0)
       activesupport (>= 3.2, < 6.2)
       nokogiri (>= 1.5.8, < 1.12)
@@ -906,14 +929,13 @@ GEM
       sprockets (>= 3.0.0)
     sqlite3 (1.4.2)
     statsd-ruby (1.4.0)
-    stormbreaker (0.0.2)
+    stormbreaker (0.0.4)
       axe-core-api (~> 4.1)
       axe-core-rspec (~> 4.1)
       axe-core-selenium (~> 4.1)
       rspec (~> 3.8)
-      safe_yaml (~> 1.0.5)
     swearjar (1.4.0)
-    switchman (2.1.5)
+    switchman (2.2.1)
       activerecord (>= 5.1, < 6.1)
       guardrail (~> 2.0.0)
       open4 (~> 1.3.0)
@@ -950,8 +972,8 @@ GEM
       thread_safe (~> 0.1)
     unf (0.1.4)
       unf_ext
-    unf_ext (0.0.7.7)
-    unicode-display_width (1.5.0)
+    unf_ext (0.0.8)
+    unicode-display_width (2.1.0)
     uri_template (0.7.0)
     vault (0.15.0)
       aws-sigv4
@@ -1018,9 +1040,9 @@ DEPENDENCIES
   aws-sdk-sns (= 1.36.0)
   aws-sdk-sqs (= 1.34.0)
   aws-sigv4 (= 1.2.2)
-  axe-core-api (= 4.1.0)
-  axe-core-rspec (= 4.1.0)
-  axe-core-selenium (= 4.1.0)
+  axe-core-api (~> 4.1.0)
+  axe-core-rspec (~> 4.1.0)
+  axe-core-selenium (~> 4.1.0)
   barby (= 0.6.8)
   bcrypt (= 3.1.16)
   bluecloth (= 2.2.0)
@@ -1030,7 +1052,7 @@ DEPENDENCIES
   brotli (= 0.2.3)
   browser (= 5.1.0)
   builder (= 3.2.4)
-  bundler (>= 2.2.17, <= 2.2.21)
+  bundler (>= 2.2.17, <= 2.2.24)
   byebug (= 11.1.3)
   canvas_breach_mitigation!
   canvas_cache!
@@ -1062,7 +1084,7 @@ DEPENDENCIES
   colored (= 1.2)
   colorize (= 0.8.1)
   config_file!
-  crack (= 0.4.3)
+  crack (= 0.4.5)
   crocodoc-ruby (= 0.0.1)
   csv_diff!
   database_cleaner (~> 1.5, >= 1.5.3)
@@ -1085,14 +1107,14 @@ DEPENDENCIES
   faraday (= 0.17.4)
   faraday_middleware (= 0.14.0)
   ffi (= 1.13.1)
-  ffi-icu (= 0.3.0)
+  ffi-icu (= 0.4.0)!
   flakey_spec_catcher
   folio-pagination (= 0.0.12)
   fugit (= 1.4.0)
   gepub (= 1.0.13)
-  gergich (= 1.2.1)
+  gergich (= 1.2.3)
   google_drive!
-  graphql (= 1.9.17)
+  graphql (= 1.12.14)
   graphql-batch (= 0.4.3)
   guardrail (= 2.0.1)
   hashery (= 2.1.2)
@@ -1115,6 +1137,7 @@ DEPENDENCIES
   jira_ref_parser (= 1.0.1)
   json (= 2.5.1)
   json-jwt (= 1.13.0)
+  json-schema (~> 2.8.1)
   json_schemer (= 0.2.16)!
   json_token!
   letter_opener (= 1.7.0)
@@ -1158,7 +1181,7 @@ DEPENDENCIES
   rack (= 2.2.3)
   rack-brotli (= 1.0.0)
   rack-test (= 1.1.0)
-  rails (= 6.0.4)
+  rails (= 6.0.4.1)
   rails-controller-testing (= 1.0.5)
   rails-dom-testing (= 2.0.3)
   rails-observers (= 0.1.5)
@@ -1174,18 +1197,20 @@ DEPENDENCIES
   ritex (= 1.0.1)
   rotp (= 6.2.0)
   rqrcode (= 1.2.0)
-  rspec (= 3.9.0)
+  rspec (= 3.10.0)
   rspec-collection_matchers (= 1.2.0)
-  rspec-expectations (= 3.9.0)
-  rspec-mocks (= 3.9.1)
+  rspec-expectations (= 3.10.1)
+  rspec-mocks (= 3.10.2)
   rspec-rails (= 4.0.1)
-  rspec-support (= 3.9.2)
+  rspec-support (= 3.10.2)
   rspec_around_all (= 0.2.0)
   rspec_junit_formatter
-  rubocop (= 0.68.0)
+  rspecq!
+  rubocop (= 1.19.1)
   rubocop-canvas!
-  rubocop-performance (= 1.3.0)
-  rubocop-rspec (= 1.33.0)
+  rubocop-performance (= 1.11.5)
+  rubocop-rails (= 2.11.3)
+  rubocop-rspec (= 2.4.0)
   ruby-duration (= 3.2.3)
   ruby-progressbar (= 1.10.1)
   ruby2_keywords (= 0.0.3)
@@ -1193,7 +1218,6 @@ DEPENDENCIES
   ruby_parser (= 3.15.0)
   rubycas-client (= 2.3.9)
   rubyzip (= 2.3.0)
-  safe_yaml (= 1.0.5)
   saml2 (= 3.1.0)
   sanitize (= 5.2.3)
   sauce_whisk (= 0.2.2)
@@ -1212,11 +1236,10 @@ DEPENDENCIES
   spring-commands-rubocop (= 0.2.0)
   sqlite3 (= 1.4.2)
   statsd-ruby (= 1.4.0)
-  stormbreaker (= 0.0.2)
+  stormbreaker (= 0.0.4)
   stringify_ids!
-  switchman (= 2.1.5)
+  switchman (= 2.2.1)
   switchman-inst-jobs (= 3.1.2)
-  test-queue!
   testingbot
   testrailtagging (= 0.3.8.7)
   thrift (= 0.9.3.0)
