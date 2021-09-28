@@ -16,17 +16,24 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import {fireEvent, render, waitFor} from '@testing-library/react'
+import {fireEvent, render, waitFor, waitForElementToBeRemoved, within} from '@testing-library/react'
 import {mockAssignmentAndSubmission, mockQuery} from '@canvas/assignments/graphql/studentMocks'
 import {MockedProvider} from '@apollo/react-testing'
 import React from 'react'
 import StudentContent from '../StudentContent'
 import {AssignmentMocks} from '@canvas/assignments/graphql/student/Assignment'
+import ContextModuleApi from '../../apis/ContextModuleApi'
 import {RUBRIC_QUERY, SUBMISSION_COMMENT_QUERY} from '@canvas/assignments/graphql/student/Queries'
 
 jest.mock('../AttemptSelect')
 
+jest.mock('../../apis/ContextModuleApi')
+
 describe('Assignment Student Content View', () => {
+  beforeEach(() => {
+    ContextModuleApi.getContextModuleData.mockResolvedValue({})
+  })
+
   it('renders the student header if the assignment is unlocked', async () => {
     const props = await mockAssignmentAndSubmission()
     const {getByTestId} = render(
@@ -120,6 +127,8 @@ describe('Assignment Student Content View', () => {
     })
 
     it('renders the rubric if the assignment has one', async () => {
+      window.ENV.ASSIGNMENT_ID = 1
+      window.ENV.COURSE_ID = 1
       props.assignment.rubric = {}
 
       const variables = {
@@ -149,13 +158,55 @@ describe('Assignment Student Content View', () => {
         }
       ]
 
-      const {findByText} = render(
+      const {queryByRole, findByText} = render(
         <MockedProvider mocks={mocks}>
           <StudentContent {...props} />
         </MockedProvider>
       )
 
+      await waitForElementToBeRemoved(() => queryByRole('img', {name: /Loading/}))
       expect(await findByText('View Rubric')).toBeInTheDocument()
+    })
+
+    describe('module links', () => {
+      beforeEach(() => {
+        window.ENV.ASSIGNMENT_ID = '1'
+        window.ENV.COURSE_ID = '1'
+
+        ContextModuleApi.getContextModuleData.mockClear()
+      })
+
+      it('renders next and previous module links if they exist for the assignment', async () => {
+        ContextModuleApi.getContextModuleData.mockResolvedValue({
+          next: {url: '/next', tooltipText: {string: 'Next'}},
+          previous: {url: '/previous', tooltipText: {string: 'Previous'}}
+        })
+
+        const {getByTestId} = render(
+          <MockedProvider>
+            <StudentContent {...props} />
+          </MockedProvider>
+        )
+        await waitFor(() => expect(ContextModuleApi.getContextModuleData).toHaveBeenCalled())
+
+        const footer = getByTestId('student-footer')
+        expect(within(footer).getByRole('link', {name: /Previous/})).toBeInTheDocument()
+        expect(within(footer).getByRole('link', {name: /Next/})).toBeInTheDocument()
+      })
+
+      it('does not render module links if no next/previous modules exist for the assignment', async () => {
+        ContextModuleApi.getContextModuleData.mockResolvedValue({})
+
+        const {queryByRole} = render(
+          <MockedProvider>
+            <StudentContent {...props} />
+          </MockedProvider>
+        )
+        await waitFor(() => expect(ContextModuleApi.getContextModuleData).toHaveBeenCalled())
+
+        expect(queryByRole('link', {name: /Previous/})).not.toBeInTheDocument()
+        expect(queryByRole('link', {name: /Next/})).not.toBeInTheDocument()
+      })
     })
   })
 
@@ -203,40 +254,6 @@ describe('Assignment Student Content View', () => {
       )
       fireEvent.click(getByText('View Feedback'))
       expect(getAllByTitle('Loading')[0]).toBeInTheDocument()
-    })
-  })
-
-  describe('when there is an unread comment', () => {
-    const makeMocks = async () => {
-      const variables = {submissionAttempt: 0, submissionId: '1'}
-      const overrides = {
-        Node: {__typename: 'Submission'},
-        SubmissionCommentConnection: {nodes: [{read: false}]}
-      }
-      const result = await mockQuery(SUBMISSION_COMMENT_QUERY, overrides, variables)
-      const mocks = [
-        {
-          request: {
-            query: SUBMISSION_COMMENT_QUERY,
-            variables
-          },
-          result
-        }
-      ]
-      return mocks
-    }
-
-    it.skip('opens the feedback panel', async () => {
-      const mocks = await makeMocks()
-      const props = await mockAssignmentAndSubmission({
-        Submission: {unreadCommentCount: 1}
-      })
-      const {getByText} = render(
-        <MockedProvider mocks={mocks}>
-          <StudentContent {...props} />
-        </MockedProvider>
-      )
-      await waitFor(() => expect(getByText('Send Comment')).toBeInTheDocument())
     })
   })
 

@@ -19,6 +19,8 @@
 #
 module CC
   module LearningOutcomes
+    include Outcomes::OutcomeFriendlyDescriptionResolver
+
     def create_learning_outcomes(document=nil)
       return nil unless @course.has_outcomes?
       root_group = @course.root_outcome_group(false)
@@ -103,14 +105,20 @@ module CC
         out_node.calculation_int item.calculation_int if item.calculation_int.present?
         out_node.vendor_guid item.vendor_guid if item.vendor_guid.present?
 
+        # Populate friendly_description for course export
+        if Account.site_admin.feature_enabled?(:outcomes_friendly_description) && item.context == @course
+          friendly_description = resolve_friendly_descriptions(@course.account, @course, item.id)
+          out_node.friendly_description friendly_description.first&.description if friendly_description.first.present?
+        end
+
         if item.context != @course
           out_node.is_global_outcome !item.context
           out_node.external_identifier item.id
         end
 
-        if item.alignments.polymorphic_where(context: @course).exists?
+        if item.alignments.where(context: @course).exists?
           out_node.alignments do |alignments_node|
-            item.alignments.polymorphic_where(context: @course).each do |alignment|
+            item.alignments.where(context: @course).each do |alignment|
               alignments_node.alignment do |alignment_node|
                 alignment_node.content_type alignment.content_type
                 alignment_node.content_id create_key(alignment.content)

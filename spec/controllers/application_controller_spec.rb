@@ -267,22 +267,6 @@ RSpec.describe ApplicationController do
         end
       end
 
-      context "module_dnd" do
-        before(:each) do
-          controller.instance_variable_set(:@domain_root_account, Account.default)
-        end
-
-        it 'is false if the feature flag is off' do
-          Account.default.disable_feature!(:module_dnd)
-          expect(controller.js_env[:FEATURES][:module_dnd]).to be_falsey
-        end
-
-        it 'is true if the feature flag is on' do
-          Account.default.enable_feature!(:module_dnd)
-          expect(controller.js_env[:FEATURES][:module_dnd]).to be_truthy
-        end
-      end
-
       context "files_dnd" do
         before(:each) do
           controller.instance_variable_set(:@domain_root_account, Account.default)
@@ -312,22 +296,6 @@ RSpec.describe ApplicationController do
         it 'is true if the feature flag is on' do
           Account.default.enable_feature!(:usage_rights_discussion_topics)
           expect(controller.js_env[:FEATURES][:usage_rights_discussion_topics]).to be_truthy
-        end
-      end
-
-      context "unpublished_courses" do
-        before(:each) do
-          controller.instance_variable_set(:@domain_root_account, Account.default)
-        end
-
-        it 'is false if the feature flag is off' do
-          Account.default.disable_feature!(:unpublished_courses)
-          expect(controller.js_env[:FEATURES][:unpublished_courses]).to be_falsey
-        end
-
-        it 'is true if the feature flag is on' do
-          Account.default.enable_feature!(:unpublished_courses)
-          expect(controller.js_env[:FEATURES][:unpublished_courses]).to be_truthy
         end
       end
     end
@@ -432,6 +400,31 @@ RSpec.describe ApplicationController do
           course.account.settings[:enable_as_k5_account] = {value: true}
           expect(@controller.js_env[:K5_HOMEROOM_COURSE]).to be_falsy
         end
+      end
+    end
+
+    context "api gateway" do
+      it 'defaults to nil' do
+        jsenv = controller.js_env({})
+        expect(jsenv[:API_GATEWAY_URI]).to be_nil
+      end
+
+      it 'loads gateway uri from dynamic settings' do
+        allow(Canvas::DynamicSettings).to receive(:find).and_return({
+          'api_gateway_enabled' => 'true',
+          'api_gateway_uri' => 'http://the-gateway/graphql'
+        })
+        jsenv = controller.js_env({})
+        expect(jsenv[:API_GATEWAY_URI]).to eq('http://the-gateway/graphql')
+      end
+
+      it 'will not expose gateway uri from dynamic settings if not enabled' do
+        allow(Canvas::DynamicSettings).to receive(:find).and_return({
+          'api_gateway_enabled' => 'false',
+          'api_gateway_uri' => 'http://the-gateway/graphql'
+        })
+        jsenv = controller.js_env({})
+        expect(jsenv[:API_GATEWAY_URI]).to be_nil
       end
     end
   end
@@ -2040,6 +2033,42 @@ describe ApplicationController do
         controller.params[:controller] = 'assignments'
         controller.params[:action] = 'syllabus'
         expect(controller.send(:show_student_view_button?)).to be_falsey
+      end
+    end
+  end
+
+  describe "show_immersive_reader? helper" do
+    before(:once) do
+      course_with_student(active_all: true)
+    end
+
+    before(:each) do
+      user_session(@student)
+      controller.instance_variable_set(:@context, @course)
+      controller.instance_variable_set(:@current_user, @student)
+    end
+
+    it "is false when no immersive reader flags are enabled, even on supported pages" do
+      controller.params[:controller] = "wiki_pages"
+      controller.params[:action] = "show"
+      expect(controller.send(:show_immersive_reader?)).to be false
+    end
+
+    context "when root account has immersive reader flag enabled" do
+      before(:once) do
+        @course.root_account.enable_feature!(:immersive_reader_wiki_pages)
+      end
+
+      it "is true for wiki_pages#show" do
+        controller.params[:controller] = "wiki_pages"
+        controller.params[:action] = "show"
+        expect(controller.send(:show_immersive_reader?)).to be true
+      end
+
+      it "is false on pages where immersive reader is not supported" do
+        controller.params[:controller] = "courses"
+        controller.params[:action] = "show"
+        expect(controller.send(:show_immersive_reader?)).to be false
       end
     end
   end

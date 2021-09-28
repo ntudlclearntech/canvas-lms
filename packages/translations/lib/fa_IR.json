@@ -23,6 +23,9 @@
     "announcements_a4b8ed4a": {
         "message": "اطلاعیه ها"
     },
+    "apply_781a2546": {
+        "message": "اعمال"
+    },
     "apps_54d24a47": {
         "message": "برنامه ها"
     },
@@ -49,6 +52,9 @@
     },
     "calendar_event_89aadc1c": {
         "message": "رویداد تقویم"
+    },
+    "cancel_caeb1e68": {
+        "message": "لغو"
     },
     "choose_usage_rights_33683854": {
         "message": "انتخاب حقوق استفاده..."
@@ -170,12 +176,6 @@
     "external_tools_6e77821": {
         "message": "ابزارهای بیرونی"
     },
-    "file_upload_failed_af22dd91": {
-        "message": "آپلود پرونده انجام نشد"
-    },
-    "file_uploading_56c9c0c8": {
-        "message": "بارگذاری پرونده"
-    },
     "files_c300e900": {
         "message": "فایل ها"
     },
@@ -242,6 +242,9 @@
     "invalid_url_cbde79f": {
         "message": "نشانی اینترنتی معتبر نیست"
     },
+    "join_6cafecca": {
+        "message": "پیوستن"
+    },
     "jump_to_today_254ccf41": {
         "message": "پرش به امروز"
     },
@@ -295,6 +298,9 @@
     },
     "my_files_2f621040": {
         "message": "فایل های من"
+    },
+    "name_1aed4a1b": {
+        "message": "نام"
     },
     "new_13daf639": {
         "message": "جدید"
@@ -401,9 +407,6 @@
     "submitted_318fad53": {
         "message": "ارسال شد"
     },
-    "success_file_uploaded_8174e93f": {
-        "message": "موفقیت: پرونده بارگذاری شد"
-    },
     "syllabus_f191f65b": {
         "message": "سرفصل"
     },
@@ -442,9 +445,6 @@
     },
     "upload_media_ce31135a": {
         "message": "بارگذاری رسانه"
-    },
-    "upload_not_available_for_this_folder_8f8623c6": {
-        "message": "بارگیری برای این پوشه در دسترس نیست"
     },
     "uploading_19e8a4e7": {
         "message": "در حال بارگذاری"

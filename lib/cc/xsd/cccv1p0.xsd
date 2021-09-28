@@ -100,6 +100,7 @@
         <xs:element name="enable_offline_web_export" type="xs:boolean" minOccurs="0"/>
         <xs:element name="homeroom_course" type="xs:boolean" minOccurs="0"/>
         <xs:element name="course_color" type="xs:string" minOccurs="0"/>
+        <xs:element name="alt_name" type="xs:string" minOccurs="0"/>
         <xs:element name="image_url" type="xs:string" minOccurs="0"/>
         <xs:element name="image_identifier_ref" type="xs:string" minOccurs="0"/>
         <xs:element name="default_view" minOccurs="0">
@@ -526,6 +527,7 @@
             <xs:element name="external_identifier" type="xs:string" minOccurs="0"/>
             <xs:element name="is_global_outcome" type="xs:boolean" minOccurs="0"/>
             <xs:element name="vendor_guid" type="xs:string" minOccurs="0"/>
+            <xs:element name="friendly_description" type="xs:string" minOccurs="0"/>
             <xs:element name="alignments" minOccurs="0">
               <xs:complexType>
                 <xs:sequence>

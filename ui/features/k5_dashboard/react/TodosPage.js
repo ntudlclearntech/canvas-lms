@@ -48,8 +48,7 @@ export const TodosPage = ({timeZone, visible}) => {
       path: '/api/v1/users/self/todo',
       success: useCallback(data => {
         if (data) {
-          data.sort(sortTodos)
-          setTodos(data)
+          setTodos(data.filter(todo => todo.type === 'grading').sort(sortTodos))
           setLoading(false)
         }
       }, []),
@@ -95,7 +94,9 @@ export const TodosPage = ({timeZone, visible}) => {
         id="homeroom-todos"
         isLoading={loading}
         renderCustomSkeleton={todoSkeleton}
-        skeletonsCount={5}
+        skeletonsNum={todos?.length}
+        defaultSkeletonsNum={5}
+        allowZeroSkeletons={false}
       >
         {todos?.length > 0 ? (
           todos.map(todo => (

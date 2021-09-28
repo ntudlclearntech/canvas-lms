@@ -47,21 +47,19 @@ export const DiscussionEntry = {
       permissions {
         ...DiscussionEntryPermissions
       }
-      rootEntry {
-        id
-        rootEntryParticipantCounts {
-          unreadCount
-          repliesCount
+      rootEntryId
+      isolatedEntryId
+      parentId
+      quotedEntry {
+        createdAt
+        previewMessage
+        author {
+          shortName
         }
-      }
-      discussionTopic {
-        entryCounts {
-          unreadCount
-          repliesCount
+        editor {
+          shortName
         }
-      }
-      parent {
-        id
+        deleted
       }
     }
     ${DiscussionEntryPermissions.fragment}
@@ -90,20 +88,20 @@ export const DiscussionEntry = {
       createdAt: string
     }),
     permissions: DiscussionEntryPermissions.shape,
-    rootEntry: shape({
-      id: string,
-      rootEntryParticipantCounts: shape({
-        unreadCount: number,
-        repliesCount: number
-      })
-    }),
-    discussionTopic: shape({
-      entryCounts: shape({
-        unreadCount: number,
-        repliesCount: number
-      })
-    }),
-    parent: shape({id: string})
+    rootEntryId: string,
+    isolatedEntryId: string,
+    parentId: string,
+    quotedEntry: shape({
+      createdAt: string,
+      previewMessage: string,
+      author: shape({
+        shortName: string
+      }),
+      editor: shape({
+        shortName: string
+      }),
+      deleted: bool
+    })
   }),
 
   mock: ({
@@ -136,19 +134,10 @@ export const DiscussionEntry = {
       pageInfo: PageInfo.mock(),
       __typename: 'DiscussionSubentriesConnection'
     },
-    rootEntry = null,
-    discussionTopic = {
-      entryCounts: {
-        unreadCount: 2,
-        repliesCount: 56,
-        __typename: 'DiscussionEntryCounts'
-      },
-      __typename: 'Discussion'
-    },
-    parent = {
-      id: '77',
-      __typename: 'DiscussionEntry'
-    }
+    rootEntryId = '77',
+    isolatedEntryId = '77',
+    parentId = '77',
+    quotedEntry = null
   } = {}) => ({
     id,
     _id,
@@ -168,9 +157,10 @@ export const DiscussionEntry = {
     lastReply,
     permissions,
     discussionSubentriesConnection,
-    rootEntry,
-    discussionTopic,
-    parent,
+    rootEntryId,
+    isolatedEntryId,
+    parentId,
+    quotedEntry,
     __typename: 'DiscussionEntry'
   })
 }

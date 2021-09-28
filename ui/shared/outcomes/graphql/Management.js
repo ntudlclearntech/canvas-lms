@@ -23,8 +23,6 @@ import {gql} from '@canvas/apollo'
 export const groupFields = `
   _id
   title
-  outcomesCount
-  childGroupsCount
 `
 
 const groupFragment = gql`
@@ -63,8 +61,6 @@ export const CHILD_GROUPS_QUERY = gql`
       }
       ... on LearningOutcomeGroup {
         _id
-        outcomesCount
-        childGroupsCount
         ...ChildGroupsFragment
       }
     }
@@ -86,6 +82,8 @@ export const FIND_GROUP_OUTCOMES = gql`
       ... on LearningOutcomeGroup {
         _id
         title
+        contextType
+        contextId
         outcomesCount(searchQuery: $searchQuery)
         outcomes(searchQuery: $searchQuery, first: 10, after: $outcomesCursor) {
           pageInfo {
@@ -93,7 +91,7 @@ export const FIND_GROUP_OUTCOMES = gql`
             endCursor
           }
           edges {
-            id
+            _id
             node {
               ... on LearningOutcome {
                 _id
@@ -113,7 +111,7 @@ export const FIND_GROUP_OUTCOMES = gql`
 `
 
 export const SEARCH_GROUP_OUTCOMES = gql`
-  query SearchGroupDetailQuery(
+  query SearchGroupOutcomesQuery(
     $id: ID!
     $outcomesCursor: String
     $outcomesContextId: ID!
@@ -133,7 +131,7 @@ export const SEARCH_GROUP_OUTCOMES = gql`
           }
           edges {
             canUnlink
-            id
+            _id
             node {
               ... on LearningOutcome {
                 _id
@@ -152,6 +150,10 @@ export const SEARCH_GROUP_OUTCOMES = gql`
                 }
               }
             }
+            group {
+              _id
+              title
+            }
           }
         }
       }
@@ -169,6 +171,21 @@ export const SET_OUTCOME_FRIENDLY_DESCRIPTION_MUTATION = gql`
       errors {
         attribute
         message
+      }
+    }
+  }
+`
+
+export const IMPORT_OUTCOMES = gql`
+  mutation ImportOutcomes($input: ImportOutcomesInput!) {
+    importOutcomes(input: $input) {
+      errors {
+        attribute
+        message
+      }
+      progress {
+        _id
+        state
       }
     }
   }
@@ -223,7 +240,13 @@ export const UPDATE_LEARNING_OUTCOME = gql`
 export const MOVE_OUTCOME_LINKS = gql`
   mutation MoveOutcomeLinks($input: MoveOutcomeLinksInput!) {
     moveOutcomeLinks(input: $input) {
-      movedOutcomeLinkIds
+      movedOutcomeLinks {
+        _id
+        group {
+          _id
+          title
+        }
+      }
       errors {
         attribute
         message
@@ -232,21 +255,30 @@ export const MOVE_OUTCOME_LINKS = gql`
   }
 `
 
-export const updateOutcomeGroup = (contextType, contextId, groupId, group) =>
-  axios.put(
-    `/api/v1/${pluralize(contextType).toLowerCase()}/${contextId}/outcome_groups/${groupId}`,
-    group
-  )
+export const UPDATE_LEARNING_OUTCOME_GROUP = gql`
+  mutation UpdateLearningOutcomeGroup($input: UpdateLearningOutcomeGroupInput!) {
+    updateLearningOutcomeGroup(input: $input) {
+      learningOutcomeGroup {
+        _id
+        title
+        description
+        vendorGuid
+        parentOutcomeGroup {
+          _id
+          title
+        }
+      }
+      errors {
+        attribute
+        message
+      }
+    }
+  }
+`
 
 export const removeOutcomeGroup = (contextType, contextId, groupId) =>
   axios.delete(
     `/api/v1/${pluralize(contextType).toLowerCase()}/${contextId}/outcome_groups/${groupId}`
-  )
-
-export const moveOutcomeGroup = (contextType, contextId, groupId, newParentGroupId) =>
-  axios.put(
-    `/api/v1/${pluralize(contextType).toLowerCase()}/${contextId}/outcome_groups/${groupId}`,
-    {parent_outcome_group_id: newParentGroupId}
   )
 
 export const addOutcomeGroup = (contextType, contextId, parentGroupId, title) => {

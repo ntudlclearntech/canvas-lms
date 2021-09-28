@@ -40,12 +40,20 @@ module MicrosoftSync
 
     DEFAULT_N_INTERMITTENT_RETRIES = 1
 
-    class ApplicationNotAuthorizedForTenant < StandardError
-      include Errors::GracefulCancelErrorMixin
+    class ApplicationNotAuthorizedForTenant < MicrosoftSync::Errors::GracefulCancelError
+      def self.public_message
+        I18n.t 'Application not authorized for tenant. ' \
+          'Please make sure your admin has granted access for us to access your Microsoft tenant.'
+      end
     end
 
-    class BatchRequestFailed < StandardError; end
-    class BatchRequestThrottled < StandardError
+    class BatchRequestFailed < MicrosoftSync::Errors::PublicError
+      def self.public_message
+        I18n.t 'Got error from Microsoft API while making a batch request.'
+      end
+    end
+
+    class BatchRequestThrottled < MicrosoftSync::Errors::PublicError
       include Errors::Throttled
 
       def initialize(msg, responses)
@@ -56,7 +64,19 @@ module MicrosoftSync
           headers['retry-after'].presence&.to_f
         end.compact.max
       end
+
+      def self.public_message
+        I18n.t 'Received throttled response from Microsoft API while making a batch request.'
+      end
     end
+
+    class ExpectedErrorWrapper < StandardError
+      attr_reader :wrapped_exception
+      def initialize(wrapped_exception)
+        @wrapped_exception = wrapped_exception
+      end
+    end
+    private_constant :ExpectedErrorWrapper
 
     def initialize(tenant, extra_statsd_tags)
       @tenant = tenant
@@ -72,9 +92,10 @@ module MicrosoftSync
     #
     # If check_for_expected_response is given, a block can be passed to check for expected
     # responses before raising an error based on the code. If the block returns non-falsey,
-    # the value is returned, and an "expected" statsd metric is incremented.
-    # This is useful if there are non-200s expected and you don't want to raise an error /
-    # count those these as errors in the stats.
+    # the value is returned, and an "expected" statsd metric is incremented. If some
+    # StandardError is returned, the error is raised (and counted as "expected", not
+    # "error"). This is useful if there are non-200s expected and you don't want to raise
+    # an HTTP error / count those these as errors in the stats.
     def request(method, path,
                 quota: nil, retries: DEFAULT_N_INTERMITTENT_RETRIES, **options,
                 &check_for_expected_response)
@@ -89,6 +110,8 @@ module MicrosoftSync
 
       if check_for_expected_response && (result = check_for_expected_response.call(response))
         log_and_increment(method, path, statsd_tags, :expected, response.code)
+        raise ExpectedErrorWrapper.new(result) if result.is_a?(StandardError)
+
         return result
       end
 
@@ -97,6 +120,8 @@ module MicrosoftSync
       result = response.parsed_response
       log_and_increment(method, path, statsd_tags, :success, response.code)
       result
+    rescue ExpectedErrorWrapper => e
+      raise e.wrapped_exception
     rescue => error
       response_code = response&.code&.to_s || error.class.name.tr(':', '_')
 
@@ -123,9 +148,9 @@ module MicrosoftSync
     # multiple pages of results.
     # @param [Hash] options_to_be_expanded: sent to expand_options
     # @param [Array] quota array of [read_quota_used, write_quota_used] for each page/request
-    def get_paginated_list(endpoint, quota:, **options_to_be_expanded)
+    def get_paginated_list(endpoint, quota:, expected_error_block: nil, **options_to_be_expanded)
       request_options = expand_options(**options_to_be_expanded)
-      response = request(:get, endpoint, query: request_options, quota: quota)
+      response = request(:get, endpoint, query: request_options, quota: quota, &expected_error_block)
       return response[PAGINATED_VALUE_KEY] unless block_given?
 
       loop do
@@ -188,7 +213,9 @@ module MicrosoftSync
     # -- Helpers for request():
 
     def request_without_metrics(method, path, options)
-      options[:headers] ||= {}
+      options = options.dup
+      options[:headers] = options[:headers]&.dup || {}
+
       options[:headers]['Authorization'] = 'Bearer ' + LoginService.token(tenant)
       if options[:body]
         options[:headers]['Content-type'] = 'application/json'

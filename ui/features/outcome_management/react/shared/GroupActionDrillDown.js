@@ -16,7 +16,7 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import React, {useState, useEffect} from 'react'
+import React, {useState, useEffect, useRef} from 'react'
 import PropTypes from 'prop-types'
 import I18n from 'i18n!FindOutcomesModal'
 import {Spinner} from '@instructure/ui-spinner'
@@ -25,24 +25,51 @@ import {IconArrowOpenEndLine, IconArrowOpenStartLine} from '@instructure/ui-icon
 import {Select} from '@instructure/ui-select'
 import {showFlashAlert} from '@canvas/alerts/react/FlashAlert'
 import {isRTL} from '@canvas/i18n/rtlHelper'
+import useCanvasContext from '@canvas/outcomes/react/hooks/useCanvasContext'
 
 const BACK_OPTION = 'back'
 const VIEW_OPTION = 'view'
 const LOADING_OPTION = 'loading'
 
-const GroupActionDrillDown = ({onCollectionClick, collections, rootId, loadedGroups}) => {
-  const [selectedGroupId, setSelectedGroupId] = useState(rootId)
+const GroupActionDrillDown = ({
+  onCollectionClick,
+  collections,
+  rootId,
+  loadedGroups,
+  setShowOutcomesView,
+  isLoadingGroupDetail,
+  outcomesCount,
+  showActionLinkForRoot,
+  selectedGroupId: incomingGroupId,
+  showOptions
+}) => {
+  const {rootIds} = useCanvasContext()
+  const [selectedGroupId, setSelectedGroupId] = useState(incomingGroupId || rootId)
+  const inputRef = useRef(null)
   const [highlightedOptionId, setHighlightedOptionId] = useState('')
   const [highlightAction, setHighlightAction] = useState(false)
-  const [isShowingOptions, setIsShowingOptions] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-  const hasOpenedGroup = selectedGroupId !== rootId
+  const [isShowingOptions, setIsShowingOptions] = useState(showOptions)
+  const [isLoadingGroup, setIsLoadingGroup] = useState(false)
+  const hasSelectedGroup = selectedGroupId !== rootId
   const isActionLinkHighlighted = highlightAction || VIEW_OPTION === highlightedOptionId
   const margin = isRTL() ? {marginRight: '-.75em'} : {marginLeft: '-.75em'}
+  const disableActionLink = rootIds.includes(selectedGroupId)
 
   useEffect(() => {
-    setIsLoading(hasOpenedGroup && !loadedGroups.includes(selectedGroupId))
-  }, [hasOpenedGroup, loadedGroups, selectedGroupId])
+    setIsLoadingGroup(hasSelectedGroup && !loadedGroups.includes(selectedGroupId))
+  }, [hasSelectedGroup, loadedGroups, selectedGroupId])
+
+  useEffect(() => {
+    if (!disableActionLink && selectedGroupId === rootId) {
+      onCollectionClick({id: rootId})
+    }
+  }, [disableActionLink, selectedGroupId, rootId, onCollectionClick])
+
+  useEffect(() => {
+    if (showOptions) {
+      inputRef.current.focus()
+    }
+  }, [showOptions])
 
   const handleHighlightOption = (_event, {id}) => {
     setHighlightAction(false)
@@ -51,10 +78,15 @@ const GroupActionDrillDown = ({onCollectionClick, collections, rootId, loadedGro
 
   const handleSelect = (_event, {id}) => {
     if (id === VIEW_OPTION) {
-      // TODO: Implement in OUT-4483
+      setShowOutcomesView(true)
+      setIsShowingOptions(false)
     } else if (id === BACK_OPTION) {
       const parentGroupId = collections[selectedGroupId].parentGroupId
+      setShowOutcomesView(false)
       setSelectedGroupId(parentGroupId)
+      if (!rootIds.includes(parentGroupId)) {
+        onCollectionClick({id: parentGroupId})
+      }
       showFlashAlert({
         message: I18n.t(`Group "%{groupName}" entered.`, {
           groupName: collections[parentGroupId].name
@@ -66,21 +98,18 @@ const GroupActionDrillDown = ({onCollectionClick, collections, rootId, loadedGro
       setSelectedGroupId(id)
       onCollectionClick({id})
       setHighlightAction(true)
+      setShowOutcomesView(false)
     }
   }
 
-  const renderSubgroups = () => {
-    if (isLoading) {
-      return (
-        <Select.Option id={LOADING_OPTION}>
-          <Flex justifyItems="center">
-            <Spinner renderTitle={I18n.t('Loading learning outcome groups')} />
-          </Flex>
-        </Select.Option>
-      )
-    }
-
-    return collections[selectedGroupId].collections.map(subgroupId => (
+  const subgroups = isLoadingGroup ? (
+    <Select.Option id={LOADING_OPTION}>
+      <Flex justifyItems="center">
+        <Spinner renderTitle={I18n.t('Loading learning outcome groups')} />
+      </Flex>
+    </Select.Option>
+  ) : (
+    collections[selectedGroupId].collections.map(subgroupId => (
       <Select.Option
         key={subgroupId}
         id={subgroupId}
@@ -91,22 +120,45 @@ const GroupActionDrillDown = ({onCollectionClick, collections, rootId, loadedGro
         {collections[subgroupId].name}
       </Select.Option>
     ))
-  }
+  )
 
-  return (
-    <Select
-      isShowingOptions={isShowingOptions}
-      assistiveText={I18n.t('Use arrow keys to navigate options')}
-      placeholder={I18n.t('Select an outcome group')}
-      width="320px"
-      inputValue={isShowingOptions ? '' : I18n.t('Select an outcome group')}
-      renderLabel={I18n.t('Groups')}
-      onRequestShowOptions={() => setIsShowingOptions(true)}
-      onRequestHideOptions={() => setIsShowingOptions(false)}
-      onRequestHighlightOption={handleHighlightOption}
-      onRequestSelectOption={handleSelect}
-    >
-      {hasOpenedGroup && (
+  const selectedGroup = isLoadingGroupDetail ? (
+    <Select.Option id={VIEW_OPTION} isDisabled isHighlighted={false}>
+      {collections[selectedGroupId].name}
+    </Select.Option>
+  ) : (
+    <Select.Group renderLabel={collections[selectedGroupId].name}>
+      <Select.Option
+        id={VIEW_OPTION}
+        isDisabled={disableActionLink}
+        isHighlighted={disableActionLink ? false : isActionLinkHighlighted}
+      >
+        {!disableActionLink && (
+          <div
+            style={{
+              ...margin,
+              color: isActionLinkHighlighted ? '' : '#008EE2'
+            }}
+          >
+            {I18n.t(
+              {
+                one: 'View 1 Outcome',
+                other: 'View %{count} Outcomes'
+              },
+              {
+                count: outcomesCount
+              }
+            )}
+          </div>
+        )}
+      </Select.Option>
+    </Select.Group>
+  )
+
+  const getOptions = () => {
+    let options = []
+    if (hasSelectedGroup) {
+      options = [
         <Select.Option
           id={BACK_OPTION}
           isHighlighted={BACK_OPTION === highlightedOptionId}
@@ -114,30 +166,35 @@ const GroupActionDrillDown = ({onCollectionClick, collections, rootId, loadedGro
         >
           {I18n.t('Back')}
         </Select.Option>
-      )}
-      {hasOpenedGroup && (
-        <Select.Group renderLabel={collections[selectedGroupId].name}>
-          <Select.Option id={VIEW_OPTION} isHighlighted={isActionLinkHighlighted}>
-            <div
-              style={{
-                ...margin,
-                color: isActionLinkHighlighted ? '' : '#008EE2'
-              }}
-            >
-              {I18n.t(
-                {
-                  one: 'View 1 Outcome',
-                  other: 'View %{count} Outcomes'
-                },
-                {
-                  count: collections[selectedGroupId].outcomesCount
-                }
-              )}
-            </div>
-          </Select.Option>
-        </Select.Group>
-      )}
-      {renderSubgroups()}
+      ]
+    }
+    if (hasSelectedGroup || showActionLinkForRoot) {
+      options.push(selectedGroup)
+    }
+    options.push(subgroups)
+    return options
+  }
+
+  return (
+    <Select
+      isShowingOptions={isShowingOptions}
+      assistiveText={I18n.t('Use arrow keys to navigate options')}
+      placeholder={I18n.t('Select an outcome group')}
+      inputValue={
+        isShowingOptions
+          ? ''
+          : selectedGroupId !== rootId
+          ? collections[selectedGroupId].name
+          : I18n.t('Select an outcome group')
+      }
+      renderLabel={I18n.t('Groups')}
+      onRequestShowOptions={() => setIsShowingOptions(true)}
+      onRequestHideOptions={() => setIsShowingOptions(false)}
+      onRequestHighlightOption={handleHighlightOption}
+      onRequestSelectOption={handleSelect}
+      inputRef={e => (inputRef.current = e)}
+    >
+      {getOptions()}
     </Select>
   )
 }
@@ -146,7 +203,20 @@ GroupActionDrillDown.propTypes = {
   onCollectionClick: PropTypes.func.isRequired,
   rootId: PropTypes.string.isRequired,
   collections: PropTypes.object.isRequired,
-  loadedGroups: PropTypes.arrayOf(PropTypes.string).isRequired
+  loadedGroups: PropTypes.arrayOf(PropTypes.string).isRequired,
+  setShowOutcomesView: PropTypes.func.isRequired,
+  isLoadingGroupDetail: PropTypes.bool.isRequired,
+  outcomesCount: PropTypes.number,
+  showActionLinkForRoot: PropTypes.bool,
+  selectedGroupId: PropTypes.string,
+  showOptions: PropTypes.bool
+}
+
+GroupActionDrillDown.defaultProps = {
+  outcomesCount: 0,
+  showActionLinkForRoot: false,
+  selectedGroupId: '',
+  showOptions: false
 }
 
 export default GroupActionDrillDown

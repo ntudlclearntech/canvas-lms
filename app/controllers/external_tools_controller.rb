@@ -558,6 +558,10 @@ class ExternalToolsController < ApplicationController
 
     assignment = api_find(@context.assignments.active, params[:assignment_id]) if params[:assignment_id]
 
+    if assignment.present? && @current_user.present?
+      assignment = AssignmentOverrideApplicator.assignment_overridden_for(assignment, @current_user)
+    end
+
     # from specs, seems this is only a fix for Quizzes Next
     # resource_link_id in regular QN launches is assignment.lti_resource_link_id
     opts[:link_code] = @tool.opaque_identifier_for(assignment.external_tool_tag) if assignment.present? && assignment.quiz_lti?
@@ -778,7 +782,8 @@ class ExternalToolsController < ApplicationController
   #
   # @argument user_navigation[visibility] [String, "admins"|"members"|"public"]
   #   Who will see the navigation tab. "admins" for admins, "public" or
-  #   "members" for everyone
+  #   "members" for everyone. Setting this to `null` will remove this configuration
+  #   and use the default behavior, which is "public".
   #
   # @argument course_home_sub_navigation[url] [String]
   #   The url of the external tool for right-side course home navigation menu
@@ -798,9 +803,10 @@ class ExternalToolsController < ApplicationController
   # @argument course_navigation[text] [String]
   #   The text that will show on the left-tab in the course navigation
   #
-  # @argument course_navigation[visibility] [String, "admins"|"members"]
+  # @argument course_navigation[visibility] [String, "admins"|"members"|"public"]
   #   Who will see the navigation tab. "admins" for course admins, "members" for
-  #   students, null for everyone
+  #   students, "public" for everyone. Setting this to `null` will remove this configuration
+  #   and use the default behavior, which is "public".
   #
   # @argument course_navigation[windowTarget] [String, "_blank"|"_self"]
   #   Determines how the navigation tab will be opened.
@@ -1189,10 +1195,12 @@ class ExternalToolsController < ApplicationController
   #      { ...  }]
   #
   def all_visible_nav_tools
-    courses = api_find_all(Course, @course_ids)
-    return unless courses.all? { |course| authorized_action(course, @current_user, :read) }
+    GuardRail.activate(:secondary) do
+      courses = api_find_all(Course, @course_ids)
+      return unless courses.all? { |course| authorized_action(course, @current_user, :read) }
 
-    render :json => external_tools_json_for_courses(courses)
+      render :json => external_tools_json_for_courses(courses)
+    end
   end
 
   # @API Get visible course navigation tools for a single course
@@ -1207,10 +1215,12 @@ class ExternalToolsController < ApplicationController
   #   curl 'https://<canvas>/api/v1/courses/<course_id>/external_tools/visible_course_nav_tools' \
   #        -H "Authorization: Bearer <token>"
   def visible_course_nav_tools
-    return unless authorized_action(@context, @current_user, :read)
-    return render :json => { :message => 'Only course context is supported' }, :status => :bad_request unless context.is_a?(Course)
+    GuardRail.activate(:secondary) do
+      return unless authorized_action(@context, @current_user, :read)
+      return render :json => { :message => 'Only course context is supported' }, :status => :bad_request unless context.is_a?(Course)
 
-    render :json => external_tools_json_for_courses([@context])
+      render :json => external_tools_json_for_courses([@context])
+    end
   end
 
   private

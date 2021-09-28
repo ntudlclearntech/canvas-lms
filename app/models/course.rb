@@ -99,6 +99,10 @@ class Course < ActiveRecord::Base
   has_many :tas, :through => :ta_enrollments, :source => :user
   has_many :observer_enrollments, -> { where("enrollments.workflow_state NOT IN ('rejected', 'deleted')").preload(:user) }, class_name: 'ObserverEnrollment'
   has_many :observers, :through => :observer_enrollments, :source => :user
+  has_many :non_observer_enrollments, -> {
+    where("enrollments.workflow_state NOT IN ('rejected', 'deleted') AND enrollments.type<>'ObserverEnrollment'")
+      .preload(:user)
+  }, class_name: 'Enrollment'
   has_many :participating_observers, -> { where(enrollments: { workflow_state: 'active' }) }, through: :observer_enrollments, source: :user
   has_many :participating_observers_by_date, -> { where(enrollments: { type: 'ObserverEnrollment', workflow_state: 'active' }).
     joins("INNER JOIN #{EnrollmentState.quoted_table_name} ON enrollment_states.enrollment_id=enrollments.id").
@@ -201,6 +205,8 @@ class Course < ActiveRecord::Base
   has_many :gradebook_csvs, inverse_of: :course
 
   has_many :master_course_templates, :class_name => "MasterCourses::MasterTemplate"
+  # only valid if non-nil
+  attr_accessor :is_master_course
   has_many :master_course_subscriptions, :class_name => "MasterCourses::ChildSubscription", :foreign_key => 'child_course_id'
   has_one :late_policy, dependent: :destroy, inverse_of: :course
   has_many :notification_policy_overrides, as: :context, inverse_of: :context
@@ -234,6 +240,8 @@ class Course < ActiveRecord::Base
 
   has_many :comment_bank_items, inverse_of: :course
 
+  has_many :pace_plans
+
   prepend Profile::Association
 
   before_save :assign_uuid
@@ -259,6 +267,7 @@ class Course < ActiveRecord::Base
   before_validation :verify_unique_ids
   validate :validate_course_dates
   validate :validate_course_image
+  validate :validate_banner_image
   validate :validate_default_view
   validate :validate_template
   validate :validate_not_on_siteadmin
@@ -450,6 +459,24 @@ class Course < ActiveRecord::Base
     end
   end
 
+  def validate_banner_image
+    if self.banner_image_url.present? && self.banner_image_id.present?
+      self.errors.add(:banner_image, t("banner_image_url and banner_image_id cannot both be set."))
+      false
+    elsif self.banner_image_id.present? && valid_course_image_id?(self.banner_image_id)
+      true
+    elsif self.banner_image_url.present? && valid_course_image_url?(self.banner_image_url)
+      true
+    else
+      if self.banner_image_id.present?
+        self.errors.add(:banner_image_id, t("banner_image_id is not a valid ID"))
+      elsif self.banner_image_url.present?
+        self.errors.add(:banner_image_url, t("banner_image_url is not a valid URL"))
+      end
+      false
+    end
+  end
+
   def validate_course_image
     if self.image_url.present? && self.image_id.present?
       self.errors.add(:image, t("image_url and image_id cannot both be set."))
@@ -513,6 +540,16 @@ class Course < ActiveRecord::Base
       end
     elsif self.image_url
       self.image_url
+    end
+  end
+
+  def banner_image
+    @banner_image ||= if self.banner_image_id.present?
+      self.shard.activate do
+        self.attachments.active.where(id: self.banner_image_id).take&.public_download_url(1.week)
+      end
+    elsif self.banner_image_url
+      self.banner_image_url
     end
   end
 
@@ -916,6 +953,14 @@ class Course < ActiveRecord::Base
       else
         User.where(:id => instructor_enrollment_scope.select(:id)).to_a
       end
+    end
+  end
+
+  def user_is_admin?(user)
+    return unless user
+
+    fetch_on_enrollments('user_is_admin', user) do
+      self.enrollments.for_user(user).active.of_admin_type.exists?
     end
   end
 
@@ -1576,10 +1621,6 @@ class Course < ActiveRecord::Base
       fetch_on_enrollments("has_active_observer_enrollment", user) { enrollments.for_user(user).active_by_date.where(:type => "ObserverEnrollment").where.not(:associated_user_id => nil).exists? } }
     can :read_grades
 
-    # we need to look into removing teacherless and the permission checks
-    given { |user| available? && !template? && self.teacherless? && user && fetch_on_enrollments("has_active_student_enrollment", user) { enrollments.for_user(user).active_by_date.of_student_type.exists? } }
-    can :update and can :delete and RoleOverride.teacherless_permissions.each{|p| can p }
-
     # Active admins (Teacher/TA/Designer)
     #################### Begin legacy permission block #########################
     given do |user|
@@ -1872,14 +1913,6 @@ class Course < ActiveRecord::Base
 
     @membership_allows ||= {}
     @membership_allows[[user.id, permission]] ||= self.cached_account_users_for(user).any? { |au| permission.nil? || au.has_permission_to?(self, permission) }
-  end
-
-  def teacherless?
-    # TODO: I need a better test for teacherless courses... in the mean time we'll just do this
-    return false
-    @teacherless_course ||= Rails.cache.fetch(['teacherless_course', self].cache_key) do
-      !self.sis_source_id && self.teacher_enrollments.empty?
-    end
   end
 
   def grade_publishing_status_translation(status, message)
@@ -2566,7 +2599,7 @@ class Course < ActiveRecord::Base
       :organize_epub_by_content_type, :show_announcements_on_home_page,
       :home_page_announcement_limit, :enable_offline_web_export, :usage_rights_required,
       :restrict_student_future_view, :restrict_student_past_view, :restrict_enrollments_to_course_dates,
-      :homeroom_course, :course_color
+      :homeroom_course, :course_color, :alt_name
     ]
   end
 
@@ -2845,6 +2878,7 @@ class Course < ActiveRecord::Base
   TAB_COLLABORATIONS_NEW = 17
   TAB_RUBRICS = 18
   TAB_SCHEDULE = 19
+  TAB_PACE_PLANS = 20
 
   CANVAS_K6_TAB_IDS = [TAB_HOME, TAB_ANNOUNCEMENTS, TAB_GRADES, TAB_MODULES].freeze
   COURSE_SUBJECT_TAB_IDS = [TAB_HOME, TAB_SCHEDULE, TAB_MODULES, TAB_GRADES].freeze
@@ -2999,17 +3033,30 @@ class Course < ActiveRecord::Base
   def uncached_tabs_available(user, opts)
     # make sure t() is called before we switch to the secondary, in case we update the user's selected locale in the process
     course_subject_tabs = elementary_subject_course? && opts[:course_subject_tabs]
+    pace_plans_allowed = false
     default_tabs = if elementary_homeroom_course?
                      Course.default_homeroom_tabs
                    elsif course_subject_tabs
                      Course.course_subject_tabs
                    elsif elementary_subject_course?
+                     pace_plans_allowed = true
                      Course.elementary_course_nav_tabs
                    else
+                     pace_plans_allowed = true
                      Course.default_tabs
                    end
     # can't manage people in template courses
     default_tabs.delete_if { |t| t[:id] == TAB_PEOPLE } if template?
+    # only show pace plans if enabled
+    if pace_plans_allowed && account.feature_enabled?(:pace_plans) && enable_pace_plans
+      default_tabs.insert(default_tabs.index { |t| t[:id] == TAB_MODULES } + 1, {
+        :id => TAB_PACE_PLANS,
+        :label => t('#tabs.pace_plans', "Pace Plans"),
+        :css_class => 'pace_plans',
+        :href => :course_pace_plans_path,
+        :visibility => 'admins'
+      })
+    end
     opts[:include_external] = false if elementary_homeroom_course?
 
     GuardRail.activate(:secondary) do
@@ -3116,13 +3163,13 @@ class Course < ActiveRecord::Base
 
       # remove tabs that the user doesn't have access to
       unless opts[:for_reordering]
-        delete_unless.call([TAB_HOME, TAB_ANNOUNCEMENTS, TAB_PAGES, TAB_OUTCOMES, TAB_CONFERENCES, TAB_COLLABORATIONS, TAB_MODULES], :read, :manage_content)
+        delete_unless.call([TAB_HOME, TAB_ANNOUNCEMENTS, TAB_PAGES, TAB_OUTCOMES, TAB_CONFERENCES, TAB_COLLABORATIONS, TAB_MODULES, TAB_PACE_PLANS], :read, :manage_content)
 
         member_only_tabs = tabs.select{ |t| t[:visibility] == 'members' }
         tabs -= member_only_tabs if member_only_tabs.present? && !check_for_permission.call(:participate_as_student, :read_as_admin)
 
-        delete_unless.call([TAB_ASSIGNMENTS, TAB_QUIZZES], :read, :manage_content, :manage_assignments)
-        delete_unless.call([TAB_SYLLABUS], :read, :read_syllabus, :manage_content, :manage_assignments)
+        delete_unless.call([TAB_ASSIGNMENTS, TAB_QUIZZES], :read, :manage_content, *RoleOverride::GRANULAR_MANAGE_ASSIGNMENT_PERMISSIONS)
+        delete_unless.call([TAB_SYLLABUS], :read, :read_syllabus, :manage_content, *RoleOverride::GRANULAR_MANAGE_ASSIGNMENT_PERMISSIONS)
 
         admin_only_tabs = tabs.select{ |t| t[:visibility] == 'admins' }
         tabs -= admin_only_tabs if admin_only_tabs.present? && !check_for_permission.call(:read_as_admin)
@@ -3139,7 +3186,7 @@ class Course < ActiveRecord::Base
         delete_unless.call([TAB_RUBRICS], :read_rubrics, :manage_rubrics)
         delete_unless.call([TAB_FILES], :read, *RoleOverride::GRANULAR_FILE_PERMISSIONS)
 
-        tabs -= [item_banks_tab] if item_banks_tab && !check_for_permission.call(:manage_content, :manage_assignments)
+        tabs -= [item_banks_tab] if item_banks_tab && !check_for_permission.call(:manage_content, *RoleOverride::GRANULAR_MANAGE_ASSIGNMENT_PERMISSIONS)
 
         # remove outcomes tab for logged-out users or non-students
         outcome_tab = tabs.detect { |t| t[:id] == TAB_OUTCOMES }
@@ -3147,9 +3194,9 @@ class Course < ActiveRecord::Base
 
         # remove hidden tabs from students
         additional_checks = {
-          TAB_ASSIGNMENTS => [:manage_content, :manage_assignments],
-          TAB_SYLLABUS => [:manage_content, :manage_assignments],
-          TAB_QUIZZES => [:manage_content, :manage_assignments],
+          TAB_ASSIGNMENTS => [:manage_content, *RoleOverride::GRANULAR_MANAGE_ASSIGNMENT_PERMISSIONS],
+          TAB_SYLLABUS => [:manage_content, *RoleOverride::GRANULAR_MANAGE_ASSIGNMENT_PERMISSIONS],
+          TAB_QUIZZES => [:manage_content, *RoleOverride::GRANULAR_MANAGE_ASSIGNMENT_PERMISSIONS],
           TAB_GRADES => [:view_all_grades, :manage_grades],
           TAB_PEOPLE => [:manage_students, :manage_admin_users],
           TAB_FILES => RoleOverride::GRANULAR_FILE_PERMISSIONS,
@@ -3272,6 +3319,8 @@ class Course < ActiveRecord::Base
   add_setting :newquizzes_engine_selected
   add_setting :image_id
   add_setting :image_url
+  add_setting :banner_image_id
+  add_setting :banner_image_url
   add_setting :organize_epub_by_content_type, :boolean => true, :default => false
   add_setting :enable_offline_web_export, :boolean => true, :default => lambda { |c| c.account.enable_offline_web_export? }
   add_setting :is_public_to_auth_users, :boolean => true, :default => false
@@ -3285,9 +3334,12 @@ class Course < ActiveRecord::Base
   add_setting :syllabus_course_summary, :boolean => true, :default => true
   add_setting :syllabus_updated_at
 
+  add_setting :enable_pace_plans, :boolean => true, :default => false
+
   add_setting :usage_rights_required, :boolean => true, :default => false, :inherited => true
 
   add_setting :course_color
+  add_setting :alt_name
 
   def elementary_enabled?
     account.enable_as_k5_account?
@@ -3301,6 +3353,14 @@ class Course < ActiveRecord::Base
     !homeroom_course? && elementary_enabled?
   end
 
+  def friendly_name
+    elementary_enabled? ? alt_name.presence : nil
+  end
+
+  def friendly_name=(name)
+    self.alt_name = name
+  end
+
   def lock_all_announcements?
     !!lock_all_announcements || elementary_homeroom_course?
   end
@@ -3311,16 +3371,22 @@ class Course < ActiveRecord::Base
 
   def sync_homeroom_enrollments(progress=nil)
     return false unless elementary_subject_course? && sync_enrollments_from_homeroom && linked_homeroom_course
-
     progress&.calculate_completion!(0, linked_homeroom_course.enrollments.size)
     linked_homeroom_course.all_enrollments.find_each do |enrollment|
-      course_enrollment = all_enrollments.find_or_initialize_by(type: enrollment.type, user_id: enrollment.user_id, role_id: enrollment.role_id)
-      course_enrollment.workflow_state = enrollment.workflow_state
-      course_enrollment.start_at = enrollment.start_at
-      course_enrollment.end_at = enrollment.end_at
-      course_enrollment.completed_at = enrollment.completed_at
-      course_enrollment.save!
-      progress.increment_completion!(1) if progress&.total
+      self.shard.activate do
+        course_enrollment = if self.shard == enrollment.shard
+          all_enrollments.find_or_initialize_by(type: enrollment.type, user_id: enrollment.user_id, role_id: enrollment.role_id)
+        else
+          # roles don't apply across shards, so fall back to the base type
+          all_enrollments.find_or_initialize_by(type: enrollment.type, user_id: enrollment.user_id)
+        end
+        course_enrollment.workflow_state = enrollment.workflow_state
+        course_enrollment.start_at = enrollment.start_at
+        course_enrollment.end_at = enrollment.end_at
+        course_enrollment.completed_at = enrollment.completed_at
+        course_enrollment.save!
+        progress.increment_completion!(1) if progress&.total
+      end
     end
   end
 
@@ -3639,7 +3705,8 @@ class Course < ActiveRecord::Base
     !!defined?(@preloaded_nickname)
   end
 
-  def nickname_for(user, fallback = :name)
+  def nickname_for(user, fallback = :name, prefer_friendly_name: true)
+    return friendly_name if prefer_friendly_name && friendly_name.present?
     nickname = preloaded_nickname? ? @preloaded_nickname : (user && user.course_nickname(self))
     nickname ||= self.send(fallback) if fallback
     nickname
@@ -3651,7 +3718,7 @@ class Course < ActiveRecord::Base
   end
 
   def apply_nickname_for!(user)
-    @nickname = nickname_for(user, nil)
+    @nickname = user && nickname_for(user, nil)
   end
 
   def self.preload_menu_data_for(courses, user, preload_favorites: false)

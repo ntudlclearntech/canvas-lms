@@ -40,6 +40,7 @@ import indicate from '../common/indicate'
 import bridge from '../bridge'
 import CanvasContentTray, {trayPropTypes} from './plugins/shared/CanvasContentTray'
 import StatusBar, {WYSIWYG_VIEW, PRETTY_HTML_EDITOR_VIEW, RAW_HTML_EDITOR_VIEW} from './StatusBar'
+import {VIEW_CHANGE} from './customEvents'
 import ShowOnFocusButton from './ShowOnFocusButton'
 import theme from '../skins/theme'
 import {isAudio, isImage, isVideo} from './plugins/shared/fileTypeUtils'
@@ -245,6 +246,7 @@ class RCEWrapper extends React.Component {
     editorOptions: editorOptionsPropType,
     handleUnmount: PropTypes.func,
     editorView: PropTypes.oneOf([WYSIWYG_VIEW, PRETTY_HTML_EDITOR_VIEW, RAW_HTML_EDITOR_VIEW]),
+    renderKBShortcutModal: PropTypes.bool,
     id: PropTypes.string,
     language: PropTypes.string,
     liveRegion: PropTypes.func.isRequired,
@@ -323,6 +325,7 @@ class RCEWrapper extends React.Component {
       path: [],
       wordCount: 0,
       editorView: props.editorView || WYSIWYG_VIEW,
+      shouldShowOnFocusButton: (props.renderKBShortcutModal === undefined ? true : props.renderKBShortcutModal),
       KBShortcutModalOpen: false,
       messages: [],
       announcement: null,
@@ -512,7 +515,13 @@ class RCEWrapper extends React.Component {
 
   insertImage(image) {
     const editor = this.mceInstance()
-    const element = contentInsertion.insertImage(editor, image)
+    let element = contentInsertion.insertImage(editor, image)
+
+    // Removes TinyMCE's caret &nbsp; text if exists.
+    if (element?.nextSibling?.data?.trim() === '') {
+      element.nextSibling.remove()
+    }
+
     if (element && element.complete) {
       this.contentInserted(element)
     } else if (element) {
@@ -694,6 +703,9 @@ class RCEWrapper extends React.Component {
     if (newView === PRETTY_HTML_EDITOR_VIEW || newView === RAW_HTML_EDITOR_VIEW) {
       document.cookie = `rce.htmleditor=${newView};path=/;max-age=31536000`
     }
+
+    // Emit view change event
+    this.mceInstance().fire(VIEW_CHANGE, {target: this.editor, newView: newState.editorView})
   }
 
   _isFullscreen() {
@@ -1751,14 +1763,16 @@ class RCEWrapper extends React.Component {
         onFocus={this.handleFocusRCE}
         onBlur={this.handleBlurRCE}
       >
-        <ShowOnFocusButton
-          onClick={this.openKBShortcutModal}
-          margin="xx-small"
-          screenReaderLabel={formatMessage('View keyboard shortcuts')}
-          ref={el => (this._showOnFocusButton = el)}
-        >
-          <IconKeyboardShortcutsLine />
-        </ShowOnFocusButton>
+        {this.state.shouldShowOnFocusButton && (
+          <ShowOnFocusButton
+            onClick={this.openKBShortcutModal}
+            margin="xx-small"
+            screenReaderLabel={formatMessage('View keyboard shortcuts')}
+            ref={el => (this._showOnFocusButton = el)}
+          >
+            <IconKeyboardShortcutsLine />
+          </ShowOnFocusButton>
+        )}
         <AlertMessageArea
           messages={this.state.messages}
           liveRegion={this.props.liveRegion}
@@ -1806,6 +1820,7 @@ class RCEWrapper extends React.Component {
             bridge={bridge}
             editor={this}
             onTrayClosing={this.handleContentTrayClosing}
+            use_rce_buttons_and_icons={this.props.use_rce_buttons_and_icons}
             {...trayProps}
           />
         )}

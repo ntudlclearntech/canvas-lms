@@ -31,6 +31,11 @@ const useCanvasContext = () => {
   const canManage = context?.env?.canManage
   const canImport = context?.env?.canImport
   const isAdmin = context?.env?.isAdmin
+  const isStudent = context?.env?.isStudent
+  const globalRootId = context?.env?.globalRootId
+  const treeBrowserRootGroupId = context?.env?.treeBrowserRootGroupId
+  const treeBrowserAccountGroupId = context?.env?.treeBrowserAccountGroupId
+  const rootIds = context?.env?.rootIds
 
   return {
     contextType,
@@ -42,7 +47,12 @@ const useCanvasContext = () => {
     isMobileView,
     canManage,
     canImport,
-    isAdmin
+    isAdmin,
+    isStudent,
+    globalRootId,
+    treeBrowserRootGroupId,
+    treeBrowserAccountGroupId,
+    rootIds
   }
 }
 

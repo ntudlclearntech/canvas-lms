@@ -371,7 +371,7 @@ class AccountsController < ApplicationController
           @current_user.enrollments.admin.shard(@current_user).except(:select, :joins)
         ).select("accounts.id").distinct.pluck(:id).map{|id| Shard.global_id_for(id)}
       end
-      course_accounts = ShardedBookmarkedCollection.build(Account::Bookmarker, Account.where(id: account_ids))
+      course_accounts = ShardedBookmarkedCollection.build(Account::Bookmarker, Account.where(id: account_ids), always_use_bookmarks: true)
       @accounts = Api.paginate(course_accounts, self, api_v1_course_accounts_url)
     else
       @accounts = []
@@ -739,7 +739,10 @@ class AccountsController < ApplicationController
     includes -= ['permissions', 'sections', 'needs_grading_count', 'total_scores']
 
     page_opts = {}
-    page_opts[:total_entries] = nil if params[:search_term] # doesn't calculate a total count
+    # don't calculate a total count for this endpoint.
+    if params[:search_term] || !@account.allow_last_page_on_account_courses?
+      page_opts[:total_entries] = nil
+    end
 
     all_precalculated_permissions = nil
     GuardRail.activate(:secondary) do
@@ -759,7 +762,8 @@ class AccountsController < ApplicationController
     end
 
     render :json => @courses.map { |c| course_json(c, @current_user, session, includes, nil,
-      precalculated_permissions: all_precalculated_permissions&.dig(c.global_id)) }
+      precalculated_permissions: all_precalculated_permissions&.dig(c.global_id),
+      prefer_friendly_name: false) }
   end
 
   # Delegated to by the update action (when the request is an api_request?)
@@ -1174,7 +1178,7 @@ class AccountsController < ApplicationController
       @account_roles = @account.available_account_roles.sort_by(&:display_sort_index).map{|role| {:id => role.id, :label => role.label}}
       @course_roles = @account.available_course_roles.sort_by(&:display_sort_index).map{|role| {:id => role.id, :label => role.label}}
 
-      @announcements = @account.announcements.order(:created_at).paginate(page: params[:page], per_page: 50)
+      @announcements = @account.announcements.order(created_at: 'desc').paginate(page: params[:page], per_page: 50)
       @external_integration_keys = ExternalIntegrationKey.indexed_keys_for(@account)
       js_env({
         APP_CENTER: { enabled: Canvas::Plugin.find(:app_center).enabled? },
@@ -1471,7 +1475,13 @@ class AccountsController < ApplicationController
       can_masquerade: @account.grants_right?(@current_user, session, :become_user),
       can_message_users: @account.grants_right?(@current_user, session, :send_messages),
       can_edit_users: @account.grants_any_right?(@current_user, session, :manage_user_logins),
-      can_manage_groups: @account.grants_right?(@current_user, session, :manage_groups), # access to view user groups?
+      can_manage_groups: # access to view account-level user groups, People --> hamburger menu
+        @account.grants_any_right?(
+          @current_user,
+          session,
+          :manage_groups,
+          *RoleOverride::GRANULAR_MANAGE_GROUPS_PERMISSIONS
+        ),
       can_create_enrollments: @account.grants_any_right?(@current_user, session, *add_enrollment_permissions(@account))
     }
     if @account.root_account.feature_enabled?(:granular_permissions_manage_users)

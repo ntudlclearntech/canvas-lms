@@ -174,21 +174,19 @@ describe MicrosoftSync::SyncerSteps do
 
   shared_examples_for 'max of members enrollment reached' do |max_members|
     it 'raises a graceful exit error informing the user' do
-      expect { subject }.to raise_error do |error|
-        expect(error).to be_a(MicrosoftSync::SyncerSteps::MaxEnrollmentsReached)
-        expect(error).to be_a(MicrosoftSync::Errors::GracefulCancelErrorMixin)
-        expect(error.public_message).to eq "Microsoft 365 allows a maximum of #{max_members || 25000} members in a team."
-      end
+      klass = MicrosoftSync::SyncerSteps::MaxMemberEnrollmentsReached
+      msg =
+        "Microsoft 365 allows a maximum of #{(max_members || 25000).to_s(:delimited)} " \
+        'members in a team.'
+      expect { subject }.to raise_microsoft_sync_graceful_cancel_error(klass, msg)
     end
   end
 
   shared_examples_for 'max of owners enrollment reached' do |max_owners|
     it 'raises a graceful exit error informing the user' do
-      expect { subject }.to raise_error do |error|
-        expect(error).to be_a(MicrosoftSync::SyncerSteps::MaxEnrollmentsReached)
-        expect(error).to be_a(MicrosoftSync::Errors::GracefulCancelErrorMixin)
-        expect(error.public_message).to eq "Microsoft 365 allows a maximum of #{max_owners || 100} owners in a team."
-      end
+      klass = MicrosoftSync::SyncerSteps::MaxOwnerEnrollmentsReached
+      msg = "Microsoft 365 allows a maximum of #{max_owners || 100} owners in a team."
+      expect { subject }.to raise_microsoft_sync_graceful_cancel_error(klass, msg)
     end
   end
 
@@ -212,8 +210,8 @@ describe MicrosoftSync::SyncerSteps do
 
     before do
       n_students_in_course(2, course: course)
-      teacher_in_course(course: course)
-      teacher_in_course(course: course)
+      teacher_in_course(course: course, active_enrollment: true)
+      teacher_in_course(course: course, active_enrollment: true)
     end
 
     context 'when the max enrollments in a course was not reached' do
@@ -286,22 +284,22 @@ describe MicrosoftSync::SyncerSteps do
       context 'when there is more than one remote MS group for the course' do
         let(:education_class_ids) { [group.ms_group_id || 'someid', 'newid3'] }
 
-        it 'raises an InvalidRemoteState error' do
-          expect { subject }.to raise_error(
-            MicrosoftSync::Errors::InvalidRemoteState,
-            'Multiple Microsoft education classes exist for the course.'
-          )
+        it 'raises a descriptive Graceful Cancel Error' do
+          klass = described_class::MultipleEducationClasses
+          msg = 'Multiple Microsoft education classes already exist for the course.'
+          expect { subject }.to raise_microsoft_sync_graceful_cancel_error(klass, msg)
         end
       end
 
       shared_examples_for 'missing the correct account settings' do
-        it 'raises a graceful cleanup error with a end-user-friendly name' do
+        it 'raises a graceful cleanup error with a end-user-friendly message' do
           expect(MicrosoftSync::GraphServiceHelpers).to_not receive(:new)
           expect(syncer_steps).to_not receive(:ensure_class_group_exists)
-          expect { subject }.to raise_error do |e|
-            expect(e).to be_a(described_class::TenantMissingOrSyncDisabled)
-            expect(e).to be_a(MicrosoftSync::Errors::GracefulCancelErrorMixin)
-          end
+          klass = described_class::TenantMissingOrSyncDisabled
+          msg =
+            'Tenant missing or sync disabled. ' \
+            'Check the Microsoft sync integration settings for the course and account.'
+          expect { subject }.to raise_microsoft_sync_graceful_cancel_error(klass, msg)
         end
       end
 
@@ -378,7 +376,10 @@ describe MicrosoftSync::SyncerSteps do
     end
 
     let!(:teachers) do
-      [teacher_in_course(course: course), teacher_in_course(course: course)].map(&:user)
+      [
+        teacher_in_course(course: course, active_enrollment: true),
+        teacher_in_course(course: course, active_enrollment: true)
+      ].map(&:user)
     end
 
     let(:mappings) do
@@ -632,13 +633,9 @@ describe MicrosoftSync::SyncerSteps do
     context 'when there are no local owners (course teacher enrollments)' do
       it 'raises a graceful exit error informing the user' do
         expect(diff).to receive(:local_owners).and_return Set.new
-        expect { subject }.to raise_error do |error|
-          expect(error).to be_a(MicrosoftSync::Errors::PublicError)
-          expect(error.public_message).to match(
-            /no users corresponding to the instructors of the Canvas course could be found/
-          )
-          expect(error).to be_a(MicrosoftSync::Errors::GracefulCancelErrorMixin)
-        end
+        klass = MicrosoftSync::Errors::MissingOwners
+        msg = /no users corresponding to the instructors of the Canvas course could be found/
+        expect { subject }.to raise_microsoft_sync_graceful_cancel_error(klass, msg)
       end
     end
 
@@ -752,7 +749,7 @@ describe MicrosoftSync::SyncerSteps do
     context 'when there are changes to process' do
       let(:n_students) { 1 }
       let!(:students) { 1.upto(n_students).map{student_in_course(course: course).user} }
-      let!(:teacher) { teacher_in_course(course: course).user }
+      let!(:teacher) { teacher_in_course(course: course, active_enrollment: true).user }
 
       before do
         students.each_with_index do |student, index|
@@ -857,11 +854,19 @@ describe MicrosoftSync::SyncerSteps do
           expect(diff).to have_received(:set_member_mapping).with(teacher.id, 't-mail-aad')
         end
 
-        it 'ignores inactive enrollments' do
-          Enrollment.where(course: course, user: students[0]).update_all(workflow_state: 'deleted')
+        %w[completed deleted inactive invited rejected].each do |state|
+          it "ignores #{state} enrollments" do
+            Enrollment.where(course: course, user: students[0]).update_all(workflow_state: state)
+            subject
+            expect(diff).to_not have_received(:set_local_member).with(students[0].id, 'StudentEnrollment')
+            expect(diff).to have_received(:set_local_member).with(students[2].id, 'StudentEnrollment')
+          end
+        end
+
+        it 'ignores StudentViewEnrollment (fake) enrollments' do
+          Enrollment.where(course: course, user: students[0]).update_all(type: 'StudentViewEnrollment')
           subject
-          expect(diff).to_not have_received(:set_local_member).with(students[0].id, 'StudentEnrollment')
-          expect(diff).to have_received(:set_local_member).with(students[2].id, 'StudentEnrollment')
+          expect(diff).to_not have_received(:set_local_member).with(students[0].id, anything)
         end
 
         it_behaves_like 'a step that executes a diff' do
@@ -918,5 +923,16 @@ describe MicrosoftSync::SyncerSteps do
 
   describe '::MAX_PARTIAL_SYNC_CHANGES' do
     it { expect(described_class::MAX_PARTIAL_SYNC_CHANGES).to eq 500 }
+  end
+
+  describe 'YAML encoding' do
+    it 'only serializes the group so other values are reloaded when the job runs' do
+      syncer_steps.send(:account_settings)
+      syncer_steps.send(:tenant)
+      expect(syncer_steps.instance_variables).to include *%i[@group @account_settings @tenant]
+      serialized = syncer_steps.to_yaml
+      deserialized = YAML.unsafe_load(serialized)
+      expect(deserialized.instance_variables).to eq %i[@group]
+    end
   end
 end

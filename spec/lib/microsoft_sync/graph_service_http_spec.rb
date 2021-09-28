@@ -42,12 +42,13 @@ describe MicrosoftSync::GraphServiceHttp do
         }
       end
       WebMock.disable_net_connect!
-      WebMock.stub_request(:get, url).and_return(responses)
+      WebMock.stub_request(http_method, url).and_return(responses)
 
       allow(InstStatsd::Statsd).to receive(:count).and_call_original
       allow(InstStatsd::Statsd).to receive(:increment).and_call_original
     end
 
+    let(:http_method) { :get }
     let(:url) { 'https://graph.microsoft.com/v1.0/foo/bar' }
     let(:statuses) { [status] }
     let(:status) { 200 }
@@ -131,9 +132,7 @@ describe MicrosoftSync::GraphServiceHttp do
 
       context 'when the response is non-200 and the block returns truthy' do
         let(:result) do
-          subject.request(:get, 'https://graph.microsoft.com/v1.0/foo/bar') do |resp|
-            resp.code == 409 && :foo
-          end
+          subject.request(:get, url) { |resp| resp.code == 409 && :foo }
         end
 
         it 'returns the value the block returned' do
@@ -150,6 +149,20 @@ describe MicrosoftSync::GraphServiceHttp do
         end
       end
 
+      context 'when the block returns a StandardError' do
+        let(:err) { StandardError.new('hello') }
+        let(:result) { subject.request(:get, url) { err } }
+
+        it 'raises that exception and increments an "expected" counter, not an "error" counter' do
+          expect { result }.to raise_error(err)
+          expect(InstStatsd::Statsd).to have_received(:increment)
+            .with('microsoft_sync.graph_service.expected',
+                  tags: {extra_tag: 'abc', msft_endpoint: 'get_foo', status_code: '409'})
+          expect(InstStatsd::Statsd).to_not have_received(:increment)
+            .with('microsoft_sync.graph_service.error', anything)
+        end
+      end
+
       context 'when the response is non-200 and the block returns falsey' do
         let(:result) do
           subject.request(:get, 'https://graph.microsoft.com/v1.0/foo/bar') do |resp|
@@ -157,7 +170,7 @@ describe MicrosoftSync::GraphServiceHttp do
           end
         end
 
-        it 'raises an error and increments an "intermittent" counter' do
+        it 'raises an error and increments an "error" counter' do
           expect { result }.to raise_error(MicrosoftSync::Errors::HTTPConflict)
           expect(InstStatsd::Statsd).to have_received(:increment)
             .with('microsoft_sync.graph_service.error',
@@ -169,6 +182,7 @@ describe MicrosoftSync::GraphServiceHttp do
     end
 
     shared_examples_for 'retrying an intermittent error' do
+      let(:http_method) { :post }
       let(:requests) { [:bad] }
 
       context 'if the first response is an intermittent error' do
@@ -179,30 +193,30 @@ describe MicrosoftSync::GraphServiceHttp do
         let(:requests) { [:bad, :good] }
 
         it 'tries again immediately' do
-          expect(subject.request(:get, 'foo/bar')).to eq('foo' => 'bar')
+          expect(subject.request(:post, 'foo/bar', body: {hello: 'world'})).to eq('foo' => 'bar')
           expect(subject).to have_received(:request_without_metrics).exactly(2).times
-            .with(:get, 'foo/bar', anything)
+            .with(:post, 'foo/bar', body: {hello: 'world'})
         end
 
         it 'increments a "retried" statsd counter' do
-          subject.request(:get, 'foo/bar')
+          subject.request(:post, 'foo/bar', body: {hello: 'world'})
           expect(InstStatsd::Statsd).to have_received(:increment)
             .with("microsoft_sync.graph_service.retried",
-                  tags: {msft_endpoint: 'get_foo', extra_tag: 'abc',
+                  tags: {msft_endpoint: 'post_foo', extra_tag: 'abc',
                          status_code: status_code_statsd_tag})
           expect(InstStatsd::Statsd).to have_received(:increment)
             .with("microsoft_sync.graph_service.success",
-                  tags: {msft_endpoint: 'get_foo', extra_tag: 'abc', status_code: '200'})
+                  tags: {msft_endpoint: 'post_foo', extra_tag: 'abc', status_code: '200'})
         end
 
         it 'logs the outcome of each request' do
           allow(Rails.logger).to receive(:info).and_call_original
-          subject.request(:get, 'foo/bar')
+          subject.request(:post, 'foo/bar')
           expect(Rails.logger).to have_received(:info).with(
-            "MicrosoftSync::GraphServiceHttp: get foo/bar -- #{status_code_statsd_tag}, retried"
+            "MicrosoftSync::GraphServiceHttp: post foo/bar -- #{status_code_statsd_tag}, retried"
           )
           expect(Rails.logger).to have_received(:info).with(
-            'MicrosoftSync::GraphServiceHttp: get foo/bar -- 200, success'
+            'MicrosoftSync::GraphServiceHttp: post foo/bar -- 200, success'
           )
         end
       end
@@ -211,36 +225,40 @@ describe MicrosoftSync::GraphServiceHttp do
         let(:requests) { [:bad, :bad] }
 
         it 'fails and increments "retried" and "error" statsd counters' do
-          expect { subject.request(:get, 'foo/bar') }.to raise_error(error_class)
+          expect { subject.request(:post, 'foo/bar', body: {hello: 'world'}) }.to raise_error(error_class)
           expect(InstStatsd::Statsd).to have_received(:increment)
             .with("microsoft_sync.graph_service.retried",
-                  tags: {msft_endpoint: 'get_foo', extra_tag: 'abc',
+                  tags: {msft_endpoint: 'post_foo', extra_tag: 'abc',
                          status_code: status_code_statsd_tag})
           expect(InstStatsd::Statsd).to have_received(:increment)
             .with("microsoft_sync.graph_service.intermittent",
-                  tags: {msft_endpoint: 'get_foo', extra_tag: 'abc',
+                  tags: {msft_endpoint: 'post_foo', extra_tag: 'abc',
                          status_code: status_code_statsd_tag})
         end
 
         it 'logs the outcome of each request' do
           allow(Rails.logger).to receive(:info).and_call_original
-          expect { subject.request(:get, 'foo/bar') }.to raise_error(error_class)
+          expect { subject.request(:post, 'foo/bar', body: {hello: 'world'}) }.to raise_error(error_class)
           expect(Rails.logger).to have_received(:info).with(
-            "MicrosoftSync::GraphServiceHttp: get foo/bar -- #{status_code_statsd_tag}, retried"
+            "MicrosoftSync::GraphServiceHttp: post foo/bar -- #{status_code_statsd_tag}, retried"
           )
           expect(Rails.logger).to have_received(:info).with(
-            "MicrosoftSync::GraphServiceHttp: get foo/bar -- #{status_code_statsd_tag}, intermittent"
+            "MicrosoftSync::GraphServiceHttp: post foo/bar -- #{status_code_statsd_tag}, intermittent"
           )
         end
       end
 
       it 'fails immediately if DEFAULT_N_INTERMITTENT_RETRIES is 0' do
         stub_const('MicrosoftSync::GraphServiceHttp::DEFAULT_N_INTERMITTENT_RETRIES', 0)
-        expect { subject.request(:get, 'foo/bar') }.to raise_error(error_class)
+        expect {
+          subject.request(:post, 'foo/bar', body: {hello: 'world'})
+        }.to raise_error(error_class)
       end
 
       it 'fails immediately if retries: 0 is passed in' do
-        expect { subject.request(:get, 'foo/bar', retries: 0) }.to raise_error(error_class)
+        expect {
+          subject.request(:post, 'foo/bar', retries: 0, body: {hello: 'world'})
+        }.to raise_error(error_class)
       end
     end
 
@@ -251,9 +269,9 @@ describe MicrosoftSync::GraphServiceHttp do
           # :good], raise an error the second time called
           requests.each do |bad_or_good|
             if bad_or_good == :good
-              expect(HTTParty).to receive(:get).exactly(:once).and_call_original
+              expect(HTTParty).to receive(:post).exactly(:once).and_call_original
             else
-              expect(HTTParty).to receive(:get).exactly(:once).and_raise(klass)
+              expect(HTTParty).to receive(:post).exactly(:once).and_raise(klass)
             end
           end
         end
@@ -278,10 +296,13 @@ describe MicrosoftSync::GraphServiceHttp do
       429 => MicrosoftSync::Errors::HTTPTooManyRequests,
     }.each do |status_code, error_class|
       context "when the error is a #{status_code}" do
+        let(:http_method) { :post }
         let(:status) { status_code }
 
-        it 'raises the error immediately and does not retried' do
-          expect { subject.request(:get, 'foo/bar') }.to raise_error(error_class)
+        it 'raises the error immediately and does not retry' do
+          expect {
+            subject.request(:post, 'foo/bar', body: {hello: 'world'})
+          }.to raise_error(error_class)
         end
       end
     end
@@ -296,7 +317,9 @@ describe MicrosoftSync::GraphServiceHttp do
   describe '#get_paginated_list' do
     subject do
       results = []
-      http.get_paginated_list('some/list', quota: [2, 3]) { |result| results << result }
+      http.get_paginated_list('some/list', quota: [2, 3], **extra_opts) do |result|
+        results << result
+      end
       results
     end
 
@@ -305,6 +328,7 @@ describe MicrosoftSync::GraphServiceHttp do
     let(:continue_url) { initial_url + '?cont=123' }
     let(:continue_response) { json_200_response(value: {a: 1}, '@odata.nextLink' => continue_url) }
     let(:finished_response) { json_200_response(value: {b: 2}) }
+    let(:extra_opts) { {} }
 
     def json_200_response(body)
       {status: 200, body: body.to_json, headers: {'Content-type' => 'application/json'}}
@@ -332,6 +356,27 @@ describe MicrosoftSync::GraphServiceHttp do
       subject
       expect(http).to \
         have_received(:request).with(:get, continue_url, hash_including(quota: [2, 3]))
+    end
+
+    context 'when passed an expected_error_block' do
+      let(:extra_opts) { {expected_error_block: block} }
+
+      context 'when the block returns false' do
+        let(:block) { lambda { |resp| resp.code == 400 } }
+
+        it 'returns results as usual' do
+          expect(subject).to eq([{'a' => 1}, {'b' => 2}])
+        end
+      end
+
+      context 'when the block returns an error' do
+        let(:err) { StandardError.new }
+        let(:block) { lambda { |resp| resp.code == 200 && err } }
+
+        it 'raises that error' do
+          expect { subject }.to raise_error(err)
+        end
+      end
     end
   end
 

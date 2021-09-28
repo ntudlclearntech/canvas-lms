@@ -799,7 +799,7 @@ class AssignmentsApiController < ApplicationController
         scope = SortsAssignments.bucket_filter(scope, params[:bucket], session, user, @current_user, @context, submissions_for_user)
       end
 
-      scope = scope.where(post_to_sis: value_to_boolean(params[:post_to_sis])) if params[:post_to_sis] && authorized_action(@context, user, :manage_assignments)
+      scope = scope.where(post_to_sis: value_to_boolean(params[:post_to_sis])) if params[:post_to_sis]
 
       if params[:assignment_ids]
         if params[:assignment_ids].length > Api.max_per_page
@@ -834,7 +834,7 @@ class AssignmentsApiController < ApplicationController
       submissions = submissions_hash(include_params, assignments, submissions_for_user)
 
       include_all_dates = include_params.include?('all_dates')
-      include_override_objects = include_params.include?('overrides') && @context.grants_any_right?(user, :manage_assignments)
+      include_override_objects = include_params.include?('overrides') && @context.grants_any_right?(user, *RoleOverride::GRANULAR_MANAGE_ASSIGNMENT_PERMISSIONS)
 
       override_param = params[:override_assignment_dates] || true
       override_dates = value_to_boolean(override_param)
@@ -848,7 +848,7 @@ class AssignmentsApiController < ApplicationController
         end
       end
 
-      include_visibility = include_params.include?('assignment_visibility') && @context.grants_any_right?(user, :read_as_admin, :manage_grades, :manage_assignments)
+      include_visibility = include_params.include?('assignment_visibility') && @context.grants_any_right?(user, :read_as_admin, :manage_grades, *RoleOverride::GRANULAR_MANAGE_ASSIGNMENT_PERMISSIONS)
 
       if include_visibility
         assignment_visibilities = AssignmentStudentVisibility.users_with_visibility_by_assignment(course_id: @context.id, assignment_id: assignments.map(&:id))
@@ -857,7 +857,7 @@ class AssignmentsApiController < ApplicationController
       needs_grading_by_section_param = params[:needs_grading_count_by_section] || false
       needs_grading_count_by_section = value_to_boolean(needs_grading_by_section_param)
 
-      if @context.grants_right?(user, :manage_assignments)
+      if @context.grants_any_right?(user, :manage_assignments, :manage_assignments_edit)
         Assignment.preload_can_unpublish(assignments)
       end
 
@@ -925,10 +925,10 @@ class AssignmentsApiController < ApplicationController
           submissions_hash(included_params, [@assignment])[@assignment.id]
       end
 
-      include_visibility = included_params.include?('assignment_visibility') && @context.grants_any_right?(@current_user, :read_as_admin, :manage_grades, :manage_assignments)
+      include_visibility = included_params.include?('assignment_visibility') && @context.grants_any_right?(@current_user, :read_as_admin, :manage_grades, *RoleOverride::GRANULAR_MANAGE_ASSIGNMENT_PERMISSIONS)
       include_all_dates = value_to_boolean(params[:all_dates] || false)
 
-      include_override_objects = included_params.include?('overrides') && @context.grants_any_right?(@current_user, :manage_assignments)
+      include_override_objects = included_params.include?('overrides') && @context.grants_any_right?(@current_user, *RoleOverride::GRANULAR_MANAGE_ASSIGNMENT_PERMISSIONS)
 
       override_param = params[:override_assignment_dates] || true
       override_dates = value_to_boolean(override_param)
@@ -1339,7 +1339,14 @@ class AssignmentsApiController < ApplicationController
   # @returns Assignment
   def update
     @assignment = api_find(@context.active_assignments, params[:id])
+
+    if needs_grading_permission? && !@assignment.grants_right?(@current_user, :grade)
+      render_unauthorized_action and return
+    end
+
     if authorized_action(@assignment, @current_user, :update)
+      # Giving us the option to increment the request cost here if need be. Remove with LS-2614.
+      increment_request_cost(Setting.get('assignments_api_update_request_cost', '0').to_i)
       @assignment.content_being_saved_by(@current_user)
       @assignment.updating_user = @current_user
       # update_api_assignment mutates params so this has to be done here
@@ -1387,7 +1394,7 @@ class AssignmentsApiController < ApplicationController
   #
   # @returns Progress
   def bulk_update
-    return render_json_unauthorized unless @context.grants_right?(@current_user, session, :manage_assignments)
+    return render_json_unauthorized unless @context.grants_any_right?(@current_user, session, :manage_assignments, :manage_assignments_edit)
     data = params.permit(:_json => [:id, :all_dates => [:id, :base, :due_at, :unlock_at, :lock_at]]).to_h[:_json]
     return render json: { message: 'expected array' }, status: :bad_request unless data.is_a?(Array)
     return render json: { message: 'missing assignment id' }, status: :bad_request unless data.all? { |a| a.key?('id') }
@@ -1441,6 +1448,11 @@ class AssignmentsApiController < ApplicationController
     end
     # self, observer
     authorized_action(@user, @current_user, %i(read_as_parent read))
+  end
+
+  def needs_grading_permission?
+    grading_attributes = [:points_possible, :grading_type, :grading_standard_id]
+    grading_attributes.any? { |attribute| params[:assignment][attribute] != @assignment[attribute] } && @assignment.submissions.graded.exists?
   end
 
   # old_assignment is the assignement we want to copy from

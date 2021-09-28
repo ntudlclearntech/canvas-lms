@@ -2620,6 +2620,7 @@ describe Course, "tabs_available" do
     before :once do
       course_with_teacher(:active_all => true)
     end
+    let_once(:default_tab_ids) { Course.default_tabs.pluck(:id) }
 
     describe 'TAB_CONFERENCES' do
       context 'when WebConferences are enabled' do
@@ -2635,7 +2636,7 @@ describe Course, "tabs_available" do
 
         it 'returns the plugin names' do
           tabs = @course.tabs_available(@user)
-          expect(tabs.select{ |t| t[:css_class] == 'conferences' }[0][:label]).to eq("Big blue button Wimba (Formerly Conferences)")
+          expect(tabs.select{ |t| t[:css_class] == 'conferences' }[0][:label]).to eq("Big blue button Wimba (Conferences)")
         end
       end
 
@@ -2648,10 +2649,9 @@ describe Course, "tabs_available" do
     end
 
     it "should return the defaults if nothing specified" do
-      length = Course.default_tabs.length
       tab_ids = @course.tabs_available(@user).map{|t| t[:id] }
-      expect(tab_ids).to eql(Course.default_tabs.map{|t| t[:id] })
-      expect(tab_ids.length).to eql(length)
+      expect(tab_ids).to eql(default_tab_ids)
+      expect(tab_ids.length).to eql(default_tab_ids.length)
     end
 
     it "should return K-6 tabs if feature flag is enabled for teachers" do
@@ -2673,15 +2673,14 @@ describe Course, "tabs_available" do
     it "should overwrite the order of tabs if configured" do
       @course.tab_configuration = [{ id: Course::TAB_COLLABORATIONS }]
       available_tabs = @course.tabs_available(@user).map { |tab| tab[:id] }
-      default_tabs   = Course.default_tabs.map           { |tab| tab[:id] }
       custom_tabs    = @course.tab_configuration.map     { |tab| tab[:id] }
-      expected_tabs  = (custom_tabs + default_tabs).uniq
+      expected_tabs  = (custom_tabs + default_tab_ids).uniq
       # Home tab always comes first
-      home_tab = default_tabs[0]
+      home_tab = default_tab_ids[0]
       expected_tabs  = expected_tabs.insert(0, expected_tabs.delete(home_tab))
 
       expect(available_tabs).to        eq expected_tabs
-      expect(available_tabs.length).to eq default_tabs.length
+      expect(available_tabs.length).to eq default_tab_ids.length
     end
 
     it "should not blow up if somehow nils got in there" do
@@ -2711,7 +2710,7 @@ describe Course, "tabs_available" do
       @course.tab_configuration = [{'id' => 912}]
       expect(@course.tabs_available(@user).map{|t| t[:id] }).not_to be_include(912)
       tab_ids = @course.tabs_available(@user).map{|t| t[:id] }
-      expect(tab_ids).to eql(Course.default_tabs.map{|t| t[:id] })
+      expect(tab_ids).to eql(default_tab_ids)
       expect(tab_ids.length).to be > 0
       expect(@course.tabs_available(@user).map{|t| t[:label] }.compact.length).to eql(tab_ids.length)
     end
@@ -2736,7 +2735,7 @@ describe Course, "tabs_available" do
     it "should not hide tabs for completed teacher enrollments" do
       @user.enrollments.where(:course_id => @course).first.complete!
       tab_ids = @course.tabs_available(@user).map{|t| t[:id] }
-      expect(tab_ids).to eql(Course.default_tabs.map{|t| t[:id] })
+      expect(tab_ids).to eql(default_tab_ids)
     end
 
     it "should not include Announcements without read_announcements rights" do
@@ -2839,10 +2838,10 @@ describe Course, "tabs_available" do
         end
 
         it "returns default course tabs without home if course_subject_tabs option is not passed" do
-          course_elementary_nav_tabs = Course.default_tabs.reject{|tab| tab[:id] == Course::TAB_HOME}
+          course_elementary_nav_tabs = default_tab_ids.reject{|id| id == Course::TAB_HOME}
           length = course_elementary_nav_tabs.length
           tab_ids = @course.tabs_available(@user).map{|t| t[:id] }
-          expect(tab_ids).to eql(course_elementary_nav_tabs.map{|t| t[:id] })
+          expect(tab_ids).to eql(course_elementary_nav_tabs)
           expect(tab_ids.length).to eql(length)
         end
 
@@ -2908,6 +2907,26 @@ describe Course, "tabs_available" do
         end
       end
     end
+
+    context "pace plans" do
+      before :once do
+        @course.account.enable_feature!(:pace_plans)
+        @course.enable_pace_plans = true
+        @course.save!
+      end
+
+      it "should be included when pace plans is enabled" do
+        tabs = @course.tabs_available(@teacher).pluck(:id)
+        expect(tabs).to include(Course::TAB_PACE_PLANS)
+      end
+
+      it "should not be included for students" do
+        tabs = @course.tabs_available(@student).pluck(:id)
+        expect(tabs).not_to include(Course::TAB_PACE_PLANS)
+      end
+    end
+
+
   end
 
   context "students" do
@@ -5090,6 +5109,33 @@ describe Course, "#sync_homeroom_enrollments" do
     @course.save!
     expect(@course.sync_homeroom_enrollments).not_to eq(false)
   end
+
+  context "cross-shard" do
+    specs_require_sharding
+
+    before :once do
+      @shard1.activate do
+        account = Account.create!
+        account.enable_as_k5_account!
+        @cross_shard_course = course_factory(account: account, active_course: true)
+        @cross_shard_course.sync_enrollments_from_homeroom = true
+        @cross_shard_course.homeroom_course_id = @homeroom_course.id
+        @cross_shard_course.save!
+      end
+    end
+
+    it "syncs enrollments across shards" do
+      expect(@cross_shard_course.user_is_instructor?(@teacher)).to eq(false)
+      expect(@cross_shard_course.user_is_instructor?(@ta)).to eq(false)
+      expect(@cross_shard_course.user_is_student?(@student)).to eq(false)
+      expect(@cross_shard_course.user_has_been_observer?(@observer)).to eq(false)
+      @cross_shard_course.sync_homeroom_enrollments
+      expect(@cross_shard_course.user_is_instructor?(@teacher)).to eq(true)
+      expect(@cross_shard_course.user_is_instructor?(@ta)).to eq(true)
+      expect(@cross_shard_course.user_is_student?(@student)).to eq(true)
+      expect(@cross_shard_course.user_has_been_observer?(@observer)).to eq(true)
+    end
+  end
 end
 
 describe Course, "user_is_instructor?" do
@@ -6235,6 +6281,22 @@ describe Course, "#apply_nickname_for!" do
     @course.apply_nickname_for!(nil)
     expect(@course.name).to eq 'some terrible name'
   end
+
+  it "prefers the subject name if present and k5 is enabled" do
+    @course.friendly_name = "drama"
+    @course.save!
+
+    @course.apply_nickname_for!(@user)
+    expect(@course.name).to eq 'nickname'
+
+    @course.account.enable_as_k5_account!
+
+    @course.apply_nickname_for!(@user)
+    expect(@course.name).to eq 'drama'
+
+    @course.apply_nickname_for!(nil)
+    expect(@course.name).to eq 'some terrible name'
+  end
 end
 
 describe Course, "#image" do
@@ -6244,19 +6306,36 @@ describe Course, "#image" do
   end
 
   it "returns the image_url when image_url is set" do
-    @course.image_url = "http://example.com"
+    url = "http://example.com"
+    @course.image_url = url
+    @course.banner_image_url = url
     @course.save!
-    expect(@course.image).to eq "http://example.com"
+    expect(@course.image).to eq url
+    expect(@course.banner_image).to eq url
   end
 
   it "returns the download_url for a course file if image_id is set" do
     @course.image_id = @attachment.id
+    @course.banner_image_id = @attachment.id
     @course.save!
     expect(@course.image).to eq @attachment.public_download_url
+    expect(@course.banner_image).to eq @attachment.public_download_url
   end
 
   it "returns nil if image_id and image_url are not set" do
     expect(@course.image).to be_nil
+    expect(@course.banner_image).to be_nil
+  end
+
+  it "throws an error if both image_id and image_url are set" do
+    url = "http://example.com"
+    @course.image_id = @attachment.id
+    @course.image_url = url
+    @course.banner_image_id = @attachment.id
+    @course.banner_image_url = url
+    @course.validate
+    expect(@course.errors[:image]).to include "image_url and image_id cannot both be set."
+    expect(@course.errors[:banner_image]).to include "banner_image_url and banner_image_id cannot both be set."
   end
 end
 

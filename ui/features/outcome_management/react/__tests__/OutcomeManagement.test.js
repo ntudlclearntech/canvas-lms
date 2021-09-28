@@ -69,7 +69,7 @@ describe('OutcomeManagement', () => {
           <OutcomeManagement />
         </MockedProvider>
       )
-      expect(getByText(/Loading/)).toBeInTheDocument()
+      expect(getByText(/^Loading$/)).toBeInTheDocument() // spinner
       await act(async () => jest.runAllTimers())
       expect(getByTestId('managementHeader')).toBeInTheDocument()
       delete window.ENV.IMPROVED_OUTCOMES_MANAGEMENT
@@ -85,7 +85,7 @@ describe('OutcomeManagement', () => {
           <OutcomeManagement />
         </MockedProvider>
       )
-      expect(getByText(/Loading/)).toBeInTheDocument()
+      expect(getByText(/^Loading$/)).toBeInTheDocument() // spinner
       await act(async () => jest.runAllTimers())
       fireEvent.click(getByText('Add'))
       fireEvent.click(getByText('Import'))
@@ -99,14 +99,14 @@ describe('OutcomeManagement', () => {
       delete window.ENV.IMPROVED_OUTCOMES_MANAGEMENT
     })
 
-    it('checks for existing outcome imports when the user switches to the manage tab', async () => {
+    it('checks for existing outcome imports when the user switches to the manage tab and renders the OutcomeManagementPanel', async () => {
       window.ENV.IMPROVED_OUTCOMES_MANAGEMENT = true
-      const {getByText} = render(
-        <MockedProvider cache={cache} mocks={[...outcomeGroupsMocks]}>
+      const {getByText, getByTestId} = render(
+        <MockedProvider cache={cache} mocks={[...outcomeGroupsMocks, ...outcomeGroupsMocks]}>
           <OutcomeManagement />
         </MockedProvider>
       )
-      expect(getByText(/Loading/)).toBeInTheDocument()
+      expect(getByText(/^Loading$/)).toBeInTheDocument() // spinner
       await act(async () => jest.runAllTimers())
       expect(showOutcomesImporterIfInProgressMock).toHaveBeenCalledTimes(1)
       expect(showOutcomesImporterIfInProgressMock).toHaveBeenCalledWith(
@@ -121,25 +121,14 @@ describe('OutcomeManagement', () => {
       fireEvent.click(getByText('Calculation'))
       fireEvent.click(getByText('Manage'))
       expect(showOutcomesImporterIfInProgressMock).toHaveBeenCalledTimes(2)
+      await act(async () => jest.runAllTimers())
+      expect(getByTestId('outcomeManagementPanel')).toBeInTheDocument()
       delete window.ENV.IMPROVED_OUTCOMES_MANAGEMENT
     })
 
     it('does not render OutcomeManagementPanel', () => {
       const {queryByTestId} = render(<OutcomeManagement />)
       expect(queryByTestId('outcomeManagementPanel')).not.toBeInTheDocument()
-    })
-
-    it('renders OutcomeManagementPanel when improved outcomes enabled', async () => {
-      window.ENV.IMPROVED_OUTCOMES_MANAGEMENT = true
-      const {getByText, getByTestId} = render(
-        <MockedProvider cache={cache} mocks={[...outcomeGroupsMocks]}>
-          <OutcomeManagement />
-        </MockedProvider>
-      )
-      expect(getByText(/Loading/)).toBeInTheDocument()
-      await act(async () => jest.runAllTimers())
-      expect(getByTestId('outcomeManagementPanel')).toBeInTheDocument()
-      delete window.ENV.IMPROVED_OUTCOMES_MANAGEMENT
     })
 
     describe('Changes confirmation', () => {
