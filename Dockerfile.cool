@@ -5,7 +5,6 @@ WORKDIR /var/canvas
 RUN adduser --disabled-password --gecos canvas --uid 1001 canvasuser \
   && chown -R canvasuser:canvasuser /var/canvas
 ENV RAILS_ENV=production
-ARG MAX_ASSET_SIZE
 # 0-1. Set up locales
 RUN apt-get update && apt-get install -y locales \
   && sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen && locale-gen
@@ -93,7 +92,7 @@ RUN bundle _2.2.17_ config set path 'vendor/bundle' \
   && bundle _2.2.17_ install --without pulsar --path vendor/bundle \ 
   && yarn install --network-concurrency 1 \
   # Compile
-  && RAILS_ENV=production MAX_ASSET_SIZE=$MAX_ASSET_SIZE bundle exec rake canvas:compile_assets --trace
+  && RAILS_ENV=production bundle exec rake canvas:compile_assets --trace
 
 CMD ./config.sh \
   && rm -rf public/dist/brandable_css/* \

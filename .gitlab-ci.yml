@@ -62,7 +62,6 @@ variables:
   CANVAS_LMS_PASSENGERFILE_MAX_REQUESTS: $TESTING_PASSENGERFILE_MAX_REQUESTS
   CANVAS_LMS_PASSENGERFILE_POOL_IDLE_TIME: $TESTING_PASSENGERFILE_POOL_IDLE_TIME
   CANVAS_LMS_PASSENGERFILE_START_TIMEOUT: $TESTING_PASSENGERFILE_START_TIMEOUT
-  CANVAS_LMS_MAX_ASSET_SIZE: $TESTING_MAX_ASSET_SIZE
 
 .fetch-image-tag: &fetch-image-tag
   - if expr match $CI_COMMIT_BRANCH '^releases/.*$';
@@ -78,7 +77,7 @@ build:
     - ./config.sh
   script:
     - *fetch-image-tag
-    - docker build --build-arg MAX_ASSET_SIZE=$CANVAS_LMS_MAX_ASSET_SIZE --file Dockerfile.cool -t $CI_REGISTRY_IMAGE:$IMAGE_TAG .
+    - docker build --file Dockerfile.cool -t $CI_REGISTRY_IMAGE:$IMAGE_TAG .
     - docker build --file Dockerfile.deployer -t $CI_REGISTRY_IMAGE/deployer:$IMAGE_TAG .
   only:
     - /^releases/.*$/@ntu-cool/canvas-lms
