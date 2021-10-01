@@ -25,7 +25,7 @@ GIT
 GIT
   remote: https://github.com/kyler-instructure/rspecq.git
   revision: b5a638f114fe66521fc46826e0afe5bd41258b0f
-  branch: rspec-args
+  ref: b5a638f114fe66521fc46826e0afe5bd41258b0f
   specs:
     rspecq (0.7.1)
       redis
@@ -59,43 +59,6 @@ GIT
   specs:
     thrift_client (0.9.3)
       thrift (~> 0.9.0)
-
-PATH
-  remote: engines
-  specs:
-    audits (0.1.0)
-      canvas_cassandra
-      dynamic_settings
-      event_stream
-      rails (>= 5.2.4.5)
-      switchman (>= 2.0.3)
-
-PATH
-  remote: gems/canvas_cassandra
-  specs:
-    canvas_cassandra (0.1.0)
-      cassandra-cql (~> 1.2.2)
-      config_file
-      rails (>= 5.0)
-
-PATH
-  remote: gems/i18n_extraction
-  specs:
-    i18n_extraction (0.0.1)
-      activesupport (>= 3.2)
-      i18nliner (~> 0.1)
-      ruby_parser (~> 3.7)
-      sexp_processor (~> 4.14, >= 4.14.1)
-
-PATH
-  remote: gems/i18n_tasks
-  specs:
-    i18n_tasks (0.0.1)
-      activesupport (>= 3.2)
-      i18n (>= 0.7, < 2)
-      i18n_extraction
-      ruby_parser (~> 3.7)
-      utf8_cleaner
 
 PATH
   remote: gems/plugins/academic_benchmark
@@ -145,12 +108,49 @@ PATH
       rails (>= 3.2)
 
 PATH
+  remote: engines
+  specs:
+    audits (0.1.0)
+      canvas_cassandra
+      dynamic_settings
+      event_stream
+      rails (>= 5.2.4.5)
+      switchman (>= 2.0.3)
+
+PATH
+  remote: gems/canvas_cassandra
+  specs:
+    canvas_cassandra (0.1.0)
+      cassandra-cql (~> 1.2.2)
+      config_file
+      rails (>= 5.0)
+
+PATH
+  remote: gems/i18n_extraction
+  specs:
+    i18n_extraction (0.0.1)
+      activesupport (>= 3.2)
+      i18nliner (~> 0.1)
+      ruby_parser (~> 3.7)
+      sexp_processor (~> 4.14, >= 4.14.1)
+
+PATH
+  remote: gems/i18n_tasks
+  specs:
+    i18n_tasks (0.0.1)
+      activesupport (>= 3.2)
+      i18n (>= 0.7, < 2)
+      i18n_extraction
+      ruby_parser (~> 3.7)
+      utf8_cleaner
+
+PATH
   remote: gems/rubocop-canvas
   specs:
     rubocop-canvas (1.0.0)
       activesupport (~> 6.0)
       jira_ref_parser (= 1.0.1)
-      outrigger (~> 2.1)
+      outrigger (~> 3.0)
       rubocop (~> 1.19)
 
 PATH
@@ -208,6 +208,7 @@ PATH
       json-jwt (~> 1.10)
     canvas_partman (2.0.0)
       activerecord (>= 3.2)
+      activerecord-pg-extensions (>= 0.3.0)
       pg (>= 0.17, < 2.0)
     canvas_quiz_statistics (0.1.0)
       activesupport
@@ -353,7 +354,7 @@ GEM
     activerecord (6.0.4.1)
       activemodel (= 6.0.4.1)
       activesupport (= 6.0.4.1)
-    activerecord-pg-extensions (0.2.3)
+    activerecord-pg-extensions (0.3.0)
       activerecord (>= 6.0, < 6.2)
       railties (>= 6.0, < 6.2)
     activestorage (6.0.4.1)
@@ -512,6 +513,8 @@ GEM
     escape_code (0.2)
     et-orbi (1.2.4)
       tzinfo
+    expgen (0.1.1)
+      parslet
     extlib (0.9.16)
     factory_bot (6.1.0)
       activesupport (>= 5.0.0)
@@ -592,15 +595,13 @@ GEM
       faraday_middleware (~> 0.8)
       json-jwt (~> 1.7)
       simple_oauth (~> 0.3.1)
-    inst-jobs (2.3.3)
+    inst-jobs (2.4.10)
       activerecord (>= 5.2)
       activesupport (>= 5.2)
       after_transaction_commit (>= 1.0, < 3)
       debug_inspector (~> 1.0)
       fugit (~> 1.3)
       railties (>= 5.2)
-      redis (> 3.0)
-      redis-scripting (~> 1.0.1)
     inst-jobs-autoscaling (2.1.0)
       aws-sdk-autoscaling
       inst-jobs (> 1.0, < 3.0)
@@ -682,8 +683,8 @@ GEM
       activerecord (>= 4.0)
       rspec (>= 3.0)
     open4 (1.3.4)
-    outrigger (2.1.1)
-      activerecord (>= 5.0, < 6.2)
+    outrigger (3.0.0)
+      activerecord (>= 6.0, < 6.2)
     pact (1.57.0)
       pact-mock_service (~> 3.0, >= 3.3.1)
       pact-support (~> 1.15)
@@ -704,10 +705,10 @@ GEM
       term-ansicolor (~> 1.0)
       thor (>= 0.19, < 2.0)
       webrick (~> 1.3)
-    pact-support (1.16.8)
+    pact-support (1.17.0)
       awesome_print (~> 1.9)
       diff-lcs (~> 1.4)
-      randexp (~> 0.1.7)
+      expgen (~> 0.1)
       term-ansicolor (~> 1.0)
     pact_broker-client (1.40.0)
       dig_rb (~> 1.0)
@@ -721,6 +722,7 @@ GEM
       parallel
     parser (3.0.2.0)
       ast (~> 2.4.1)
+    parslet (2.0.0)
     pdf-core (0.9.0)
     pg (1.2.3)
     prawn (2.4.0)
@@ -786,7 +788,6 @@ GEM
     rake (13.0.3)
     rake-compiler (1.1.1)
       rake
-    randexp (0.1.7)
     ratom-nokogiri (0.10.10)
       nokogiri (>= 1.5.6, < 1.12)
     rdiscount (2.2.0.2)
@@ -940,8 +941,8 @@ GEM
       guardrail (~> 2.0.0)
       open4 (~> 1.3.0)
       railties (>= 5.1, < 6.1)
-    switchman-inst-jobs (3.1.2)
-      inst-jobs (>= 1.0.3, < 3.0)
+    switchman-inst-jobs (3.2.2)
+      inst-jobs (>= 2.4.9, < 3.0)
       parallel (>= 1.19)
       railties (>= 5.2, < 6.1)
       switchman (~> 2.0)
@@ -1016,7 +1017,7 @@ DEPENDENCIES
   account_reports!
   active_model-better_errors (= 1.6.7)
   active_model_serializers (= 0.9.0alpha1)!
-  activerecord-pg-extensions (= 0.2.3)
+  activerecord-pg-extensions (= 0.3.0)
   activesupport-suspend_callbacks!
   acts_as_list!
   addressable (= 2.7.0)
@@ -1129,7 +1130,7 @@ DEPENDENCIES
   icalendar (= 2.7.0)
   ims-lti (= 2.3.0)
   incoming_mail_processor!
-  inst-jobs (= 2.3.3)
+  inst-jobs (= 2.4.10)
   inst-jobs-autoscaling (= 2.1.0)
   inst-jobs-statsd (= 2.1.0)
   inst_statsd (= 2.2.0)
@@ -1150,6 +1151,7 @@ DEPENDENCIES
   mail (= 2.7.1)
   marginalia (= 1.9.0)
   mime-types (= 3.3.1)
+  mime-types-data (= 3.2021.0901)
   mini_magick (= 4.11.0)
   mini_mime (= 1.0.2)
   moodle_importer!
@@ -1165,7 +1167,7 @@ DEPENDENCIES
   oj (= 3.10.16)
   once-ler (= 0.1.4)
   open4 (= 1.3.4)
-  outrigger (= 2.1.1)
+  outrigger (= 3.0.0)
   pact (= 1.57.0)
   pact-messages (= 0.2.0)
   pact_broker-client (= 1.40.0)
@@ -1239,7 +1241,7 @@ DEPENDENCIES
   stormbreaker (= 0.0.4)
   stringify_ids!
   switchman (= 2.2.1)
-  switchman-inst-jobs (= 3.1.2)
+  switchman-inst-jobs (= 3.2.2)
   testingbot
   testrailtagging (= 0.3.8.7)
   thrift (= 0.9.3.0)
