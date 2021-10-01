@@ -658,11 +658,12 @@ class ActiveRecord::Base
     end
   end
 
-  def self.wait_for_replication(start: nil, timeout: nil)
+  def self.wait_for_replication(start: nil, timeout: nil, use_report: false)
     return true unless GuardRail.activate(:secondary) { connection.readonly? }
 
+    replica = use_report ? :report : :secondary
     start ||= current_xlog_location
-    GuardRail.activate(:secondary) do
+    GuardRail.activate(replica) do
       # positive == first value greater, negative == second value greater
       start_time = Time.now.utc
       while connection.wal_lsn_diff(start, :last_replay) >= 0
@@ -741,23 +742,6 @@ class ActiveRecord::Base
     end
     changes_applied
   end
-
-  def self.with_statement_timeout(timeout = 30_000)
-    raise ArgumentError.new("timeout must be an integer") unless timeout.is_a? Integer
-
-    transaction do
-      connection.execute "SET LOCAL statement_timeout = #{timeout}"
-      yield
-    rescue ActiveRecord::StatementInvalid => e
-      raise ActiveRecord::QueryTimeout if e.cause.is_a? PG::QueryCanceled
-
-      raise e
-    end
-  end
-end
-
-module ActiveRecord
-  class QueryTimeout < ActiveRecord::StatementInvalid; end
 end
 
 module UsefulFindInBatches
