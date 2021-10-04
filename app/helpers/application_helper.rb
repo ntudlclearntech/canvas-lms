@@ -1314,4 +1314,8 @@ module ApplicationHelper
       !@current_user.used_feature?(:cc_prefs) &&
       !k5_student
   end
+
+  def official_course_pattern
+    /[0-9]{3}-[1|2|3|4]:\w{3}_\w{5}:?\w{2}?/
+  end
 end

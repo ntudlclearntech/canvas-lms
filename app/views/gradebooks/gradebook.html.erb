@@ -44,7 +44,7 @@
       <div class="gradebook-menus">
         <span data-component="GradebookMenu" data-variant="DefaultGradebook"></span>
         <span data-component="ViewOptionsMenu"></span>
-        <% if @context.sis_source_id != nil %>
+        <% if official_course_pattern.match(@context.sis_source_id) %>
           <span data-component="ActionMenu" data-variant="OfficialCourse"></span>
         <% else %>
           <span data-component="ActionMenu" data-variant="NonOfficialCourse"></span>
