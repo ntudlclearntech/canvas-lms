@@ -52,7 +52,7 @@ To add some comments, click the "Edit" link at the top.
   <% end %>
   -->
   <% if can_do(@context, @current_user, :manage_content) %>
-    <% if @context.sis_source_id != nil %>
+    <% if official_course_pattern.match(@context.sis_source_id) %>
       <a href="#" id="custom_edit_syllabus_btn" class="btn button-sidebar-wide"><i class="icon-edit"></i> <%= t 'links.edit_syllabus_description', "Edit" %></a>
     <% else %>
       <a href="#" class="edit_syllabus_link btn button-sidebar-wide"><i class="icon-edit"></i> <%= t 'links.edit_syllabus_description', "Edit" %></a>
@@ -68,7 +68,7 @@ To add some comments, click the "Edit" link at the top.
   <%= help_text %>
 </div>
 
-<% if @context.sis_source_id == nil %>
+<% if !official_course_pattern.match(@context.sis_source_id) %>
   <%= form_for @context.class.to_s.underscore.to_sym, :url => context_url(@context, :context_url), :html => {:id => 'edit_course_syllabus_form', :style => 'display: none; margin-bottom: 10px;', :method => :put} do |f| %>
     <% unless @context.feature_enabled?(:rce_enhancements) %>
       <div style="float: <%= direction('right') %>;">
