@@ -7015,7 +7015,7 @@ zh-Hant:
     course_options: 
       course_options: 
         concluded: 已結束
-        favorite: 最喜愛的課程
+        favorite: 進行中的課程
         groups: 課程組別
         more_courses: 更多課程
     hide: 隱藏
@@ -10984,7 +10984,7 @@ zh-Hant:
   fall_grading_period_final_score_56d96a8f: 秋季評分時段最終分數
   fall_grading_period_id_74ef68e: "秋季評分時段 ID"
   favicon_6e658914: Favicon
-  favorite_courses_fbd356f0: 最喜愛的課程
+  favorite_courses_fbd356f0: 進行中的課程
   favorite_d720d310: 我的最愛
   favorites_c7e0207c: 我的最愛
   feature_f5526584: 功能
