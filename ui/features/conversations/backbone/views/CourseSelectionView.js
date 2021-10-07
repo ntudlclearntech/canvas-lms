@@ -179,7 +179,7 @@ export default class CourseSelectionView extends View {
         ? (course = this.options.courses.favorites.get(id) || this.options.courses.all.get(id))
         : this.options.courses.groups.get(id)
     if (context) {
-      return {name: context.get('name'), id: this._value}
+      return {name: context.get('course_code'), id: this._value}
     } else {
       return {}
     }
@@ -207,7 +207,7 @@ export default class CourseSelectionView extends View {
   }
 
   truncate_course(course) {
-    const name = course.name
+    const name = course.course_code
     const truncated = this.middle_truncate(name)
     if (name !== truncated) {
       return (course.truncated_name = truncated)
