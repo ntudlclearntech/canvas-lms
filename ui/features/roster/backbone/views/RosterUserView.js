@@ -91,6 +91,9 @@ export default class RosterUserView extends Backbone.View {
 
     const isAdmin = ENV.current_user_roles.includes('admin') || ENV.current_user_roles.includes('root admin')
 
+    // For hiding deactivate button if enrollment is not admin
+    json.isAdmin = isAdmin
+
     // if current user is admin, use original logic, otherwise disable remove/edit non-auditor students
     json.canRemoveUsers = _.every(this.model.get('enrollments'), e => e.can_be_removed)
     if (!isAdmin) {
