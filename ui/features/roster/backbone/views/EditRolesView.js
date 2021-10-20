@@ -50,7 +50,7 @@ export default class EditRolesView extends DialogBaseView {
       json.role_id = this.role_id
     }
 
-    json.roles = filterRoles(ENV.ALL_ROLES, ENV.current_user_roles);
+    json.roles = filterRoles(['StudentEnrollment', 'DesignerEnrollment']);
     return json
   }
 

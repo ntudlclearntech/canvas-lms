@@ -64,7 +64,7 @@ export default class RosterView extends Backbone.View {
       courseId: (ENV.course && ENV.course.id) || 0,
       defaultInstitutionName: ENV.ROOT_ACCOUNT_NAME || '',
       //roles: (ENV.ALL_ROLES || []).filter(canAddUser),
-      roles: (filterRoles(ENV.ALL_ROLES, ENV.current_user_roles) || []).filter(canAddUser),
+      roles: (filterRoles(['StudentEnrollment', 'DesignerEnrollment']) || []).filter(canAddUser),
       sections: ENV.SECTIONS || [],
       onClose: () => this.fetchOnCreateUsersClose(),
       inviteUsersURL: ENV.INVITE_USERS_URL,
