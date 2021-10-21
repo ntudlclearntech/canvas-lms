@@ -45,6 +45,17 @@ class Attachment < ActiveRecord::Base
 
   CLONING_ERROR_TYPE = 'attachment_clone_url'.freeze
 
+  ### PREDOC only ###
+  ## Note:  The following values are taken from https://gitlab.dlc.ntu.edu.tw/ntu-cool/predoc/-/blob/dlc-master/config/initializers/predoc.rb.default#L22-27,
+  ##        remember to modify both if you want to make any changes.
+  ## Mime_type
+  ALLOWED_FILE_TYPE = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 
+  'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'text/plain', 'application/zip']
+
+  ## Bytes
+  FILE_SIZE_LIMIT = 50 * 1024 * 1024
+  #########################################
+
   include HasContentTags
   include ContextModuleItem
   include SearchTermHelper
@@ -2067,6 +2078,11 @@ class Attachment < ActiveRecord::Base
 
   def canvadoc_available?
     canvadoc.try(:available?)
+  end
+
+  def predoc_available?
+    # self.size unit is Bytes
+    ALLOWED_FILE_TYPE.include?(self.content_type) && FILE_SIZE_LIMIT >= self.size.to_i
   end
 
   def canvadoc_url(user, opts={})
