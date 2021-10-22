@@ -16,6 +16,7 @@ SECURITY_FILE="${DIR}/config/security.yml"
 SESSION_STORE_FILE="${DIR}/config/session_store.yml"
 PASSENGERFILE_FILE="${DIR}/Passengerfile.json"
 PASSENGER_NGINX_CONFIGURATION_TEMPLATE_FILE="${DIR}/passenger_nginx_config.erb"
+LOGGING_FILE="${DIR}/config/logging.yml"
 
 create_cache_store_config_file() {
   cat << EOF > "${CACHE_STORE_FILE}"
@@ -405,6 +406,14 @@ http {
 EOF
 }
 
+create_logging_config_file() {
+  cat << EOF > "${LOGGING_FILE}"
+production:
+  logger: rails
+  log_level: "<%= ENV.fetch('LOGGING_LEVEL', 'info') %>"
+EOF
+}
+
 create_cache_store_config_file
 create_cassandra_config_file
 create_database_config_file
@@ -420,3 +429,4 @@ create_security_config_file
 create_session_store_config_file
 create_passengerfile_file
 create_passenger_nginx_configuration_template_file
+create_logging_config_file
