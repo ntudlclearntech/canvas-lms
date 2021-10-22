@@ -875,6 +875,9 @@ class Attachment < ActiveRecord::Base
   end
 
   def inline_content?
+    # Embed CSV in iframe src will cause automatic download, so we exclude CSV.
+    return false if self.content_type.match('text/csv')
+
     self.content_type.match(/\Atext/) || self.extension == '.html' || self.extension == '.htm' || self.extension == '.swf'
   end
 
