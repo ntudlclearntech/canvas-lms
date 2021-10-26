@@ -13999,7 +13999,7 @@ zh-Hant:
       previous: 上一個
   jquery_doc_previews: 
     errors: 
-      cannot_view_document_in_canvas: "在 Canvas 中無法顯示此文件。"
+      cannot_view_document_in_canvas: "無法預覽此文件。"
       document_preview_processing: 文件預覽目前正在處理中。請稍後重試。
   jquery_media_comments: 
     loading: 正在載入媒體...
