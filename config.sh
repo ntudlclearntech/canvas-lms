@@ -111,9 +111,9 @@ production:
         application_id: "<%= ENV.fetch('DYNAMIC_SETTINGS_APPLICATION_ID', '27627d1e-8a4f-4645-b390-bb396fc83c81') %>"
         client_token: "<%= ENV.fetch('DYNAMIC_SETTINGS_CLIENT_TOKEN', 'a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r') %>"
         sample_rate_percentage: "<%= ENV.fetch('DYNAMIC_SETTINGS_SAMPLE_RATE_PERCENTAGE', '0.0') %>" # Between 0.0 and 100.0; 0.0 disables the feature.
-      live-events:
-        aws_endpoint: "<%= ENV.fetch('DYNAMIC_SETTINGS_AWS_ENDPOINT', 'http://kinesis.canvaslms.docker') %>"
-        kinesis_stream_name: "<%= ENV.fetch('DYNAMIC_SETTINGS_KINESIS_STREAM_NAME', 'live-events') %>"
+      # live-events:
+      #   aws_endpoint: "<%= ENV.fetch('DYNAMIC_SETTINGS_AWS_ENDPOINT', 'http://kinesis.canvaslms.docker') %>"
+      #   kinesis_stream_name: "<%= ENV.fetch('DYNAMIC_SETTINGS_KINESIS_STREAM_NAME', 'live-events') %>"
       live-events-subscription-service:
         app-host: "<%= ENV.fetch('DYNAMIC_SETTINGS_LIVE_EVENTS_SUBSCRIPTION_SERVICE_HOST', 'http://les.docker') %>"
         sad-panda: "<%= ENV.fetch('DYNAMIC_SETTINGS_LIVE_EVENTS_SUBSCRIPTION_SERVICE_SAD_PANDA', 'null') %>"
