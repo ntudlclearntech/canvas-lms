@@ -215,7 +215,7 @@ $.fn.loadDocPreview = function(options) {
             htmlEscape(
               I18n.t(
                 'errors.cannot_view_document_in_canvas',
-                'This document cannot be displayed within Canvas.'
+                'This document cannot be displayed.'
               )
             ) +
             '</p>'
