@@ -17,6 +17,7 @@ SESSION_STORE_FILE="${DIR}/config/session_store.yml"
 PASSENGERFILE_FILE="${DIR}/Passengerfile.json"
 PASSENGER_NGINX_CONFIGURATION_TEMPLATE_FILE="${DIR}/passenger_nginx_config.erb"
 LOGGING_FILE="${DIR}/config/logging.yml"
+DELAYED_JOB_DELAY_FILE="${DIR}/config/delayed_job_delay.yml"
 
 create_cache_store_config_file() {
   cat << EOF > "${CACHE_STORE_FILE}"
@@ -414,6 +415,19 @@ production:
 EOF
 }
 
+create_delayed_job_delay() {
+  cat << EOF > "${DELAYED_JOB_DELAY_FILE}"
+# Affected code: app/models/discussion_entry.rb:context_module_action_later
+# Check #http://gitlab.dlc.ntu.edu.tw/ntu-cool/canvas-lms/-/issues/216#note_28432 for details.
+
+production:
+  discussion_entry_context_module_action: "<%= ENV.fetch('DELAYED_JOB_DELAY_DISCUSSION_ENTRY_CONTEXT_MODULE_ACTION', 5) %>"
+
+development:
+  discussion_entry_context_module_action: "<%= ENV.fetch('DELAYED_JOB_DELAY_DISCUSSION_ENTRY_CONTEXT_MODULE_ACTION', 5) %>"
+EOF
+}
+
 create_cache_store_config_file
 create_cassandra_config_file
 create_database_config_file
@@ -430,3 +444,4 @@ create_session_store_config_file
 create_passengerfile_file
 create_passenger_nginx_configuration_template_file
 create_logging_config_file
+create_delayed_job_delay
