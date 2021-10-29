@@ -307,6 +307,9 @@ module CanvasRails
 
 	  # load predoc url
     config.predoc = config_for(:predoc)
+
+    config.delayed_job_delay = config_for(:delayed_job_delay)
+
     class DummyKeyGenerator
       def self.generate_key(*)
       end
