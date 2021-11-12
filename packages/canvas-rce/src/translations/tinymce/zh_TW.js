@@ -120,7 +120,7 @@ tinymce.addI18n('zh_TW', {
   'Horizontal line': '\u6c34\u5e73\u7dda',
   'Insert/edit image': '\u63d2\u5165/\u7de8\u8f2f \u5716\u7247',
   'Image description': '\u5716\u7247\u63cf\u8ff0',
-  Source: '\u5716\u7247\u7db2\u5740',
+  Source: '\u4f86\u6e90\u7db2\u5740',
   Dimensions: '\u5c3a\u5bf8',
   'Constrain proportions': '\u7b49\u6bd4\u4f8b\u7e2e\u653e',
   General: '\u4e00\u822c',
