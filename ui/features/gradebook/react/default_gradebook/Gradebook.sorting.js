@@ -17,6 +17,7 @@
  */
 
 import natcompare from '@canvas/util/natcompare'
+import tempFixNatcompare from '@canvas/util/tempFixNatcompare'
 
 export function isDefaultSortOrder(sortOrder) {
   return !['due_date', 'name', 'points', 'module_position', 'custom'].includes(sortOrder)
@@ -34,7 +35,8 @@ export function localeSort(a, b, {asc = true, nullsLast = false} = {}) {
   if (!asc) {
     ;[b, a] = [a, b]
   }
-  return natcompare.strings(a || '', b || '')
+  //return natcompare.strings(a || '', b || '')
+  return tempFixNatcompare.strings(a || '', b || '')
 }
 
 export function wrapColumnSortFn(wrappedFn, direction = 'ascending') {
