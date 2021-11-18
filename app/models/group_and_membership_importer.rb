@@ -52,7 +52,7 @@ class GroupAndMembershipImporter < ActiveRecord::Base
 
     begin
       begin
-        option = SIS::CSV::CSVBaseImporter::PARSE_ARGS.clone
+        option = SIS::CSV::CSVBaseImporter::PARSE_ARGS.clone(freeze: false)
         option[:encoding] = 'big5'
         csv_contents = CSV.read(csv[:fullpath], **option)
       rescue
