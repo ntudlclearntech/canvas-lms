@@ -207,7 +207,13 @@ export default class CourseSelectionView extends View {
   }
 
   truncate_course(course) {
-    const name = course.course_code
+    /*
+      course.course_code for: /api/v1/courses/?state[]=unpublished&state[]=available&state[]=completed&include[]=term&per_page=50
+      course.name for: /api/v1/users/self/groups?per_page=20&include=can_message
+
+      Check #228 for more details
+    */
+    const name = course.course_code ? course.course : course.name
     const truncated = this.middle_truncate(name)
     if (name !== truncated) {
       return (course.truncated_name = truncated)
