@@ -213,7 +213,7 @@ export default class CourseSelectionView extends View {
 
       Check #228 for more details
     */
-    const name = course.course_code ? course.course : course.name
+    const name = course.course_code ? course.course_code : course.name
     const truncated = this.middle_truncate(name)
     if (name !== truncated) {
       return (course.truncated_name = truncated)
