@@ -101,7 +101,7 @@
       --volume /var/run/docker.sock:/var/run/docker.sock
       $CANVAS_LMS_CI_REGISTRY_IMAGE/deployer:$CANVAS_LMS_IMAGE_TAG
         --project-name $CANVAS_LMS_CONTAINER_NAME
-        up --detach
+        up --detach"
 
 .canvas-lms-deploy:
   script:
