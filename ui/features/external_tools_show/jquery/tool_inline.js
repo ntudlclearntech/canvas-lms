@@ -24,88 +24,79 @@ import MarkAsDone from '@canvas/util/jquery/markAsDone'
 import ToolLaunchResizer from '@canvas/lti/jquery/tool_launch_resizer'
 import {monitorLtiMessages} from '@canvas/lti/jquery/messages'
 
-$( document ).ready(function() {
-  const $toolForm = $('#tool_form')
-  
-  const launchToolManually = function() {
-    const $button = $toolForm.find('button')
-  
+const $toolForm = $('#tool_form')
+
+const launchToolManually = function() {
+  const $button = $toolForm.find('button')
+
+  $toolForm.show()
+
+  // Firefox remembers disabled state after page reloads
+  $button.attr('disabled', false)
+  setTimeout(() => {
+    // LTI links have a time component in the signature and will
+    // expire after a few minutes.
+    $button.attr('disabled', true).text($button.data('expired_message'))
+  }, 60 * 2.5 * 1000)
+
+  $toolForm.submit(function() {
+    $(this)
+      .find('.load_tab,.tab_loaded')
+      .toggle()
+  })
+}
+
+const launchToolInNewTab = function() {
+  $toolForm.attr('target', '_blank')
+  launchToolManually()
+}
+
+switch ($toolForm.data('tool-launch-type')) {
+  case 'window':
     $toolForm.show()
-  
-    // Firefox remembers disabled state after page reloads
-    $button.attr('disabled', false)
-    setTimeout(() => {
-      // LTI links have a time component in the signature and will
-      // expire after a few minutes.
-      $button.attr('disabled', true).text($button.data('expired_message'))
-    }, 60 * 2.5 * 1000)
-  
-    $toolForm.submit(function() {
-      $(this)
-        .find('.load_tab,.tab_loaded')
-        .toggle()
+    launchToolInNewTab()
+    break
+  case 'self':
+    $toolForm.removeAttr('target')
+    try {
+      $toolForm.submit()
+    } catch (e) {}
+    break
+  default:
+    // Firefox throws an error when submitting insecure content
+    try {
+      $toolForm.submit()
+    } catch (e) {}
+
+    $('#tool_content').bind('load', () => {
+      if (
+        document.location.protocol !== 'https:' ||
+        $('#tool_form')[0].action.indexOf('https:') > -1
+      ) {
+        $('#insecure_content_msg').hide()
+        $toolForm.hide()
+      }
     })
-  }
-  
-  const launchToolInNewTab = function() {
-    $toolForm.attr('target', '_blank')
-    launchToolManually()
-  }
-
-  switch ($toolForm.data('tool-launch-type')) {
-    case 'window':
-      $toolForm.show()
-      launchToolInNewTab()
-      break
-    case 'self':
-      $toolForm.removeAttr('target')
-      try {
-        $toolForm.submit()
-      } catch (e) {
-        console.log(e)
+    setTimeout(() => {
+      if ($('#insecure_content_msg').is(':visible')) {
+        $('#load_failure').show()
+        launchToolInNewTab()
       }
-      break
-    default:
-      // Firefox throws an error when submitting insecure content
-      try {
-        $toolForm.submit()
-      } catch (e) {
-        console.log(e)
-      }
-  
-      $('#tool_content').bind('load', () => {
-        if (
-          document.location.protocol !== 'https:' ||
-          $('#tool_form')[0].action.indexOf('https:') > -1
-        ) {
-          $('#insecure_content_msg').hide()
-          $toolForm.hide()
-        }
-      })
-      setTimeout(() => {
-        if ($('#insecure_content_msg').is(':visible')) {
-          $('#load_failure').show()
-          launchToolInNewTab()
-        }
-      }, 3 * 1000)
-      break
-  }
-})
+    }, 3 * 1000)
+    break
+}
 
-$( document ).ready(function() {
-  const $toolForm = $('#tool_form')
+// Google analytics tracking code
+const toolName = $toolForm.data('tool-id') || 'unknown'
+const toolPath = $toolForm.data('tool-path')
+const messageType = $toolForm.data('message-type') || 'tool_launch'
+trackEvent(messageType, toolName, toolPath)
 
-  // Google analytics tracking code
-  const toolName = $toolForm.data('tool-id') || 'unknown'
-  const toolPath = $toolForm.data('tool-path')
-  const messageType = $toolForm.data('message-type') || 'tool_launch'
-  trackEvent(messageType, toolName, toolPath)
-})
+// Iframe resize handler
+let $tool_content_wrapper
+let min_tool_height, canvas_chrome_height
 
-$( document ).ready(function() {
-  // Iframe resize handler
-  let $tool_content_wrapper
-  let min_tool_height, canvas_chrome_height
+$(function() {
   const $window = $(window)
   $tool_content_wrapper = $('.tool_content_wrapper')
   const toolResizer = new ToolLaunchResizer(min_tool_height)
