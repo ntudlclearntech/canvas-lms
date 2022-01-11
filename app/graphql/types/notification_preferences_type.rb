@@ -44,9 +44,8 @@ module Types
       channels
     end
 
-
     field :send_scores_in_emails, Boolean, null: true do
-      argument :course_id, ID, required: false, prepare: GraphQLHelpers.relay_or_legacy_id_prepare_func('Course')
+      argument :course_id, ID, required: false, prepare: GraphQLHelpers.relay_or_legacy_id_prepare_func("Course")
     end
     def send_scores_in_emails(course_id: nil)
       user = object[:user]

@@ -29,11 +29,10 @@
 # wants to do with errors can be hooked into this path with the
 # .register! method.
 
-require 'inst-jobs'
-require 'canvas_errors/job_info'
+require "inst-jobs"
+require "canvas_errors/job_info"
 
 module CanvasErrors
-
   # register something to happen on every exception that occurs.
   #
   # The parameter is a unique key for this callback, which is
@@ -69,8 +68,8 @@ module CanvasErrors
   # to ":error" and (much like log levels), can trigger different
   # reporting outcomes in the callbacks. expected member of ERROR_LEVELS.
   # Registered callbacks can decide what to do about different levels.
-  ERROR_LEVELS = [:info, :warn, :error].freeze
-  def self.capture(exception, data={}, level=:error)
+  ERROR_LEVELS = %i[info warn error].freeze
+  def self.capture(exception, data = {}, level = :error)
     unless ERROR_LEVELS.include?(level)
       Rails.logger.warn("[ERRORS] error level #{level} is not supported, defaulting to :error")
       level = :error
@@ -83,8 +82,8 @@ module CanvasErrors
 
   # convenience method, use this if you want to apply the 'type' tag without
   # having to pass in a whole hash
-  def self.capture_exception(type, exception, level=:error)
-    self.capture(exception, {tags: {type: type.to_s}}, level)
+  def self.capture_exception(type, exception, level = :error)
+    capture(exception, { tags: { type: type.to_s } }, level)
   end
 
   # This is really just for clearing out the registry during tests,
@@ -107,9 +106,9 @@ module CanvasErrors
     job ? CanvasErrors::JobInfo.new(job, nil).to_h : {}
   end
 
-  def self.run_callbacks(exception, extra, level=:error)
-    registry.each_with_object({}) do |(key, callback), outputs|
-      outputs[key] = callback.call(exception, extra, level)
+  def self.run_callbacks(exception, extra, level = :error)
+    registry.transform_values do |callback|
+      callback.call(exception, extra, level)
     end
   end
   private_class_method :run_callbacks
@@ -123,7 +122,7 @@ module CanvasErrors
     if data.key?(:tags) || data.key?(:extra)
       data
     else
-      {extra: data}
+      { extra: data }
     end
   end
   private_class_method :wrap_in_extra

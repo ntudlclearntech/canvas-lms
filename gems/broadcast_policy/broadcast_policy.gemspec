@@ -1,9 +1,6 @@
 # frozen_string_literal: true
 
-$:.push File.expand_path("../lib", __FILE__)
-
-# Maintain your gem's version:
-require "broadcast_policy/version"
+require_relative "lib/broadcast_policy/version"
 
 # Describe your gem and declare its dependencies:
 Gem::Specification.new do |s|
@@ -19,7 +16,7 @@ Gem::Specification.new do |s|
 
   s.add_dependency "activesupport"
   s.add_dependency "after_transaction_commit"
-  s.add_development_dependency "rspec", "~> 3.5.0"
   s.add_development_dependency "byebug"
   s.add_development_dependency "pry"
+  s.add_development_dependency "rspec", "~> 3.5.0"
 end

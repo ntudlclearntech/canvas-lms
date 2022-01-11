@@ -27,13 +27,18 @@ describe('StudentOutcomeScore', () => {
   const defaultProps = (props = {}) => {
     return {
       outcome: {
-        mastery_points: 5
+        id: '1',
+        title: 'Title',
+        mastery_points: 5,
+        ratings: []
       },
       rollup: {
+        outcomeId: '1',
         rating: {
           color: 'FFFFF',
           points: 3,
-          description: 'great!'
+          description: 'great!',
+          mastery: false
         }
       },
       ...props
@@ -59,7 +64,16 @@ describe('StudentOutcomeScore', () => {
   })
 
   it('renders ScreenReaderContent with "Unassessed" if there is no rollup rating', () => {
-    const {getByText} = render(<StudentOutcomeScore {...defaultProps({rollup: {}})} />)
+    const {getByText} = render(
+      <StudentOutcomeScore
+        {...defaultProps({
+          rollup: {
+            outcomeId: '1',
+            rating: {points: 3, color: 'FFFFF', description: '', mastery: false}
+          }
+        })}
+      />
+    )
     expect(getByText('Unassessed')).toBeInTheDocument()
   })
 })

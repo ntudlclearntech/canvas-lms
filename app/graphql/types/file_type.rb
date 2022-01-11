@@ -22,7 +22,7 @@ module Types
   class FileType < ApplicationObjectType
     include ApplicationHelper
 
-    graphql_name 'File'
+    graphql_name "File"
 
     implements GraphQL::Types::Relay::Node
     implements Interfaces::ModuleItemInterface
@@ -48,6 +48,7 @@ module Types
     field :thumbnail_url, Types::UrlType, null: true
     def thumbnail_url
       return if object.locked_for?(current_user, check_policies: true)
+
       authenticated_thumbnail_url(object)
     end
 
@@ -56,8 +57,8 @@ module Types
       return if object.locked_for?(current_user, check_policies: true)
 
       opts = {
-        download: '1',
-        download_frd: '1',
+        download: "1",
+        download_frd: "1",
         host: context[:request].host_with_port,
         protocol: context[:request].protocol
       }
@@ -84,6 +85,7 @@ module Types
           load_submission_history_associations(submission) do |course, assignment|
             attachment_ids = submission.submission_history.map(&:attachment_ids_for_version).flatten
             next unless attachment_ids.include?(object.id)
+
             get_canvadoc_url(course, assignment, submission)
           end
         end

@@ -18,21 +18,20 @@
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 class ApiScopeMappingWriter
-
   attr_reader :resource_lookup
 
   def initialize(resources)
     @resources = resources
     dir = File.dirname(__FILE__)
-    @template = File.read(File.join(dir, '/scope_mapper_template.erb'))
-    @output_file = Rails.root.join("lib", "api_scope_mapper.rb")
+    @template = File.read(File.join(dir, "/scope_mapper_template.erb"))
+    @output_file = Rails.root.join("lib/api_scope_mapper.rb")
     @resource_lookup = {}
   end
 
   def generate_scope_mapper
     mapping = generate_scopes_mapping(@resources)
-    out = ERB.new(@template, nil, '-').result(binding)
-    File.open(@output_file, 'w') {|file| file.write(out)}
+    out = ERB.new(@template, trim_mode: "-").result(binding)
+    File.open(@output_file, "w") { |file| file.write(out) }
   end
 
   private
@@ -45,7 +44,7 @@ class ApiScopeMappingWriter
 
   def process_controllers(controllers, name, resource_hash)
     controllers.each_with_object(resource_hash) do |controller, hash|
-      scope_resource = controller.name.to_s.underscore.gsub('_controller', '')
+      scope_resource = controller.name.to_s.underscore.gsub("_controller", "")
       children = process_children(controller.children, name)
       hash[scope_resource] = hash[scope_resource].nil? ? children : hash[scope_resource].merge(children)
     end
@@ -54,6 +53,7 @@ class ApiScopeMappingWriter
   def process_children(children, name)
     children.each_with_object({}) do |child, hash|
       next unless api_method?(child)
+
       resource = name.parameterize.underscore.to_sym
       hash[child.name] = resource
       add_resource_lookup(resource, name)
@@ -65,7 +65,6 @@ class ApiScopeMappingWriter
   end
 
   def api_method?(child)
-    child.tags.any? {|t| t.tag_name == "API"} && child.tags.none? {|t| t.tag_name.casecmp?("internal")}
+    child.tags.any? { |t| t.tag_name == "API" } && child.tags.none? { |t| t.tag_name.casecmp?("internal") }
   end
-
 end

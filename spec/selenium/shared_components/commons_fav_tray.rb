@@ -17,10 +17,9 @@
 # You should have received a copy of the GNU Affero General Public License along
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 
-require_relative '../common'
+require_relative "../common"
 
 module CommonsFavoriteTray
-
   # ------------------------------ Selectors -----------------------------
 
   # ------------------------------ Elements ------------------------------
@@ -29,10 +28,9 @@ module CommonsFavoriteTray
     f("[role='dialog']")
   end
 
-	def tray_iframe
-		commons_fav_tray.find_element(:css, "iframe")
-	end
+  def tray_iframe
+    commons_fav_tray.find_element(:css, "iframe")
+  end
 
   # ------------------------------ Actions --------------------------------
-
 end

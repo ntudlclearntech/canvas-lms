@@ -17,12 +17,10 @@
 # You should have received a copy of the GNU Affero General Public License along
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 
-require 'spec_helper'
-
 describe MessageBus do
-  TEST_MB_NAMESPACE = "test-only"
+  let(:namespace) { "test-only" }
 
-  around(:each) do |example|
+  around do |example|
     old_interval = MessageBus.worker_process_interval_lambda
     # let's not waste time with queue throttling in tests
     MessageBus.worker_process_interval = -> { 0.01 }
@@ -31,12 +29,12 @@ describe MessageBus do
     MessageBus.worker_process_interval = old_interval unless old_interval.nil?
   end
 
-  before(:each) do
+  before do
     skip("pulsar config required to test") unless MessageBus.enabled?
   end
 
-  after(:each) do
-    MessageBus.reset!
+  after do
+    MessageBus.process_all_and_reset!
   end
 
   describe ".reset!" do
@@ -45,7 +43,7 @@ describe MessageBus do
       allow(client).to receive(:close) do
         raise ::Pulsar::Error::AlreadyClosed
       end
-      expect{ MessageBus.reset! }.to_not raise_error
+      expect { MessageBus.reset! }.to_not raise_error
       new_client = MessageBus.client
       expect(new_client).to_not eq(client)
     end
@@ -54,35 +52,35 @@ describe MessageBus do
   it "can send messages and then later receive messages" do
     topic_name = "lazily-created-topic-#{SecureRandom.hex(16)}"
     subscription_name = "subscription-#{SecureRandom.hex(4)}"
-    producer = MessageBus.producer_for(TEST_MB_NAMESPACE, topic_name)
-    log_values = {test_key: "test_val"}
+    producer = MessageBus.producer_for(namespace, topic_name)
+    log_values = { test_key: "test_val" }
     producer.send(log_values.to_json)
-    consumer = MessageBus.consumer_for(TEST_MB_NAMESPACE, topic_name, subscription_name)
+    consumer = MessageBus.consumer_for(namespace, topic_name, subscription_name)
     msg = consumer.receive(1000)
     consumer.acknowledge(msg)
     # normally you would process the message before acknowledging it
     # but we're trying to keep the external state as clean as possible in the tests.
-    expect(JSON.parse(msg.data)['test_key']).to eq("test_val")
+    expect(JSON.parse(msg.data)["test_key"]).to eq("test_val")
   end
 
   it "can send a single message resiliant to timeout" do
     topic_name = "lazily-created-topic-#{SecureRandom.hex(17)}"
     subscription_name = "subscription-#{SecureRandom.hex(5)}"
     call_count = 0
-    original_producer_for = MessageBus.method(:producer_for)
-    allow(MessageBus).to receive(:producer_for) do |namespace, topic_name|
+    allow(MessageBus).to receive(:producer_for).and_wrap_original do |original, namespace, topic|
       call_count += 1
       raise(::Pulsar::Error::Timeout, "Big Ops Fail") if call_count <= 1
-      original_producer_for.call(namespace, topic_name)
+
+      original.call(namespace, topic)
     end
-    MessageBus.send_one_message(TEST_MB_NAMESPACE, topic_name, {test_my_key: "test_my_val"}.to_json)
+    MessageBus.send_one_message(namespace, topic_name, { test_my_key: "test_my_val" }.to_json)
     MessageBus.production_worker.stop! # make sure we actually get through shipping the messages
-    consumer = MessageBus.consumer_for(TEST_MB_NAMESPACE, topic_name, subscription_name)
+    consumer = MessageBus.consumer_for(namespace, topic_name, subscription_name)
     msg = consumer.receive(1000)
     consumer.acknowledge(msg)
     # normally you would process the message before acknowledging it
     # but we're trying to keep the external state as clean as possible in the tests.
-    expect(JSON.parse(msg.data)['test_my_key']).to eq("test_my_val")
+    expect(JSON.parse(msg.data)["test_my_key"]).to eq("test_my_val")
   end
 
   it "only parses the YAML one time as long as it doesn't change" do
@@ -92,7 +90,7 @@ describe MessageBus do
     5.times { original_config = MessageBus.config }
     # force the config to change, so we get a second yaml parse
     yaml = "NOT_THE_ORIGINAL: config"
-    allow(DynamicSettings).to receive(:find).and_return({'pulsar.yml' => yaml})
+    allow(DynamicSettings).to receive(:find).and_return({ "pulsar.yml" => yaml })
     other_config = nil
     5.times { other_config = MessageBus.config }
     # make sure that the contents change when the dynamic settings change
@@ -102,15 +100,15 @@ describe MessageBus do
   describe "connection caching" do
     it "caches a single producer connection until you force it" do
       topic_name = "cachable-created-topic-#{SecureRandom.hex(16)}"
-      producer = MessageBus.producer_for(TEST_MB_NAMESPACE, topic_name)
-      producer2 = MessageBus.producer_for(TEST_MB_NAMESPACE, topic_name)
-      producer3 = MessageBus.producer_for(TEST_MB_NAMESPACE, topic_name)
+      producer = MessageBus.producer_for(namespace, topic_name)
+      producer2 = MessageBus.producer_for(namespace, topic_name)
+      producer3 = MessageBus.producer_for(namespace, topic_name)
       expect(producer.class).to eq(Pulsar::Producer)
       expect(producer3).to be(producer)
       expect(producer2).to be(producer)
-      producer4 = MessageBus.producer_for(TEST_MB_NAMESPACE, topic_name, force_fresh: true)
+      producer4 = MessageBus.producer_for(namespace, topic_name, force_fresh: true)
       expect(producer4).to_not be(producer)
-      producer5 = MessageBus.producer_for(TEST_MB_NAMESPACE, topic_name)
+      producer5 = MessageBus.producer_for(namespace, topic_name)
       expect(producer5).to be(producer4)
     end
 
@@ -118,14 +116,13 @@ describe MessageBus do
       topic_name = "cachable-created-topic-#{SecureRandom.hex(16)}"
       subscription_name_1 = "subscription-1-#{SecureRandom.hex(4)}"
       subscription_name_2 = "subscription-2-#{SecureRandom.hex(4)}"
-      consumer1 = MessageBus.consumer_for(TEST_MB_NAMESPACE, topic_name, subscription_name_1)
-      consumer2 = MessageBus.consumer_for(TEST_MB_NAMESPACE, topic_name, subscription_name_1)
-      consumer3 = MessageBus.consumer_for(TEST_MB_NAMESPACE, topic_name, subscription_name_2)
-      consumer4 = MessageBus.consumer_for(TEST_MB_NAMESPACE, topic_name, subscription_name_2)
+      consumer1 = MessageBus.consumer_for(namespace, topic_name, subscription_name_1)
+      consumer2 = MessageBus.consumer_for(namespace, topic_name, subscription_name_1)
+      consumer3 = MessageBus.consumer_for(namespace, topic_name, subscription_name_2)
+      consumer4 = MessageBus.consumer_for(namespace, topic_name, subscription_name_2)
       expect(consumer1).to be(consumer2)
       expect(consumer3).to be(consumer4)
       expect(consumer1).to_not be(consumer3)
     end
   end
-
 end

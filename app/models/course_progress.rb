@@ -40,36 +40,37 @@ class CourseProgress
   end
 
   def current_module
-    if read_only
-      @_current_module ||= begin
-        progressions_by_mod_id = module_progressions.index_by(&:context_module_id)
-        modules.detect do |m|
-          prog = progressions_by_mod_id[m.id]
-          prog.nil? || prog.completed? == false
-        end
-      end
-    else
-      @_current_module ||= modules.detect { |m| m.evaluate_for(user).completed? == false }
-    end
+    @_current_module ||= if read_only
+                           begin
+                             progressions_by_mod_id = module_progressions.index_by(&:context_module_id)
+                             modules.detect do |m|
+                               prog = progressions_by_mod_id[m.id]
+                               prog.nil? || prog.completed? == false
+                             end
+                           end
+                         else
+                           modules.detect { |m| m.evaluate_for(user).completed? == false }
+                         end
   end
 
   def module_progressions
     @_module_progressions ||= if @preloaded_progressions
-      module_ids = modules.pluck(:id)
-      @preloaded_progressions[course.id]&.select { |cmp| module_ids.include?(cmp.context_module_id) } ||
-        ContextModuleProgression.none
-    else
-      course.context_module_progressions.
-        where(user_id: user, context_module_id: modules)
-    end
+                                module_ids = modules.pluck(:id)
+                                @preloaded_progressions[course.id]&.select { |cmp| module_ids.include?(cmp.context_module_id) } ||
+                                  ContextModuleProgression.none
+                              else
+                                course.context_module_progressions
+                                      .where(user_id: user, context_module_id: modules)
+                              end
   end
 
   def current_position
     return unless in_progress?
+
     if read_only
       @current_positions ||= begin
-        prog = module_progressions.detect{|p| p.context_module_id == current_module.id}
-        prog && prog.current_position
+        prog = module_progressions.detect { |p| p.context_module_id == current_module.id }
+        prog&.current_position
       end
     else
       @current_position ||= current_module.evaluate_for(user).current_position
@@ -78,11 +79,12 @@ class CourseProgress
 
   def current_content_tag
     return unless in_progress?
+
     @current_content_tag ||= begin
-      tags = current_module.content_tags.select{|ct| ct.position == current_position}
+      tags = current_module.content_tags.select { |ct| ct.position == current_position }
       if tags.any?
         opts = current_module.visibility_for_user(user)
-        tags.detect{|tag| tag.visible_to_user?(user, opts)}
+        tags.detect { |tag| tag.visible_to_user?(user, opts) }
       else
         nil
       end
@@ -114,13 +116,14 @@ class CourseProgress
 
   def current_requirement_url
     return unless in_progress? && current_content_tag
-    course_context_modules_item_redirect_url(:course_id => course.id,
-      :id => current_content_tag.id,
-      :host => HostUrl.context_host(course))
+
+    course_context_modules_item_redirect_url(course_id: course.id,
+                                             id: current_content_tag.id,
+                                             host: HostUrl.context_host(course))
   end
 
   def in_progress?
-    current_module && current_module.require_sequential_progress
+    current_module&.require_sequential_progress
   end
 
   def completed?
@@ -129,8 +132,9 @@ class CourseProgress
 
   def most_recent_module_completed_at
     return unless module_progressions
+
     if module_progressions.is_a? Array
-      module_progressions.map(&:completed_at).compact.max
+      module_progressions.filter_map(&:completed_at).max
     else
       module_progressions.maximum(:completed_at)
     end
@@ -138,10 +142,11 @@ class CourseProgress
 
   def completed_at
     return unless completed?
+
     most_recent_module_completed_at&.utc&.iso8601
   end
 
-  def to_json
+  def to_json(*)
     if course.module_based? && course.user_is_student?(user, include_all: true)
       {
         requirement_count: requirement_count,
@@ -151,8 +156,7 @@ class CourseProgress
       }
     else
       { error:
-        { message: 'no progress available because this course is not module based (has modules and module completion requirements) or the user is not enrolled as a student in this course' }
-      }
+        { message: "no progress available because this course is not module based (has modules and module completion requirements) or the user is not enrolled as a student in this course" } }
     end
   end
 
@@ -168,14 +172,12 @@ class CourseProgress
 
   def module_requirements(mod)
     @_module_requirements ||= {}
-    @_module_requirements[mod.id] ||= mod.completion_requirements_visible_to(@user, :is_teacher => false)
+    @_module_requirements[mod.id] ||= mod.completion_requirements_visible_to(@user, is_teacher: false)
   end
 
   def module_requirements_completed(progression)
     @_module_requirements_completed ||= {}
-    @_module_requirements_completed[progression.id] ||= begin
-      progression.requirements_met.select { |req| module_requirements(progression.context_module).include?(req) }.uniq
-    end
+    @_module_requirements_completed[progression.id] ||= progression.requirements_met.select { |req| module_requirements(progression.context_module).include?(req) }.uniq
   end
 
   def module_reqs_to_complete_count(mod)
@@ -192,5 +194,4 @@ class CourseProgress
   def module_completed?(progression)
     module_requirements_completed(progression).count >= module_reqs_to_complete_count(progression.context_module)
   end
-
 end

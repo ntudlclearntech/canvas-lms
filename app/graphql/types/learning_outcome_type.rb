@@ -31,14 +31,15 @@ module Types
 
     class ImportedLoader < GraphQL::Batch::Loader
       def initialize(target_context_id, target_context_type)
+        super()
         @target_context_id = target_context_id
         @target_context_type = target_context_type.downcase.capitalize
       end
 
       def perform(outcomes)
         imported_ids = ContentTag.learning_outcome_links.active
-          .where(content_id: outcomes, context_id: @target_context_id, context_type: @target_context_type)
-          .pluck(:content_id)
+                                 .where(content_id: outcomes, context_id: @target_context_id, context_type: @target_context_type)
+                                 .pluck(:content_id)
 
         outcomes.each do |outcome|
           fulfill(outcome, imported_ids.include?(outcome.id))
@@ -46,7 +47,7 @@ module Types
       end
     end
 
-    alias outcome object
+    alias_method :outcome, :object
     implements GraphQL::Types::Relay::Node
     implements Interfaces::LegacyIDInterface
     implements Interfaces::TimestampInterface
@@ -59,6 +60,9 @@ module Types
     field :description, String, null: true
     field :display_name, String, null: true
     field :vendor_guid, String, null: true
+    field :calculation_method, String, null: true
+    field :calculation_int, Integer, null: true
+    field :rubric_criterion, Types::RubricCriterionType, null: true
 
     field :can_edit, Boolean, null: false
     def can_edit

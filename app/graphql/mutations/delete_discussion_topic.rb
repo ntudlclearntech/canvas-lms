@@ -20,7 +20,7 @@
 class Mutations::DeleteDiscussionTopic < Mutations::BaseMutation
   graphql_name "DeleteDiscussionTopic"
   # input arguments
-  argument :id, ID, required: true, prepare: GraphQLHelpers.relay_or_legacy_id_prepare_func('DiscussionTopic')
+  argument :id, ID, required: true, prepare: GraphQLHelpers.relay_or_legacy_id_prepare_func("DiscussionTopic")
 
   # the return data if the delete is successful
   field :discussion_topic_id, ID, null: false
@@ -33,7 +33,7 @@ class Mutations::DeleteDiscussionTopic < Mutations::BaseMutation
       raise GraphQL::ExecutionError, "Insufficient permissions"
     end
 
-    context[:deleted_models] = { discussion_topic: {}}
+    context[:deleted_models] = { discussion_topic: {} }
     context[:deleted_models][:discussion_topic] = record
     record.destroy
     {

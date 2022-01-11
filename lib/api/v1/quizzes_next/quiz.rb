@@ -20,7 +20,7 @@
 module Api::V1::QuizzesNext::Quiz
   extend Api::V1::Quiz
 
-  def quizzes_next_json(quizzes, context, user, session, options={})
+  def quizzes_next_json(quizzes, context, user, session, options = {})
     # bulk preload all description attachments to prevent N+1 query
     preloaded_attachments = api_bulk_load_user_content_attachments(quizzes.map(&:description), context)
     options[:description_formatter] = description_formatter(context, user, preloaded_attachments)
@@ -37,6 +37,6 @@ module Api::V1::QuizzesNext::Quiz
 
     return Quizzes::QuizSerializer if quiz.is_a?(Quizzes::Quiz)
 
-    raise ArgumentError, 'An invalid quiz object is passed to quizzes_next_json'
+    raise ArgumentError, "An invalid quiz object is passed to quizzes_next_json"
   end
 end

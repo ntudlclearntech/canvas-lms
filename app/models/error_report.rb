@@ -36,16 +36,15 @@ class ErrorReport < ActiveRecord::Base
   end
 
   def truncate_enormous_fields
-    self.message = message.truncate(1024, omission: '...<truncated>') if message
-    data['exception_message'] = data['exception_message'].truncate(1024, omission: '...<truncated>') if data['exception_message']
+    self.message = message.truncate(1024, omission: "...<truncated>") if message
+    data["exception_message"] = data["exception_message"].truncate(1024, omission: "...<truncated>") if data["exception_message"]
   end
 
   class Reporter
-
-    IGNORED_CATEGORIES = "404,ActionDispatch::RemoteIp::IpSpoofAttackError,Turnitin::Errors::SubmissionNotScoredError".freeze
+    IGNORED_CATEGORIES = "404,ActionDispatch::RemoteIp::IpSpoofAttackError,Turnitin::Errors::SubmissionNotScoredError"
 
     def ignored_categories
-      Setting.get('ignored_error_report_categories', IGNORED_CATEGORIES).split(',')
+      Setting.get("ignored_error_report_categories", IGNORED_CATEGORIES).split(",")
     end
 
     include ActiveSupport::Callbacks
@@ -58,8 +57,9 @@ class ErrorReport < ActiveRecord::Base
     end
 
     def log_error(category, opts)
-      opts[:category] = category.to_s.presence || 'default'
+      opts[:category] = category.to_s.presence || "default"
       return if ignored_categories.include? category
+
       @opts = opts
       # sanitize invalid encodings
       @opts[:message] = Utf8Cleaner.strip_invalid_utf8(@opts[:message]) if @opts[:message]
@@ -82,6 +82,7 @@ class ErrorReport < ActiveRecord::Base
       while (exception = exception.cause)
         limit -= 1
         break if limit == 0
+
         cause = exception.to_s rescue exception.class.name
         message += " caused by #{cause}"
         new_backtrace = Array(exception.backtrace)
@@ -106,9 +107,9 @@ class ErrorReport < ActiveRecord::Base
           Rails.logger.error("Failed creating ErrorReport: #{e.inspect}")
           Rails.logger.error("Original error: #{opts[:message]}")
           Rails.logger.error("Original exception: #{opts[:exception_message]}") if opts[:exception_message]
-          @exception.backtrace.each do |line|
+          @exception&.backtrace&.each do |line|
             Rails.logger.error("Trace: #{line}")
-          end if @exception
+          end
         end
         report
       end
@@ -145,6 +146,7 @@ class ErrorReport < ActiveRecord::Base
 
   def self.log_exception_from_canvas_errors(exception, data)
     return nil if configured_to_ignore?(exception.class.to_s)
+
     tags = data.fetch(:tags, {})
     extras = data.fetch(:extra, {})
     account_id = tags[:account_id]
@@ -163,15 +165,15 @@ class ErrorReport < ActiveRecord::Base
     end
   end
 
-  PROTECTED_FIELDS = [:id, :created_at, :updated_at, :data].freeze
+  PROTECTED_FIELDS = %i[id created_at updated_at data].freeze
 
   # assigns data attributes to the column if there's a column with that name,
   # otherwise goes into the general data hash
   def assign_data(data = {})
     self.data ||= {}
-    data.each do |k,v|
+    data.each do |k, v|
       if respond_to?(:"#{k}=") && !ErrorReport::PROTECTED_FIELDS.include?(k.to_sym)
-        self.send(:"#{k}=", v)
+        send(:"#{k}=", v)
       else
         # dup'ing because some strings come in from Rack as frozen sometimes,
         # depending on the web server, and our invalid utf-8 stripping breaks on that
@@ -184,7 +186,7 @@ class ErrorReport < ActiveRecord::Base
     if !val || val.length < self.class.maximum_text_length
       write_attribute(:backtrace, val)
     else
-      write_attribute(:backtrace, val[0,self.class.maximum_text_length])
+      write_attribute(:backtrace, val[0, self.class.maximum_text_length])
     end
   end
 
@@ -192,7 +194,7 @@ class ErrorReport < ActiveRecord::Base
     if !val || val.length < self.class.maximum_text_length
       write_attribute(:comments, val)
     else
-      write_attribute(:comments, val[0,self.class.maximum_text_length])
+      write_attribute(:comments, val[0, self.class.maximum_text_length])
     end
   end
 
@@ -202,16 +204,16 @@ class ErrorReport < ActiveRecord::Base
 
   def safe_url?
     uri = URI.parse(url)
-    ['http', 'https'].include?(uri.scheme)
+    ["http", "https"].include?(uri.scheme)
   rescue
     false
   end
 
   def guess_email
-    self.email = nil if self.email && self.email.empty?
-    self.email ||= self.user.email rescue nil
+    self.email = nil if email && email.empty?
+    self.email ||= user.email rescue nil
     unless self.email
-      domain = HostUrl.outgoing_email_domain.gsub(/[^a-zA-Z0-9]/, '-')
+      domain = HostUrl.outgoing_email_domain.gsub(/[^a-zA-Z0-9]/, "-")
       # example.com definitely won't exist
       self.email = "unknown-#{domain}@instructure.example.com"
     end
@@ -221,10 +223,10 @@ class ErrorReport < ActiveRecord::Base
   # delete old error reports before a given date
   # returns the number of destroyed error reports
   def self.destroy_error_reports(before_date)
-    self.where("created_at<?", before_date).delete_all
+    where("created_at<?", before_date).delete_all
   end
 
   def self.categories
-    distinct_values('category')
+    distinct_values("category")
   end
 end

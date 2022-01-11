@@ -17,11 +17,13 @@
  */
 
 import React from 'react'
+// @ts-ignore: TS doesn't understand i18n scoped imports
 import I18n from 'i18n!pace_plans_settings'
+import moment from 'moment-timezone'
 import {connect} from 'react-redux'
 
-import {AccessibleContent} from '@instructure/ui-a11y-content'
-import {Button, CloseButton, CondensedButton, IconButton} from '@instructure/ui-buttons'
+import {ScreenReaderContent} from '@instructure/ui-a11y-content'
+import {Button, CloseButton, IconButton} from '@instructure/ui-buttons'
 import {Checkbox} from '@instructure/ui-checkbox'
 import {Heading} from '@instructure/ui-heading'
 import {IconSettingsLine} from '@instructure/ui-icons'
@@ -29,27 +31,31 @@ import {Modal} from '@instructure/ui-modal'
 import {Popover} from '@instructure/ui-popover'
 import {View} from '@instructure/ui-view'
 
+import {showFlashAlert} from '@canvas/alerts/react/FlashAlert'
 import BlackoutDates from './blackout_dates'
 import * as PacePlanApi from '../../../api/pace_plan_api'
 import {StoreState, PacePlan} from '../../../types'
 import {getCourse} from '../../../reducers/course'
-import {getExcludeWeekends, getPacePlan} from '../../../reducers/pace_plans'
-import {autoSavingActions, pacePlanActions} from '../../../actions/pace_plans'
+import {getExcludeWeekends, getPacePlan, getPlanPublishing} from '../../../reducers/pace_plans'
+import {pacePlanActions} from '../../../actions/pace_plans'
 import {actions as uiActions} from '../../../actions/ui'
+import PacePlanDateInput from '../../../shared/components/pace_plan_date_input'
 import UpdateExistingPlansModal from '../../../shared/components/update_existing_plans_modal'
 
 interface StoreProps {
   readonly courseId: string
   readonly excludeWeekends: boolean
   readonly pacePlan: PacePlan
+  readonly planPublishing: boolean
 }
 
 interface DispatchProps {
   readonly loadLatestPlanByContext: typeof pacePlanActions.loadLatestPlanByContext
   readonly setEditingBlackoutDates: typeof uiActions.setEditingBlackoutDates
+  readonly setEndDate: typeof pacePlanActions.setEndDate
   readonly showLoadingOverlay: typeof uiActions.showLoadingOverlay
-  readonly toggleExcludeWeekends: typeof autoSavingActions.toggleExcludeWeekends
-  readonly toggleHardEndDates: typeof autoSavingActions.toggleHardEndDates
+  readonly toggleExcludeWeekends: typeof pacePlanActions.toggleExcludeWeekends
+  readonly toggleHardEndDates: typeof pacePlanActions.toggleHardEndDates
 }
 
 type ComponentProps = StoreProps & DispatchProps
@@ -81,9 +87,15 @@ export class Settings extends React.Component<ComponentProps, LocalState> {
 
   republishAllPlans = () => {
     this.props.showLoadingOverlay('Publishing...')
-    PacePlanApi.republishAllPlansForCourse(this.props.courseId).then(
-      this.onCloseUpdateExistingPlansModal
-    )
+    PacePlanApi.republishAllPlansForCourse(this.props.courseId)
+      .then(this.onCloseUpdateExistingPlansModal)
+      .catch(err => {
+        showFlashAlert({
+          message: I18n.t('Failed publishing plan'),
+          err,
+          type: 'error'
+        })
+      })
   }
 
   onCloseBlackoutDatesModal = () => {
@@ -104,6 +116,20 @@ export class Settings extends React.Component<ComponentProps, LocalState> {
       this.props.pacePlan.context_id
     )
     this.props.setEditingBlackoutDates(false)
+  }
+
+  validateEnd = (date: moment.Moment) => {
+    let error: string | undefined
+
+    if (ENV.VALID_DATE_RANGE.start_at.date && date < moment(ENV.VALID_DATE_RANGE.start_at.date)) {
+      error = I18n.t('Date is before course start date')
+    } else if (
+      ENV.VALID_DATE_RANGE.end_at.date &&
+      date > moment(ENV.VALID_DATE_RANGE.end_at.date)
+    ) {
+      error = I18n.t('Date is after course end date')
+    }
+    return error
   }
 
   /* Renderers */
@@ -144,7 +170,47 @@ export class Settings extends React.Component<ComponentProps, LocalState> {
     )
   }
 
+  renderHardEndDatesCheckbox() {
+    return (
+      <View as="div" margin="small 0 0" width="100%">
+        <Checkbox
+          data-testid="require-end-date-toggle"
+          label={I18n.t('Require Completion by Specified End Date')}
+          checked={this.props.pacePlan.hard_end_dates}
+          disabled={this.props.planPublishing}
+          onChange={() => {
+            this.props.toggleHardEndDates()
+            // this has the dual affect of setting the plan's end_date
+            // when unchecked and setting a default value for when it
+            // gets checked
+            this.props.setEndDate(ENV.VALID_DATE_RANGE.end_at.date)
+          }}
+        />
+      </View>
+    )
+  }
+
+  renderHardEndDatesInput() {
+    if (!this.props.pacePlan.hard_end_dates) return null
+
+    return (
+      <View id="pace-plans-required-end-date-input" as="div" margin="small 0 0" width="100%">
+        <PacePlanDateInput
+          label={<ScreenReaderContent>{I18n.t('End Date')}</ScreenReaderContent>}
+          interaction="enabled"
+          dateValue={this.props.pacePlan.end_date}
+          onDateChange={this.props.setEndDate}
+          validateDay={this.validateEnd}
+          width="100%"
+        />
+      </View>
+    )
+  }
+
   render() {
+    if (this.props.pacePlan.context_type === 'Enrollment') {
+      return null
+    }
     return (
       <div>
         {this.renderBlackoutDatesModal()}
@@ -167,31 +233,32 @@ export class Settings extends React.Component<ComponentProps, LocalState> {
           withArrow={false}
         >
           <View as="div" padding="small">
-            <View as="div" margin="0 0 small 0">
+            <View as="div">
               <Checkbox
+                data-testid="skip-weekends-toggle"
                 label={I18n.t('Skip Weekends')}
                 checked={this.props.excludeWeekends}
+                disabled={this.props.planPublishing}
                 onChange={() => this.props.toggleExcludeWeekends()}
               />
             </View>
-            <View as="div" margin="0 0 small 0">
-              <Checkbox
-                label={I18n.t('Require Completion by Specified End Date')}
-                checked={this.props.pacePlan.hard_end_dates}
-                onChange={() => this.props.toggleHardEndDates()}
-                disabled={!this.props.pacePlan.end_date}
-              />
+            <View>
+              {this.renderHardEndDatesCheckbox()}
+              {this.renderHardEndDatesInput()}
             </View>
-            <CondensedButton
-              onClick={() => {
-                this.setState({showSettingsPopover: false})
-                this.showBlackoutDatesModal()
-              }}
-            >
-              <AccessibleContent alt={I18n.t('View Blackout Dates')}>
-                {I18n.t('Blackout Dates')}
-              </AccessibleContent>
-            </CondensedButton>
+            {/* Commented out since we're not implementing these features yet */}
+            {/* </View> */}
+            {/* <CondensedButton */}
+            {/*  onClick={() => { */}
+            {/*    this.setState({showSettingsPopover: false}) */}
+            {/*    this.showBlackoutDatesModal() */}
+            {/*  }} */}
+            {/*  margin="small 0 0" */}
+            {/* > */}
+            {/*  <AccessibleContent alt={I18n.t('View Blackout Dates')}> */}
+            {/*    {I18n.t('Blackout Dates')} */}
+            {/*  </AccessibleContent> */}
+            {/* </CondensedButton> */}
           </View>
         </Popover>
       </div>
@@ -203,14 +270,16 @@ const mapStateToProps = (state: StoreState): StoreProps => {
   return {
     courseId: getCourse(state).id,
     excludeWeekends: getExcludeWeekends(state),
-    pacePlan: getPacePlan(state)
+    pacePlan: getPacePlan(state),
+    planPublishing: getPlanPublishing(state)
   }
 }
 
 export default connect(mapStateToProps, {
   loadLatestPlanByContext: pacePlanActions.loadLatestPlanByContext,
   setEditingBlackoutDates: uiActions.setEditingBlackoutDates,
+  setEndDate: pacePlanActions.setEndDate,
   showLoadingOverlay: uiActions.showLoadingOverlay,
-  toggleExcludeWeekends: autoSavingActions.toggleExcludeWeekends,
-  toggleHardEndDates: autoSavingActions.toggleHardEndDates
+  toggleExcludeWeekends: pacePlanActions.toggleExcludeWeekends,
+  toggleHardEndDates: pacePlanActions.toggleHardEndDates
 })(Settings)

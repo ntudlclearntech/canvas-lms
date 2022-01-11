@@ -23,7 +23,7 @@ class AuthenticationProvider::Microsoft < AuthenticationProvider::OpenIDConnect
   self.plugin = :microsoft
   plugin_settings :application_id, application_secret: :application_secret_dec
 
-  SENSITIVE_PARAMS = [ :application_secret ].freeze
+  SENSITIVE_PARAMS = [:application_secret].freeze
 
   def self.singleton?
     false
@@ -51,26 +51,26 @@ class AuthenticationProvider::Microsoft < AuthenticationProvider::OpenIDConnect
 
   def self.recognized_params
     # need to filter out OpenIDConnect params, but still call super to get mfa_required
-    super - open_id_connect_params + [:tenant, :login_attribute, :jit_provisioning].freeze
+    super - open_id_connect_params + %i[tenant login_attribute jit_provisioning].freeze
   end
 
   def self.login_attributes
-    ['sub'.freeze, 'email'.freeze, 'oid'.freeze, 'preferred_username'.freeze].freeze
+    %w[sub email oid preferred_username].freeze
   end
   validates :login_attribute, inclusion: login_attributes
 
   def self.recognized_federated_attributes
-    [
-      'email'.freeze,
-      'name'.freeze,
-      'preferred_username'.freeze,
-      'oid'.freeze,
-      'sub'.freeze,
+    %w[
+      email
+      name
+      preferred_username
+      oid
+      sub
     ].freeze
   end
 
   def login_attribute
-    super || 'id'.freeze
+    super || "id"
   end
 
   protected
@@ -85,14 +85,13 @@ class AuthenticationProvider::Microsoft < AuthenticationProvider::OpenIDConnect
 
   def scope
     result = []
-    requested_attributes = [login_attribute] + federated_attributes.values.map { |v| v['attribute'] }
-    result << 'profile' unless (requested_attributes & ['name', 'oid', 'preferred_username']).empty?
-    result << 'email' if requested_attributes.include?('email')
-    result.join(' ')
+    requested_attributes = [login_attribute] + federated_attributes.values.map { |v| v["attribute"] }
+    result << "profile" unless (requested_attributes & %w[name oid preferred_username]).empty?
+    result << "email" if requested_attributes.include?("email")
+    result.join(" ")
   end
 
   def tenant_value
-    tenant.presence || 'common'
+    tenant.presence || "common"
   end
-
 end

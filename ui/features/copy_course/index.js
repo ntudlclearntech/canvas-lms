@@ -55,7 +55,7 @@ const importQuizzesNextView = new ImportQuizzesNextView({
   questionBank: null
 })
 $('#new_quizzes_migrate').html(importQuizzesNextView.render().el)
-$('#importQuizzesNext').attr('name', 'import_quizzes_next')
+$('#importQuizzesNext').attr('name', 'settings[import_quizzes_next]')
 
 $('#date_shift').html(dateShiftView.render().el)
 dateShiftView.$oldStartDate.val(ENV.OLD_START_DATE).trigger('change')
@@ -76,12 +76,12 @@ function validateDates() {
   return $('#copy_course_form').hideErrors()
 }
 
-$start.on('change', function() {
-  validateDates()
+$start.on('change', function () {
   dateShiftView.$newStartDate.val($(this).val()).trigger('change')
+  validateDates()
 })
 
-$end.on('change', function() {
-  validateDates()
+$end.on('change', function () {
   dateShiftView.$newEndDate.val($(this).val()).trigger('change')
+  validateDates()
 })

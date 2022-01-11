@@ -18,44 +18,43 @@
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-require File.expand_path(File.dirname(__FILE__) + '/../spec_helper')
-require File.expand_path(File.dirname(__FILE__) + '/messages_helper')
+require_relative "messages_helper"
 
-describe 'appointment_deleted_for_user.email' do
+describe "appointment_deleted_for_user.email" do
   include MessagesCommon
 
-  it "should render" do
-    user = user_model(:name => 'bob')
-    appointment_participant_model(:participant => user)
+  it "renders" do
+    user = user_model(name: "bob")
+    appointment_participant_model(participant: user)
 
     generate_message(:appointment_deleted_for_user, :email, @event,
-                     :data => {:updating_user_name => @teacher.name,
-                               :cancel_reason => "just because"})
+                     data: { updating_user_name: @teacher.name,
+                             cancel_reason: "just because" })
 
-    expect(@message.subject).to include('some title')
-    expect(@message.body).to include('some title')
-    expect(@message.body).to include('just because')
+    expect(@message.subject).to include("some title")
+    expect(@message.body).to include("some title")
+    expect(@message.body).to include("just because")
     expect(@message.body).to include(@teacher.name)
     expect(@message.body).to include(user.name)
     expect(@message.body).to include(@course.name)
     expect(@message.body).to include("/appointment_groups/#{@appointment_group.id}")
   end
 
-  it "should render for groups" do
-    user = user_model(:name => 'bob')
+  it "renders for groups" do
+    user = user_model(name: "bob")
     @course = course_model
     cat = group_category
-    @group = cat.groups.create(:context => @course)
+    @group = cat.groups.create(context: @course)
     @group.users << user
-    appointment_participant_model(:participant => @group, :course => @course)
+    appointment_participant_model(participant: @group, course: @course)
 
     generate_message(:appointment_deleted_for_user, :email, @event,
-                     :data => {:updating_user_name => @teacher.name,
-                               :cancel_reason => "just because"})
+                     data: { updating_user_name: @teacher.name,
+                             cancel_reason: "just because" })
 
-    expect(@message.subject).to include('some title')
-    expect(@message.body).to include('some title')
-    expect(@message.body).to include('just because')
+    expect(@message.subject).to include("some title")
+    expect(@message.body).to include("some title")
+    expect(@message.body).to include("just because")
     expect(@message.body).to include(@teacher.name)
     expect(@message.body).to include(user.name)
     expect(@message.body).to include(@group.name)
@@ -64,19 +63,19 @@ describe 'appointment_deleted_for_user.email' do
     expect(@message.body).to include("/appointment_groups/#{@appointment_group.id}")
   end
 
-  it "should exclude reschedule instructions if appointment group isn't active" do
-    user = user_model(:name => 'bob')
-    appointment_participant_model(:participant => user)
+  it "excludes reschedule instructions if appointment group isn't active" do
+    user = user_model(name: "bob")
+    appointment_participant_model(participant: user)
     @appointment_group.destroy(@teacher)
     @event.reload
 
     generate_message(:appointment_deleted_for_user, :email, @event,
-                     :data => {:updating_user_name => @teacher.name,
-                               :cancel_reason => "just because"})
+                     data: { updating_user_name: @teacher.name,
+                             cancel_reason: "just because" })
 
-    expect(@message.subject).to include('some title')
-    expect(@message.body).to include('some title')
-    expect(@message.body).to include('just because')
+    expect(@message.subject).to include("some title")
+    expect(@message.body).to include("some title")
+    expect(@message.body).to include("just because")
     expect(@message.body).to include(@teacher.name)
     expect(@message.body).to include(user.name)
     expect(@message.body).to include(@course.name)

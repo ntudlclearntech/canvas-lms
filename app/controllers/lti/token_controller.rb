@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU Affero General Public License along
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 #
-require_dependency 'lib/canvas/oauth/client_credentials_provider'
+require_dependency "lib/canvas/oauth/client_credentials_provider"
 
 class Lti::TokenController < ApplicationController
   include SupportHelpers::ControllerHelpers
@@ -31,7 +31,7 @@ class Lti::TokenController < ApplicationController
   # Why advantage_access_token? LTI Advantage is the suite of grade passback
   # and other communication services for 1.3 tools, and is the main use case for these tokens.
   def advantage_access_token
-    provider = Canvas::Oauth::SiteAdminClientCredentialsProvider.new(
+    provider = Canvas::OAuth::SiteAdminClientCredentialsProvider.new(
       key.global_id,
       request.host_with_port,
       TokenScopes::LTI_SCOPES.keys,
@@ -48,15 +48,15 @@ class Lti::TokenController < ApplicationController
 
     render json: {
       status: :bad_request,
-      errors: [{message: "Tool/Developer Key must be for LTI 1.3 tool"}]
+      errors: [{ message: "Tool/Developer Key must be for LTI 1.3 tool" }]
     }, status: :bad_request
   end
 
   def key
     @key ||= if params[:client_id]
-      DeveloperKey.find params.require(:client_id)
-    else
-      ContextExternalTool.find(params.require(:tool_id)).developer_key
-    end
+               DeveloperKey.find params.require(:client_id)
+             else
+               ContextExternalTool.find(params.require(:tool_id)).developer_key
+             end
   end
 end

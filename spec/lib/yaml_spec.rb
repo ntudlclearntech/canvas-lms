@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 #
 # Copyright (C) 2021 - present Instructure, Inc.
 #
@@ -17,7 +18,7 @@
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-require_relative '../spec_helper'
+require_relative "../spec_helper"
 
 describe YAML do
   it "can roundtrip '0x_'" do

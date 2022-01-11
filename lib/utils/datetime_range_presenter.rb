@@ -19,7 +19,8 @@
 module Utils
   class DatetimeRangePresenter
     attr_reader :start, :zone, :with_weekday
-    def initialize(datetime, end_datetime = nil, datetime_type=:event, zone=nil, with_weekday: false)
+
+    def initialize(datetime, end_datetime = nil, datetime_type = :event, zone = nil, with_weekday: false)
       zone ||= ::Time.zone
       @start = datetime.in_time_zone(zone) rescue datetime
       @_finish = end_datetime.in_time_zone(zone) rescue end_datetime
@@ -28,8 +29,9 @@ module Utils
       @with_weekday = with_weekday
     end
 
-    def as_string(options={})
+    def as_string(options = {})
       return nil unless start
+
       shorten_midnight = options.fetch(:shorten_midnight, false)
       if is_not_range?
         if shorten_midnight && should_display_as_date?
@@ -46,19 +48,19 @@ module Utils
 
     def present_range
       if start.to_date == finish.to_date
-        I18n.t('time.ranges.same_day', "%{date} from %{start_time} to %{end_time}",
+        I18n.t("time.ranges.same_day", "%{date} from %{start_time} to %{end_time}",
                date: start_date_string, start_time: start_as_time, end_time: finish_as_time)
       else
         start_string = datetime_component(start_date_string, start)
         end_string = datetime_component(end_date_string, finish)
-        I18n.t('time.ranges.different_days', "%{start_date_and_time} to %{end_date_and_time}",
+        I18n.t("time.ranges.different_days", "%{start_date_and_time} to %{end_date_and_time}",
                start_date_and_time: start_string, end_date_and_time: end_string)
       end
     end
 
     def should_display_as_date?
       (datetime_type == :due_date && start.hour == 23 && start.min == 59) ||
-      (datetime_type == :event && start.hour == 0 && start.min == 0)
+        (datetime_type == :event && start.hour == 0 && start.min == 0)
     end
 
     def is_not_range?
@@ -76,9 +78,9 @@ module Utils
     def datetime_component(date_string, time)
       time_string = present_time(time)
       if datetime_type == :due_date
-        I18n.t('time.due_date', "%{date} by %{time}", date: date_string, time: time_string)
+        I18n.t("time.due_date", "%{date} by %{time}", date: date_string, time: time_string)
       else
-        I18n.t('time.event', "%{date} at %{time}", date: date_string, time: time_string)
+        I18n.t("time.event", "%{date} at %{time}", date: date_string, time: time_string)
       end
     end
 
@@ -100,6 +102,7 @@ module Utils
 
     def finish
       return nil if datetime_type == :due_date || !valid_raw_type?
+
       @_finish
     end
 
@@ -116,12 +119,12 @@ module Utils
 
     def datetime_type
       return @_datetime_type if valid_raw_type?
+
       :event
     end
 
     def valid_raw_type?
       @_datetime_type.is_a?(Symbol)
     end
-
   end
 end

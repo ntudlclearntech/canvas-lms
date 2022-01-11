@@ -19,9 +19,9 @@
 #
 
 class Mutations::CreateLearningOutcomeGroup < Mutations::BaseMutation
-  graphql_name 'CreateLearningOutcomeGroup'
+  graphql_name "CreateLearningOutcomeGroup"
 
-  argument :id, ID, required: true, prepare: GraphQLHelpers.relay_or_legacy_id_prepare_func('LearningOutcomeGroup')
+  argument :id, ID, required: true, prepare: GraphQLHelpers.relay_or_legacy_id_prepare_func("LearningOutcomeGroup")
   argument :title, String, required: true
   argument :description, String, required: false
   argument :vendor_guid, String, required: false
@@ -35,7 +35,7 @@ class Mutations::CreateLearningOutcomeGroup < Mutations::BaseMutation
 
     @child_outcome_group = @outcome_group.child_outcome_groups.build(attributes(input))
     if @child_outcome_group.save
-      {learning_outcome_group: @child_outcome_group}
+      { learning_outcome_group: @child_outcome_group }
     else
       errors_for(@child_outcome_group)
     end

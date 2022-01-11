@@ -18,13 +18,11 @@
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-require File.expand_path(File.dirname(__FILE__) + '/../../spec_helper')
-require File.expand_path(File.dirname(__FILE__) + '/../views_helper')
+require_relative "../views_helper"
 
 describe "/gradebooks/grade_summary_list" do
-  it "should render" do
+  it "renders" do
     render "gradebooks/grade_summary_list"
     expect(response).not_to be_nil
   end
 end
-

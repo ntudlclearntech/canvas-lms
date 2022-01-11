@@ -35,7 +35,7 @@ class GradebookUploadsController < ApplicationController
         else
           # let them continue on with their old upload
           redirect_to course_gradebook_upload_path(@context)
-          return
+          nil
         end
       end
     end
@@ -62,7 +62,7 @@ class GradebookUploadsController < ApplicationController
         render :show
       else
         flash[:error] = t(:no_file_attached, "We did not detect a CSV to "\
-          "upload. Please select a CSV to upload and submit again.")
+                                             "upload. Please select a CSV to upload and submit again.")
         redirect_to action: :new
       end
     end

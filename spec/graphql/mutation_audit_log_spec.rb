@@ -23,7 +23,7 @@ require_relative "./graphql_spec_helper"
 
 describe AuditLogFieldExtension do
   before do
-    if !AuditLogFieldExtension.enabled?
+    unless AuditLogFieldExtension.enabled?
       skip("AuditLog needs to be enabled by configuring dynamodb.yml")
     end
   end
@@ -32,39 +32,42 @@ describe AuditLogFieldExtension do
     Canvas::DynamoDB::DevUtils.initialize_ddb_for_development!(:auditors, "graphql_mutations", recreate: true)
     course_with_student(active_all: true)
     @assignment = @course.assignments.create! name: "asdf"
-    MUTATION = <<~MUTATION
+  end
+
+  let(:mutation) do
+    <<~GQL
       mutation {
         updateAssignment(input: {id: "#{@assignment.id}"}) {
           assignment { name }
         }
       }
-    MUTATION
+    GQL
   end
 
   it "logs" do
     expect_any_instance_of(AuditLogFieldExtension::Logger).to receive(:log).once
-    CanvasSchema.execute(MUTATION, context: {current_user: @teacher})
+    CanvasSchema.execute(mutation, context: { current_user: @teacher })
   end
 
   it "creates a log for every item" do
     expect_any_instance_of(AuditLogFieldExtension::Logger).to receive(:log).twice
 
-    CanvasSchema.execute(<<~MUTATION, context: {current_user: @teacher})
+    CanvasSchema.execute(<<~GQL, context: { current_user: @teacher })
       mutation {
         hideAssignmentGrades(input: {assignmentId: "#{@assignment.id}"}) {
           assignment { _id }
         }
       }
-    MUTATION
+    GQL
   end
 
   it "doesn't log failed mutations" do
     expect_any_instance_of(AuditLogFieldExtension::Logger).not_to receive(:log)
-    CanvasSchema.execute(MUTATION, context: {current_user: @student})
+    CanvasSchema.execute(mutation, context: { current_user: @student })
   end
 
   it "fails gracefully when dynamo isn't working, with captured exception" do
-    require 'canvas_dynamodb'
+    require "canvas_dynamodb"
     dynamo = CanvasDynamoDB::Database.new(
       "asdf",
       prefix: "asdf",
@@ -77,7 +80,7 @@ describe AuditLogFieldExtension do
       expect(e.class).to eq(Aws::DynamoDB::Errors::ServiceError)
     end
     allow(Canvas::DynamoDB::DatabaseBuilder).to receive(:from_config).and_return(dynamo)
-    response = CanvasSchema.execute(MUTATION, context: {current_user: @teacher})
+    response = CanvasSchema.execute(mutation, context: { current_user: @teacher })
     expect(response.dig("data", "updateAssignment", "assignment", "name")).to eq "asdf"
     expect(response["error"]).to be_nil
   end
@@ -94,42 +97,42 @@ describe AuditLogFieldExtension::Logger do
   end
 
   it "sanitizes arguments" do
-    logger = AuditLogFieldExtension::Logger.new(mutation, {}, {input: {password: "TOP SECRET"}})
-    expect(logger.instance_variable_get(:@params)).to eq ({password: "[FILTERED]"})
+    logger = AuditLogFieldExtension::Logger.new(mutation, {}, { input: { password: "TOP SECRET" } })
+    expect(logger.instance_variable_get(:@params)).to eq({ password: "[FILTERED]" })
   end
 
   it "truncates long text" do
     long_string = "Z" * 500
     shortened_string = "Z" * 256
     logger = AuditLogFieldExtension::Logger.new(mutation, {}, {
-      input: {
-        string: long_string,
-        array: [long_string],
-        nested_hash: {a: long_string}
-      }
-    })
-    expect(logger.instance_variable_get(:@params)).to eq ({
-      string: shortened_string,
-      array: [shortened_string],
-      nested_hash: {a: shortened_string}
-    })
+                                                  input: {
+                                                    string: long_string,
+                                                    array: [long_string],
+                                                    nested_hash: { a: long_string }
+                                                  }
+                                                })
+    expect(logger.instance_variable_get(:@params)).to eq({
+                                                           string: shortened_string,
+                                                           array: [shortened_string],
+                                                           nested_hash: { a: shortened_string }
+                                                         })
   end
 
   context "#log_entry_ids" do
     it "uses #asset_string and includes the domain_root_account id for the object_id" do
-      logger = AuditLogFieldExtension::Logger.new(mutation, {}, {input: {}})
+      logger = AuditLogFieldExtension::Logger.new(mutation, {}, { input: {} })
       expect(logger.log_entry_ids(@entry, "some_field")).to eq ["#{@course.root_account.global_id}-assignment_#{@entry.id}"]
     end
 
     it "allows overriding the logged object" do
       expect(mutation).to receive(:whatever_log_entry) { @entry.context }
-      logger = AuditLogFieldExtension::Logger.new(mutation, {}, {input: {}})
+      logger = AuditLogFieldExtension::Logger.new(mutation, {}, { input: {} })
       expect(logger.log_entry_ids(@entry, "whatever")).to eq ["#{@course.root_account.global_id}-course_#{@course.id}"]
     end
   end
 
   it "generates a unique mutation_id for each entry" do
-    logger = AuditLogFieldExtension::Logger.new(mutation, {request_id: "REQUEST_ID"}, {input: {}})
+    logger = AuditLogFieldExtension::Logger.new(mutation, { request_id: "REQUEST_ID" }, { input: {} })
     timestamp = logger.instance_variable_get(:@timestamp).to_f
     expect(logger.mutation_id).to eq "#{timestamp}-REQUEST_ID-#1"
     expect(logger.mutation_id).to eq "#{timestamp}-REQUEST_ID-#2"

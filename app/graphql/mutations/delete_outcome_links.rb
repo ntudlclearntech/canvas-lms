@@ -19,9 +19,9 @@
 #
 
 class Mutations::DeleteOutcomeLinks < Mutations::BaseMutation
-  graphql_name 'DeleteOutcomeLinks'
+  graphql_name "DeleteOutcomeLinks"
 
-  argument :ids, [ID], required: true, prepare: GraphQLHelpers.relay_or_legacy_ids_prepare_func('ContentTag')
+  argument :ids, [ID], required: true, prepare: GraphQLHelpers.relay_or_legacy_ids_prepare_func("ContentTag")
 
   field :deleted_outcome_link_ids, [ID], null: false
 
@@ -32,7 +32,7 @@ class Mutations::DeleteOutcomeLinks < Mutations::BaseMutation
   def resolve(input:)
     @errors = []
     @deleted_outcome_link_ids = []
-    context[:deleted_models] = {outcome_links: {}}
+    context[:deleted_models] = { outcome_links: {} }
     outcome_links, not_found_ids = get_outcome_links(input)
 
     generate_not_found_errors(not_found_ids)

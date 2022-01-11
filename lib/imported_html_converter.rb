@@ -18,14 +18,14 @@
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-require 'nokogiri'
+require "nokogiri"
 
 class ImportedHtmlConverter
   include TextHelper
   include HtmlTextHelper
 
-  CONTAINER_TYPES = ['div', 'p', 'body']
-  LINK_ATTRS = ['rel', 'href', 'src', 'data', 'value', 'longdesc']
+  CONTAINER_TYPES = %w[div p body].freeze
+  LINK_ATTRS = %w[rel href src data value longdesc].freeze
 
   attr_reader :link_parser, :link_resolver, :link_replacer
 
@@ -36,7 +36,7 @@ class ImportedHtmlConverter
     @link_replacer = Importers::LinkReplacer.new(migration)
   end
 
-  def convert(html, item_type, mig_id, field, opts={})
+  def convert(html, item_type, mig_id, field, opts = {})
     mig_id = mig_id.to_s
     doc = Nokogiri::HTML5(html || "")
     doc.search("*").each do |node|
@@ -45,11 +45,13 @@ class ImportedHtmlConverter
       end
     end
 
-    node = doc.at_css('body')
+    node = doc.at_css("body")
     return "" unless node
+
     if opts[:remove_outer_nodes_if_one_child]
       while node.children.size == 1 && node.child.child
         break unless CONTAINER_TYPES.member?(node.child.name) && node.child.attributes.blank?
+
         node = node.child
       end
     end
@@ -79,5 +81,4 @@ class ImportedHtmlConverter
     Rails.logger.warn "attempting to translate invalid url: #{url}"
     false
   end
-
 end

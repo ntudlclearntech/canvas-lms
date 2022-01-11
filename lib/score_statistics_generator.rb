@@ -29,55 +29,55 @@ class ScoreStatisticsGenerator
     min = Setting.get("minimum_seconds_wait_for_grade_statistics", 10).to_i
     max = Setting.get("maximum_seconds_wait_for_grade_statistics", 130).to_i
     delay_if_production(singleton: "ScoreStatisticsGenerator:#{course_id}",
-        run_at: rand(min..max).seconds.from_now,
-        on_conflict: :loose).
-      update_score_statistics(course_id)
+                        run_at: rand(min..max).seconds.from_now,
+                        on_conflict: :loose)
+      .update_score_statistics(course_id)
   end
 
   def self.update_score_statistics(course_id)
     root_account_id = Course.find_by(id: course_id)&.root_account_id
 
-    self.update_assignment_score_statistics(course_id, root_account_id: root_account_id)
-    self.update_course_score_statistic(course_id)
+    update_assignment_score_statistics(course_id, root_account_id: root_account_id)
+    update_course_score_statistic(course_id)
   end
 
   def self.update_assignment_score_statistics(course_id, root_account_id:)
-    # note: because a score is needed for max/min/ave we are not filtering
+    # NOTE: because a score is needed for max/min/ave we are not filtering
     # by assignment_student_visibilities, if a stat is added that doesn't
     # require score then add a filter when the DA feature is on
     statistics = GuardRail.activate(:secondary) do
       connection = ScoreStatistic.connection
-      connection.select_all(<<~SQL)
-      WITH want_assignments AS (
-        SELECT a.id, a.created_at
-        FROM #{Assignment.quoted_table_name} a
-        WHERE a.context_id = #{course_id} AND a.context_type = 'Course' AND a.workflow_state = 'published'
-      ), interesting_submissions AS (
-        SELECT s.assignment_id, s.user_id, s.score, a.created_at
-        FROM #{Submission.quoted_table_name} s
-        JOIN want_assignments a ON s.assignment_id = a.id
+      connection.select_all(<<~SQL.squish)
+        WITH want_assignments AS (
+          SELECT a.id, a.created_at
+          FROM #{Assignment.quoted_table_name} a
+          WHERE a.context_id = #{course_id} AND a.context_type = 'Course' AND a.workflow_state = 'published'
+        ), interesting_submissions AS (
+          SELECT s.assignment_id, s.user_id, s.score, a.created_at
+          FROM #{Submission.quoted_table_name} s
+          JOIN want_assignments a ON s.assignment_id = a.id
+          WHERE
+            s.excused IS NOT true
+            AND s.score IS NOT NULL
+            AND s.workflow_state = 'graded'
+        ), want_users AS (
+          SELECT e.user_id
+          FROM #{Enrollment.quoted_table_name} e
+          WHERE e.type = 'StudentEnrollment' AND e.course_id = #{course_id} AND e.workflow_state NOT IN ('rejected', 'completed', 'deleted', 'inactive')
+        )
+        SELECT
+          s.assignment_id AS id,
+          MAX(s.score) AS max,
+          MIN(s.score) AS min,
+          AVG(s.score) AS avg,
+          COUNT(*) AS count
+        FROM
+          interesting_submissions s
         WHERE
-          s.excused IS NOT true
-          AND s.score IS NOT NULL
-          AND s.workflow_state = 'graded'
-      ), want_users AS (
-        SELECT e.user_id
-        FROM #{Enrollment.quoted_table_name} e
-        WHERE e.type = 'StudentEnrollment' AND e.course_id = #{course_id} AND e.workflow_state NOT IN ('rejected', 'completed', 'deleted', 'inactive')
-      )
-      SELECT
-        s.assignment_id AS id,
-        MAX(s.score) AS max,
-        MIN(s.score) AS min,
-        AVG(s.score) AS avg,
-        COUNT(*) AS count
-      FROM
-        interesting_submissions s
-      WHERE
-        s.user_id IN (SELECT user_id FROM want_users)
-      GROUP BY s.assignment_id
-      ORDER BY MIN(s.created_at)
-SQL
+          s.user_id IN (SELECT user_id FROM want_users)
+        GROUP BY s.assignment_id
+        ORDER BY MIN(s.created_at)
+      SQL
     end
 
     connection = ScoreStatistic.connection
@@ -85,23 +85,23 @@ SQL
     bulk_values = statistics.map do |assignment|
       values =
         [
-          assignment['id'],
-          assignment['max'],
-          assignment['min'],
-          assignment['avg'],
-          assignment['count'],
+          assignment["id"],
+          assignment["max"],
+          assignment["min"],
+          assignment["avg"],
+          assignment["count"],
           now,
           now,
           root_account_id
-        ].join(',')
+        ].join(",")
       "(#{values})"
     end
 
     bulk_values.each_slice(100) do |bulk_slice|
-      connection.execute(<<~SQL)
+      connection.execute(<<~SQL.squish)
         INSERT INTO #{ScoreStatistic.quoted_table_name}
           (assignment_id, maximum, minimum, mean, count, created_at, updated_at, root_account_id)
-        VALUES #{bulk_slice.join(',')}
+        VALUES #{bulk_slice.join(",")}
         ON CONFLICT (assignment_id)
         DO UPDATE SET
            minimum = excluded.minimum,
@@ -118,8 +118,8 @@ SQL
     current_scores = []
     enrollment_ids = []
     GuardRail.activate(:secondary) do
-      StudentEnrollment.select(:id, :user_id).not_fake.where(course_id: course_id, workflow_state: [:active, :invited]).
-        find_in_batches { |batch| enrollment_ids.concat(batch) }
+      StudentEnrollment.select(:id, :user_id).not_fake.where(course_id: course_id, workflow_state: [:active, :invited])
+                       .find_in_batches { |batch| enrollment_ids.concat(batch) }
       # The grade calculator ensures all enrollments for the same user have the same score, so we only need one
       # enrollment_id for our later score query
       enrollment_ids = enrollment_ids.uniq(&:user_id).map(&:id)
@@ -136,7 +136,7 @@ SQL
       return
     end
 
-    average = current_scores.map(&:to_d).sum / BigDecimal(score_count)
+    average = current_scores.sum(&:to_d) / BigDecimal(score_count)
 
     # This is a safeguard to avoid blowing up due to database storage which is set to be a decimal with a precision of 8
     # and a scale of 2. And really, what are you even doing awarding 1,000,000% or over in a course?
@@ -152,7 +152,7 @@ SQL
       now
     ].join(",")
 
-    CourseScoreStatistic.connection.execute(<<~SQL)
+    CourseScoreStatistic.connection.execute(<<~SQL.squish)
       INSERT INTO #{CourseScoreStatistic.quoted_table_name}
         (course_id, average, score_count, created_at, updated_at)
       VALUES (#{values})

@@ -20,6 +20,7 @@
 
 class ModuleItemsVisibleLoader < GraphQL::Batch::Loader
   def initialize(user)
+    super()
     @user = user
   end
 
@@ -33,7 +34,6 @@ class ModuleItemsVisibleLoader < GraphQL::Batch::Loader
   end
 end
 
-
 module Types
   class ModuleType < ApplicationObjectType
     graphql_name "Module"
@@ -42,7 +42,7 @@ module Types
     implements Interfaces::TimestampInterface
     implements Interfaces::LegacyIDInterface
 
-    alias context_module object
+    alias_method :context_module, :object
 
     global_id_field :id
 

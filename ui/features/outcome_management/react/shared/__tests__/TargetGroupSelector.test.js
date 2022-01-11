@@ -148,6 +148,34 @@ describe('TargetGroupSelector', () => {
     expect(getByText('Create New Group')).toBeInTheDocument()
   })
 
+  describe('passing starterGroupId', () => {
+    it('calls setTargetGroup with a mock group when back button is clicked', async () => {
+      const {getByText} = render(
+        <TargetGroupSelector {...defaultProps({starterGroupId: '123'})} />,
+        {
+          mocks: [
+            ...groupMocks({
+              groupId: '123',
+              parentOutcomeGroupId: '12',
+              parentOutcomeGroupTitle: 'Group 12'
+            }),
+            ...groupMocks({
+              groupId: '12'
+            })
+          ]
+        }
+      )
+      await act(async () => jest.runAllTimers())
+      // We're in group 123
+      fireEvent.click(getByText('Back'))
+      await act(async () => jest.runAllTimers())
+      // Now we're group 12 (parent group of 123)
+      expect(getByText('Group 12')).toBeInTheDocument()
+      // We should se a setTargetGroup with group 12 (parent of 123)
+      expect(setTargetGroupMock.mock.calls[1][0].targetGroup.id).toBe('12')
+    })
+  })
+
   describe('create new group button', () => {
     it('focuses on the link after the AddContentItem unexpands', async () => {
       const {getByText} = render(<TargetGroupSelector {...defaultProps()} />)
@@ -174,11 +202,11 @@ describe('TargetGroupSelector', () => {
       await act(async () => jest.runAllTimers())
       expect(showFlashAlertSpy).toHaveBeenCalledWith({
         type: 'success',
-        message: '"new group name" has been created.'
+        message: '"new group name" was successfully created.'
       })
     })
 
-    it('displays custom error message if group cannot be created', async () => {
+    it('displays an error message if group cannot be created', async () => {
       const {getByText, getByLabelText} = render(<TargetGroupSelector {...defaultProps()} />, {
         mocks: [
           ...accountMocks({childGroupsCount: 0}),
@@ -196,29 +224,7 @@ describe('TargetGroupSelector', () => {
       await act(async () => jest.runAllTimers())
       expect(showFlashAlertSpy).toHaveBeenCalledWith({
         type: 'error',
-        message: 'An error occurred adding group "new group name": GraphQL error: Network error.'
-      })
-    })
-
-    it('displays default error message if group cannot be created and no error message is returned', async () => {
-      const {getByText, getByLabelText} = render(<TargetGroupSelector {...defaultProps()} />, {
-        mocks: [
-          ...accountMocks({childGroupsCount: 0}),
-          ...createOutcomeGroupMocks({
-            parentOutcomeGroupId: '1',
-            title: 'new group name',
-            failMutationNoErrMsg: true
-          })
-        ]
-      })
-      await act(async () => jest.runAllTimers())
-      fireEvent.click(getByText('Create New Group'))
-      fireEvent.change(getByLabelText('Enter new group name'), {target: {value: 'new group name'}})
-      fireEvent.click(getByText('Create new group'))
-      await act(async () => jest.runAllTimers())
-      expect(showFlashAlertSpy).toHaveBeenCalledWith({
-        type: 'error',
-        message: 'An error occurred adding group "new group name".'
+        message: 'An error occurred while creating this group. Please try again.'
       })
     })
   })

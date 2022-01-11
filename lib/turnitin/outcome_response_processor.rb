@@ -19,9 +19,8 @@
 
 module Turnitin
   class OutcomeResponseProcessor
-
     # this one goes to 14 (so that the last attempt is ~24hr after the first)
-    MAX_ATTEMPTS=14
+    MAX_ATTEMPTS = 14
 
     def self.max_attempts
       MAX_ATTEMPTS
@@ -54,7 +53,7 @@ module Turnitin
       submission = submit_homework(attachment)
 
       # Set submission processing status to "pending"
-      update_turnitin_data!(submission, asset_string, status: 'pending', outcome_response: @outcomes_response_json)
+      update_turnitin_data!(submission, asset_string, status: "pending", outcome_response: @outcomes_response_json)
 
       # Start a job that attempts to retrieve the
       # score from TII.
@@ -74,13 +73,13 @@ module Turnitin
         turnitin_processor = Turnitin::OutcomeResponseProcessor.new(@tool, @assignment, @user, @outcomes_response_json)
         stash_turnitin_client do
           turnitin_processor.delay(max_attempts: Turnitin::OutcomeResponseProcessor.max_attempts,
-            priority: Delayed::LOW_PRIORITY,
-            attempts: attempt_number,
-            run_at: Time.now.utc + (attempt_number ** 4) + 5).
-            new_submission
+                                   priority: Delayed::LOW_PRIORITY,
+                                   attempts: attempt_number,
+                                   run_at: Time.now.utc + (attempt_number**4) + 5)
+                            .new_submission
         end
       end
-    rescue StandardError
+    rescue
       if attempt_number == self.class.max_attempts
         create_error_attachment
       end
@@ -102,16 +101,16 @@ module Turnitin
         update_turnitin_data!(submission, asset_string, turnitin_client.turnitin_data)
       elsif attempt_number < self.class.max_attempts
         InstStatsd::Statsd.increment("submission_not_scored.account_#{@assignment.root_account.global_id}",
-                                     short_stat: 'submission_not_scored',
+                                     short_stat: "submission_not_scored",
                                      tags: { root_account_id: @assignment.root_account.global_id })
         # Retry the update_originality_data job
         raise Errors::SubmissionNotScoredError
       else
         new_data = {
-          status: 'error',
+          status: "error",
           public_error_message: I18n.t(
-            'turnitin.no_score_after_retries',
-            'Turnitin has not returned a score after %{max_tries} attempts to retrieve one.',
+            "turnitin.no_score_after_retries",
+            "Turnitin has not returned a score after %{max_tries} attempts to retrieve one.",
             max_tries: self.class.max_attempts
           )
         }
@@ -123,9 +122,9 @@ module Turnitin
 
     def create_error_attachment
       @assignment.attachments.create!(
-        uploaded_data: StringIO.new(I18n.t('An error occurred while attempting to contact Turnitin.')),
-        display_name: 'Failed turnitin submission',
-        filename: 'failed_turnitin.txt',
+        uploaded_data: StringIO.new(I18n.t("An error occurred while attempting to contact Turnitin.")),
+        display_name: "Failed turnitin submission",
+        filename: "failed_turnitin.txt",
         user: @user
       )
     end
@@ -159,8 +158,7 @@ module Turnitin
     end
 
     def submit_homework(attachment)
-      @assignment.submit_homework(@user, attachments: [attachment], submission_type: 'online_upload', submitted_at: turnitin_client.uploaded_at)
+      @assignment.submit_homework(@user, attachments: [attachment], submission_type: "online_upload", submitted_at: turnitin_client.uploaded_at)
     end
-
   end
 end

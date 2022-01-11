@@ -19,7 +19,7 @@
 
 module Factories
   class GradingPeriodGroupHelper
-    TITLE = "Example Grading Period Group".freeze
+    TITLE = "Example Grading Period Group"
 
     def valid_attributes(attr = {})
       {
@@ -27,7 +27,7 @@ module Factories
       }.merge(attr)
     end
 
-    def create_for_account(account, options={})
+    def create_for_account(account, options = {})
       account.grading_period_groups.create!(title: TITLE, **options)
     end
 

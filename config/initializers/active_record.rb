@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU Affero General Public License along
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 
-require 'active_support/callbacks/suspension'
+require "active_support/callbacks/suspension"
 
 class ActiveRecord::Base
   self.cache_timestamp_format = :usec
@@ -27,9 +27,8 @@ class ActiveRecord::Base
   class << self
     delegate :distinct_on, :find_ids_in_batches, :explain, to: :all
 
-    def find_ids_in_ranges(opts={}, &block)
-      opts.reverse_merge!(:loose => true)
-      all.find_ids_in_ranges(opts, &block)
+    def find_ids_in_ranges(loose: true, **kwargs, &block)
+      all.find_ids_in_ranges(loose: loose, **kwargs, &block)
     end
 
     attr_accessor :in_migration
@@ -39,6 +38,7 @@ class ActiveRecord::Base
     # unless specifically requested
     def in_transaction_in_test?
       return false unless Rails.env.test?
+
       stacktrace = caller
 
       transaction_index, wrap_index, after_index = [
@@ -48,13 +48,13 @@ class ActiveRecord::Base
       ].map do |method|
         if method
           regex = /\A#{Regexp.escape(method.source_location.first)}:\d+:in `#{Regexp.escape(method.name)}'\z/.freeze
-          stacktrace.index{|s| s =~ regex}
+          stacktrace.index { |s| s =~ regex }
         end
       end
 
       if transaction_index
         # we wrap a transaction around controller actions, so try to see if this call came from that
-        if wrap_index && (transaction_index..wrap_index).all?{|i| stacktrace[i].match?(/transaction|synchronize/)}
+        if wrap_index && (transaction_index..wrap_index).all? { |i| stacktrace[i].match?(/transaction|synchronize/) }
           false
         else
           # check if this is being run through an after_transaction_commit since the last transaction
@@ -81,49 +81,26 @@ class ActiveRecord::Base
     read_attribute(attr_name) || (write_attribute(attr_name, default_value) && read_attribute(attr_name))
   end
 
-  alias :clone :dup
+  alias_method :clone, :dup
 
   # See ActiveModel#serializable_add_includes
-  def serializable_add_includes(options = {}, &block)
+  def serializable_add_includes(options = {})
     super(options) do |association, records, opts|
-      yield association, records, opts.reverse_merge(:include_root => options[:include_root])
+      yield association, records, opts.reverse_merge(include_root: options[:include_root])
     end
   end
 
   def feed_code
-    id = self.uuid rescue self.id
+    id = uuid rescue self.id
     "#{self.class.reflection_type_name}_#{id}"
   end
 
-  def self.all_models
-    return @all_models if @all_models.present?
-    @all_models = (ActiveRecord::Base.models_from_files +
-                   [Version]).compact.uniq.reject { |model|
-      (model < Tableless) ||
-      model.abstract_class?
-    }
-  end
-
-  def self.models_from_files
-    @from_files ||= begin
-      Dir[
-        "#{Rails.root}/app/models/**/*.rb",
-        "#{Rails.root}/vendor/plugins/*/app/models/**/*.rb",
-        "#{Rails.root}/gems/plugins/*/app/models/**/*.rb",
-      ].sort.each do |file|
-        next if const_defined?(file.sub(%r{.*/app/models/(.*)\.rb$}, '\1').camelize)
-        ActiveSupport::Dependencies.require_or_load(file)
-      end
-      ActiveRecord::Base.descendants
-    end
-  end
-
   def self.maximum_text_length
-    @maximum_text_length ||= 64.kilobytes-1
+    @maximum_text_length ||= 64.kilobytes - 1
   end
 
   def self.maximum_long_text_length
-    @maximum_long_text_length ||= 500.kilobytes-1
+    @maximum_long_text_length ||= 500.kilobytes - 1
   end
 
   def self.maximum_string_length
@@ -137,8 +114,8 @@ class ActiveRecord::Base
   def self.find_all_by_asset_string(strings, asset_types = nil)
     assets = strings.is_a?(Hash) ? strings : parse_asset_string_list(strings)
 
-    assets.map do |klass, ids|
-      next if asset_types && asset_types.exclude?(klass)
+    assets.filter_map do |klass, ids|
+      next if asset_types&.exclude?(klass)
 
       begin
         klass = klass.constantize
@@ -148,7 +125,7 @@ class ActiveRecord::Base
       next unless klass < ActiveRecord::Base
 
       klass.where(id: ids).to_a
-    end.compact.flatten
+    end.flatten
   end
 
   # takes an asset string list, like "course_5,user_7,course_9" and turns it into an
@@ -169,19 +146,19 @@ class ActiveRecord::Base
   end
 
   def self.asset_string_components(str)
-    components = str.split('_', -1)
+    components = str.split("_", -1)
     id = components.pop
-    [components.join('_'), id.presence]
+    [components.join("_"), id.presence]
   end
 
   def self.convert_class_name(str)
-    namespaces = str.split(':')
+    namespaces = str.split(":")
     class_name = namespaces.pop
-    (namespaces.map(&:camelize) + [class_name.try(:classify)]).join('::')
+    (namespaces.map(&:camelize) + [class_name.try(:classify)]).join("::")
   end
 
   def self.asset_string(id)
-    "#{self.reflection_type_name}_#{id}"
+    "#{reflection_type_name}_#{id}"
   end
 
   def asset_string
@@ -211,17 +188,17 @@ class ActiveRecord::Base
     unless method
       # this is weird, but gets the instance methods defined so they can be chained
       begin
-        self.new.send("#{association_version_name}_id")
+        new.send("#{association_version_name}_id")
       rescue
         # the db doesn't exist yet; no need to bother with backcompat methods anyway
         return
       end
-      define_asset_string_backcompat_method(string_version_name, association_version_name, 'id')
-      define_asset_string_backcompat_method(string_version_name, association_version_name, 'type')
+      define_asset_string_backcompat_method(string_version_name, association_version_name, "id")
+      define_asset_string_backcompat_method(string_version_name, association_version_name, "type")
       return
     end
 
-    asset_string_backcompat_module.class_eval <<-CODE, __FILE__, __LINE__ + 1
+    asset_string_backcompat_module.class_eval <<~RUBY, __FILE__, __LINE__ + 1
       def #{association_version_name}_#{method}
         res = super
         if !res && #{string_version_name}.present?
@@ -232,15 +209,15 @@ class ActiveRecord::Base
         end
         res
       end
-    CODE
+    RUBY
   end
 
-  def export_columns(format = nil)
+  def export_columns
     self.class.content_columns.map(&:name)
   end
 
-  def to_row(format = nil)
-    export_columns(format).map { |c| self.send(c) }
+  def to_row
+    export_columns.map { |c| send(c) }
   end
 
   def is_a_context?
@@ -248,31 +225,32 @@ class ActiveRecord::Base
   end
 
   def cached_context_short_name
-    if self.respond_to?(:context)
-      code = self.respond_to?(:context_code) ? self.context_code : self.context.asset_string
-      @cached_context_name ||= Rails.cache.fetch(['short_name_lookup', code].cache_key) do
-        self.context.short_name rescue ""
+    if respond_to?(:context)
+      code = respond_to?(:context_code) ? context_code : context.asset_string
+      @cached_context_name ||= Rails.cache.fetch(["short_name_lookup", code].cache_key) do
+        context.short_name rescue ""
       end
     else
       raise "Can only call cached_context_short_name on items with a context"
     end
   end
 
-  def self.skip_touch_context(skip=true)
+  def self.skip_touch_context(skip = true)
     @@skip_touch_context = skip
   end
 
   def save_without_touching_context
     @skip_touch_context = true
-    self.save
+    save
     @skip_touch_context = false
   end
 
   def touch_context
     return if ((@@skip_touch_context ||= false) || (@skip_touch_context ||= false))
-    if self.respond_to?(:context_type) && self.respond_to?(:context_id) && self.context_type && self.context_id
+
+    if respond_to?(:context_type) && respond_to?(:context_id) && context_type && context_id
       self.class.connection.after_transaction_commit do
-        self.context_type.constantize.where(id: self.context_id).update_all(updated_at: Time.now.utc)
+        context_type.constantize.where(id: context_id).update_all(updated_at: Time.now.utc)
       end
     end
   rescue
@@ -280,9 +258,9 @@ class ActiveRecord::Base
   end
 
   def touch_user
-    if self.respond_to?(:user_id) && self.user_id
+    if respond_to?(:user_id) && user_id
       User.connection.after_transaction_commit do
-        User.where(:id => self.user_id).update_all(:updated_at => Time.now.utc)
+        User.where(id: user_id).update_all(updated_at: Time.now.utc)
       end
     end
     true
@@ -292,7 +270,7 @@ class ActiveRecord::Base
   end
 
   def context_url_prefix
-    "#{self.context_type.downcase.pluralize}/#{self.context_id}"
+    "#{context_type.downcase.pluralize}/#{context_id}"
   end
 
   # Example:
@@ -300,18 +278,18 @@ class ActiveRecord::Base
   def as_json(options = nil)
     options = options.try(:dup) || {}
 
-    self.set_serialization_options if self.respond_to?(:set_serialization_options)
+    set_serialization_options if respond_to?(:set_serialization_options)
 
     except = options.delete(:except) || []
     except = Array(except).dup
     except.concat(self.class.serialization_excludes) if self.class.respond_to?(:serialization_excludes)
-    except.concat(self.serialization_excludes) if self.respond_to?(:serialization_excludes)
+    except.concat(serialization_excludes) if respond_to?(:serialization_excludes)
     except.uniq!
 
     methods = options.delete(:methods) || []
     methods = Array(methods).dup
     methods.concat(self.class.serialization_methods) if self.class.respond_to?(:serialization_methods)
-    methods.concat(self.serialization_methods) if self.respond_to?(:serialization_methods)
+    methods.concat(serialization_methods) if respond_to?(:serialization_methods)
     methods.uniq!
 
     options[:except] = except unless except.empty?
@@ -334,19 +312,19 @@ class ActiveRecord::Base
 
     if options[:permissions]
       obj_hash = options[:include_root] ? hash[self.class.base_class.model_name.element] : hash
-      if self.respond_to?(:filter_attributes_for_user)
-        self.filter_attributes_for_user(obj_hash, options[:permissions][:user], options[:permissions][:session])
+      if respond_to?(:filter_attributes_for_user)
+        filter_attributes_for_user(obj_hash, options[:permissions][:user], options[:permissions][:session])
       end
       unless options[:permissions][:include_permissions] == false
-        permissions_hash = self.rights_status(options[:permissions][:user], options[:permissions][:session], *options[:permissions][:policies])
-        if self.respond_to?(:serialize_permissions)
-          permissions_hash = self.serialize_permissions(permissions_hash, options[:permissions][:user], options[:permissions][:session])
+        permissions_hash = rights_status(options[:permissions][:user], options[:permissions][:session], *options[:permissions][:policies])
+        if respond_to?(:serialize_permissions)
+          permissions_hash = serialize_permissions(permissions_hash, options[:permissions][:user], options[:permissions][:session])
         end
         obj_hash["permissions"] = permissions_hash
       end
     end
 
-    self.revert_from_serialization_options if self.respond_to?(:revert_from_serialization_options)
+    revert_from_serialization_options if respond_to?(:revert_from_serialization_options)
 
     hash.with_indifferent_access
   end
@@ -363,34 +341,31 @@ class ActiveRecord::Base
     base_class.name.underscore
   end
 
-  def wildcard(*args)
+  ruby2_keywords def wildcard(*args)
     self.class.wildcard(*args)
   end
 
-  def self.wildcard(*args)
-    options = args.last.is_a?(Hash) ? args.pop : {}
-    options[:type] ||= :full
-
+  def self.wildcard(*args, type: :full, delimiter: nil, case_sensitive: false)
     value = args.pop
-    if options[:delimiter]
-      options[:type] = :full
-      value = options[:delimiter] + value + options[:delimiter]
-      delimiter = connection.quote(options[:delimiter])
+    if delimiter
+      type = :full
+      value = delimiter + value + delimiter
+      delimiter = connection.quote(delimiter)
       column_str = "#{delimiter} || %s || #{delimiter}"
-      args = args.map{ |a| column_str % a.to_s }
+      args = args.map { |a| column_str % a.to_s }
     end
 
-    value = wildcard_pattern(value, options)
-    cols = args.map{ |col| like_condition(col, '?', !options[:case_sensitive]) }
-    sanitize_sql_array ["(" + cols.join(" OR ") + ")", *([value] * cols.size)]
+    value = wildcard_pattern(value, case_sensitive: case_sensitive, type: type)
+    cols = args.map { |col| like_condition(col, "?", !case_sensitive) }
+    sanitize_sql_array ["(#{cols.join(" OR ")})", *([value] * cols.size)]
   end
 
-  def self.wildcard_pattern(value, options = {})
+  def self.wildcard_pattern(value, case_sensitive: false, type: :full)
     value = value.to_s
-    value = value.downcase unless options[:case_sensitive]
-    value = value.gsub('\\', '\\\\\\\\').gsub('%', '\\%').gsub('_', '\\_')
-    value = '%' + value unless options[:type] == :right
-    value += '%' unless options[:type] == :left
+    value = value.downcase unless case_sensitive
+    value = value.gsub("\\", "\\\\\\\\").gsub("%", "\\%").gsub("_", "\\_")
+    value = "%#{value}" unless type == :right
+    value += "%" unless type == :left
     value
   end
 
@@ -398,49 +373,49 @@ class ActiveRecord::Base
     value = args.pop
     value = wildcard_pattern(value)
     cols = coalesce_chain(args)
-    sanitize_sql_array ["(#{like_condition(cols, '?', false)})", value]
+    sanitize_sql_array ["(#{like_condition(cols, "?", false)})", value]
   end
 
   def self.coalesce_chain(cols)
-    "(#{cols.map{|col| coalesce_clause(col)}.join(" || ' ' || ")})"
+    "(#{cols.map { |col| coalesce_clause(col) }.join(" || ' ' || ")})"
   end
 
   def self.coalesce_clause(column)
     "COALESCE(LOWER(#{column}), '')"
   end
 
-  def self.like_condition(value, pattern = '?', downcase = true)
+  def self.like_condition(value, pattern = "?", downcase = true)
     value = "LOWER(#{value})" if downcase
     "#{value} LIKE #{pattern}"
   end
 
   def self.best_unicode_collation_key(col)
-    val = if ActiveRecord::Base.configurations[Rails.env]['adapter'] == 'postgresql'
-      # For PostgreSQL, we can't trust a simple LOWER(column), with any collation, since
-      # Postgres just defers to the C library which is different for each platform. The best
-      # choice is the collkey function from pg_collkey which uses ICU to get a full unicode sort.
-      # If that extension isn't around, casting to a bytea sucks for international characters,
-      # but at least it's consistent, and orders commas before letters so you don't end up with
-      # Johnson, Bob sorting before Johns, Jimmy
-      unless @collkey&.key?(Shard.current.database_server.id)
-        @collkey ||= {}
-        @collkey[Shard.current.database_server.id] = connection.extension(:pg_collkey)&.schema
-      end
-      if (collation = Canvas::ICU.choose_pg12_collation(connection.icu_collations) && false)
-        "(#{col} COLLATE #{collation})"
-      elsif (schema = @collkey[Shard.current.database_server.id])
-        # The collation level of 3 is the default, but is explicitly specified here and means that
-        # case, accents and base characters are all taken into account when creating a collation key
-        # for a string - more at https://pgxn.org/dist/pg_collkey/0.5.1/
-        # if you change these arguments, you need to rebuild all db indexes that use them,
-        # and you should also match the settings with Canvas::ICU::Collator and natcompare.js
-        "#{schema}.collkey(#{col}, '#{Canvas::ICU.locale_for_collation}', false, 3, true)"
-      else
-        "CAST(LOWER(replace(#{col}, '\\', '\\\\')) AS bytea)"
-      end
-    else
-      col
-    end
+    val = if ActiveRecord::Base.configurations[Rails.env]["adapter"] == "postgresql"
+            # For PostgreSQL, we can't trust a simple LOWER(column), with any collation, since
+            # Postgres just defers to the C library which is different for each platform. The best
+            # choice is the collkey function from pg_collkey which uses ICU to get a full unicode sort.
+            # If that extension isn't around, casting to a bytea sucks for international characters,
+            # but at least it's consistent, and orders commas before letters so you don't end up with
+            # Johnson, Bob sorting before Johns, Jimmy
+            unless @collkey&.key?(Shard.current.database_server.id)
+              @collkey ||= {}
+              @collkey[Shard.current.database_server.id] = connection.extension(:pg_collkey)&.schema
+            end
+            if (collation = Canvas::ICU.choose_pg12_collation(connection.icu_collations) && false)
+              "(#{col} COLLATE #{collation})"
+            elsif (schema = @collkey[Shard.current.database_server.id])
+              # The collation level of 3 is the default, but is explicitly specified here and means that
+              # case, accents and base characters are all taken into account when creating a collation key
+              # for a string - more at https://pgxn.org/dist/pg_collkey/0.5.1/
+              # if you change these arguments, you need to rebuild all db indexes that use them,
+              # and you should also match the settings with Canvas::ICU::Collator and natcompare.js
+              "#{schema}.collkey(#{col}, '#{Canvas::ICU.locale_for_collation}', false, 3, true)"
+            else
+              "CAST(LOWER(replace(#{col}, '\\', '\\\\')) AS bytea)"
+            end
+          else
+            col
+          end
     Arel.sql(val)
   end
 
@@ -448,75 +423,71 @@ class ActiveRecord::Base
     column = options[:column] || "created_at"
     max_date = (options[:max_date] || Time.zone.now).midnight
     num_days = options[:num_days] || 20
-    min_date = (options[:min_date] || max_date.advance(:days => -(num_days-1))).midnight
-
-    offset = max_date.utc_offset
+    min_date = (options[:min_date] || max_date.advance(days: -(num_days - 1))).midnight
 
     expression = "((#{column} || '-00')::TIMESTAMPTZ AT TIME ZONE '#{Time.zone.tzinfo.name}')::DATE"
 
-    result = where(
-        "#{column} >= ? AND #{column} < ?",
-        min_date,
-        max_date.advance(:days => 1)
-      ).
-      group(expression).
-      order(Arel.sql(expression)).
-      count
+    result = where("#{column} >= ? AND #{column} < ?",
+                   min_date,
+                   max_date.advance(days: 1))
+             .group(expression)
+             .order(Arel.sql(expression))
+             .count
 
     return result if result.keys.first.is_a?(Date)
-    Hash[result.map { |date, count|
-      [Time.zone.parse(date).to_date, count]
-    }]
+
+    result.transform_keys do |date|
+      Time.zone.parse(date).to_date
+    end
   end
 
   def self.rank_sql(ary, col)
-    sql = ary.each_with_index.inject(+'CASE '){ |string, (values, i)|
-      string << "WHEN #{col} IN (" << Array(values).map{ |value| connection.quote(value) }.join(', ') << ") THEN #{i} "
-    } << "ELSE #{ary.size} END"
+    sql = ary.each_with_index.inject(+"CASE ") do |string, (values, i)|
+      string << "WHEN #{col} IN (" << Array(values).map { |value| connection.quote(value) }.join(", ") << ") THEN #{i} "
+    end << "ELSE #{ary.size} END"
     Arel.sql(sql)
   end
 
   def self.rank_hash(ary)
-    ary.each_with_index.inject(Hash.new(ary.size + 1)){ |hash, (values, i)|
-      Array(values).each{ |value| hash[value] = i + 1 }
-      hash
-    }
+    ary.each_with_index.each_with_object(Hash.new(ary.size + 1)) do |(values, i), hash|
+      Array(values).each { |value| hash[value] = i + 1 }
+    end
   end
 
   def self.distinct_values(column, include_nil: false)
     column = column.to_s
 
-    result = if ActiveRecord::Base.configurations[Rails.env]['adapter'] == 'postgresql'
-      sql = +''
-      sql << "SELECT NULL AS #{column} WHERE EXISTS (SELECT * FROM #{quoted_table_name} WHERE #{column} IS NULL) UNION ALL (" if include_nil
-      sql << <<~SQL
-        WITH RECURSIVE t AS (
-          SELECT MIN(#{column}) AS #{column} FROM #{quoted_table_name}
-          UNION ALL
-          SELECT (SELECT MIN(#{column}) FROM #{quoted_table_name} WHERE #{column} > t.#{column})
-          FROM t
-          WHERE t.#{column} IS NOT NULL
-        )
-        SELECT #{column} FROM t WHERE #{column} IS NOT NULL
-      SQL
-      sql << ")" if include_nil
-      find_by_sql(sql)
-    else
-      conditions = "#{column} IS NOT NULL" unless include_nil
-      find(:all, :select => "DISTINCT #{column}", :conditions => conditions, :order => column)
-    end
+    result = if ActiveRecord::Base.configurations[Rails.env]["adapter"] == "postgresql"
+               sql = +""
+               sql << "SELECT NULL AS #{column} WHERE EXISTS (SELECT * FROM #{quoted_table_name} WHERE #{column} IS NULL) UNION ALL (" if include_nil
+               sql << <<~SQL.squish
+                 WITH RECURSIVE t AS (
+                   SELECT MIN(#{column}) AS #{column} FROM #{quoted_table_name}
+                   UNION ALL
+                   SELECT (SELECT MIN(#{column}) FROM #{quoted_table_name} WHERE #{column} > t.#{column})
+                   FROM t
+                   WHERE t.#{column} IS NOT NULL
+                 )
+                 SELECT #{column} FROM t WHERE #{column} IS NOT NULL
+               SQL
+               sql << ")" if include_nil
+               find_by_sql(sql)
+             else
+               conditions = "#{column} IS NOT NULL" unless include_nil
+               find(:all, select: "DISTINCT #{column}", conditions: conditions, order: column)
+             end
     result.map(&column.to_sym)
   end
 
   # direction is nil, :asc, or :desc
   def self.nulls(first_or_last, column, direction = nil)
-    if connection.adapter_name == 'PostgreSQL'
+    if connection.adapter_name == "PostgreSQL"
       clause = if first_or_last == :first && direction != :desc
                  " NULLS FIRST"
                elsif first_or_last == :last && direction == :desc
                  " NULLS LAST"
                end
-      
+
       Arel.sql("#{column} #{direction.to_s.upcase}#{clause}".strip)
     else
       Arel.sql("#{column} IS#{" NOT" unless first_or_last == :last} NULL, #{column} #{direction.to_s.upcase}".strip)
@@ -535,7 +506,7 @@ class ActiveRecord::Base
 
     reflection = super[name.to_s]
 
-    if name.to_s == 'developer_key'
+    if name.to_s == "developer_key"
       reflection.instance_eval do
         def association_class
           DeveloperKey::CacheOnAssociation
@@ -543,11 +514,11 @@ class ActiveRecord::Base
       end
     end
 
-    include Canvas::RootAccountCacher if name.to_s == 'root_account'
+    include Canvas::RootAccountCacher if name.to_s == "root_account"
     Canvas::AccountCacher.apply_to_reflections(self)
 
     if reflection.options[:polymorphic].is_a?(Array) ||
-        reflection.options[:polymorphic].is_a?(Hash)
+       reflection.options[:polymorphic].is_a?(Hash)
       reflection.options[:exhaustive] = exhaustive
       reflection.options[:polymorphic_prefix] = polymorphic_prefix
       add_polymorph_methods(reflection)
@@ -579,10 +550,10 @@ class ActiveRecord::Base
       specific_classes = specifics.map(&:last).sort
       validates reflection.foreign_type, inclusion: { in: specific_classes }, allow_nil: true
 
-      @polymorph_module.class_eval <<-RUBY, __FILE__, __LINE__ + 1
+      @polymorph_module.class_eval <<~RUBY, __FILE__, __LINE__ + 1
         def #{reflection.name}=(record)
-          if record && [#{specific_classes.join(', ')}].none? { |klass| record.is_a?(klass) }
-            message = "one of #{specific_classes.join(', ')} expected, got \#{record.class}"
+          if record && [#{specific_classes.join(", ")}].none? { |klass| record.is_a?(klass) }
+            message = "one of #{specific_classes.join(", ")} expected, got \#{record.class}"
             raise ActiveRecord::AssociationTypeMismatch, message
           end
           super
@@ -601,25 +572,25 @@ class ActiveRecord::Base
       table_name = self.table_name
       belongs_to :"#{prefix}#{name}", -> { where(table_name => { reflection.foreign_type => class_name }) },
                  foreign_key: reflection.foreign_key,
-                 class_name: class_name
+                 class_name: class_name # rubocop:disable Rails/ReflectionClassName
 
       correct_type = "#{reflection.foreign_type} && self.class.send(:compute_type, #{reflection.foreign_type}) <= #{class_name}"
 
-      @polymorph_module.class_eval <<-RUBY, __FILE__, __LINE__ + 1
-      def #{prefix}#{name}
-        #{reflection.name} if #{correct_type}
-      end
+      @polymorph_module.class_eval <<~RUBY, __FILE__, __LINE__ + 1
+        def #{prefix}#{name}
+          #{reflection.name} if #{correct_type}
+        end
 
-      def #{prefix}#{name}=(record)
-        # we don't want to unset it if it's currently some other type, i.e.
-        # foo.bar = Bar.new
-        # foo.baz = nil
-        # foo.bar.should_not be_nil
-        return if record.nil? && !(#{correct_type})
-        association(:#{prefix}#{name}).send(:raise_on_type_mismatch!, record) if record
+        def #{prefix}#{name}=(record)
+          # we don't want to unset it if it's currently some other type, i.e.
+          # foo.bar = Bar.new
+          # foo.baz = nil
+          # foo.bar.should_not be_nil
+          return if record.nil? && !(#{correct_type})
+          association(:#{prefix}#{name}).send(:raise_on_type_mismatch!, record) if record
 
-        self.#{reflection.name} = record
-      end
+          self.#{reflection.name} = record
+        end
 
       RUBY
     end
@@ -632,15 +603,14 @@ class ActiveRecord::Base
     # transaction. useful for possible race conditions where we don't want to
     # take a lock (e.g. when we create a submission).
     retries.times do |retry_count|
-      begin
-        result = transaction(:requires_new => true) { uncached { yield(retry_count) } }
-        connection.clear_query_cache
-        return result
-      rescue ActiveRecord::RecordNotUnique
-      end
+      result = transaction(requires_new: true) { uncached { yield(retry_count) } }
+      connection.clear_query_cache
+      return result
+    rescue ActiveRecord::RecordNotUnique
+      next
     end
     GuardRail.activate(:primary) do
-      result = transaction(:requires_new => true) { uncached { yield(retries) } }
+      result = transaction(requires_new: true) { uncached { yield(retries) } }
       connection.clear_query_cache
       result
     end
@@ -649,7 +619,7 @@ class ActiveRecord::Base
   def self.current_xlog_location
     Shard.current(shard_category).database_server.unguard do
       GuardRail.activate(:primary) do
-        if Rails.env.test? ? self.in_transaction_in_test? : connection.open_transactions > 0
+        if Rails.env.test? ? in_transaction_in_test? : connection.open_transactions > 0
           raise "don't run current_xlog_location in a transaction"
         else
           connection.current_wal_lsn
@@ -675,12 +645,13 @@ class ActiveRecord::Base
     true
   end
 
-  def self.bulk_insert_objects(objects, excluded_columns: ['primary_key'])
+  def self.bulk_insert_objects(objects, excluded_columns: ["primary_key"])
     return if objects.empty?
+
     hashed_objects = []
-    excluded_columns << objects.first.class.primary_key if excluded_columns.delete('primary_key')
+    excluded_columns << objects.first.class.primary_key if excluded_columns.delete("primary_key")
     objects.each do |object|
-      hashed_objects << object.attributes.except(excluded_columns.join(',')).map do |(name, value)|
+      hashed_objects << object.attributes.except(excluded_columns.join(",")).map do |(name, value)|
         if (type = object.class.attribute_types[name]).is_a?(ActiveRecord::Type::Serialized)
           value = type.serialize(value)
         end
@@ -692,19 +663,20 @@ class ActiveRecord::Base
 
   def self.bulk_insert(records)
     return if records.empty?
-    array_columns = records.first.select{|k, v| v.is_a?(Array)}.map(&:first)
+
+    array_columns = records.first.select { |_k, v| v.is_a?(Array) }.keys
     array_columns.each do |column_name|
-      cast_type = connection.send(:lookup_cast_type_from_column, self.columns_hash[column_name.to_s])
+      cast_type = connection.send(:lookup_cast_type_from_column, columns_hash[column_name.to_s])
       records.each do |row|
         row[column_name] = cast_type.serialize(row[column_name])
       end
     end
 
-    if self.respond_to?(:attrs_in_partition_groups)
+    if respond_to?(:attrs_in_partition_groups)
       # this model is partitioned, we need to send a separate
       # insert statement for each partition represented
       # in the input records
-      self.attrs_in_partition_groups(records) do |partition_name, partition_records|
+      attrs_in_partition_groups(records) do |partition_name, partition_records|
         transaction do
           connection.bulk_insert(partition_name, partition_records)
         end
@@ -719,8 +691,8 @@ class ActiveRecord::Base
   include ActiveSupport::Callbacks::Suspension
 
   def self.touch_all_records
-    self.find_ids_in_ranges do |min_id, max_id|
-      self.where(primary_key => min_id..max_id).touch_all
+    find_ids_in_ranges do |min_id, max_id|
+      where(primary_key => min_id..max_id).touch_all
     end
   end
 
@@ -732,6 +704,7 @@ class ActiveRecord::Base
   # rely on no callbacks or validations
   def save_without_transaction(touch: true)
     return unless changed?
+
     self.updated_at = Time.now.utc if touch
     if new_record?
       self.created_at = updated_at if touch
@@ -746,10 +719,10 @@ end
 
 module UsefulFindInBatches
   # add the strategy param
-  def find_each(start: nil, finish: nil, **kwargs)
-    if block_given?
+  def find_each(start: nil, finish: nil, **kwargs, &block)
+    if block
       find_in_batches(start: start, finish: finish, **kwargs) do |records|
-        records.each { |record| yield record }
+        records.each(&block)
       end
     else
       enum_for(:find_each, start: start, finish: finish, **kwargs) do
@@ -775,7 +748,7 @@ module UsefulFindInBatches
   end
 
   def in_batches(strategy: nil, start: nil, finish: nil, **kwargs, &block)
-    unless block_given?
+    unless block
       return ActiveRecord::Batches::BatchEnumerator.new(strategy: strategy, start: start, relation: self, **kwargs)
     end
 
@@ -788,7 +761,10 @@ module UsefulFindInBatches
     end
 
     kwargs.delete(:error_on_ignore)
-    activate { |r| r.send("in_batches_with_#{strategy}", start: start, finish: finish, **kwargs, &block); nil }
+    activate do |r|
+      r.send("in_batches_with_#{strategy}", start: start, finish: finish, **kwargs, &block)
+      nil
+    end
   end
 
   def in_batches_needs_temp_table?
@@ -877,7 +853,7 @@ module UsefulFindInBatches
     # while we're running this will get a new connection
     pool.remove(conn)
 
-    checkin = -> do
+    checkin = lambda do
       pool&.restore_connection(conn)
       pool = nil
     end
@@ -885,34 +861,34 @@ module UsefulFindInBatches
     # make sure to log _something_, even if the dbtime is totally off
     conn.send(:log, full_query, "#{klass.name} Load") do
       decoder = if load
-        # set up all our metadata based on a dummy query (COPY doesn't return any metadata)
-        result = conn.raw_connection.exec(limited_query)
-        type_map = conn.raw_connection.type_map_for_results.build_column_map(result)
-        # see PostgreSQLAdapter#exec_query
-        types = {}
-        fields = result.fields
-        fields.each_with_index do |fname, i|
-          ftype = result.ftype i
-          fmod  = result.fmod i
-          types[fname] = conn.send(:get_oid_type, ftype, fmod, fname)
-        end
+                  # set up all our metadata based on a dummy query (COPY doesn't return any metadata)
+                  result = conn.raw_connection.exec(limited_query)
+                  type_map = conn.raw_connection.type_map_for_results.build_column_map(result)
+                  # see PostgreSQLAdapter#exec_query
+                  types = {}
+                  fields = result.fields
+                  fields.each_with_index do |fname, i|
+                    ftype = result.ftype i
+                    fmod  = result.fmod i
+                    types[fname] = conn.send(:get_oid_type, ftype, fmod, fname)
+                  end
 
-        column_types = types.dup
-        columns_hash.each_key { |k| column_types.delete k }
+                  column_types = types.dup
+                  columns_hash.each_key { |k| column_types.delete k }
 
-        PG::TextDecoder::CopyRow.new(type_map: type_map)
-      else
-        pkey_oid = columns_hash[primary_key].sql_type_metadata.oid
-        # this is really dumb that we have to manually search through this, but
-        # PG::TypeMapByOid doesn't have a direct lookup method
-        coder = conn.raw_connection.type_map_for_results.coders.find { |c| c.oid == pkey_oid }
+                  PG::TextDecoder::CopyRow.new(type_map: type_map)
+                else
+                  pkey_oid = columns_hash[primary_key].sql_type_metadata.oid
+                  # this is really dumb that we have to manually search through this, but
+                  # PG::TypeMapByOid doesn't have a direct lookup method
+                  coder = conn.raw_connection.type_map_for_results.coders.find { |c| c.oid == pkey_oid }
 
-        PG::TextDecoder::CopyRow.new(type_map: PG::TypeMapByColumn.new([coder]))
-      end
+                  PG::TextDecoder::CopyRow.new(type_map: PG::TypeMapByColumn.new([coder]))
+                end
 
       rows = []
 
-      build_relation = -> do
+      build_relation = lambda do
         if load
           records = ActiveRecord::Result.new(fields, rows, types).map { |record| instantiate(record, column_types) }
           ids = records.map(&:id)
@@ -971,11 +947,11 @@ module UsefulFindInBatches
   def in_batches_with_temp_table(of: 1000, start: nil, finish: nil, load: false, ignore_transaction: false)
     Shard.current.database_server.unguard do
       can_do_it = ignore_transaction ||
-        Rails.env.production? ||
-        ActiveRecord::Base.in_migration ||
-        GuardRail.environment == :deploy ||
-        (!Rails.env.test? && connection.open_transactions > 0) ||
-        ActiveRecord::Base.in_transaction_in_test?
+                  Rails.env.production? ||
+                  ActiveRecord::Base.in_migration ||
+                  GuardRail.environment == :deploy ||
+                  (!Rails.env.test? && connection.open_transactions > 0) ||
+                  ActiveRecord::Base.in_transaction_in_test?
       unless can_do_it
         raise ArgumentError, "in_batches with temp_table probably won't work outside a migration
              and outside a transaction. Unfortunately, it's impossible to automatically
@@ -990,7 +966,7 @@ module UsefulFindInBatches
       relation = apply_limits(self, start, finish)
       sql = relation.to_sql
       table = "#{table_name}_in_batches_temp_table_#{sql.hash.abs.to_s(36)}"
-      table = table[-63..-1] if table.length > 63
+      table = table[-63..] if table.length > 63
 
       remaining = connection.update("CREATE TEMPORARY TABLE #{table} AS #{sql}")
 
@@ -999,14 +975,14 @@ module UsefulFindInBatches
 
         if remaining > of
           begin
-            old_proc = connection.raw_connection.set_notice_processor {}
+            old_proc = connection.raw_connection.set_notice_processor { nil }
             index = if (select_values.empty? || select_values.any? { |v| v.to_s == primary_key.to_s }) && order_values.empty?
-              connection.execute(%{CREATE INDEX "temp_primary_key" ON #{connection.quote_local_table_name(table)}(#{connection.quote_column_name(primary_key)})})
-              primary_key.to_s
-            else
-              connection.execute "ALTER TABLE #{table} ADD temp_primary_key SERIAL PRIMARY KEY"
-              'temp_primary_key'
-            end
+                      connection.execute(%{CREATE INDEX "temp_primary_key" ON #{connection.quote_local_table_name(table)}(#{connection.quote_column_name(primary_key)})})
+                      primary_key.to_s
+                    else
+                      connection.execute "ALTER TABLE #{table} ADD temp_primary_key SERIAL PRIMARY KEY"
+                      "temp_primary_key"
+                    end
           ensure
             connection.raw_connection.set_notice_processor(&old_proc) if old_proc
           end
@@ -1024,10 +1000,10 @@ module UsefulFindInBatches
             break if remaining <= 0
 
             last_value = if yielded_relation.loaded?
-              yielded_relation.last[index]
-            else
-              yielded_relation.offset(of - 1).limit(1).pluck(index).first
-            end
+                           yielded_relation.last[index]
+                         else
+                           yielded_relation.offset(of - 1).limit(1).pluck(index).first
+                         end
             break if last_value.nil?
 
             yielded_relation = batch_relation.where("#{connection.quote_column_name(index)} > ?", last_value)
@@ -1050,11 +1026,11 @@ module UsefulBatchEnumerator
     super(**kwargs.slice(:of, :start, :finish, :relation))
   end
 
-  def each_record
-    return to_enum(:each_record) unless block_given?
+  def each_record(&block)
+    return to_enum(:each_record) unless block
 
     @relation.to_enum(:in_batches, strategy: @strategy, load: true, **@kwargs).each do |relation|
-      relation.records.each { |record| yield record }
+      relation.records.each(&block)
     end
   end
 
@@ -1098,9 +1074,9 @@ module UsefulBatchEnumerator
     @relation.in_batches(strategy: @strategy, load: true, **@kwargs, &:destroy_all)
   end
 
-  def each
+  def each(&block)
     enum = @relation.to_enum(:in_batches, strategy: @strategy, load: true, **@kwargs)
-    return enum.each { |relation| yield relation } if block_given?
+    return enum.each(&block) if block
 
     enum
   end
@@ -1109,8 +1085,8 @@ module UsefulBatchEnumerator
     return to_enum(:pluck, *args) unless block_given?
 
     @relation.except(:select)
-      .select(*args)
-      .in_batches(strategy: @strategy, load: false, **@kwargs) do |relation|
+             .select(*args)
+             .in_batches(strategy: @strategy, load: false, **@kwargs) do |relation|
       yield relation.pluck(*args)
     end
   end
@@ -1133,26 +1109,26 @@ module UsefulBatchEnumerator
 
         found_match = true
 
-        raw_update = update.value.value_before_type_cast 
+        raw_update = update.value.value_before_type_cast
         # we want to check exact class here, not ancestry, since we want to ignore
         # subclasses we don't understand
-        if pred.class == Arel::Nodes::Equality
+        if pred.instance_of?(Arel::Nodes::Equality)
           update != pred.right
-        elsif pred.class == Arel::Nodes::NotEqual
+        elsif pred.instance_of?(Arel::Nodes::NotEqual)
           update == pred.right
-        elsif pred.class == Arel::Nodes::GreaterThanOrEqual
+        elsif pred.instance_of?(Arel::Nodes::GreaterThanOrEqual)
           raw_update < pred.right.value.value_before_type_cast
-        elsif pred.class == Arel::Nodes::GreaterThan
+        elsif pred.instance_of?(Arel::Nodes::GreaterThan)
           raw_update <= pred.right.value.value_before_type_cast
-        elsif pred.class == Arel::Nodes::LessThanOrEqual
+        elsif pred.instance_of?(Arel::Nodes::LessThanOrEqual)
           raw_update >= pred.right.value.value_before_type_cast
-        elsif pred.class == Arel::Nodes::LessThan
-          raw_update >= pred.right.value.value_before_type_cast
-        elsif pred.class == Arel::Nodes::Between
+        elsif pred.instance_of?(Arel::Nodes::LessThan)
+          raw_update > pred.right.value.value_before_type_cast
+        elsif pred.instance_of?(Arel::Nodes::Between)
           raw_update < pred.right.left.value.value_before_type_cast || raw_update > pred.right.right.value.value_before_type_cast
-        elsif pred.class == Arel::Nodes::In && pred.right.is_a?(Array)
-          !pred.right.include?(update)
-        elsif pred.class == Arel::Nodes::NotIn && pred.right.is_a?(Array)
+        elsif pred.instance_of?(Arel::Nodes::In) && pred.right.is_a?(Array)
+          pred.right.exclude?(update)
+        elsif pred.instance_of?(Arel::Nodes::NotIn) && pred.right.is_a?(Array)
           pred.right.include?(update)
         end
       end && found_match
@@ -1176,7 +1152,7 @@ end
 
 module LockForNoKeyUpdate
   def lock(lock_type = true)
-    lock_type = 'FOR NO KEY UPDATE' if lock_type == :no_key_update
+    lock_type = "FOR NO KEY UPDATE" if lock_type == :no_key_update
     super(lock_type)
   end
 end
@@ -1195,13 +1171,9 @@ ActiveRecord::Relation.class_eval do
     super
   end
 
-  def uniq(*)
-    raise "use #distinct instead of #uniq on relations (Rails 5.1 will delegate uniq to to_a)"
-  end
-
   def not_recently_touched
     scope = self
-    if((personal_space = Setting.get('touch_personal_space', 0).to_i) != 0)
+    if (personal_space = Setting.get("touch_personal_space", 0).to_i) != 0
       personal_space -= 1
       # truncate to seconds
       bound = Time.at(Time.now.to_i - personal_space).utc
@@ -1223,7 +1195,7 @@ ActiveRecord::Relation.class_eval do
   end
 
   def touch_all
-    self.activate do |relation|
+    activate do |relation|
       relation.update_all_locked_in_order(updated_at: Time.now.utc)
     end
   end
@@ -1239,10 +1211,10 @@ ActiveRecord::Relation.class_eval do
 
     relation = clone
     old_select = relation.select_values
-    relation.select_values = [+"DISTINCT ON (#{args.join(', ')}) "]
+    relation.select_values = [+"DISTINCT ON (#{args.join(", ")}) "]
     relation.distinct_value = false
 
-    relation.select_values.first << (old_select.empty? ? "*" : old_select.uniq.join(', '))
+    relation.select_values.first << (old_select.empty? ? "*" : old_select.uniq.join(", "))
 
     relation
   end
@@ -1270,43 +1242,42 @@ ActiveRecord::Relation.class_eval do
   # smallest to largest.
   #
   # note this does a raw connection.select_values, so it doesn't work with scopes
-  def find_ids_in_batches(options = {})
-    batch_size = options[:batch_size] || 1000
+  def find_ids_in_batches(batch_size: 1000, no_integer_cast: false)
     key = "#{quoted_table_name}.#{primary_key}"
     scope = except(:select).select(key).reorder(Arel.sql(key)).limit(batch_size)
     ids = connection.select_values(scope.to_sql)
-    ids = ids.map(&:to_i) unless options[:no_integer_cast]
+    ids = ids.map(&:to_i) unless no_integer_cast
     while ids.present?
       yield ids
       break if ids.size < batch_size
+
       last_value = ids.last
       ids = connection.select_values(scope.where("#{key}>?", last_value).to_sql)
-      ids = ids.map(&:to_i) unless options[:no_integer_cast]
+      ids = ids.map(&:to_i) unless no_integer_cast
     end
   end
 
   # returns 2 ids at a time (the min and the max of a range), working through
   # the primary key from smallest to largest.
-  def find_ids_in_ranges(options = {})
+  def find_ids_in_ranges(loose: false, batch_size: 1000, end_at: nil, start_at: nil)
     is_integer = columns_hash[primary_key.to_s].type == :integer
-    loose_mode = options[:loose] && is_integer
+    loose_mode = loose && is_integer
     # loose_mode: if we don't care about getting exactly batch_size ids in between
     # don't get the max - just get the min and add batch_size so we get that many _at most_
     values = loose_mode ? "MIN(id)" : "MIN(id), MAX(id)"
 
-    batch_size = options[:batch_size].try(:to_i) || 1000
     quoted_primary_key = "#{klass.connection.quote_local_table_name(table_name)}.#{klass.connection.quote_column_name(primary_key)}"
-    as_id = " AS id" unless primary_key == 'id'
+    as_id = " AS id" unless primary_key == "id"
     subquery_scope = except(:select).select("#{quoted_primary_key}#{as_id}").reorder(primary_key.to_sym).limit(loose_mode ? 1 : batch_size)
-    subquery_scope = subquery_scope.where("#{quoted_primary_key} <= ?", options[:end_at]) if options[:end_at]
+    subquery_scope = subquery_scope.where("#{quoted_primary_key} <= ?", end_at) if end_at
 
-    first_subquery_scope = options[:start_at] ? subquery_scope.where("#{quoted_primary_key} >= ?", options[:start_at]) : subquery_scope
+    first_subquery_scope = start_at ? subquery_scope.where("#{quoted_primary_key} >= ?", start_at) : subquery_scope
 
     ids = connection.select_rows("SELECT #{values} FROM (#{first_subquery_scope.to_sql}) AS subquery").first
 
     while ids.first.present?
       ids.map!(&:to_i) if is_integer
-      ids << ids.first + batch_size if loose_mode
+      ids << (ids.first + batch_size) if loose_mode
 
       yield(*ids)
       last_value = ids.last
@@ -1317,16 +1288,17 @@ ActiveRecord::Relation.class_eval do
 end
 
 module UpdateAndDeleteWithJoins
-  def deconstruct_joins(joins_sql=nil)
+  def deconstruct_joins(joins_sql = nil)
     unless joins_sql
-      joins_sql = ''
+      joins_sql = ""
       add_joins!(joins_sql, nil)
     end
     tables = []
     join_conditions = []
-    joins_sql.strip.split('INNER JOIN')[1..-1].each do |join|
+    joins_sql.strip.split("INNER JOIN")[1..].each do |join|
       # this could probably be improved
-      raise "PostgreSQL update_all/delete_all only supports INNER JOIN" unless join.strip =~ /([a-zA-Z0-9'"_\.]+(?:(?:\s+[aA][sS])?\s+[a-zA-Z0-9'"_]+)?)\s+ON\s+(.*)/m
+      raise "PostgreSQL update_all/delete_all only supports INNER JOIN" unless join.strip =~ /([a-zA-Z0-9'"_.]+(?:(?:\s+[aA][sS])?\s+[a-zA-Z0-9'"_]+)?)\s+ON\s+(.*)/m
+
       tables << $1
       join_conditions << $2
     end
@@ -1336,10 +1308,10 @@ module UpdateAndDeleteWithJoins
   def update_all(updates, *args)
     db = Shard.current(klass.shard_category).database_server
     if joins_values.empty?
-      if ::GuardRail.environment != db.guard_rail_environment
-        Shard.current.database_server.unguard {return super }
-      else
+      if ::GuardRail.environment == db.guard_rail_environment
         return super
+      else
+        Shard.current.database_server.unguard { return super }
       end
     end
 
@@ -1361,9 +1333,9 @@ module UpdateAndDeleteWithJoins
     tables, join_conditions = deconstruct_joins(join_sql)
 
     unless tables.empty?
-      sql.concat(' FROM ')
-      sql.concat(tables.join(', '))
-      sql.concat(' ')
+      sql.concat(" FROM ")
+      sql.concat(tables.join(", "))
+      sql.concat(" ")
     end
 
     scope = self
@@ -1375,11 +1347,11 @@ module UpdateAndDeleteWithJoins
       connection.visitor.accept(node, collector)
     end
     where_sql = collector.value
-    sql.concat('WHERE ' + where_sql)
-    if ::GuardRail.environment != db.guard_rail_environment
-      Shard.current.database_server.unguard {connection.update(sql, "#{name} Update")}
-    else
+    sql.concat("WHERE " + where_sql)
+    if ::GuardRail.environment == db.guard_rail_environment
       connection.update(sql, "#{name} Update")
+    else
+      Shard.current.database_server.unguard { connection.update(sql, "#{name} Update") }
     end
   end
 
@@ -1391,9 +1363,9 @@ module UpdateAndDeleteWithJoins
     join_sql = arel.join_sources.map(&:to_sql).join(" ")
     tables, join_conditions = deconstruct_joins(join_sql)
 
-    sql.concat('USING ')
-    sql.concat(tables.join(', '))
-    sql.concat(' ')
+    sql.concat("USING ")
+    sql.concat(tables.join(", "))
+    sql.concat(" ")
 
     scope = self
     join_conditions.each { |join| scope = scope.where(join) }
@@ -1403,7 +1375,7 @@ module UpdateAndDeleteWithJoins
       connection.visitor.accept(node, collector)
     end
     where_sql = collector.value
-    sql.concat('WHERE ' + where_sql)
+    sql.concat("WHERE " + where_sql)
 
     connection.delete(sql, "SQL", [])
   end
@@ -1431,7 +1403,8 @@ ActiveRecord::Relation.prepend(UpdateAndDeleteAllWithLimit)
 
 ActiveRecord::Associations::CollectionProxy.class_eval do
   def respond_to?(name, include_private = false)
-    return super if [:marshal_dump, :_dump, 'marshal_dump', '_dump'].include?(name)
+    return super if [:marshal_dump, :_dump, "marshal_dump", "_dump"].include?(name)
+
     super ||
       (load_target && target.respond_to?(name, include_private)) ||
       proxy_association.klass.respond_to?(name, include_private)
@@ -1443,22 +1416,18 @@ ActiveRecord::Associations::CollectionProxy.class_eval do
     @association.set_inverse_instance(record)
     record
   end
-
-  def uniq(*args)
-    raise "use #distinct instead of #uniq on relations (Rails 5.1 will delegate uniq to to_a)"
-  end
 end
 
 ActiveRecord::ConnectionAdapters::AbstractAdapter.class_eval do
   def bulk_insert(table_name, records)
     keys = records.first.keys
-    quoted_keys = keys.map{ |k| quote_column_name(k) }.join(', ')
+    quoted_keys = keys.map { |k| quote_column_name(k) }.join(", ")
     records.each do |record|
-      execute <<~SQL
+      execute <<~SQL.squish
         INSERT INTO #{quote_table_name(table_name)}
           (#{quoted_keys})
         VALUES
-          (#{keys.map{ |k| quote(record[k]) }.join(', ')})
+          (#{keys.map { |k| quote(record[k]) }.join(", ")})
       SQL
     end
   end
@@ -1474,7 +1443,7 @@ class ActiveRecord::ConnectionAdapters::AbstractAdapter
   #     string_agg(name::text, '|')       (postgres)
 
   def func(name, *args)
-    "#{name}(#{args.map{ |arg| func_arg_esc(arg) }.join(', ')})"
+    "#{name}(#{args.map { |arg| func_arg_esc(arg) }.join(", ")})"
   end
 
   def func_arg_esc(arg)
@@ -1490,13 +1459,15 @@ class ActiveRecord::ConnectionAdapters::AbstractAdapter
   end
 
   def infer_group_by_columns(columns)
-    columns.map { |col|
-      col.respond_to?(:columns) ?
-          col.columns.map { |c|
-            "#{col.quoted_table_name}.#{quote_column_name(c.name)}"
-          } :
-          col
-    }
+    columns.map do |col|
+      if col.respond_to?(:columns)
+        col.columns.map do |c|
+          "#{col.quoted_table_name}.#{quote_column_name(c.name)}"
+        end
+      else
+        col
+      end
+    end
   end
 end
 
@@ -1510,11 +1481,11 @@ end
 
 class ActiveRecord::Migration
   # at least one of these tags is required
-  DEPLOY_TAGS = [:predeploy, :postdeploy]
+  DEPLOY_TAGS = [:predeploy, :postdeploy].freeze
 
   class << self
     def is_postgres?
-      connection.adapter_name == 'PostgreSQL'
+      connection.adapter_name == "PostgreSQL"
     end
 
     def has_postgres_proc?(procname)
@@ -1524,7 +1495,7 @@ class ActiveRecord::Migration
 
   def connection
     if self.class.respond_to?(:connection)
-      return self.class.connection
+      self.class.connection
     else
       @connection || ActiveRecord::Base.connection
     end
@@ -1552,7 +1523,8 @@ class ActiveRecord::MigrationProxy
   def load_migration
     load(filename)
     @migration = name.constantize
-    raise "#{self.name} (#{self.version}) is not tagged as exactly one of predeploy or postdeploy!" unless (@migration.tags & ActiveRecord::Migration::DEPLOY_TAGS).length == 1
+    raise "#{name} (#{version}) is not tagged as exactly one of predeploy or postdeploy!" unless (@migration.tags & ActiveRecord::Migration::DEPLOY_TAGS).length == 1
+
     @migration
   end
 end
@@ -1564,7 +1536,7 @@ module MigratorCache
   end
 
   def migrations_paths
-    @@migrations_paths ||= [File.join(Rails.root, "db/migrate")]
+    @@migrations_paths ||= [Rails.root.join("db/migrate")]
   end
 end
 ActiveRecord::Migrator.singleton_class.prepend(MigratorCache)
@@ -1576,6 +1548,7 @@ module Migrator
 
   def pending_migrations(call_super: false)
     return super() if call_super
+
     super().select(&:runnable?)
   end
 
@@ -1589,11 +1562,12 @@ module Migrator
       old_migration_name, Marginalia::Comment.migration = Marginalia::Comment.migration, migration.name
     end
     if down? && !Rails.env.test? && !$confirmed_migrate_down
-      require 'highline'
+      require "highline"
       if HighLine.new.ask("Revert migration #{migration.name} (#{migration.version}) ? [y/N/a] > ") !~ /^([ya])/i
         raise("Revert not confirmed")
       end
-      $confirmed_migrate_down = true if $1.downcase == 'a'
+
+      $confirmed_migrate_down = true if $1.casecmp?("a")
     end
 
     super
@@ -1604,7 +1578,7 @@ module Migrator
 end
 ActiveRecord::Migrator.prepend(Migrator)
 
-ActiveRecord::Migrator.migrations_paths.concat Dir[Rails.root.join('gems', 'plugins', '*', 'db', 'migrate')]
+ActiveRecord::Migrator.migrations_paths.concat Dir[Rails.root.join("gems/plugins/*/db/migrate")]
 
 ActiveRecord::Tasks::DatabaseTasks.migrations_paths = ActiveRecord::Migrator.migrations_paths
 
@@ -1635,6 +1609,7 @@ ActiveRecord::ConnectionAdapters::SchemaStatements.class_eval do
 
   def foreign_key_for(from_table, **options)
     return unless supports_foreign_keys?
+
     fks = foreign_keys(from_table).select { |fk| fk.defined_for?(options) }
     # prefer a FK on a column named after the table
     if options[:to_table]
@@ -1683,11 +1658,11 @@ end
 # but _none_ of them (as of writing) will invert them on reversion. Some will
 # purposely strip the option, but most don't do anything.
 module ExistenceInversions
-  %w{index foreign_key column}.each do |type|
+  %w[index foreign_key column].each do |type|
     # these methods purposely pull the flag from the incoming args,
     # and assign to the outgoing args, not relying on it getting
     # passed through. and sometimes they even modify args.
-    class_eval <<-RUBY, __FILE__, __LINE__ + 1
+    class_eval <<~RUBY, __FILE__, __LINE__ + 1
       def invert_add_#{type}(args)
         orig_args = args.dup
         result = super
@@ -1715,7 +1690,6 @@ end
 
 ActiveRecord::Migration::CommandRecorder.prepend(ExistenceInversions)
 
-
 ActiveRecord::Associations::CollectionAssociation.class_eval do
   # CollectionAssociation implements uniq for :uniq option, in its
   # own special way. re-implement, but as a relation
@@ -1735,13 +1709,14 @@ if CANVAS_RAILS6_0
       scope.scoping { super }
     end
   end
-  ActiveRecord::Base.send(:include, UnscopeCallbacks)
+  ActiveRecord::Base.include UnscopeCallbacks
 end
 
 module MatchWithDiscard
   def match(model, name)
     result = super
     return nil if result && !result.is_a?(ActiveRecord::DynamicMatchers::FindBy)
+
     result
   end
 end
@@ -1786,14 +1761,15 @@ module SkipTouchCallbacks
     end
 
     def touch_callbacks_skipped?(name)
-      (@skip_touch_callbacks && @skip_touch_callbacks.include?(name)) ||
-        (self.superclass < ActiveRecord::Base && self.superclass.touch_callbacks_skipped?(name))
+      @skip_touch_callbacks&.include?(name) ||
+        (superclass < ActiveRecord::Base && superclass.touch_callbacks_skipped?(name))
     end
   end
 
   module BelongsTo
     def touch_record(o, _changes, _foreign_key, name, *)
       return if o.class.touch_callbacks_skipped?(name)
+
       super
     end
   end
@@ -1829,11 +1805,12 @@ ActiveModel::AttributeMutationTracker.prepend(DupArraysInMutationTracker)
 
 module IgnoreOutOfSequenceMigrationDates
   def current_migration_number(dirname)
-    migration_lookup_at(dirname).map do |file|
+    migration_lookup_at(dirname).filter_map do |file|
       digits = File.basename(file).split("_").first
       next if ActiveRecord::Base.timestamped_migrations && digits.length != 14
+
       digits.to_i
-    end.compact.max.to_i
+    end.max.to_i
   end
 end
 # Thor doesn't call `super` in its `inherited` method, so hook in so that we can hook in later :)
@@ -1876,13 +1853,13 @@ module ExplainAnalyze
   end
 
   def explain(analyze: false)
-    #TODO: Fix for binds.
+    # TODO: Fix for binds.
     exec_explain(collecting_queries_for_explain do
       if block_given?
         yield
       else
         # fold in switchman's override
-        self.activate { |relation| relation.send(:exec_queries) }
+        activate { |relation| relation.send(:exec_queries) }
       end
     end, analyze: analyze)
   end
@@ -1891,11 +1868,11 @@ ActiveRecord::Relation.prepend(ExplainAnalyze)
 
 # fake Rails into grabbing correct column information for a table rename in-progress
 module TableRename
-  RENAMES = { 'authentication_providers' => 'account_authorization_configs' }.freeze
+  RENAMES = { "authentication_providers" => "account_authorization_configs" }.freeze
 
   def columns(table_name)
-    if (old_name = RENAMES[table_name])
-      table_name = old_name if data_source_exists?(old_name)
+    if (old_name = RENAMES[table_name]) && connection.table_exists?(old_name)
+      table_name = old_name
     end
     super
   end
@@ -1947,11 +1924,11 @@ ActiveRecord::ConnectionAdapters::Transaction.prepend(PreserveShardAfterTransact
 module ConnectionWithMaxRuntime
   def initialize(*)
     super
-    @created_at = Concurrent.monotonic_time
+    @created_at = Process.clock_gettime(Process::CLOCK_MONOTONIC)
   end
 
   def runtime
-    Concurrent.monotonic_time - @created_at
+    Process.clock_gettime(Process::CLOCK_MONOTONIC) - @created_at
   end
 end
 ActiveRecord::ConnectionAdapters::AbstractAdapter.prepend(ConnectionWithMaxRuntime)
@@ -1960,6 +1937,7 @@ module RestoreConnectionConnectionPool
   def restore_connection(conn)
     # If the connection got closed before we restored it, don't try to return it
     return unless conn.active?
+
     synchronize do
       adopt_connection(conn)
       # check if a new connection was checked out in the meantime, and check it back in
@@ -1978,7 +1956,6 @@ module RestoreConnectionConnectionPool
   end
 end
 ActiveRecord::ConnectionAdapters::ConnectionPool.prepend(RestoreConnectionConnectionPool)
-
 
 module MaxRuntimeConnectionPool
   def max_runtime
@@ -2020,6 +1997,7 @@ module MaxRuntimeConnectionPool
     old_connections = synchronize do
       # TODO: Rails 6.1 adds a `discarded?` method instead of checking this directly
       return unless @connections
+
       @connections.select do |conn|
         !conn.in_use? && conn.runtime >= max_runtime
       end.each do |conn|
@@ -2059,9 +2037,9 @@ module Serialization
 
     # the rest of this method is from ActiveModel::Serialization
     attribute_names = self.attribute_names
-    if only = options[:only]
+    if (only = options[:only])
       attribute_names &= Array(only).map(&:to_s)
-    elsif except = options[:except]
+    elsif (except = options[:except])
       attribute_names -= Array(except).map(&:to_s)
     end
 
@@ -2072,10 +2050,10 @@ module Serialization
 
     serializable_add_includes(options) do |association, records, opts|
       hash[association.to_s] = if records.respond_to?(:to_ary)
-        records.to_ary.map { |a| a.serializable_hash(opts) }
-      else
-        records.serializable_hash(opts)
-      end
+                                 records.to_ary.map { |a| a.serializable_hash(opts) }
+                               else
+                                 records.serializable_hash(opts)
+                               end
     end
 
     hash
@@ -2089,14 +2067,14 @@ module UserContentSerialization
     if result.present?
       result = result.with_indifferent_access
       user_content_fields = options[:user_content] || []
-      result.keys.each do |name|
+      result.each_key do |name|
         if user_content_fields.include?(name.to_s)
           result[name] = UserContent.escape(result[name])
         end
       end
     end
     if options && options[:include_root]
-      result = {self.class.base_class.model_name.element => result}
+      result = { self.class.base_class.model_name.element => result }
     end
     result
   end

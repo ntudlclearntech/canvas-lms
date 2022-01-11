@@ -17,6 +17,7 @@
  */
 
 import {arrayOf, bool, number, shape, string} from 'prop-types'
+import {AnonymousUser} from './AnonymousUser'
 import {Assignment} from './Assignment'
 import {Attachment} from './Attachment'
 import {Section} from './Section'
@@ -24,6 +25,7 @@ import {DiscussionPermissions} from './DiscussionPermissions'
 import gql from 'graphql-tag'
 import {User} from './User'
 import {DiscussionEntry} from './DiscussionEntry'
+import {DiscussionEntryDraft} from './DiscussionEntryDraft'
 import {PageInfo} from './PageInfo'
 import {ChildTopic} from './ChildTopic'
 import {RootTopic} from './RootTopic'
@@ -44,12 +46,15 @@ export const Discussion = {
       isSectionSpecific
       isAnnouncement
       discussionType
+      anonymousState
       allowRating
       onlyGradersCanRate
       delayedPostAt
       subscribed
       published
       canUnpublish
+      lockAt
+      availableForUser
       entryCounts {
         unreadCount
         repliesCount
@@ -98,18 +103,22 @@ export const Discussion = {
     isSectionSpecific: bool,
     isAnnouncement: bool,
     discussionType: string,
+    anonymousState: string,
     allowRating: bool,
     onlyGradersCanRate: bool,
     delayedPostAt: string,
+    lockAt: string,
     subscribed: bool,
     published: bool,
     canUnpublish: bool,
     searchEntryCount: number,
+    availableForUser: bool,
     entryCounts: shape({
       unreadCount: number,
       repliesCount: number
     }),
     author: User.shape,
+    anonymousAuthor: AnonymousUser.shape,
     editor: User.shape,
     attachment: Attachment.shape,
     assignment: Assignment.shape,
@@ -135,19 +144,23 @@ export const Discussion = {
     isSectionSpecific = false,
     isAnnouncement = false,
     discussionType = 'threaded',
+    anonymousState = null,
     allowRating = true,
     onlyGradersCanRate = false,
     delayedPostAt = null,
+    lockAt = null,
     subscribed = true,
     published = true,
     canUnpublish = false,
     searchEntryCount = 3,
+    availableForUser = true,
     entryCounts = {
       unreadCount: 2,
       repliesCount: 56,
       __typename: 'DiscussionEntryCounts'
     },
     author = User.mock({_id: '1', displayName: 'Charles Xavier'}),
+    anonymousAuthor = null,
     editor = User.mock({_id: '1', displayName: 'Charles Xavier'}),
     attachment = Attachment.mock(),
     assignment = Assignment.mock(),
@@ -161,6 +174,11 @@ export const Discussion = {
       nodes: [DiscussionEntry.mock()],
       pageInfo: PageInfo.mock(),
       __typename: 'DiscussionEntriesConnection'
+    },
+    discussionEntryDraftsConnection = {
+      nodes: [DiscussionEntryDraft.mock()],
+      pageInfo: PageInfo.mock(),
+      __typename: 'DiscussionEntryDraftsConnection'
     }
   } = {}) => ({
     id,
@@ -175,14 +193,18 @@ export const Discussion = {
     isSectionSpecific,
     isAnnouncement,
     discussionType,
+    anonymousState,
     allowRating,
     onlyGradersCanRate,
     delayedPostAt,
+    lockAt,
     subscribed,
     published,
     canUnpublish,
     entryCounts,
+    availableForUser,
     author,
+    anonymousAuthor,
     editor,
     attachment,
     assignment,
@@ -194,6 +216,7 @@ export const Discussion = {
     searchEntryCount,
     entriesTotalPages,
     discussionEntriesConnection,
+    discussionEntryDraftsConnection,
     __typename: 'Discussion'
   })
 }

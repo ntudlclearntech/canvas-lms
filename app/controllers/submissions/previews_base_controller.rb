@@ -37,13 +37,13 @@ module Submissions
       prepare_js_env
 
       @assessment_request = @submission.assessment_requests.where(assessor_id: @current_user).first
-      @body_classes << 'is-inside-submission-frame'
+      @body_classes << "is-inside-submission-frame"
 
       # We're re-using the preview view for viewing Student Annotation
       # submissions in SpeedGrader, but the default padding for previews does
       # not work well for SpeedGrader.
       if @submission.submission_type == "student_annotation"
-        @body_classes.push('full-width', 'student-annotation-container')
+        @body_classes.push("full-width", "student-annotation-container")
       end
 
       if @assignment.moderated_grading?
@@ -54,7 +54,7 @@ module Submissions
                                           @assignment.anonymous_instructor_annotations
 
       unless @assignment.visible_to_user?(@current_user)
-        flash[:notice] = t('This assignment will no longer count towards your grade.')
+        flash[:notice] = t("This assignment will no longer count towards your grade.")
       end
 
       @headers = false
@@ -63,7 +63,7 @@ module Submissions
           redirect_to(named_context_url(@context, redirect_path_name, @assignment.quiz.id, redirect_params))
         else
           @anonymize_students = anonymize_students?
-          render template: 'submissions/show_preview', locals: {
+          render template: "submissions/show_preview", locals: {
             anonymize_students: @anonymize_students
           }
         end
@@ -71,6 +71,7 @@ module Submissions
     end
 
     protected
+
     def anonymize_students?
       if current_user_is_student?
         @submission_for_show.assignment.anonymous_peer_reviews? && @submission_for_show.submission.peer_reviewer?(@current_user)
@@ -90,7 +91,7 @@ module Submissions
     end
 
     def prepare_js_env
-      hash = {CONTEXT_ACTION_SOURCE: :submissions}
+      hash = { CONTEXT_ACTION_SOURCE: :submissions }
       append_sis_data(hash)
       js_env(hash)
     end
@@ -99,10 +100,10 @@ module Submissions
       { headless: 1 }.tap do |h|
         if redirect_to_quiz_history?
           h.merge!({
-            hide_student_name: params[:hide_student_name],
-            user_id: @submission.user_id,
-            version: params[:version] || @submission.quiz_submission_version
-          })
+                     hide_student_name: params[:hide_student_name],
+                     user_id: @submission.user_id,
+                     version: params[:version] || @submission.quiz_submission_version
+                   })
         end
       end
     end

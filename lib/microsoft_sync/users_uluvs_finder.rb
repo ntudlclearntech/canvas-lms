@@ -47,10 +47,10 @@ module MicrosoftSync
 
       users_uluvs =
         case login_attribute
-        when 'email' then find_by_email
-        when 'preferred_username' then find_by_active_pseudonyms_field(:unique_id)
-        when 'sis_user_id' then find_by_active_pseudonyms_field(:sis_user_id)
-        when 'integration_id' then find_by_active_pseudonyms_field(:integration_id)
+        when "email" then find_by_email
+        when "preferred_username" then find_by_active_pseudonyms_field(:unique_id)
+        when "sis_user_id" then find_by_active_pseudonyms_field(:sis_user_id)
+        when "integration_id" then find_by_active_pseudonyms_field(:integration_id)
         else raise InvalidOrMissingLoginAttributeConfig
         end
 
@@ -59,24 +59,24 @@ module MicrosoftSync
       # smallest number) and returning the first uluv found to the related user_id.
       users_uluvs
         .uniq(&:first)
-        .map{|user_id, uluv| [user_id, uluv + login_attribute_suffix]}
+        .map { |user_id, uluv| [user_id, uluv + login_attribute_suffix] }
     end
 
     private
 
     def find_by_email
       CommunicationChannel
-        .where(user_id: user_ids, path_type: 'email', workflow_state: 'active')
+        .where(user_id: user_ids, path_type: "email", workflow_state: "active")
         .order(position: :asc)
         .pluck(:user_id, :path)
     end
 
     def find_by_active_pseudonyms_field(field)
       root_account.pseudonyms
-        .active.where(user_id: user_ids)
-        .where.not(field => nil)
-        .order(position: :asc)
-        .pluck(:user_id, field)
+                  .active.where(user_id: user_ids)
+                  .where.not(field => nil)
+                  .order(position: :asc)
+                  .pluck(:user_id, field)
     end
 
     def login_attribute
@@ -89,7 +89,7 @@ module MicrosoftSync
     end
 
     def login_attribute_suffix
-      @login_attribute_suffix ||= settings[:microsoft_sync_login_attribute_suffix] || ''
+      @login_attribute_suffix ||= settings[:microsoft_sync_login_attribute_suffix] || ""
     end
   end
 end

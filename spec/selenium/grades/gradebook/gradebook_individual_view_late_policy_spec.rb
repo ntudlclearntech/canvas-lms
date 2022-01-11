@@ -17,10 +17,10 @@
 # You should have received a copy of the GNU Affero General Public License along
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 
-require_relative '../pages/gradebook_individual_view_page'
-require_relative '../../helpers/gradebook_common'
+require_relative "../pages/gradebook_individual_view_page"
+require_relative "../../helpers/gradebook_common"
 
-describe 'Late Policies:' do
+describe "Late Policies:" do
   include_context "in-process server selenium tests"
   include GradebookCommon
 
@@ -36,30 +36,44 @@ describe 'Late Policies:' do
   end
 
   context "grade detail tray other" do
-    before(:each) do
+    before do
       user_session(@teacher)
       GradebookIndividualViewPage.visit(@course.id)
     end
 
-    it 'missing submission has missing pill' do
+    it "missing submission has missing pill" do
       GradebookIndividualViewPage.select_assignment(@a2)
       GradebookIndividualViewPage.select_student(@course.students.first)
 
-      expect(GradebookIndividualViewPage.status_pill('missing')).to be_displayed
+      expect(GradebookIndividualViewPage.status_pill("missing")).to be_displayed
     end
 
-    it 'late submission has late pill' do
+    context "remove_missing_status_when_graded enabled" do
+      before do
+        Account.site_admin.enable_feature!(:remove_missing_status_when_graded)
+        GradebookIndividualViewPage.visit(@course.id)
+      end
+
+      it "missing submission has missing pill removed" do
+        GradebookIndividualViewPage.select_assignment(@a2)
+        GradebookIndividualViewPage.select_student(@course.students.first)
+
+        expect(find_all_with_jquery(".missing-pill:contains('missing')").length).to eq 0
+      end
+    end
+
+    it "late submission has late pill" do
       GradebookIndividualViewPage.select_assignment(@a1)
       GradebookIndividualViewPage.select_student(@course.students.first)
 
-      expect(GradebookIndividualViewPage.status_pill('late')).to be_displayed
+      expect(GradebookIndividualViewPage.status_pill("late")).to be_displayed
     end
 
     it "late submission has late penalty" do
       GradebookIndividualViewPage.select_assignment(@a1)
       GradebookIndividualViewPage.select_student(@course.students.first)
 
-      late_penalty_value = "-" + @course.students.first.submissions.find_by(assignment_id:@a1.id).points_deducted.to_s
+      late_penalty_value = "-" + @course.students.first.submissions.find_by(assignment_id: @a1.id).points_deducted.to_s
 
       # the data from rails and data from ui are not in the same format
       expect(GradebookIndividualViewPage.late_penalty_text.to_f.to_s).to eq late_penalty_value
@@ -69,7 +83,7 @@ describe 'Late Policies:' do
       GradebookIndividualViewPage.select_assignment(@a1)
       GradebookIndividualViewPage.select_student(@course.students.first)
 
-      final_grade_value = @course.students.first.submissions.find_by(assignment_id:@a1.id).published_grade
+      final_grade_value = @course.students.first.submissions.find_by(assignment_id: @a1.id).published_grade
       expect(GradebookIndividualViewPage.late_policy_final_grade_text).to eq final_grade_value
     end
   end

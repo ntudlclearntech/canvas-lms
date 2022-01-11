@@ -18,7 +18,7 @@
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-require 'atom'
+require "atom"
 
 # @API User Observees
 #
@@ -52,7 +52,6 @@ require 'atom'
 #       }
 #     }
 class ObserverPairingCodesApiController < ApplicationController
-
   before_action :require_user
 
   # @API Create observer pairing code

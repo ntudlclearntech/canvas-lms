@@ -21,7 +21,6 @@
 module Lti
   module MembershipService
     class GroupLisPersonCollator < LisPersonCollatorBase
-
       private
 
       def scope
@@ -29,8 +28,8 @@ module Lti
       end
 
       def generate_roles(user)
-        roles = [IMS::LIS::Roles::Context::URNs::Member]
-        roles << IMS::LIS::Roles::Context::URNs::Manager if user.id == context.leader_id
+        roles = [::IMS::LIS::Roles::Context::URNs::Member]
+        roles << ::IMS::LIS::Roles::Context::URNs::Manager if user.id == context.leader_id
         roles
       end
     end

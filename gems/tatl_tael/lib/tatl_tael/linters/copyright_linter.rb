@@ -106,7 +106,7 @@ module TatlTael
       end
 
       def remove_blank_lines(lines)
-        lines.reject { |line| line =~ /^\s+$/ }
+        lines.grep_v(/^\s+$/)
       end
 
       def valid_title?(title)
@@ -134,8 +134,8 @@ module TatlTael
       end
 
       def copyright_body
-        copyright.split("\n")[1..-1].join("\n") # remove first line
-          .gsub(/\s+/, " ").strip
+        copyright.split("\n")[1..].join("\n") # remove first line
+                 .gsub(/\s+/, " ").strip
       end
 
       def copyright_line_count
@@ -174,7 +174,7 @@ module TatlTael
         end
       end
 
-      ENDING_BLOCK_COMMENT_REGEX = /^(\s+)?(\*+\/)(\s+)?$/
+      ENDING_BLOCK_COMMENT_REGEX = %r{^(\s+)?(\*+/)(\s+)?$}.freeze
       def ending_block_comment_only?(line, _ext)
         line =~ ENDING_BLOCK_COMMENT_REGEX
       end
@@ -190,9 +190,8 @@ module TatlTael
           end
 
           if first_line_about_to_write
-            if first_line_exception?(line) # e.g. "# encoding: UTF-8"
-              next
-            elsif ending_block_comment_only?(line, ext) # e.g. "*/"
+            if first_line_exception?(line) || # e.g. "# encoding: UTF-8"
+               ending_block_comment_only?(line, ext) # e.g. "*/"
               next
             elsif !blank_or_comment_symbol_only?(line, ext)
               temp_file.write "\n"
@@ -211,8 +210,8 @@ module TatlTael
         start_comment = comment_symbols[:block_start]
 
         copy = copyright.gsub(config[:copyright_year_placeholder], Time.now.year.to_s)
-          .split("\n")
-          .map { |line| "#{line_comment} #{line}".rstrip }
+                        .split("\n")
+                        .map { |line| "#{line_comment} #{line}".rstrip }
 
         copy.unshift(start_comment) if start_comment
         copy.push(end_comment) if end_comment
@@ -223,15 +222,16 @@ module TatlTael
       def blank_or_comment_symbol_only?(line, ext)
         comment_symbols = config[:comment_symbols][ext.to_sym]
         line =~ if comment_symbols[:block]
-          /^\s*?$/
+                  /^\s*?$/
                 else
-          /^#{comment_symbols[:line]}?\s*?$/
+                  /^#{comment_symbols[:line]}?\s*?$/
                 end
       end
 
       def existing_copyright_header?(path_from_root)
         lines = head(path_from_root, copyright_line_count + COPYRIGHT_LINES_BUFFER)
         return unless lines
+
         lines.any? { |line| line.include?(config[:copyright_ending_token]) }
       end
 
@@ -242,6 +242,7 @@ module TatlTael
 
       def head(path, line_count)
         return unless File.exist?(path)
+
         File.foreach(path).first(line_count)
       end
     end

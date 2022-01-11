@@ -20,7 +20,8 @@
 class Attachments::GarbageCollector
   class ByContextType
     attr_reader :context_type, :older_than, :restore_state, :dry_run, :stats
-    def initialize(context_type:, older_than:, restore_state: 'processed', dry_run: false)
+
+    def initialize(context_type:, older_than:, restore_state: "processed", dry_run: false)
       @context_type = context_type
       @older_than = older_than
       @restore_state = restore_state
@@ -30,19 +31,19 @@ class Attachments::GarbageCollector
 
     def delete_content
       to_delete_scope.where(root_attachment_id: nil).find_ids_in_batches(batch_size: 500) do |ids_batch|
-        non_type_children = Attachment.where(root_attachment_id: ids_batch).
-          not_deleted.
-          where.not(context_type: context_type).
-          where.not(root_attachment_id: nil). # postgres is being weird
-          order([:root_attachment_id, :id]).
-          select("distinct on (attachments.root_attachment_id) attachments.*").
-          group_by(&:root_attachment_id)
-        same_type_children_fields = Attachment.where(root_attachment_id: ids_batch).
-          not_deleted.
-          where(context_type: context_type).
-          where.not(root_attachment_id: nil). # postgres is being weird
-          select(:id, :created_at, :root_attachment_id).
-          group_by(&:root_attachment_id)
+        non_type_children = Attachment.where(root_attachment_id: ids_batch)
+                                      .not_deleted
+                                      .where.not(context_type: context_type)
+                                      .where.not(root_attachment_id: nil) # postgres is being weird
+                                      .order([:root_attachment_id, :id])
+                                      .select("distinct on (attachments.root_attachment_id) attachments.*")
+                                      .group_by(&:root_attachment_id)
+        same_type_children_fields = Attachment.where(root_attachment_id: ids_batch)
+                                              .not_deleted
+                                              .where(context_type: context_type)
+                                              .where.not(root_attachment_id: nil) # postgres is being weird
+                                              .select(:id, :created_at, :root_attachment_id)
+                                              .group_by(&:root_attachment_id)
 
         to_delete_ids = []
         Attachment.where(id: ids_batch).each do |att|
@@ -55,8 +56,8 @@ class Attachments::GarbageCollector
           end
 
           if non_type_children[att.id].present?
-            if context_type == 'ContentExport' &&
-                non_type_children[att.id].detect{ |x| x.context_type == 'ContentMigration' }.present?
+            if context_type == "ContentExport" &&
+               non_type_children[att.id].detect { |x| x.context_type == "ContentMigration" }.present?
               stats[:cm_skipped] += 1
               next
             end
@@ -76,7 +77,7 @@ class Attachments::GarbageCollector
 
         if to_delete_ids.present?
           stats[:marked_deleted] += to_delete_ids.count
-          updates = { workflow_state: 'deleted', file_state: 'deleted', deleted_at: Time.now.utc }
+          updates = { workflow_state: "deleted", file_state: "deleted", deleted_at: Time.now.utc }
           Attachment.where(id: to_delete_ids).update_all(updates) unless dry_run
         end
       end
@@ -88,10 +89,11 @@ class Attachments::GarbageCollector
     def undelete_content
       raise "Only works with S3" unless Attachment.s3_storage?
       raise "Cannot delete rows in dry_run mode" if dry_run
+
       deleted_scope.where(root_attachment_id: nil).find_ids_in_batches do |ids_batch|
         restored = []
         Attachment.where(id: ids_batch).each do |att|
-          versions = att.s3object.bucket.object_versions({prefix: att.s3object.key})
+          versions = att.s3object.bucket.object_versions({ prefix: att.s3object.key })
           delete_tokens, objects = versions.partition do |obj|
             obj.is_latest && obj.data.is_a?(Aws::S3::Types::DeleteMarkerEntry)
           end
@@ -100,7 +102,7 @@ class Attachments::GarbageCollector
             restored << att.id
           end
         end
-        updates = { workflow_state: restore_state, file_state: 'available', deleted_at: nil, updated_at: Time.now.utc }
+        updates = { workflow_state: restore_state, file_state: "available", deleted_at: nil, updated_at: Time.now.utc }
         Attachment.where(id: restored).update_all(updates) if restored.present?
       end
     end
@@ -108,6 +110,7 @@ class Attachments::GarbageCollector
     # Once you're confident and don't want to revert, clean up the DB rows
     def delete_rows
       raise "Cannot delete rows in dry_run mode" if dry_run
+
       deleted_scope.where.not(root_attachment_id: nil).in_batches.delete_all
       deleted_scope.in_batches.delete_all
     end
@@ -115,9 +118,9 @@ class Attachments::GarbageCollector
     private
 
     def to_delete_scope
-      scope = Attachment.where(context_type: context_type).
-        where.not(file_state: 'deleted')
-      if context_type == 'ContentExport'
+      scope = Attachment.where(context_type: context_type)
+                        .where.not(file_state: "deleted")
+      if context_type == "ContentExport"
         scope = scope.where.not("EXISTS (
           SELECT 1
           FROM #{ContentExport.quoted_table_name}
@@ -132,14 +135,15 @@ class Attachments::GarbageCollector
     def deleted_scope
       Attachment.where(
         context_type: context_type,
-        workflow_state: 'deleted',
-        file_state: 'deleted'
+        workflow_state: "deleted",
+        file_state: "deleted"
       )
     end
 
     def has_younger_children?(children_max_created_at)
       return false unless older_than
       return false unless children_max_created_at
+
       children_max_created_at >= older_than
     end
 
@@ -155,7 +159,7 @@ class Attachments::GarbageCollector
   # file exports now go through the content export flow.
   class FolderContextType < ByContextType
     def initialize(dry_run: false)
-      super(context_type: 'Folder', older_than: nil, restore_state: 'zipped', dry_run: dry_run)
+      super(context_type: "Folder", older_than: nil, restore_state: "zipped", dry_run: dry_run)
     end
   end
 
@@ -171,17 +175,18 @@ class Attachments::GarbageCollector
   # which is why we use the join conditions below
   class ContentExportContextType < ByContextType
     def initialize(older_than: ContentExport.expire_days.days.ago, dry_run: false)
-      super(context_type: 'ContentExport', older_than: older_than, dry_run: dry_run)
+      super(context_type: "ContentExport", older_than: older_than, dry_run: dry_run)
     end
 
     def delete_rows
       raise "Cannot delete rows in dry_run mode" if dry_run
-      null_scope = ContentExport.joins(<<~SQL).
+
+      null_scope = ContentExport.joins(<<~SQL.squish)
         INNER JOIN #{Attachment.quoted_table_name}
         ON attachments.context_type = 'ContentExport'
         AND content_exports.attachment_id = attachments.id
       SQL
-        where(attachments: { workflow_state: 'deleted', file_state: 'deleted' })
+                                .where(attachments: { workflow_state: "deleted", file_state: "deleted" })
       while null_scope.limit(1000).update_all(attachment_id: nil) > 0; end
       super
     end
@@ -195,25 +200,26 @@ class Attachments::GarbageCollector
   # - context_type='ContentExport'
   class ContentExportAndMigrationContextType < ByContextType
     def initialize(older_than: ContentMigration.expire_days.days.ago, dry_run: false)
-      super(context_type: ['ContentExport', 'ContentMigration'], older_than: older_than, dry_run: dry_run)
+      super(context_type: ["ContentExport", "ContentMigration"], older_than: older_than, dry_run: dry_run)
     end
 
     def delete_rows
       raise "Cannot delete rows in dry_run mode" if dry_run
-      ce_null_scope = ContentExport.joins(<<~SQL).
+
+      ce_null_scope = ContentExport.joins(<<~SQL.squish)
         INNER JOIN #{Attachment.quoted_table_name}
         ON attachments.context_type = 'ContentExport'
         AND content_exports.attachment_id = attachments.id
       SQL
-        where(attachments: { workflow_state: 'deleted', file_state: 'deleted' })
+                                   .where(attachments: { workflow_state: "deleted", file_state: "deleted" })
       while ce_null_scope.limit(1000).update_all(attachment_id: nil) > 0; end
 
-      cm_null_scope = ContentMigration.joins(<<~SQL).
+      cm_null_scope = ContentMigration.joins(<<~SQL.squish)
         INNER JOIN #{Attachment.quoted_table_name}
         ON attachments.context_type IN ('ContentMigration', 'ContentExport')
         AND content_migrations.attachment_id = attachments.id
       SQL
-        where(attachments: { workflow_state: 'deleted', file_state: 'deleted' })
+                                      .where(attachments: { workflow_state: "deleted", file_state: "deleted" })
       while cm_null_scope.limit(1000).update_all(attachment_id: nil) > 0; end
 
       super

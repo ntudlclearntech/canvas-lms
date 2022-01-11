@@ -164,9 +164,10 @@ class GradeChangeAuditApiController < AuditorApiController
   def for_course
     begin
       course = Course.find(params[:course_id])
-    rescue ActiveRecord::RecordNotFound => not_found
+    rescue ActiveRecord::RecordNotFound => e
       return render_unauthorized_action unless admin_authorized?
-      raise not_found
+
+      raise e
     end
 
     return render_unauthorized_action unless course_authorized?(course)
@@ -251,11 +252,11 @@ class GradeChangeAuditApiController < AuditorApiController
   # @returns [GradeChangeEvent]
   #
   def query
-    unless Auditors::read_from_postgres?
+    unless Auditors.read_from_postgres?
       return render json: { message: "Advanced query is unsupported on this instance" }, status: :not_implemented
     end
 
-    assignment = Auditors::GradeChange::COURSE_OVERRIDE_ASSIGNMENT if params[:assignment_id] == 'override'
+    assignment = Auditors::GradeChange::COURSE_OVERRIDE_ASSIGNMENT if params[:assignment_id] == "override"
 
     if params[:course_id].present?
       course = api_find(Course, params[:course_id])
@@ -273,10 +274,13 @@ class GradeChangeAuditApiController < AuditorApiController
     end
 
     conditions = {}
-    conditions.merge!(context_id: course.id, context_type: 'Course') if course
-    conditions.merge!(student_id: student.id) if student
-    conditions.merge!(grader_id: grader.id) if grader
-    conditions.merge!(assignment_id: assignment.id) if assignment
+    if course
+      conditions[:context_id] = course.id
+      conditions[:context_type] = "Course"
+    end
+    conditions[:student_id] = student.id if student
+    conditions[:grader_id] = grader.id if grader
+    conditions[:assignment_id] = assignment.id if assignment
     if conditions.empty?
       return render json: { message: "Must specify at least one query condition" }, status: :bad_request
     end
@@ -285,14 +289,15 @@ class GradeChangeAuditApiController < AuditorApiController
     render_events(events, api_v1_audit_grade_change_url, course: course, remove_anonymous: params[:student_id].present?)
   end
 
-  # TODO remove Cassandra cruft and make Gradebook History use the admin search above
+  # TODO: remove Cassandra cruft and make Gradebook History use the admin search above
   # once OSS users have been given the opportunity to migrate to Postgres auditors
   def for_course_and_other_parameters
     begin
       course = Course.find(params[:course_id])
-    rescue ActiveRecord::RecordNotFound => not_found
+    rescue ActiveRecord::RecordNotFound => e
       return render_unauthorized_action unless admin_authorized?
-      raise not_found
+
+      raise e
     end
 
     return render_unauthorized_action unless course_authorized?(course)
@@ -308,24 +313,24 @@ class GradeChangeAuditApiController < AuditorApiController
     args[:student] = course.all_users.find(params[:student_id]) if params[:student_id]
 
     url_method = if args[:assignment] && args[:grader] && args[:student]
-      :api_v1_audit_grade_change_course_assignment_grader_student_url
-    elsif args[:assignment] && args[:grader]
-      :api_v1_audit_grade_change_course_assignment_grader_url
-    elsif args[:assignment] && args[:student]
-      :api_v1_audit_grade_change_course_assignment_student_url
-    elsif args[:assignment]
-      :api_v1_audit_grade_change_course_assignment_url
-    elsif args[:grader] && args[:student]
-      :api_v1_audit_grade_change_course_grader_student_url
-    elsif args[:grader]
-      :api_v1_audit_grade_change_course_grader_url
-    elsif args[:student]
-      :api_v1_audit_grade_change_course_student_url
-    end
+                   :api_v1_audit_grade_change_course_assignment_grader_student_url
+                 elsif args[:assignment] && args[:grader]
+                   :api_v1_audit_grade_change_course_assignment_grader_url
+                 elsif args[:assignment] && args[:student]
+                   :api_v1_audit_grade_change_course_assignment_student_url
+                 elsif args[:assignment]
+                   :api_v1_audit_grade_change_course_assignment_url
+                 elsif args[:grader] && args[:student]
+                   :api_v1_audit_grade_change_course_grader_student_url
+                 elsif args[:grader]
+                   :api_v1_audit_grade_change_course_grader_url
+                 elsif args[:student]
+                   :api_v1_audit_grade_change_course_student_url
+                 end
 
     events = Auditors::GradeChange.for_course_and_other_arguments(course, args, query_options)
 
-    route_args = restrict_to_override_grades ? args.merge({assignment: "override"}) : args
+    route_args = restrict_to_override_grades ? args.merge({ assignment: "override" }) : args
     render_events(events, send(url_method, route_args), course: course, remove_anonymous: params[:student_id].present?)
   end
 
@@ -358,7 +363,7 @@ class GradeChangeAuditApiController < AuditorApiController
     # to leak information, so just drop the event completely while the
     # assignment is still anonymous and muted.
     events = remove_anonymous ? remove_anonymous_events(events) : anonymize_events(events)
-    render :json => grade_change_events_compound_json(events, @current_user, session)
+    render json: grade_change_events_compound_json(events, @current_user, session)
   end
 
   def remove_anonymous_events(events)
@@ -381,7 +386,7 @@ class GradeChangeAuditApiController < AuditorApiController
   end
 
   def anonymous_and_muted(events)
-    assignment_ids = events.map { |event| event["attributes"].fetch("assignment_id") }.compact
+    assignment_ids = events.filter_map { |event| event["attributes"].fetch("assignment_id") }
     assignments = api_find_all(Assignment, assignment_ids)
     assignments_anonymous_and_muted = {}
 
@@ -425,10 +430,10 @@ class GradeChangeAuditApiController < AuditorApiController
 
       current_score = current_scores[key]
       event.grade_current = if current_score&.override_grade
-        current_score.override_grade
-      elsif current_score&.override_score
-        I18n.n(current_score.override_score, percentage: true)
-      end
+                              current_score.override_grade
+                            elsif current_score&.override_score
+                              I18n.n(current_score.override_score, percentage: true)
+                            end
     end
   end
 
@@ -443,8 +448,8 @@ class GradeChangeAuditApiController < AuditorApiController
         "(#{key})"
       end.join(", ")
 
-      scopes << base_score_scope.
-        where("(enrollments.course_id, enrollments.user_id, scores.grading_period_id) IN (#{values})")
+      scopes << base_score_scope
+                .where("(enrollments.course_id, enrollments.user_id, scores.grading_period_id) IN (#{values})")
     end
 
     events_without_grading_period = events.reject(&:in_grading_period?)
@@ -454,9 +459,9 @@ class GradeChangeAuditApiController < AuditorApiController
         "(#{key})"
       end.join(", ")
 
-      scopes << base_score_scope.
-        where(course_score: true).
-        where("(enrollments.course_id, enrollments.user_id) IN (#{values})")
+      scopes << base_score_scope
+                .where(course_score: true)
+                .where("(enrollments.course_id, enrollments.user_id) IN (#{values})")
     end
 
     scopes.reduce { |result, scope| result.union(scope) }

@@ -45,8 +45,8 @@ class Lti::ToolConfigurationsApiController < ApplicationController
   before_action :require_user
   before_action :require_manage_developer_keys, except: :show
   before_action :require_key_in_context, only: :show
-  before_action :require_lti_add_edit, only: :show
-  before_action :require_tool_configuration, only: [:show, :update, :destroy]
+  before_action :require_manage_lti, only: :show
+  before_action :require_tool_configuration, only: %i[show update destroy]
 
   # @API Create Tool configuration
   # Creates tool configuration with the provided parameters.
@@ -159,8 +159,8 @@ class Lti::ToolConfigurationsApiController < ApplicationController
     head :unauthorized unless developer_key.usable_in_context?(@context)
   end
 
-  def require_lti_add_edit
-    head :unauthorized unless @context.grants_right?(@current_user, :lti_add_edit)
+  def require_manage_lti
+    head :unauthorized unless @context.grants_any_right?(@current_user, :lti_add_edit, *RoleOverride::GRANULAR_MANAGE_LTI_PERMISSIONS)
   end
 
   def manual_custom_fields
@@ -172,20 +172,22 @@ class Lti::ToolConfigurationsApiController < ApplicationController
   def update_developer_key!(tool_config, redirect_uris = nil)
     developer_key = tool_config.developer_key
     developer_key.redirect_uris = redirect_uris unless redirect_uris.nil?
-    developer_key.public_jwk = tool_config.settings['public_jwk']
-    developer_key.public_jwk_url = tool_config.settings['public_jwk_url']
-    developer_key.oidc_initiation_url = tool_config.settings['oidc_initiation_url']
+    developer_key.public_jwk = tool_config.settings["public_jwk"]
+    developer_key.public_jwk_url = tool_config.settings["public_jwk_url"]
+    developer_key.oidc_initiation_url = tool_config.settings["oidc_initiation_url"]
     developer_key.is_lti_key = true
     developer_key.update!(developer_key_params)
   end
 
   def require_tool_configuration
     return if developer_key.tool_configuration.present?
+
     head :not_found
   end
 
   def account
-    return @context if params[:action] == 'create'
+    return @context if params[:action] == "create"
+
     developer_key.owner_account
   end
 
@@ -199,12 +201,13 @@ class Lti::ToolConfigurationsApiController < ApplicationController
 
   def tool_configuration_params
     params.require(:tool_configuration).permit(:settings_url, :custom_fields, :privacy_level, disabled_placements: []).merge(
-      {settings: params.require(:tool_configuration)[:settings]&.to_unsafe_h}
+      { settings: params.require(:tool_configuration)[:settings]&.to_unsafe_h }
     )
   end
 
   def developer_key_params
     return {} if params[:developer_key].blank?
+
     params.require(:developer_key).permit(:name, :email, :notes, :redirect_uris, :test_cluster_only, :client_credentials_audience, scopes: [])
   end
 

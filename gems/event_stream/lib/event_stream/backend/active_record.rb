@@ -54,8 +54,8 @@ module EventStream::Backend
 
       send(operation, record)
       stream.run_callbacks(operation, record)
-    rescue StandardError => exception
-      stream.run_callbacks(:error, operation, record, exception)
+    rescue => e
+      stream.run_callbacks(:error, operation, record, e)
       raise if stream.raise_on_error
     end
 
@@ -79,6 +79,7 @@ module EventStream::Backend
     end
 
     private
+
     def insert(record)
       active_record_type.create_from_event_stream!(record)
     end

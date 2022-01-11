@@ -18,11 +18,9 @@
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-require File.expand_path(File.dirname(__FILE__) + '/../sharding_spec_helper')
-
 describe StreamItemsHelper do
   before :once do
-    Notification.create!(:name => "Assignment Created", :category => "TestImmediately")
+    Notification.create!(name: "Assignment Created", category: "TestImmediately")
     course_with_teacher(active_all: true)
     @reviewee_student = course_with_student(active_all: true, course: @course).user
     @reviewer_student = course_with_student(active_all: true, course: @course).user
@@ -35,18 +33,18 @@ describe StreamItemsHelper do
     entry.mentions.new(user_id: @teacher, root_account_id: @discussion.root_account_id)
     entry.save!
     @announcement = announcement_model
-    @assignment = assignment_model(:course => @course, peer_reviews: true)
+    @assignment = assignment_model(course: @course, peer_reviews: true)
     @assignment.assign_peer_review(@teacher, @student)
     @assignment.assign_peer_review(@reviewer_student, @reviewee_student)
     # this conversation will not be shown, since the teacher is the last author
-    conversation(@another_user, @teacher).conversation.add_message(@teacher, 'zomg')
+    conversation(@another_user, @teacher).conversation.add_message(@teacher, "zomg")
     # whereas this one will be shown
     @participant = conversation(@other_user, @teacher)
     @conversation = @participant.conversation
   end
 
   context "categorize_stream_items" do
-    it "should categorize different types correctly" do
+    it "categorizes different types correctly" do
       @items = @teacher.recent_stream_items
       expect(@items.size).to eq 7 # 1 for each type, 1 hidden conversation
       @categorized = helper.categorize_stream_items(@items, @teacher)
@@ -58,12 +56,12 @@ describe StreamItemsHelper do
       expect(@categorized["AssessmentRequest"].size).to eq 1
     end
 
-    it "should normalize output into common fields" do
+    it "normalizes output into common fields" do
       @items = @teacher.recent_stream_items
       expect(@items.size).to eq 7 # 1 for each type, 1 hidden conversation
       @categorized = helper.categorize_stream_items(@items, @teacher)
       @categorized.values.flatten.each do |presenter|
-        item = @items.detect{ |si| si.id == presenter.stream_item_id }
+        item = @items.detect { |si| si.id == presenter.stream_item_id }
         expect(item).not_to be_nil
         expect(presenter.updated_at).not_to be_nil
         expect(presenter.path).not_to be_nil
@@ -72,22 +70,22 @@ describe StreamItemsHelper do
       end
     end
 
-    it "should skip items that are not visible to the current user" do
+    it "skips items that are not visible to the current user" do
       # this discussion topic will not be shown since it is a graded discussion with a
       # future unlock at date
-      @group_assignment_discussion = group_assignment_discussion({ :course => @course })
+      @group_assignment_discussion = group_assignment_discussion({ course: @course })
       @group_assignment_discussion.update_attribute(:user, @teacher)
       assignment = @group_assignment_discussion.assignment
       assignment.update({
-        :due_at => 30.days.from_now,
-        :lock_at => 30.days.from_now,
-        :unlock_at => 20.days.from_now
-      })
+                          due_at: 30.days.from_now,
+                          lock_at: 30.days.from_now,
+                          unlock_at: 20.days.from_now
+                        })
       expect(@student.recent_stream_items).not_to include @group_assignment_discussion
       expect(@teacher.recent_stream_items).not_to include @group_assignment_discussion
     end
 
-    it "should skip assessment requests the user doesn't have permission to read" do
+    it "skips assessment requests the user doesn't have permission to read" do
       @items = @reviewer_student.recent_stream_items
       @categorized = helper.categorize_stream_items(@items, @reviewer_student)
       expect(@categorized["AssessmentRequest"].size).to eq 1
@@ -103,15 +101,15 @@ describe StreamItemsHelper do
       specs_require_sharding
 
       it "stream item ids should always be relative to the user's shard" do
-        course_with_teacher(:active_all => 1)
+        course_with_teacher(active_all: 1)
         @user2 = @shard1.activate { user_model }
         @course.enroll_student(@user2).accept!
-        dt = @course.discussion_topics.create!(:title => 'title')
+        @course.discussion_topics.create!(title: "title")
 
         items = @user2.recent_stream_items
         categorized = helper.categorize_stream_items(items, @user2)
-        categorized1 = @shard1.activate{ helper.categorize_stream_items(items, @user2) }
-        categorized2 = @shard2.activate{ helper.categorize_stream_items(items, @user2) }
+        categorized1 = @shard1.activate { helper.categorize_stream_items(items, @user2) }
+        categorized2 = @shard2.activate { helper.categorize_stream_items(items, @user2) }
         si_id = @shard1.activate { items[0].id }
         expect(categorized["DiscussionTopic"][0].stream_item_id).to eq si_id
         expect(categorized1["DiscussionTopic"][0].stream_item_id).to eq si_id
@@ -119,28 +117,28 @@ describe StreamItemsHelper do
       end
 
       it "links to stream item assets should be relative to the active shard" do
-        @shard1.activate{ course_with_teacher(account: Account.create, active_all: 1) }
-        @shard2.activate{ course_with_teacher(account: Account.create, active_all: 1, user: @teacher) }
-        topic = @course.discussion_topics.create!(title: 'title')
+        @shard1.activate { course_with_teacher(account: Account.create, active_all: 1) }
+        @shard2.activate { course_with_teacher(account: Account.create, active_all: 1, user: @teacher) }
+        topic = @course.discussion_topics.create!(title: "title")
 
         items = @teacher.recent_stream_items
         categorized = helper.categorize_stream_items(items, @teacher)
-        categorized1 = @shard1.activate{ helper.categorize_stream_items(items, @teacher) }
-        categorized2 = @shard2.activate{ helper.categorize_stream_items(items, @teacher) }
+        categorized1 = @shard1.activate { helper.categorize_stream_items(items, @teacher) }
+        categorized2 = @shard2.activate { helper.categorize_stream_items(items, @teacher) }
         expect(categorized["DiscussionTopic"][0].path).to eq "/courses/#{Shard.short_id_for(@course.global_id)}/discussion_topics/#{Shard.short_id_for(topic.global_id)}"
         expect(categorized1["DiscussionTopic"][0].path).to eq "/courses/#{Shard.short_id_for(@course.global_id)}/discussion_topics/#{Shard.short_id_for(topic.global_id)}"
         expect(categorized2["DiscussionTopic"][0].path).to eq "/courses/#{@course.local_id}/discussion_topics/#{topic.local_id}"
       end
 
       it "links to stream item contexts should be relative to the active shard" do
-        @shard1.activate{ course_with_teacher(account: Account.create, active_all: 1) }
-        @shard2.activate{ course_with_teacher(account: Account.create, active_all: 1, user: @teacher) }
-        @course.discussion_topics.create!(title: 'title')
+        @shard1.activate { course_with_teacher(account: Account.create, active_all: 1) }
+        @shard2.activate { course_with_teacher(account: Account.create, active_all: 1, user: @teacher) }
+        @course.discussion_topics.create!(title: "title")
 
         items = @teacher.recent_stream_items
         categorized = helper.categorize_stream_items(items, @teacher)
-        categorized1 = @shard1.activate{ helper.categorize_stream_items(items, @teacher) }
-        categorized2 = @shard2.activate{ helper.categorize_stream_items(items, @teacher) }
+        categorized1 = @shard1.activate { helper.categorize_stream_items(items, @teacher) }
+        categorized2 = @shard2.activate { helper.categorize_stream_items(items, @teacher) }
         expect(categorized["DiscussionTopic"][0].context.linked_to).to eq "/courses/#{Shard.short_id_for(@course.global_id)}/discussion_topics"
         expect(categorized1["DiscussionTopic"][0].context.linked_to).to eq "/courses/#{Shard.short_id_for(@course.global_id)}/discussion_topics"
         expect(categorized2["DiscussionTopic"][0].context.linked_to).to eq "/courses/#{@course.local_id}/discussion_topics"
@@ -149,7 +147,7 @@ describe StreamItemsHelper do
   end
 
   context "extract_path" do
-    it "should link to correct place" do
+    it "links to correct place" do
       @items = @teacher.recent_stream_items
       expect(@items.size).to eq 7 # 1 for each type, 1 hidden conversation
       @categorized = helper.categorize_stream_items(@items, @teacher)
@@ -163,7 +161,7 @@ describe StreamItemsHelper do
   end
 
   context "extract_context" do
-    it "should find the correct context" do
+    it "finds the correct context" do
       @items = @teacher.recent_stream_items
       expect(@items.size).to eq 7 # 1 for each type, 1 hidden conversation
       @categorized = helper.categorize_stream_items(@items, @teacher)
@@ -177,7 +175,7 @@ describe StreamItemsHelper do
   end
 
   context "extract_updated_at" do
-    it "should find the correct updated_at time for a conversation participant" do
+    it "finds the correct updated_at time for a conversation participant" do
       @conversation.updated_at = 1.hour.ago
       @conversation.save!
 
@@ -191,19 +189,19 @@ describe StreamItemsHelper do
   end
 
   context "extract_summary" do
-    it "should find the right content" do
+    it "finds the right content" do
       @items = @teacher.recent_stream_items
       expect(@items.size).to eq 7 # 1 for each type, 1 hidden conversation
       @categorized = helper.categorize_stream_items(@items, @teacher)
       expect(@categorized["Announcement"].first.summary).to eq @announcement.title
       expect(@categorized["Conversation"].first.summary).to eq @participant.last_message.body
-      expect(@categorized["Assignment"].first.summary).to match /Assignment Created/
+      expect(@categorized["Assignment"].first.summary).to match(/Assignment Created/)
       expect(@categorized["DiscussionTopic"].first.summary).to eq @discussion.title
       expect(@categorized["DiscussionEntry"].first.summary).to eq "#{@other_user.short_name} mentioned you in #{@discussion.title}."
       expect(@categorized["AssessmentRequest"].first.summary).to include(@assignment.title)
     end
 
-    it 'should handle anonymous review for AssessmentRequests' do
+    it "handles anonymous review for AssessmentRequests" do
       @assignment.update_attribute(:anonymous_peer_reviews, true)
       student = @student
       create_enrollments(@course, [@other_user])
@@ -214,14 +212,14 @@ describe StreamItemsHelper do
         user: student,
         assessor_asset: assessor_submission
       )
-      assessment_request.workflow_state = 'assigned'
+      assessment_request.workflow_state = "assigned"
       assessment_request.save
       items = @other_user.recent_stream_items
       @categorized = helper.categorize_stream_items(items, @other_user)
-      expect(@categorized["AssessmentRequest"].first.summary).to include('Anonymous User')
+      expect(@categorized["AssessmentRequest"].first.summary).to include("Anonymous User")
     end
 
-    it 'should anonymize path for anonymous AssessmentRequests' do
+    it "anonymizes path for anonymous AssessmentRequests" do
       @assignment.update_attribute(:anonymous_peer_reviews, true)
       student = @student
       create_enrollments(@course, [@other_user])
@@ -232,11 +230,11 @@ describe StreamItemsHelper do
         user: student,
         assessor_asset: assessor_submission
       )
-      assessment_request.workflow_state = 'assigned'
+      assessment_request.workflow_state = "assigned"
       assessment_request.save
       items = @other_user.recent_stream_items
       @categorized = helper.categorize_stream_items(items, @other_user)
-      expect(@categorized["AssessmentRequest"].first.path).to include('anonymous_submission')
+      expect(@categorized["AssessmentRequest"].first.path).to include("anonymous_submission")
     end
   end
 end

@@ -56,9 +56,6 @@ const locale = {
   "auto_saved_content_exists_would_you_like_to_load_t_fee528f2": {
     "message": "Van automatikusan mentett tartalom. Szeretné inkább azt betölteni?"
   },
-  "automatically_open_an_in_line_preview_preview_disp_ed784ffe": {
-    "message": "Automatikusan megnyit egy beágyazott előnézetet. (Az előnézet csak mentés után jelenik meg.)"
-  },
   "available_folders_694d0436": { "message": "Elérhető mappák" },
   "c_2001_acme_inc_283f7f80": { "message": "(c) 2001 Acme Inc." },
   "cancel_caeb1e68": { "message": "Mégse" },
@@ -130,9 +127,6 @@ const locale = {
   "details_98a31b68": { "message": "Részletek" },
   "dimensions_45ddb7b7": { "message": "Méretek" },
   "directionality_26ae9e08": { "message": "Irányítottság" },
-  "disable_in_line_preview_2a675175": {
-    "message": "Letiltja a beágyazott előnézetet."
-  },
   "discussions_a5f96392": { "message": "Fórumok" },
   "discussions_index_6c36ced": { "message": "Fórumok indexe" },
   "display_options_315aba85": { "message": "Megjelenítési beállítások" },
@@ -294,6 +288,7 @@ const locale = {
   "pages_e5414c2c": { "message": "Oldalak" },
   "paragraph_5e5ad8eb": { "message": "Bekezdés" },
   "people_b4ebb13c": { "message": "Résztvevők" },
+  "percentage_34ab7c2c": { "message": "Százalék" },
   "posted_when_a578f5ab": { "message": "Közzétéve: { when }" },
   "preformatted_d0670862": { "message": "Előre formázott" },
   "preview_53003fd2": { "message": "Előnézet" },
@@ -327,9 +322,6 @@ const locale = {
   "show_link_options_545338fd": { "message": "Linkbeállítások mutatása" },
   "show_video_options_6ed3721a": { "message": "Videóbeállítások mutatása" },
   "size_b30e1077": { "message": "Méret" },
-  "size_of_file_is_greater_than_the_maximum_max_mb_al_6eb3fa9a": {
-    "message": "A { file } mérete nagyobb, mint a megengedett legnagyobb fájl méret: { max } MB."
-  },
   "small_b070434a": { "message": "Kicsi" },
   "something_went_wrong_89195131": { "message": "Hiba történt!" },
   "something_went_wrong_and_i_don_t_know_what_to_show_e0c54ec8": {

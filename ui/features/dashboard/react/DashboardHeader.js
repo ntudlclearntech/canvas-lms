@@ -17,6 +17,7 @@
  */
 
 import React from 'react'
+import ReactDOM from 'react-dom'
 import I18n from 'i18n!dashboard'
 import axios from '@canvas/axios'
 import classnames from 'classnames'
@@ -34,6 +35,7 @@ import loadCardDashboard from '@canvas/dashboard-card'
 import $ from 'jquery'
 import {asText, getPrefetchedXHR} from '@instructure/js-utils'
 import '@canvas/jquery/jquery.disableWhileLoading'
+import {CreateCourseModal} from '@canvas/create-course-modal/react/CreateCourseModal'
 
 const [show, hide] = ['block', 'none'].map(displayVal => id => {
   const el = document.getElementById(id)
@@ -64,8 +66,9 @@ class DashboardHeader extends React.Component {
 
   constructor(...args) {
     super(...args)
-    if (ENV.STUDENT_PLANNER_ENABLED) {
-      initializePlanner({
+    this.planner_init_promise = undefined
+    if (this.props.planner_enabled) {
+      this.planner_init_promise = initializePlanner({
         changeDashboardView: this.changeDashboard,
         getActiveApp: this.getActiveApp,
         flashError: message => showFlashAlert({message, type: 'error'}),
@@ -94,6 +97,14 @@ class DashboardHeader extends React.Component {
 
   componentDidMount() {
     this.showDashboard(this.state.currentDashboard)
+  }
+
+  ready = () => {
+    if (this.props.planner_enabled) {
+      return this.planner_init_promise
+    } else {
+      return Promise.resolve()
+    }
   }
 
   getActiveApp = () => this.state.currentDashboard
@@ -137,7 +148,13 @@ class DashboardHeader extends React.Component {
     if (this.state.loadedViews.includes(newView)) return
 
     if (newView === 'planner' && this.props.planner_enabled) {
-      this.loadPlannerComponent()
+      this.planner_init_promise
+        .then(() => {
+          this.loadPlannerComponent()
+        })
+        .catch(() =>
+          showFlashAlert({message: I18n.t('Failed initializing dashboard'), type: 'error'})
+        )
     } else if (newView === 'cards') {
       this.loadCardDashboard()
     } else if (newView === 'activity') {
@@ -181,6 +198,7 @@ class DashboardHeader extends React.Component {
       this.saveDashboardView(newView)
       this.switchDashboard(newView)
     }
+    return this.ready()
   }
 
   switchDashboard = newView => {
@@ -265,6 +283,25 @@ function showTodoList() {
           // render the canvas-planner ToDo list into it
           const container = document.querySelector('.Sidebar__TodoListContainer')
           if (container) renderToDoSidebar(container)
+
+          const startButton = document.getElementById('start_new_course')
+          const modalContainer = document.getElementById('create_course_modal_container')
+          if (startButton && modalContainer && ENV.FEATURES?.create_course_subaccount_picker) {
+            startButton.addEventListener('click', () => {
+              ReactDOM.render(
+                <CreateCourseModal
+                  isModalOpen
+                  setModalOpen={isOpen => {
+                    if (!isOpen) ReactDOM.unmountComponentAtNode(modalContainer)
+                  }}
+                  permissions={ENV.CREATE_COURSES_PERMISSIONS.PERMISSION}
+                  restrictToMCCAccount={ENV.CREATE_COURSES_PERMISSIONS.RESTRICT_TO_MCC_ACCOUNT}
+                  isK5User={false} // can't be k5 user if classic dashboard is showing
+                />,
+                modalContainer
+              )
+            })
+          }
         }
       )
     )

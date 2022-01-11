@@ -29,7 +29,6 @@
 # the regional config will be nil, and no suffix need be applied.
 module MessageBus
   class Namespace
-
     def initialize(namespace_base_string)
       @base_string = namespace_base_string
       @suffix = Canvas.region_code
@@ -38,7 +37,7 @@ module MessageBus
     def self.build(namespace)
       return namespace if namespace.is_a?(::MessageBus::Namespace)
 
-      self.new(namespace)
+      new(namespace)
     end
 
     # If somehow the consuming code is already injecting
@@ -46,10 +45,11 @@ module MessageBus
     # multiple times, don't continue to add suffixes.
     def to_s
       return @base_string if @suffix.nil?
+
       extension = "-#{@suffix}"
-      return @base_string if @base_string[(-1*(extension.length))..] == extension
+      return @base_string if @base_string[(-1 * extension.length)..] == extension
+
       @base_string + extension
     end
-
   end
 end

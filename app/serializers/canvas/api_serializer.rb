@@ -78,7 +78,7 @@ module Canvas
     alias_method :current_user, :user
 
     def_delegators :@controller, :polymorphic_url,
-      :accepts_jsonapi?, :session, :context
+                   :accepts_jsonapi?, :session, :context
 
     # See ActiveModel::Serializer's documentation for options.
     #
@@ -94,13 +94,13 @@ module Canvas
     #
     #   Use these options in your serializer implementation using
     #   #serializer_option(key)
-    def initialize(object, options={})
+    def initialize(object, options = {})
       super(object, options)
       @controller = options[:controller]
       @sideloads = options.fetch(:includes, []).map(&:to_s)
       @serializer_options = options.fetch(:serializer_options, {})
       unless controller
-        raise ArgumentError.new("You must pass a controller to APISerializer!")
+        raise ArgumentError, "You must pass a controller to APISerializer!"
       end
     end
 
@@ -118,13 +118,13 @@ module Canvas
       associations.each_with_object({}) do |(name, association), hash|
         if included_associations.include? name
           if association.embed_ids?
-            hash['links'] ||= {}
-            hash['links'][association.name] = serialize_ids association
+            hash["links"] ||= {}
+            hash["links"][association.name] = serialize_ids association
           elsif association.embed_objects? && association.embed_in_root?
             hash[association.embedded_key] = build_serializer(association).serializable_object
           elsif association.embed_objects?
-            hash['links'] ||= {}
-            hash['links'][association.embedded_key] = serialize association
+            hash["links"] ||= {}
+            hash["links"][association.embedded_key] = serialize association
           end
         end
       end
@@ -137,7 +137,7 @@ module Canvas
     #
     # You can override when to stringify by implementing the "stringify_ids?"
     # method.
-    def as_json(options={})
+    def as_json(options = {})
       root = options[:root]
       hash = super(options)
       response = root ? (hash[root] || hash) : hash
@@ -145,13 +145,14 @@ module Canvas
       stringify!(response)
       hash
     end
+
     # Creates a method alias for the "object" method based on the name of your
     # serializer. For example, if your class is `QuizSerializer`, you will
     # have a method named "quiz" available to your class, so you don't have to
     # use object if you don't want to.
     def self.inherited(klass)
       super(klass)
-      resource_name = klass.name.demodulize.underscore.downcase.split('_serializer').first
+      resource_name = klass.name.demodulize.underscore.downcase.split("_serializer").first
       klass.send(:alias_method, resource_name.to_sym, :object)
     end
 
@@ -165,9 +166,9 @@ module Canvas
       object = send(association.name)
       options = { controller: @controller, scope: scope }
       association.build_serializer(object, options).tap do |serializer|
-        if association.options.has_key?(:wrap_in_array)
-          serializer.instance_variable_set('@wrap_in_array',
-            association.options[:wrap_in_array])
+        if association.options.key?(:wrap_in_array)
+          serializer.instance_variable_set("@wrap_in_array",
+                                           association.options[:wrap_in_array])
         end
       end
     end
@@ -222,6 +223,7 @@ module Canvas
     # ```
     def serialize_ids(association)
       return super unless association.embed_ids? && !association.embed_in_root
+
       name     = association.name
       instance = send(name)
       # We want to use `exists?` instead of `present?` for has_many associations
@@ -233,10 +235,10 @@ module Canvas
       if instance && association.is_a?(ActiveModel::Serializer::Association::HasMany)
         # fall back to empty? for plain old arrays
         instance_does_not_exist = if instance.respond_to?(:exists?)
-          !instance.exists?
-        else
-          instance.empty?
-        end
+                                    !instance.exists?
+                                  else
+                                    instance.empty?
+                                  end
         send("#{name}_url".to_sym) unless instance_does_not_exist
       elsif instance.present?
         send("#{name}_url".to_sym)

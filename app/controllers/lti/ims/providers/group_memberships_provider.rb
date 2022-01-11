@@ -17,9 +17,8 @@
 # You should have received a copy of the GNU Affero General Public License along
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 
-module Lti::Ims::Providers
+module Lti::IMS::Providers
   class GroupMembershipsProvider < MembershipsProvider
-
     def context
       @_context ||= GroupContextDecorator.new(super)
     end
@@ -33,7 +32,7 @@ module Lti::Ims::Providers
       preload_past_lti_ids(enrollments)
 
       memberships = to_memberships(enrollments)
-      [ memberships, metadata ]
+      [memberships, metadata]
     end
 
     def base_users_scope
@@ -43,13 +42,14 @@ module Lti::Ims::Providers
     def rlid_users_scope
       scope = base_users_scope
       if assignment? && !nonsense_role_filter?
-        scope = scope.where(correlated_assignment_submissions('group_memberships.user_id').arel.exists)
+        scope = scope.where(correlated_assignment_submissions("group_memberships.user_id").arel.exists)
       end
       apply_role_filter(scope)
     end
 
     def apply_role_filter(scope)
       return scope unless role?
+
       enrollment_types = queryable_roles(role)
       if enrollment_types.present? && group_role?(enrollment_types)
         enrollment_types == [:group_leader] ? scope.where(user: context.leader_id) : scope
@@ -72,9 +72,8 @@ module Lti::Ims::Providers
       enrollments.map { |e| GroupMembershipDecorator.new(e, tool) }
     end
 
-    # *Decorators fix up models to conforms to interface expected by Lti::Ims::NamesAndRolesSerializer
+    # *Decorators fix up models to conforms to interface expected by Lti::IMS::NamesAndRolesSerializer
     class GroupMembershipDecorator < SimpleDelegator
-
       def initialize(membership, tool)
         super(membership)
         @tool = tool

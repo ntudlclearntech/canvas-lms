@@ -27,13 +27,13 @@ module CC::Importer::Canvas
     def convert_lti_resource_links
       resource_links = []
 
-      @manifest.css('resource[type$=imsbasiclti_xmlv1p3]').each do |resource|
-        identifier = resource.attributes['identifier'].value
+      @manifest.css("resource[type$=imsbasiclti_xmlv1p3]").each do |resource|
+        identifier = resource.attributes["identifier"].value
         resource_link_element = resource.at_css("file[href$='lti_resource_links/#{identifier}.xml']")
 
         next unless resource_link_element
 
-        path = @package_root.item_path(resource_link_element['href'])
+        path = @package_root.item_path(resource_link_element["href"])
         document = open_file_xml(path)
 
         next unless document
@@ -42,7 +42,7 @@ module CC::Importer::Canvas
         lookup_uuid = nil
 
         document.xpath("//blti:custom//lticm:property").each do |el|
-          key = el.attributes['name'].value
+          key = el.attributes["name"].value
           value = el.content
 
           next if key.empty?
@@ -50,22 +50,22 @@ module CC::Importer::Canvas
           # As `el.content` returns a String, we're trying to convert the
           # custom parameter value to the orignal data type
           value = if FLOAT_REGEX.match? value
-            value.to_f
-          elsif INTEGER_REGEX.match? value
-            value.to_i
-          elsif value == 'true'
-            true
-          elsif value == 'false'
-            false
-          else
-            value
-          end
+                    value.to_f
+                  elsif INTEGER_REGEX.match? value
+                    value.to_i
+                  elsif value == "true"
+                    true
+                  elsif value == "false"
+                    false
+                  else
+                    value
+                  end
 
           custom[key.to_sym] = value
         end
 
         document.xpath("//blti:extensions//lticm:property").each do |el|
-          lookup_uuid = el.content if el.attributes['name'].value == 'lookup_uuid'
+          lookup_uuid = el.content if el.attributes["name"].value == "lookup_uuid"
         end
 
         launch_url = (document.xpath("//blti:launch_url").first || document.xpath("//blti:secure_launch_url").first).content

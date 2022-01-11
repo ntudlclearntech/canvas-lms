@@ -20,36 +20,30 @@ import fetchMock from 'fetch-mock'
 
 import {
   fetchCourseInstructors,
-  fetchGrades,
+  transformGrades,
   fetchGradesForGradingPeriod,
   fetchLatestAnnouncement,
   readableRoleName,
   fetchCourseApps,
   sendMessage,
-  createNewCourse,
   getAssignmentGroupTotals,
   getAssignmentGrades,
-  getAccountsFromEnrollments,
   getTotalGradeStringFromEnrollments,
   fetchImportantInfos,
   parseAnnouncementDetails,
   groupAnnouncementsByHomeroom,
-  groupImportantDates,
-  parseObserverList
+  groupImportantDates
 } from '../utils'
 
 import {MOCK_ASSIGNMENTS, MOCK_EVENTS} from './fixtures'
 
 const ANNOUNCEMENT_URL =
   '/api/v1/announcements?context_codes=course_test&active_only=true&per_page=1'
-const GRADES_URL = /\/api\/v1\/users\/self\/courses\?.*/
 const GRADING_PERIODS_URL = /\/api\/v1\/users\/self\/enrollments\?.*/
 const USERS_URL =
   '/api/v1/courses/test/users?enrollment_type[]=teacher&enrollment_type[]=ta&include[]=avatar_url&include[]=bio&include[]=enrollments'
 const APPS_URL = '/api/v1/external_tools/visible_course_nav_tools?context_codes[]=course_test'
 const CONVERSATIONS_URL = '/api/v1/conversations'
-const NEW_COURSE_URL =
-  '/api/v1/accounts/15/courses?course[name]=Science&course[sync_enrollments_from_homeroom]=true&course[homeroom_course_id]=14&enroll_me=true'
 const getSyllabusUrl = courseId => encodeURI(`/api/v1/courses/${courseId}?include[]=syllabus_body`)
 
 afterEach(() => {
@@ -122,7 +116,7 @@ describe('readableRoleName', () => {
   })
 })
 
-describe('fetchGrades', () => {
+describe('transformGrades', () => {
   const defaultCourse = {
     id: '1',
     name: 'Intro to Everything',
@@ -156,8 +150,7 @@ describe('fetchGrades', () => {
   }
 
   it('translates courses to just course and grade-relevant properties', async () => {
-    fetchMock.get(GRADES_URL, JSON.stringify([defaultCourse]))
-    const courseGrades = await fetchGrades()
+    const courseGrades = transformGrades([defaultCourse])
     expect(courseGrades).toEqual([
       {
         courseId: '1',
@@ -202,8 +195,7 @@ describe('fetchGrades', () => {
   })
 
   it("doesn't use current period score if the course has only one grading period", async () => {
-    fetchMock.get(GRADES_URL, JSON.stringify([{...defaultCourse, has_grading_periods: false}]))
-    const courseGrades = await fetchGrades()
+    const courseGrades = transformGrades([{...defaultCourse, has_grading_periods: false}])
     expect(courseGrades).toEqual([
       {
         courseId: '1',
@@ -239,28 +231,25 @@ describe('fetchGrades', () => {
   })
 
   it('populates totalGradeForAllGradingPeriods and totalScoreForAllGradingPeriods if totals option is true', async () => {
-    fetchMock.get(
-      GRADES_URL,
-      JSON.stringify([
-        {
-          ...defaultCourse,
-          enrollments: [
-            {
-              current_grading_period_id: '1',
-              current_grading_period_title: 'The first one',
-              totals_for_all_grading_periods_option: true,
-              current_period_computed_current_score: 80,
-              current_period_computed_current_grade: 'B-',
-              computed_current_score: 89,
-              computed_current_grade: 'B+',
-              type: 'student'
-            }
-          ]
-        }
-      ])
-    )
+    const courseWithTotals = [
+      {
+        ...defaultCourse,
+        enrollments: [
+          {
+            current_grading_period_id: '1',
+            current_grading_period_title: 'The first one',
+            totals_for_all_grading_periods_option: true,
+            current_period_computed_current_score: 80,
+            current_period_computed_current_grade: 'B-',
+            computed_current_score: 89,
+            computed_current_grade: 'B+',
+            type: 'student'
+          }
+        ]
+      }
+    ]
 
-    const courseGrades = await fetchGrades()
+    const courseGrades = transformGrades(courseWithTotals)
     expect(courseGrades).toEqual([
       {
         courseId: '1',
@@ -366,14 +355,6 @@ describe('sendMessage', () => {
     fetchMock.post(CONVERSATIONS_URL, 200)
     const result = await sendMessage(1, 'Hello user #1!', null)
     expect(result.response.ok).toBeTruthy()
-  })
-})
-
-describe('createNewCourse', () => {
-  it('posts to the new course endpoint and returns the new id', async () => {
-    fetchMock.post(encodeURI(NEW_COURSE_URL), {id: '56'})
-    const result = await createNewCourse(15, 'Science', true, 14)
-    expect(result.id).toBe('56')
   })
 })
 
@@ -574,64 +555,6 @@ describe('getAssignmentGrades', () => {
     expect(totals.find(({id}) => id === 149).hasComments).toBe(true)
     expect(totals.find(({id}) => id === 150).hasComments).toBe(false)
     expect(totals.find(({id}) => id === 151).hasComments).toBe(false)
-  })
-})
-
-describe('getAccountsFromEnrollments', () => {
-  it('returns array of objects containing id and name', () => {
-    const enrollments = [
-      {
-        name: 'Algebra',
-        account: {
-          id: 6,
-          name: 'Elementary',
-          workflow_state: 'active'
-        }
-      }
-    ]
-    const accounts = getAccountsFromEnrollments(enrollments)
-    expect(accounts.length).toBe(1)
-    expect(accounts[0].id).toBe(6)
-    expect(accounts[0].name).toBe('Elementary')
-    expect(accounts[0].workflow_state).toBeUndefined()
-  })
-
-  it('removes duplicate accounts from list', () => {
-    const enrollments = [
-      {
-        account: {
-          id: 12,
-          name: 'FFES'
-        }
-      },
-      {
-        account: {
-          id: 12,
-          name: 'FFES'
-        }
-      }
-    ]
-    const accounts = getAccountsFromEnrollments(enrollments)
-    expect(accounts.length).toBe(1)
-  })
-
-  it('ignores enrollments without an account property', () => {
-    const enrollments = [
-      {
-        id: 10,
-        account: {
-          id: 1,
-          name: 'School'
-        }
-      },
-      {
-        id: 11,
-        access_restricted_by_date: true
-      }
-    ]
-    const accounts = getAccountsFromEnrollments(enrollments)
-    expect(accounts.length).toBe(1)
-    expect(accounts[0].id).toBe(1)
   })
 })
 
@@ -932,25 +855,5 @@ describe('groupImportantDates', () => {
     expect(event.type).toBe('event')
     expect(event.url).toBe('http://localhost:3000/calendar?event_id=99&include_contexts=course_30')
     expect(event.start).toBe('2021-06-30T07:00:00Z')
-  })
-})
-
-describe('parseObserverList', () => {
-  it('transforms attribute names', () => {
-    const users = parseObserverList([
-      {id: '4', name: 'Student 4', avatar_url: 'https://url_here'},
-      {id: '6', name: 'Student 6'}
-    ])
-    expect(users.length).toBe(2)
-    expect(users[0].id).toBe('4')
-    expect(users[0].name).toBe('Student 4')
-    expect(users[0].avatarUrl).toBe('https://url_here')
-    expect(users[1].id).toBe('6')
-    expect(users[1].name).toBe('Student 6')
-  })
-
-  it('returns empty list if no observers passed', () => {
-    const users = parseObserverList([])
-    expect(users.length).toBe(0)
   })
 })

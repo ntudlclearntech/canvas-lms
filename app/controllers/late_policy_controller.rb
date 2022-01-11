@@ -103,7 +103,7 @@ class LatePolicyController < ApplicationController
   before_action :require_manage_grades_for_course, except: [:show]
   before_action :require_view_or_manage_grades_for_course, only: [:show]
 
-  rescue_from 'RecordAlreadyExists', with: :record_already_exists
+  rescue_from "RecordAlreadyExists", with: :record_already_exists
 
   # @API Get a late policy
   #
@@ -116,6 +116,7 @@ class LatePolicyController < ApplicationController
   #
   def show
     raise ActiveRecord::RecordNotFound if course.late_policy.blank?
+
     render json: serialize(course.late_policy)
   end
 
@@ -153,6 +154,7 @@ class LatePolicyController < ApplicationController
   #
   def create
     raise RecordAlreadyExists if course.late_policy.present?
+
     late_policy = course.build_late_policy(late_policy_params)
 
     if late_policy.save
@@ -189,6 +191,7 @@ class LatePolicyController < ApplicationController
   #
   def update
     raise ActiveRecord::RecordNotFound if course.late_policy.blank?
+
     if course.late_policy.update(late_policy_params)
       head :no_content
     else
@@ -228,7 +231,7 @@ class LatePolicyController < ApplicationController
 
   def record_already_exists
     status = :bad_request
-    message = 'only one late policy per course is allowed'
+    message = "only one late policy per course is allowed"
     render json: { status: status, errors: [{ message: message }] }, status: status
   end
 

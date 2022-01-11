@@ -39,20 +39,22 @@ module Types
 
     field :name, String, null: true
     field :sortable_name, String,
-      "The name of the user that is should be used for sorting groups of users, such as in the gradebook.",
-      null: true
+          "The name of the user that is should be used for sorting groups of users, such as in the gradebook.",
+          null: true
     field :short_name, String,
-      "A short name the user has selected, for use in conversations or other less formal places through the site.",
-      null: true
+          "A short name the user has selected, for use in conversations or other less formal places through the site.",
+          null: true
 
     field :pronouns, String, null: true
 
     field :avatar_url, UrlType, null: true
 
     def avatar_url
-      object.account.service_enabled?(:avatars) ?
-        AvatarHelper.avatar_url_for_user(object, context[:request], use_fallback: false) :
+      if object.account.service_enabled?(:avatars)
+        AvatarHelper.avatar_url_for_user(object, context[:request], use_fallback: false)
+      else
         nil
+      end
     end
 
     field :email, String, null: true
@@ -62,59 +64,82 @@ module Types
 
       return object.email if object.email_cached?
 
-      Loaders::AssociationLoader.for(User, :communication_channels).
-        load(object).
-        then { object.email }
+      Loaders::AssociationLoader.for(User, :communication_channels)
+                                .load(object)
+                                .then { object.email }
     end
 
     field :sis_id, String, null: true
     def sis_id
       domain_root_account = context[:domain_root_account]
       if domain_root_account.grants_any_right?(context[:current_user], :read_sis, :manage_sis) ||
-        object.grants_any_right?(context[:current_user], :read_sis, :manage_sis)
-        Loaders::AssociationLoader.for(User, :pseudonyms).
-          load(object).
-          then do
-            pseudonym = SisPseudonym.for(object, domain_root_account, type: :implicit, require_sis: false,
-                root_account: domain_root_account, in_region: true)
-            pseudonym&.sis_user_id
-          end
+         object.grants_any_right?(context[:current_user], :read_sis, :manage_sis)
+        Loaders::AssociationLoader.for(User, :pseudonyms)
+                                  .load(object)
+                                  .then do
+          pseudonym = SisPseudonym.for(object, domain_root_account, type: :implicit, require_sis: false,
+                                                                    root_account: domain_root_account, in_region: true)
+          pseudonym&.sis_user_id
+        end
+      end
+    end
+
+    field :integration_id, String, null: true
+    def integration_id
+      domain_root_account = context[:domain_root_account]
+      if domain_root_account.grants_any_right?(context[:current_user], :read_sis, :manage_sis) ||
+         object.grants_any_right?(context[:current_user], :read_sis, :manage_sis)
+        Loaders::AssociationLoader.for(User, :pseudonyms)
+                                  .load(object)
+                                  .then do
+          pseudonym = SisPseudonym.for(object, domain_root_account, type: :implicit, require_sis: false,
+                                                                    root_account: domain_root_account, in_region: true)
+          pseudonym&.integration_id
+        end
       end
     end
 
     field :enrollments, [EnrollmentType], null: false do
       argument :course_id, ID,
-        "only return enrollments for this course",
-        required: false,
-        prepare: GraphQLHelpers.relay_or_legacy_id_prepare_func("Course")
+               "only return enrollments for this course",
+               required: false,
+               prepare: GraphQLHelpers.relay_or_legacy_id_prepare_func("Course")
+      argument :current_only, Boolean,
+               "Whether or not to restrict results to `active` enrollments in `available` courses",
+               required: false
+      argument :order_by, [String],
+               "The fields to order the results by",
+               required: false
     end
 
-    def enrollments(course_id: nil)
+    def enrollments(course_id: nil, current_only: false, order_by: [])
       course_ids = [course_id].compact
       Loaders::UserCourseEnrollmentLoader.for(
-        course_ids: course_ids
+        course_ids: course_ids,
+        order_by: order_by,
+        current_only: current_only
       ).load(object.id).then do |enrollments|
-        (enrollments || []).select { |enrollment|
+        (enrollments || []).select do |enrollment|
           object == context[:current_user] ||
             enrollment.grants_right?(context[:current_user], context[:session], :read)
-        }
+        end
       end
     end
 
     field :notification_preferences_enabled, Boolean, null: false do
-      argument :account_id, ID, required: false, prepare: GraphQLHelpers.relay_or_legacy_id_prepare_func('Account')
-      argument :course_id, ID, required: false, prepare: GraphQLHelpers.relay_or_legacy_id_prepare_func('Course')
+      argument :account_id, ID, required: false, prepare: GraphQLHelpers.relay_or_legacy_id_prepare_func("Account")
+      argument :course_id, ID, required: false, prepare: GraphQLHelpers.relay_or_legacy_id_prepare_func("Course")
       argument :context_type, NotificationPreferencesContextType, required: true
     end
     def notification_preferences_enabled(account_id: nil, course_id: nil, context_type: nil)
-      enabled_for = ->(context) do
+      enabled_for = lambda do |context|
         NotificationPolicyOverride.enabled_for(object, context)
       end
 
       case context_type
-      when 'Account'
+      when "Account"
         enabled_for[Account.find(account_id)]
-      when 'Course'
+      when "Course"
         enabled_for[Course.find(course_id)]
       end
     rescue ActiveRecord::RecordNotFound
@@ -123,6 +148,8 @@ module Types
 
     field :notification_preferences, NotificationPreferencesType, null: true
     def notification_preferences
+      return nil unless object.grants_all_rights?(context[:current_user], :read_profile, :read_email_addresses)
+
       Loaders::AssociationLoader.for(User, :communication_channels).load(object).then do |comm_channels|
         {
           channels: comm_channels.supported.unretired,
@@ -139,21 +166,21 @@ module Types
       if object == context[:current_user]
         load_association(:all_conversations).then do
           conversations_scope = case scope
-          when 'unread'
-            object.conversations.unread
-          when 'starred'
-            object.starred_conversations
-          when 'sent'
-            object.all_conversations.sent
-          when 'archived'
-            object.conversations.archived
-          else
-            object.conversations.default
-          end
+                                when "unread"
+                                  object.conversations.unread
+                                when "starred"
+                                  object.starred_conversations
+                                when "sent"
+                                  object.all_conversations.sent
+                                when "archived"
+                                  object.conversations.archived
+                                else
+                                  object.conversations.default
+                                end
 
           filter_mode = :or
           filters = Array(filter || [])
-          conversations_scope = conversations_scope.tagged(*filters, :mode => filter_mode) if filters.present?
+          conversations_scope = conversations_scope.tagged(*filters, mode: filter_mode) if filters.present?
           conversations_scope
         end
       end
@@ -184,7 +211,7 @@ module Types
       )
 
       per_page = 100
-      contexts_collection = collections.select { |c| c[0] == 'contexts' }
+      contexts_collection = collections.select { |c| c[0] == "contexts" }
       contexts = []
       if contexts_collection.count > 0
         batch = contexts_collection[0][1].paginate(per_page: per_page)
@@ -195,7 +222,7 @@ module Types
         end
       end
 
-      users_collection = collections.select { |c| c[0] == 'participants' }
+      users_collection = collections.select { |c| c[0] == "participants" }
       users = []
       if users_collection.count > 0
         batch = users_collection[0][1].paginate(per_page: per_page)
@@ -223,9 +250,9 @@ module Types
     #
     # alternatively, figure out what kind of permissions a person needs to view
     # another user's groups?
-    field :groups, [GroupType], <<~DESC, null: true
+    field :groups, [GroupType], <<~MD, null: true
       **NOTE**: this only returns groups for the currently logged-in user.
-    DESC
+    MD
     def groups
       if object == current_user
         # FIXME: this only returns groups on the current shard.  it should
@@ -236,9 +263,9 @@ module Types
 
     field :summary_analytics, StudentSummaryAnalyticsType, null: true do
       argument :course_id, ID,
-        "returns summary analytics for this course",
-        required: true,
-        prepare: GraphQLHelpers.relay_or_legacy_id_prepare_func("Course")
+               "returns summary analytics for this course",
+               required: true,
+               prepare: GraphQLHelpers.relay_or_legacy_id_prepare_func("Course")
     end
 
     def summary_analytics(course_id:)
@@ -254,9 +281,9 @@ module Types
 
       load_association(:enrollments).then do |enrollments|
         Promise.all([
-          Loaders::AssociationLoader.for(Enrollment, :course).load_many(enrollments),
-          load_association(:favorites)
-        ]).then do
+                      Loaders::AssociationLoader.for(Enrollment, :course).load_many(enrollments),
+                      load_association(:favorites)
+                    ]).then do
           object.menu_courses
         end
       end
@@ -274,10 +301,28 @@ module Types
       end
     end
 
+    field :submission_comments_connection, Types::SubmissionCommentType.connection_type, null: true
+    def submission_comments_connection
+      return unless object == current_user
+
+      submission_comments = []
+      stream_item_instances = current_user.visible_stream_item_instances(only_active_courses: true)
+
+      Shard.partition_by_shard(stream_item_instances, ->(sii) { sii.stream_item_id }) do |shard_stream_items|
+        submission_ids = StreamItem.where(id: shard_stream_items.map(&:stream_item_id),
+                                          asset_type: "Submission")
+                                   .select("asset_id")
+        submission_comments += SubmissionComment.preload(submission: { assignment: :context })
+                                                .where(submission_id: submission_ids)
+      end
+
+      submission_comments
+    end
+
     field :comment_bank_items_connection, Types::CommentBankItemType.connection_type, null: true do
-      argument :query, String, <<~DOC, required: false
+      argument :query, String, <<~MD, required: false
         Only include comments that match the query string.
-      DOC
+      MD
       argument :limit, Integer, required: false
     end
     def comment_bank_items_connection(query: nil, limit: nil)
@@ -303,7 +348,7 @@ module Types
       argument :built_in_only, Boolean, "Only return default/built_in roles", required: false
     end
     def course_roles(course_id: nil, role_types: nil, built_in_only: true)
-      # The discussion only role "Author" will be handled with a front-end check because graphql 
+      # The discussion only role "Author" will be handled with a front-end check because graphql
       # currently does not support type inheritance. If graphql starts supporting type inheritance
       # this field can be replaced by a discussionAuthor type that inherits from User type and
       # contains a discussionRoles field
@@ -316,12 +361,19 @@ end
 
 module Loaders
   class UserCourseEnrollmentLoader < Loaders::ForeignKeyLoader
-    def initialize(course_ids:)
-      scope = Enrollment.joins(:course).
-        where.not(enrollments: {workflow_state: "deleted"}).
-        where.not(courses: {workflow_state: "deleted"})
+    def initialize(course_ids:, order_by: [], current_only: false)
+      scope = Enrollment.joins(:course)
+
+      scope = if current_only
+                scope.current.active_by_date
+              else
+                scope.where.not(enrollments: { workflow_state: "deleted" })
+                     .where.not(courses: { workflow_state: "deleted" })
+              end
 
       scope = scope.where(course_id: course_ids) if course_ids.present?
+
+      order_by.each { |o| scope = scope.order(o) }
 
       super(scope, :user_id)
     end

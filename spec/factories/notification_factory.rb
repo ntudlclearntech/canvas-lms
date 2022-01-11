@@ -19,15 +19,15 @@
 #
 
 module Factories
-  def notification_model(opts={})
+  def notification_model(opts = {})
     @notification = Notification.create!(notification_valid_attributes.merge(opts))
   end
 
   def notification_valid_attributes
     {
-      :name => "Show In Feed",
-      :subject => "value for subject",
-      :category => "TestImmediately"
+      name: "Show In Feed",
+      subject: "value for subject",
+      category: "TestImmediately"
     }
   end
 end

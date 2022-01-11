@@ -16,10 +16,9 @@
 #
 # You should have received a copy of the GNU Affero General Public License along
 # with this program. If not, see <http://www.gnu.org/licenses/>.
-require_relative '../../common'
+require_relative "../../common"
 
 module CourseHomePage
-
   # ---------------------- Elements ----------------------
 
   def course_header
@@ -27,7 +26,7 @@ module CourseHomePage
   end
 
   def course_options
-    f('.course-options')
+    f(".course-options")
   end
 
   def course_options_analytics2_link
@@ -37,9 +36,9 @@ module CourseHomePage
   def course_options_analytics1_link
     fj(".course-options a:contains('View Course Analytics')")
   end
-  
+
   def course_nav_menu
-    f('#section-tabs')
+    f("#section-tabs")
   end
 
   def course_nav_analytics2_link

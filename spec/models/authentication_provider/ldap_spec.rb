@@ -18,14 +18,12 @@
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-require File.expand_path(File.dirname(__FILE__) + '/../../spec_helper.rb')
-
 describe AuthenticationProvider::LDAP do
-  it "should not escape auth_filter" do
+  it "does not escape auth_filter" do
     @account = Account.new
     @account_config = @account.authentication_providers.build(
-      auth_type: 'ldap',
-      ldap_filter: '(&(!(userAccountControl:1.2.840.113556.1.4.803:=2))(sAMAccountName={{login}}))'
+      auth_type: "ldap",
+      ldap_filter: "(&(!(userAccountControl:1.2.840.113556.1.4.803:=2))(sAMAccountName={{login}}))"
     )
 
     @account_config.save
@@ -33,15 +31,15 @@ describe AuthenticationProvider::LDAP do
   end
 
   describe "#test_ldap_search" do
-    it "should validate filter syntax" do
+    it "validates filter syntax" do
       aac = AuthenticationProvider::LDAP.new
-      aac.auth_type = 'ldap'
-      aac.ldap_filter = 'bob'
+      aac.auth_type = "ldap"
+      aac.ldap_filter = "bob"
       expect(aac.test_ldap_search).to be_falsey
       expect(aac.errors.full_messages.join).to match(/Invalid filter syntax/)
 
       aac.errors.clear
-      aac.ldap_filter = '(sAMAccountName={{login}})'
+      aac.ldap_filter = "(sAMAccountName={{login}})"
       expect(aac.test_ldap_search).to be_falsey
       expect(aac.errors.full_messages.join).not_to match(/Invalid filter syntax/)
     end
@@ -52,22 +50,22 @@ describe AuthenticationProvider::LDAP do
       @account = Account.new
       @account.save!
       @aac = AuthenticationProvider::LDAP.new(account: @account)
-      @aac.auth_type = 'ldap'
-      @aac.ldap_filter = 'bob'
+      @aac.auth_type = "ldap"
+      @aac.ldap_filter = "bob"
       @aac.save!
     end
 
-    it "should not attempt to bind with a blank password" do
+    it "does not attempt to bind with a blank password" do
       aac = AuthenticationProvider::LDAP.new
-      aac.auth_type = 'ldap'
-      aac.ldap_filter = 'bob'
-      expect(aac).to receive(:ldap_connection).never
-      aac.ldap_bind_result('test', '')
+      aac.auth_type = "ldap"
+      aac.ldap_filter = "bob"
+      expect(aac).not_to receive(:ldap_connection)
+      aac.ldap_bind_result("test", "")
     end
 
     context "statsd" do
       before do
-        @ldap = double()
+        @ldap = double
         allow(@ldap).to receive(:base)
         allow(@aac).to receive(:ldap_connection).and_return(@ldap)
         allow(@aac).to receive(:ldap_filter).and_return(nil)
@@ -77,29 +75,29 @@ describe AuthenticationProvider::LDAP do
         allow(InstStatsd::Statsd).to receive(:increment)
       end
 
-      it "should send to statsd on success" do
+      it "sends to statsd on success" do
         allow(@ldap).to receive(:bind_as).and_return(true)
-        @aac.ldap_bind_result('user', 'pass')
+        @aac.ldap_bind_result("user", "pass")
         expect(InstStatsd::Statsd).to have_received(:increment).with(
           "#{@aac.send(:statsd_prefix)}.ldap_success",
           short_stat: "ldap_success",
-          tags: {account_id: Shard.global_id_for(@aac.account_id), auth_provider_id: @aac.global_id}
+          tags: { account_id: Shard.global_id_for(@aac.account_id), auth_provider_id: @aac.global_id }
         )
       end
 
-      it "should send to statsd on failure" do
+      it "sends to statsd on failure" do
         allow(@ldap).to receive(:bind_as).and_return(false)
-        @aac.ldap_bind_result('user', 'pass')
+        @aac.ldap_bind_result("user", "pass")
         expect(InstStatsd::Statsd).to have_received(:increment).with(
           "#{@aac.send(:statsd_prefix)}.ldap_failure",
           short_stat: "ldap_failure",
-          tags: {account_id: Shard.global_id_for(@aac.account_id), auth_provider_id: @aac.global_id}
+          tags: { account_id: Shard.global_id_for(@aac.account_id), auth_provider_id: @aac.global_id }
         )
       end
 
-      it "should send to statsd on timeout" do
+      it "sends to statsd on timeout" do
         allow(@ldap).to receive(:bind_as).and_raise(Timeout::Error)
-        @aac.ldap_bind_result('user', 'pass')
+        @aac.ldap_bind_result("user", "pass")
         expect(InstStatsd::Statsd).to have_received(:increment).with(
           "#{@aac.send(:statsd_prefix)}.ldap_timeout",
           short_stat: "ldap_timeout",
@@ -110,9 +108,9 @@ describe AuthenticationProvider::LDAP do
         )
       end
 
-      it "should send to statsd on exception" do
+      it "sends to statsd on exception" do
         allow(@ldap).to receive(:bind_as).and_raise(StandardError)
-        @aac.ldap_bind_result('user', 'pass')
+        @aac.ldap_bind_result("user", "pass")
         expect(InstStatsd::Statsd).to have_received(:increment).with(
           "#{@aac.send(:statsd_prefix)}.ldap_error",
           short_stat: "ldap_error",

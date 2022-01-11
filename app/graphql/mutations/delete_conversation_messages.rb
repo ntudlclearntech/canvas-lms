@@ -22,7 +22,7 @@ class Mutations::DeleteConversationMessages < Mutations::BaseMutation
   graphql_name "DeleteConversationMessages"
 
   # input arguments
-  argument :ids, [ID], required: true, prepare: GraphQLHelpers.relay_or_legacy_ids_prepare_func('ConversationMessage')
+  argument :ids, [ID], required: true, prepare: GraphQLHelpers.relay_or_legacy_ids_prepare_func("ConversationMessage")
 
   field :conversation_message_ids, [ID], null: false
 
@@ -36,9 +36,9 @@ class Mutations::DeleteConversationMessages < Mutations::BaseMutation
     raise GraphQL::ExecutionError, "Insufficient permissions" if participant_record.nil?
 
     participant_record.remove_messages(*messages)
-    context[:deleted_models] = {conversation_messages: {}}
-    messages.each {|message| context[:deleted_models][:conversation_messages]["#{message.id}"] = message}
-    {conversation_message_ids: input[:ids]}
+    context[:deleted_models] = { conversation_messages: {} }
+    messages.each { |message| context[:deleted_models][:conversation_messages][message.id.to_s] = message }
+    { conversation_message_ids: input[:ids] }
   rescue ActiveRecord::RecordInvalid => e
     errors_for(e.record)
   rescue ActiveRecord::RecordNotFound

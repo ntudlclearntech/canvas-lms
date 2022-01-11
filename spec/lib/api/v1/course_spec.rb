@@ -17,7 +17,6 @@
 # You should have received a copy of the GNU Affero General Public License along
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 #
-require File.expand_path(File.dirname(__FILE__) + '/../../../spec_helper.rb')
 
 describe Api::V1::Course do
   include Api::V1::Course
@@ -31,7 +30,7 @@ describe Api::V1::Course do
       @course = Course.create!
     end
 
-    it "should return course settings hash" do
+    it "returns course settings hash" do
       grading_standard = grading_standard_for(@course)
       @course.grading_standard = grading_standard
       @course.save
@@ -50,34 +49,34 @@ describe Api::V1::Course do
   end
 
   describe "#course_json" do
-    it "should work for a logged-out user" do
+    it "works for a logged-out user" do
       course_factory
       hash = course_json(@course, nil, nil, [], nil)
-      expect(hash['id']).to be_present
+      expect(hash["id"]).to be_present
     end
 
-    it "should include course locale" do
+    it "includes course locale" do
       course_factory
-      @course.locale = 'tlh'
+      @course.locale = "tlh"
       @course.save
       hash = course_json(@course, nil, nil, [], nil)
-      expect(hash['locale']).to eql @course.locale
+      expect(hash["locale"]).to eql @course.locale
     end
 
-    it "should include the image when it is asked for and the feature flag is on" do
+    it "includes the image when it is asked for and the feature flag is on" do
       course_factory
       @course.image_url = "http://image.jpeg"
       @course.save
 
-      hash = course_json(@course, nil, nil, ['course_image'], nil)
-      expect(hash['image_download_url']).to eql 'http://image.jpeg'
+      hash = course_json(@course, nil, nil, ["course_image"], nil)
+      expect(hash["image_download_url"]).to eql "http://image.jpeg"
     end
 
-    it "should not include the image if the course_image include is not present" do
+    it "does not include the image if the course_image include is not present" do
       course_factory
 
       hash = course_json(@course, nil, nil, [], nil)
-      expect(hash['image_download_url']).not_to be_present
+      expect(hash["image_download_url"]).not_to be_present
     end
   end
 end

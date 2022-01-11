@@ -17,8 +17,7 @@
 # You should have received a copy of the GNU Affero General Public License along
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 
-require File.expand_path(File.dirname(__FILE__) + '/../../spec_helper')
-require File.expand_path(File.dirname(__FILE__) + '/../views_helper')
+require_relative "../views_helper"
 
 describe "courses/_to_do_list.html.erb" do
   include AssignmentsHelper
@@ -28,7 +27,7 @@ describe "courses/_to_do_list.html.erb" do
       it "shows the new planner to do list anyway" do
         course_with_student(active_all: true)
         view_context
-        render partial: "courses/to_do_list", locals: {contexts: nil}
+        render partial: "courses/to_do_list", locals: { contexts: nil }
         expect(response).to include '<div class="todo-list Sidebar__TodoListContainer">'
       end
     end
@@ -47,14 +46,14 @@ describe "courses/_to_do_list.html.erb" do
 
         2.times do
           @course.enroll_student(user_factory).accept!
-          @assignment.submit_homework(@user, {:submission_type => 'online_text_entry', :body => 'blah'})
+          @assignment.submit_homework(@user, { submission_type: "online_text_entry", body: "blah" })
         end
 
         @user = @teacher
         @user.set_preference(:course_nicknames, @course.id, "My Awesome Course")
         view_context
         # title, course nickname, points, due date, number of submissions to grade
-        render partial: "courses/to_do_list", locals: {contexts: nil, show_legacy_todo_list: true}
+        render partial: "courses/to_do_list", locals: { contexts: nil, show_legacy_todo_list: true }
         expect(response).to include "Grade GradeMe"
         expect(response).to include "15 points"
         expect(response).to include "My Awesome Course"
@@ -78,7 +77,7 @@ describe "courses/_to_do_list.html.erb" do
         @user.set_preference(:course_nicknames, @course.id, "My Awesome Course")
         view_context
         # title, course nickname, points, due date, number of submissions to grade
-        render partial: "courses/to_do_list", locals: {contexts: nil, show_legacy_todo_list: true}
+        render partial: "courses/to_do_list", locals: { contexts: nil, show_legacy_todo_list: true }
         expect(response).to include "Grade GradeMe"
         expect(response).to include "15 points"
         expect(response).to include "My Awesome Course"
@@ -108,7 +107,7 @@ describe "courses/_to_do_list.html.erb" do
         @user = @teacher
         @user.set_preference(:course_nicknames, @course.id, "My Awesome Course")
         view_context
-        render partial: "courses/to_do_list", locals: {contexts: nil, show_legacy_todo_list: true}
+        render partial: "courses/to_do_list", locals: { contexts: nil, show_legacy_todo_list: true }
         expect(response).to include "Moderate ModerateMe"
         expect(response).to include "Ignore ModerateMe until new mark"
       end
@@ -127,7 +126,7 @@ describe "courses/_to_do_list.html.erb" do
         submission = submission_model(assignment: @assignment, body: "my submission")
         submission.find_or_create_provisional_grade!(@teacher, grade: 5)
         view_context
-        render partial: "courses/to_do_list", locals: {contexts: nil, show_legacy_todo_list: true}
+        render partial: "courses/to_do_list", locals: { contexts: nil, show_legacy_todo_list: true }
         expect(response).not_to include "Moderate ModerateMe"
       end
     end

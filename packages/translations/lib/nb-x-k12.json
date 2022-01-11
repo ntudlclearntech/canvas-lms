@@ -92,6 +92,9 @@
     "apply_781a2546": {
         "message": "Søk"
     },
+    "apply_changes_to_all_instances_of_this_button_and__3a3bea34": {
+        "message": "Bruk endringer på alle forekomster av denne Knappen og Ikonet i faget"
+    },
     "apps_54d24a47": {
         "message": "Apper"
     },
@@ -148,9 +151,6 @@
     },
     "auto_saved_content_exists_would_you_like_to_load_t_fee528f2": {
         "message": "Automatisk lagret innhold finnes. Ønsker du å laste det automatisk lagrede innholdet i stedet?"
-    },
-    "automatically_open_an_in_line_preview_preview_disp_ed784ffe": {
-        "message": "Automatisk åpne en forhåndsvisning av prosesslinjen. (Forhåndsvisning vises etter lagring)"
     },
     "available_folders_694d0436": {
         "message": "Tilgjengelige mapper"
@@ -245,6 +245,9 @@
     "close_opportunity_center_popup_9907d981": {
         "message": "Lukk boksen «Mulighetsmarked»"
     },
+    "closed_caption_file_must_be_less_than_maxkb_kb_5880f752": {
+        "message": "Fil med teksting må være mindre enn { maxKb } kb"
+    },
     "closed_captions_subtitles_e6aaa016": {
         "message": "Undertekster"
     },
@@ -326,6 +329,12 @@
     "creative_commons_license_725584ae": {
         "message": "Kreative Allmenninger Lisens:"
     },
+    "crop_image_807ebb08": {
+        "message": "Beskjær bilde"
+    },
+    "current_image_f16c249c": {
+        "message": "Nåværende bilde"
+    },
     "custom_6979cd81": {
         "message": "Tilpasset"
     },
@@ -374,14 +383,17 @@
     "details_a6f427c3": {
         "message": "Detaljer:"
     },
+    "diamond_b8dfe7ae": {
+        "message": "Diamant"
+    },
+    "dimension_type_55c83e4e": {
+        "message": "Dimensjonstype"
+    },
     "dimensions_45ddb7b7": {
         "message": "Dimensjoner"
     },
     "directionality_26ae9e08": {
         "message": "Retning"
-    },
-    "disable_in_line_preview_2a675175": {
-        "message": "Deaktiver forhåndsvisning av prosesslinjen."
     },
     "discussion_6719c51d": {
         "message": "Diskusjon"
@@ -547,6 +559,9 @@
     },
     "feedback_6dcc1991": {
         "message": "Tilbakemelding"
+    },
+    "file_name_8fd421ff": {
+        "message": "Filnavn"
     },
     "file_url_c12b64be": {
         "message": "Fil URL"
@@ -797,6 +812,9 @@
     "loading_please_wait_d276220a": {
         "message": "Laster inn, vennligst vent"
     },
+    "loading_preview_9f077aa1": {
+        "message": "Laster forhåndsvisning"
+    },
     "location_3b6ff307": {
         "message": "Sted:"
     },
@@ -830,6 +848,12 @@
     "modules_c4325335": {
         "message": "Moduler"
     },
+    "multi_color_image_63d7372f": {
+        "message": "Bilde i flere farger"
+    },
+    "must_be_at_least_percentage_22e373b6": {
+        "message": "Må være minst { percentage }%"
+    },
     "must_be_at_least_width_x_height_px_41dc825e": {
         "message": "Det må være minst { width } x { height }px"
     },
@@ -838,9 +862,6 @@
     },
     "my_grades_98834476": {
         "message": "Mine vurderinger"
-    },
-    "my_images_427f9b0c": {
-        "message": "Mine bilder"
     },
     "name_1aed4a1b": {
         "message": "Navn"
@@ -892,6 +913,9 @@
     },
     "none_3b5e34d2": {
         "message": "Ingen"
+    },
+    "none_selected_b93d56d2": {
+        "message": "Ingen valgt"
     },
     "nothing_due_this_week_d45c9ef9": {
         "message": "Ingenting må leveres denne uken"
@@ -965,8 +989,17 @@
     "peer_review_for_itemtitle_358cb413": {
         "message": "Medelevvurdering for { itemTitle }"
     },
+    "pentagon_17d82ea3": {
+        "message": "Femkant"
+    },
     "people_b4ebb13c": {
         "message": "Deltakere"
+    },
+    "percentage_34ab7c2c": {
+        "message": "Prosent"
+    },
+    "pixels_52ece7d1": {
+        "message": "Piksler"
     },
     "points_bceb5005": {
         "message": "poeng"
@@ -1076,6 +1109,9 @@
     "search_term_b2d2235": {
         "message": "Søkeord"
     },
+    "select_crop_shape_d441feeb": {
+        "message": "Velg beskjæringsform"
+    },
     "select_language_7c93a900": {
         "message": "Velg språk"
     },
@@ -1103,11 +1139,14 @@
     "show_video_options_6ed3721a": {
         "message": "Vis videovalg"
     },
+    "single_color_image_4e5d4dbc": {
+        "message": "Enkeltfargebilde"
+    },
     "size_b30e1077": {
         "message": "Størrelse"
     },
-    "size_of_file_is_greater_than_the_maximum_max_mb_al_6eb3fa9a": {
-        "message": "Størrelsen på { file } er større enn den maksimale { max } MB tillatte filstørrelsen."
+    "size_of_caption_file_is_greater_than_the_maximum_m_bff5f86e": {
+        "message": "Størrelsen på bildetekstfilen er større en maksimalt tillatt størrelse på { max } kb."
     },
     "small_b070434a": {
         "message": "Liten"

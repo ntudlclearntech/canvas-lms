@@ -24,7 +24,7 @@ import useFetchApi from '@canvas/use-fetch-api-hook'
 function useSettings(courseId) {
   const [group, setGroup] = useState({})
   const [enabled, setEnabled] = useState(false)
-  const [loading, setLoading] = useState({})
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState()
   const groupEndpoint = `/api/v1/courses/${courseId}/microsoft_sync/group`
 
@@ -72,7 +72,13 @@ function useSettings(courseId) {
     try {
       await toggleGroup()
     } catch (e) {
-      setError(e.message)
+      let message
+      try {
+        message = e.response.data.message
+      } catch (e) {
+        message = null
+      }
+      setError(message ? {message} : e.message)
     }
     setLoading(false)
   }

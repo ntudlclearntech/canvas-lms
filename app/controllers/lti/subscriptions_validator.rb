@@ -21,16 +21,19 @@ module Lti
   class SubscriptionsValidator
     class InvalidContextType < StandardError
     end
+
     class MissingCapability < StandardError
     end
+
     class ToolNotInContext < StandardError
     end
+
     class ContextNotFound < StandardError
     end
 
     CONTEXT_WHITELIST = {
-      'root_account' => Account,
-      'assignment' => Assignment
+      "root_account" => Account,
+      "assignment" => Assignment
     }.freeze
 
     attr_reader :subscription, :tool_proxy
@@ -45,9 +48,9 @@ module Lti
       return if tool_proxy.enabled_capabilities.include?(ToolConsumerProfile.webhook_grant_all_capability)
 
       subscription[:EventTypes].each do |event_type|
-        raise MissingCapability, "EventType #{event_type} is invalid" unless capabilities_hash.keys.include?(event_type.to_sym)
+        raise MissingCapability, "EventType #{event_type} is invalid" unless capabilities_hash.key?(event_type.to_sym)
         if (tool_proxy.enabled_capabilities & capabilities_hash[event_type.to_sym]).blank?
-          raise MissingCapability, 'Missing required capability'
+          raise MissingCapability, "Missing required capability"
         end
       end
     end
@@ -65,6 +68,7 @@ module Lti
 
     def self.validate_subscription_context!(subscription)
       raise ContextNotFound unless retrieve_context(subscription).present?
+
       true
     end
 
@@ -85,9 +89,7 @@ module Lti
     private
 
     def subscription_context
-      @_subscription_context ||= begin
-        SubscriptionsValidator.retrieve_context(subscription)
-      end
+      @_subscription_context ||= SubscriptionsValidator.retrieve_context(subscription)
     end
   end
 end

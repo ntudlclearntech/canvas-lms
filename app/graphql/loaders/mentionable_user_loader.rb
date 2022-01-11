@@ -20,6 +20,7 @@
 
 class Loaders::MentionableUserLoader < GraphQL::Batch::Loader
   def initialize(current_user:, search_term: nil)
+    super()
     @curent_user = current_user
     @search_term = search_term
   end
@@ -30,5 +31,4 @@ class Loaders::MentionableUserLoader < GraphQL::Batch::Loader
       fulfill(object, calculator.search_in_context_scope(context: object, search: @search_term))
     end
   end
-
 end

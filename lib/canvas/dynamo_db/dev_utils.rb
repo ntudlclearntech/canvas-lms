@@ -21,14 +21,14 @@ module Canvas
   module DynamoDB
     module DevUtils
       SCHEMA_FIXTURES = {
-        'graphql_mutations' => {
+        "graphql_mutations" => {
           attribute_definitions: [
-            {attribute_name: "object_id", attribute_type: "S"},
-            {attribute_name: "mutation_id", attribute_type: "S"},
+            { attribute_name: "object_id", attribute_type: "S" },
+            { attribute_name: "mutation_id", attribute_type: "S" },
           ],
           key_schema: [
-            {attribute_name: "object_id", key_type: "HASH"},
-            {attribute_name: "mutation_id", key_type: "RANGE"},
+            { attribute_name: "object_id", key_type: "HASH" },
+            { attribute_name: "mutation_id", key_type: "RANGE" },
           ]
         }
       }.freeze
@@ -37,35 +37,37 @@ module Canvas
         unless ["development", "test"].include?(Rails.env)
           raise "DynamoDB should not be initialized this way in a real environment!!!"
         end
+
         canvas_ddb = ddb || Canvas::DynamoDB::DatabaseBuilder.from_config(category)
         dynamodb = canvas_ddb.client
         local_table_name = canvas_ddb.prefixed_table_name(table_name)
         exists = begin
-                   result = dynamodb.describe_table(table_name: local_table_name)
-                   true
-                 rescue Aws::DynamoDB::Errors::ResourceNotFoundException
-                   false
-                 end
+          dynamodb.describe_table(table_name: local_table_name)
+          true
+        rescue Aws::DynamoDB::Errors::ResourceNotFoundException
+          false
+        end
         if exists
           Rails.logger.debug("Local DDB table #{local_table_name} already exists!")
           return true unless recreate
+
           Rails.logger.debug("Deleting existing table...")
           dynamodb.delete_table(table_name: local_table_name)
         end
         Rails.logger.debug("Creating local DDB table for #{local_table_name}...")
         schema_opts = schema || SCHEMA_FIXTURES[table_name]
         params = schema_opts.merge({
-          table_name: local_table_name,
-          provisioned_throughput: { read_capacity_units: 5, write_capacity_units: 5 }
-        })
+                                     table_name: local_table_name,
+                                     provisioned_throughput: { read_capacity_units: 5, write_capacity_units: 5 }
+                                   })
         begin
           result = dynamodb.create_table(params)
-          Rails.logger.debug('Created table. Status: ' + result.table_description.table_status)
-          return true
-        rescue Aws::DynamoDB::Errors::ServiceError => error
-          Rails.logger.debug('Unable to create table:')
-          Rails.logger.debug(error.message)
-          return false
+          Rails.logger.debug("Created table. Status: " + result.table_description.table_status)
+          true
+        rescue Aws::DynamoDB::Errors::ServiceError => e
+          Rails.logger.debug("Unable to create table:")
+          Rails.logger.debug(e.message)
+          false
         end
       end
     end

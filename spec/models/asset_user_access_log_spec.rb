@@ -18,16 +18,17 @@
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-require 'spec_helper.rb'
-
 describe AssetUserAccessLog do
-  around(:each) do |example|
-    old_interval = MessageBus.worker_process_interval_lambda
+  around do |example|
+    old_compaction_recv_timeout = Setting.get("aua_compaction_receive_timeout_ms", "1000")
     # let's not waste time with queue throttling in tests
     MessageBus.worker_process_interval = -> { 0.01 }
+    MessageBus.max_mem_queue_size = -> { 1000 }
+    Setting.set("aua_compaction_receive_timeout_ms", "50")
     example.run
   ensure
-    MessageBus.worker_process_interval = old_interval unless old_interval.nil?
+    Canvas::MessageBusConfig.apply # resets config changes made to interval and queue size
+    Setting.set("aua_compaction_receive_timeout_ms", old_compaction_recv_timeout)
   end
 
   def reset_message_bus_topic(topic_root_account, subscription_name)
@@ -49,8 +50,8 @@ describe AssetUserAccessLog do
 
   describe "write path" do
     before(:once) do
-      @course = Account.default.courses.create!(name: 'My Course')
-      @assignment = @course.assignments.create!(title: 'My Assignment')
+      @course = Account.default.courses.create!(name: "My Course")
+      @assignment = @course.assignments.create!(title: "My Assignment")
       @user = User.create!
       @asset = factory_with_protected_attributes(AssetUserAccess, user: @user, context: @course, asset_code: @assignment.asset_string)
       @asset.display_name = @assignment.asset_string
@@ -67,8 +68,7 @@ describe AssetUserAccessLog do
     end
 
     describe "via message bus" do
-
-      before(:each) do
+      before do
         skip("pulsar config required to test") unless MessageBus.enabled?
         MessageBus.reset!
         @channel_config = {
@@ -78,7 +78,7 @@ describe AssetUserAccessLog do
         allow(AssetUserAccessLog).to receive(:channel_config).and_return(@channel_config)
       end
 
-      after(:each) do
+      after do
         MessageBus.process_all_and_reset!
       end
 
@@ -128,7 +128,7 @@ describe AssetUserAccessLog do
     end
 
     describe "under emergency load shedding" do
-      before(:each) do
+      before do
         @channel_config = {
           "pulsar_writes_enabled" => false,
           "pulsar_reads_enabled" => false,
@@ -152,11 +152,11 @@ describe AssetUserAccessLog do
       Setting.set("aua_log_batch_size", "100")
       Setting.set("aua_log_truncation_enabled", "true")
       ps = PluginSetting.find_or_initialize_by(name: "asset_user_access_logs", inheritance_scope: "shard")
-      ps.settings = { max_log_ids: [0,0,0,0,0,0,0], write_path: 'log' }
+      ps.settings = { max_log_ids: [0, 0, 0, 0, 0, 0, 0], write_path: "log" }
       ps.save!
       @account = Account.default
-      @course = @account.courses.create!(name: 'My Course')
-      @assignment = @course.assignments.create!(title: 'My Assignment')
+      @course = @account.courses.create!(name: "My Course")
+      @assignment = @course.assignments.create!(title: "My Assignment")
       @user_1 = User.create!
       @user_2 = User.create!
       @user_3 = User.create!
@@ -184,9 +184,15 @@ describe AssetUserAccessLog do
     end
 
     def await_message_bus_queue!(target_depth: 0)
+      # rubocop:disable Lint/NoSleep this is the best way I know of to give up thread priority
       while MessageBus.production_worker.queue_depth > target_depth
-        sleep 0.01 # give background thread a chance to make progress
+        # we need autoloading to not deadlock if the background thread is awaiting
+        # autoloading. https://guides.rubyonrails.org/threading_and_code_execution.html#permit-concurrent-loads
+        ActiveSupport::Dependencies.interlock.permit_concurrent_loads do
+          sleep 0.01 # give background thread a chance to make progress
+        end
       end
+      # rubocop:enable Lint/NoSleep
     end
 
     def advance_sequence(model, by_count)
@@ -211,11 +217,10 @@ describe AssetUserAccessLog do
     end
 
     it "doesn't fail when there is no data" do
-      expect{ AssetUserAccessLog.compact }.to_not raise_error
+      expect { AssetUserAccessLog.compact }.to_not raise_error
     end
 
     describe "with data via postgres" do
-
       it "computes correct results for multiple assets with multiple log entries spanning more than one batch" do
         expect(@asset_1.view_score).to be_nil
         expect(@asset_5.view_score).to be_nil
@@ -264,7 +269,7 @@ describe AssetUserAccessLog do
           expect(AssetUserAccessLog.log_model(24.hours.ago).count).to eq(0)
           # we should only have one setting with an offset in it, the other should have been zeroed
           # out during the truncation
-          expect(AssetUserAccessLog.metadatum_payload[:max_log_ids].select{|id| id > 0}.size).to eq(1)
+          expect(AssetUserAccessLog.metadatum_payload[:max_log_ids].count { |id| id > 0 }).to eq(1)
         end
       end
 
@@ -288,7 +293,7 @@ describe AssetUserAccessLog do
 
       it "can skip over gaps in the sequence" do
         Timecop.freeze do
-          Setting.set('aua_log_seq_jumps_allowed', 'true')
+          Setting.set("aua_log_seq_jumps_allowed", "true")
           model = AssetUserAccessLog.log_model(Time.now.utc)
           generate_log([@asset_1, @asset_2, @asset_3], 2)
           AssetUserAccessLog.compact
@@ -330,13 +335,13 @@ describe AssetUserAccessLog do
     end
 
     describe "via message bus" do
-      before(:each) do
+      before do
         skip("pulsar config required to test") unless MessageBus.enabled?
         allow(AssetUserAccessLog).to receive(:channel_config).and_return({
-          "pulsar_writes_enabled" => true,
-          "pulsar_reads_enabled" => true,
-          "db_writes_enabled" => true
-        })
+                                                                           "pulsar_writes_enabled" => true,
+                                                                           "pulsar_reads_enabled" => true,
+                                                                           "db_writes_enabled" => true
+                                                                         })
 
         @account = Account.default
 
@@ -344,7 +349,7 @@ describe AssetUserAccessLog do
         reset_message_bus_topic(@account, AssetUserAccessLog::PULSAR_SUBSCRIPTION)
       end
 
-      after(:each) do
+      after do
         MessageBus.process_all_and_reset!
       end
 
@@ -352,7 +357,7 @@ describe AssetUserAccessLog do
         default_metadata = AssetUserAccessLog.metadatum_payload
         default_metadata.delete(:temp_root_account_max_log_ids)
         AssetUserAccessLog.update_metadatum(default_metadata)
-        expect{ AssetUserAccessLog.compact }.to_not raise_error
+        expect { AssetUserAccessLog.compact }.to_not raise_error
       end
 
       it "computes correct results for multiple assets with multiple log entries spanning more than one batch" do
@@ -439,19 +444,19 @@ describe AssetUserAccessLog do
     end
 
     describe "multiple root accounts with ripcord" do
-      before(:each) do
+      before do
         skip("pulsar config required to test") unless MessageBus.enabled?
         allow(AssetUserAccessLog).to receive(:channel_config).and_return({
-          "pulsar_writes_enabled" => true,
-          "pulsar_reads_enabled" => false,
-          "db_writes_enabled" => true
-        })
+                                                                           "pulsar_writes_enabled" => true,
+                                                                           "pulsar_reads_enabled" => false,
+                                                                           "db_writes_enabled" => true
+                                                                         })
 
         @account1 = Account.default
         @account2 = account_model(root_account_id: nil)
 
-        @course2 = @account2.courses.create!(name: 'My Course')
-        @assignment2 = @course2.assignments.create!(title: 'My Other Assignment')
+        @course2 = @account2.courses.create!(name: "My Course")
+        @assignment2 = @course2.assignments.create!(title: "My Other Assignment")
         @user_6 = User.create!
         @user_7 = User.create!
         @user_8 = User.create!
@@ -482,12 +487,12 @@ describe AssetUserAccessLog do
         expect(@asset_8.reload.view_score).to eq(20.0)
         # do pulsar for a bit
         allow(AssetUserAccessLog).to receive(:channel_config).and_return({
-          "pulsar_writes_enabled" => true,
-          "pulsar_reads_enabled" => true,
-          "db_writes_enabled" => true
-        })
+                                                                           "pulsar_writes_enabled" => true,
+                                                                           "pulsar_reads_enabled" => true,
+                                                                           "db_writes_enabled" => true
+                                                                         })
         compaction_state = AssetUserAccessLog.metadatum_payload
-        expect(compaction_state[:max_log_ids].select{|id| id > 0}.length > 0).to be_truthy
+        expect(compaction_state[:max_log_ids].count { |id| id > 0 } > 0).to be_truthy
         Timecop.freeze do
           generate_log([@asset_2, @asset_7, @asset_3], 5)
           AssetUserAccessLog.compact
@@ -503,19 +508,19 @@ describe AssetUserAccessLog do
         expect(@asset_7.reload.view_score).to eq(5.0)
         expect(@asset_8.reload.view_score).to eq(20.0)
         compaction_state = AssetUserAccessLog.metadatum_payload
-        expect(compaction_state[:max_log_ids].select{|id| id > 0}.length > 0).to be_truthy
+        expect(compaction_state[:max_log_ids].count { |id| id > 0 } > 0).to be_truthy
         # Stop writing to postgres entirely for a while
         allow(AssetUserAccessLog).to receive(:channel_config).and_return({
-          "pulsar_writes_enabled" => true,
-          "pulsar_reads_enabled" => true,
-          "db_writes_enabled" => false
-        })
+                                                                           "pulsar_writes_enabled" => true,
+                                                                           "pulsar_reads_enabled" => true,
+                                                                           "db_writes_enabled" => false
+                                                                         })
         Timecop.freeze do
           generate_log([@asset_3, @asset_8, @asset_4], 10)
           AssetUserAccessLog.compact
         end
         compaction_state = AssetUserAccessLog.metadatum_payload
-        expect(compaction_state[:max_log_ids].select{|id| id > 0}.length > 0).to be_truthy
+        expect(compaction_state[:max_log_ids].count { |id| id > 0 } > 0).to be_truthy
         expect(@asset_1.reload.view_score).to eq(60.0)
         expect(@asset_2.reload.view_score).to eq(85.0)
         expect(@asset_3.reload.view_score).to eq(15.0)
@@ -527,16 +532,16 @@ describe AssetUserAccessLog do
 
         # resume postgres writing
         allow(AssetUserAccessLog).to receive(:channel_config).and_return({
-          "pulsar_writes_enabled" => true,
-          "pulsar_reads_enabled" => true,
-          "db_writes_enabled" => true
-        })
+                                                                           "pulsar_writes_enabled" => true,
+                                                                           "pulsar_reads_enabled" => true,
+                                                                           "db_writes_enabled" => true
+                                                                         })
         Timecop.freeze do
           generate_log([@asset_4, @asset_1, @asset_5], 10)
           AssetUserAccessLog.compact
         end
         compaction_state = AssetUserAccessLog.metadatum_payload
-        expect(compaction_state[:max_log_ids].select{|id| id > 0}.length > 0).to be_truthy
+        expect(compaction_state[:max_log_ids].count { |id| id > 0 } > 0).to be_truthy
         expect(@asset_1.reload.view_score).to eq(70.0)
         expect(@asset_2.reload.view_score).to eq(85.0)
         expect(@asset_3.reload.view_score).to eq(15.0)
@@ -547,10 +552,10 @@ describe AssetUserAccessLog do
         expect(@asset_8.reload.view_score).to eq(30.0)
         # switch back to postgres compaction!
         allow(AssetUserAccessLog).to receive(:channel_config).and_return({
-          "pulsar_writes_enabled" => true,
-          "pulsar_reads_enabled" => false,
-          "db_writes_enabled" => true
-        })
+                                                                           "pulsar_writes_enabled" => true,
+                                                                           "pulsar_reads_enabled" => false,
+                                                                           "db_writes_enabled" => true
+                                                                         })
         Timecop.freeze do
           generate_log([@asset_3, @asset_8, @asset_4], 5)
           AssetUserAccessLog.compact
@@ -558,7 +563,7 @@ describe AssetUserAccessLog do
           AssetUserAccessLog.compact
         end
         compaction_state = AssetUserAccessLog.metadatum_payload
-        expect(compaction_state[:max_log_ids].select{|id| id > 0}.length > 0).to be_truthy
+        expect(compaction_state[:max_log_ids].count { |id| id > 0 } > 0).to be_truthy
         expect(@asset_1.reload.view_score).to eq(70.0)
         expect(@asset_2.reload.view_score).to eq(85.0)
         expect(@asset_3.reload.view_score).to eq(25.0)
@@ -582,28 +587,28 @@ describe AssetUserAccessLog do
     it "has a reasonable default" do
       CanvasMetadatum.delete_all
       default_metadatum = AssetUserAccessLog.metadatum_payload
-      expect(default_metadatum[:max_log_ids]).to eq([0,0,0,0,0,0,0])
+      expect(default_metadatum[:max_log_ids]).to eq([0, 0, 0, 0, 0, 0, 0])
       expect(default_metadatum[:pulsar_partition_iterators]).to eq({})
     end
 
     it "faithfully returns existing state" do
       AssetUserAccessLog.update_metadatum({
-        max_log_ids: [1,2,3,4,5,6,7],
-        pulsar_partition_iterators: {
-          42 => "(10668,7,42,0)"
-        }
-      })
+                                            max_log_ids: [1, 2, 3, 4, 5, 6, 7],
+                                            pulsar_partition_iterators: {
+                                              42 => "(10668,7,42,0)"
+                                            }
+                                          })
       stored_metadatum = AssetUserAccessLog.metadatum_payload
-      expect(stored_metadatum[:max_log_ids]).to eq([1,2,3,4,5,6,7])
+      expect(stored_metadatum[:max_log_ids]).to eq([1, 2, 3, 4, 5, 6, 7])
       expect(stored_metadatum[:pulsar_partition_iterators]["42"]).to eq("(10668,7,42,0)")
     end
 
     it "defaults MISSING state during transition to message bus" do
       AssetUserAccessLog.update_metadatum({
-        max_log_ids: [1,2,3,4,5,6,7]
-      })
+                                            max_log_ids: [1, 2, 3, 4, 5, 6, 7]
+                                          })
       stored_metadatum = AssetUserAccessLog.metadatum_payload
-      expect(stored_metadatum[:max_log_ids]).to eq([1,2,3,4,5,6,7])
+      expect(stored_metadatum[:max_log_ids]).to eq([1, 2, 3, 4, 5, 6, 7])
       default_pulsar_state = stored_metadatum[:pulsar_partition_iterators]
       expect(default_pulsar_state).to eq({})
     end

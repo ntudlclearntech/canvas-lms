@@ -27,8 +27,8 @@ module DynamicSettings
     end
 
     def write_set(hash, ttl: nil)
-      opts = {expires_in: ttl}
-      hash.each{|k, v| write(k, v, opts) }
+      opts = { expires_in: ttl }
+      hash.each { |k, v| write(k, v, opts) }
     end
 
     # Everything from here down is actully a reimplementation
@@ -39,7 +39,7 @@ module DynamicSettings
     # does not respond to "fetch_without_expiration", it just raises any errors
     # it encounters, but if there IS such a method it will try to see if the value
     # is available in the non-expiring part of the cache.
-    KEY_SUFFIX = '__no_expire'
+    KEY_SUFFIX = "__no_expire"
 
     def fetch_without_expiration(key)
       fetch(key + KEY_SUFFIX)

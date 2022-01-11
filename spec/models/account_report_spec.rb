@@ -18,12 +18,10 @@
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-require File.expand_path(File.dirname(__FILE__) + '/../sharding_spec_helper.rb')
-
 describe AccountReport do
   describe ".delete_old_rows_and_runners" do
-    let(:account){ account_model }
-    let(:admin){ user_model }
+    let(:account) { account_model }
+    let(:admin) { user_model }
 
     it "cleans up old db records" do
       report = AccountReport.create!(account_id: account.id, user_id: admin.id)

@@ -19,7 +19,7 @@
 
 module Exporters
   module ExporterHelper
-    def self.add_attachment_to_zip(attachment, zipfile, filename = nil, files_in_zip=[])
+    def self.add_attachment_to_zip(attachment, zipfile, filename = nil, files_in_zip = [])
       filename ||= attachment.filename
 
       # we allow duplicate filenames in the same folder. it's a bit silly, but we
@@ -29,12 +29,12 @@ module Exporters
 
       handle = nil
       begin
-        handle = attachment.open(:need_local_file => true)
-        zipfile.get_output_stream(filename){|zos| Zip::IOExtras.copy_stream(zos, handle)}
-      rescue => e
+        handle = attachment.open(need_local_file: true)
+        zipfile.get_output_stream(filename) { |zos| Zip::IOExtras.copy_stream(zos, handle) }
+      rescue
         return false
       ensure
-        handle.close if handle
+        handle&.close
       end
 
       true

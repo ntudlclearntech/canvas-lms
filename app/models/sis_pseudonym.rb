@@ -20,12 +20,12 @@
 class SisPseudonym
   # type: :exact, :trusted, or :implicit
   def self.for(user, context, type: :exact, require_sis: true, include_deleted: false, root_account: nil, in_region: false, include_all_pseudonyms: false)
-    raise ArgumentError("type must be :exact, :trusted, or :implicit") unless [:exact, :trusted, :implicit].include?(type)
+    raise ArgumentError("type must be :exact, :trusted, or :implicit") unless %i[exact trusted implicit].include?(type)
     raise ArgumentError("invalid root_account") if root_account && !root_account.root_account?
     raise ArgumentError("context must respond to .root_account") unless root_account&.root_account? || context.respond_to?(:root_account)
 
     sis_pseudonym =
-      self.new(user, context, type, require_sis, include_deleted, root_account, in_region: in_region, include_all_pseudonyms: include_all_pseudonyms)
+      new(user, context, type, require_sis, include_deleted, root_account, in_region: in_region, include_all_pseudonyms: include_all_pseudonyms)
     include_all_pseudonyms ? sis_pseudonym.all_pseudonyms : sis_pseudonym.pseudonym
   end
 
@@ -48,8 +48,8 @@ class SisPseudonym
     result = nil if exclude_deleted?(result)
     result ||= find_in_home_account
     result ||= find_in_other_accounts
-    if result
-      result.account = root_account if result.account_id == root_account.id
+    if result && result.account_id == root_account.id
+      result.account = root_account
     end
     result
   end
@@ -61,7 +61,7 @@ class SisPseudonym
     results << find_in_home_account
     results << find_in_other_accounts
     results = results.flatten.compact.uniq
-    results.reject! {|result| exclude_deleted?(result)}
+    results.reject! { |result| exclude_deleted?(result) }
     if results.present?
       results.each do |result|
         result.account = root_account if result.account_id == root_account.id
@@ -74,7 +74,7 @@ class SisPseudonym
   private
 
   def exclude_deleted?(result)
-    result&.workflow_state == 'deleted' && !@include_deleted
+    result&.workflow_state == "deleted" && !@include_deleted
   end
 
   def find_on_enrollment_for_context
@@ -86,7 +86,7 @@ class SisPseudonym
       # but if the sis_user_id got moved to another pseudonym
       # it will grab that one instead.
       return nil if pseudonym&.sis_user_id.nil?
-      return nil if pseudonym&.workflow_state == 'deleted' && !@include_deleted
+      return nil if pseudonym&.workflow_state == "deleted" && !@include_deleted
 
       pseudonym
     end
@@ -108,12 +108,10 @@ class SisPseudonym
     # try the user's home shard first if it's fast
     # the default shard has a replica in every region, so is always fast
     user_shard_is_in_region = user.shard.in_current_region? || user.shard.default?
-    if user_shard_is_in_region
-      if type != :trusted || (account_ids = trusted_account_ids[user.shard])
-        user.shard.activate do
-          result = find_in_trusted_accounts(account_ids)
-          return result if result
-        end
+    if user_shard_is_in_region && (type != :trusted || (account_ids = trusted_account_ids[user.shard]))
+      user.shard.activate do
+        result = find_in_trusted_accounts(account_ids)
+        return result if result
       end
     end
 
@@ -145,7 +143,7 @@ class SisPseudonym
   def find_in_home_account
     if use_loaded_collection?(root_account.shard)
       if user.pseudonyms.loaded?
-        pick_user_pseudonym(user.pseudonyms,[root_account.id])
+        pick_user_pseudonym(user.pseudonyms, [root_account.id])
       else
         pick_user_pseudonym(include_deleted ? user.all_pseudonyms : user.all_active_pseudonyms,
                             [root_account.id])
@@ -158,7 +156,7 @@ class SisPseudonym
   end
 
   def use_loaded_collection?(shard)
-    user.pseudonyms.loaded? && user.shard == shard ||
+    (user.pseudonyms.loaded? && user.shard == shard) ||
       (include_deleted ? user.all_pseudonyms_loaded? : user.all_active_pseudonyms_loaded?)
   end
 
@@ -168,7 +166,7 @@ class SisPseudonym
       raise "could not resolve root account" unless account.is_a?(Account)
 
       account
-     end
+    end
   end
 
   def pick_pseudonym(account_ids)
@@ -206,12 +204,12 @@ class SisPseudonym
         true
       end
     else
-      collection.sort_by {|p| [p.workflow_state, p.sis_user_id ? 0 : 1, Canvas::ICU.collation_key(p.unique_id)] }.detect do |p|
+      collection.sort_by { |p| [p.workflow_state, p.sis_user_id ? 0 : 1, Canvas::ICU.collation_key(p.unique_id)] }.detect do |p|
         next if account_ids && !account_ids.include?(p.account_id)
         next if !account_ids && !p.works_for_account?(root_account, type == :implicit)
         next if require_sis && !p.sis_user_id
 
-        include_deleted || p.workflow_state != 'deleted'
+        include_deleted || p.workflow_state != "deleted"
       end
     end
   end

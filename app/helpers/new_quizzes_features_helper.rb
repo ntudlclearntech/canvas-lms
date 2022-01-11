@@ -46,6 +46,10 @@ module NewQuizzesFeaturesHelper
   end
 
   def new_quizzes_require_migration?(context = @context)
-      context.root_account.feature_enabled?(:require_migration_to_new_quizzes)
+    context.root_account.feature_enabled?(:require_migration_to_new_quizzes)
+  end
+
+  def new_quizzes_bank_migrations_enabled?(context = @context)
+    context.feature_enabled?(:quizzes_next) && context.root_account.feature_enabled?(:new_quizzes_migration) && Account.site_admin.feature_enabled?(:new_quizzes_bank_migrations)
   end
 end

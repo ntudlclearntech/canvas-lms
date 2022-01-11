@@ -32,6 +32,7 @@ module Lti
       attr_reader :original_tool_id
 
       def initialize(original_tool_id)
+        super()
         @original_tool_id = original_tool_id
       end
 
@@ -43,7 +44,7 @@ module Lti
         response = Canvas.retriable(on: Timeout::Error) do
           case import_format
           when JSON_FORMAT
-            CanvasHttp.post(import_start_url, base_request_headers, body: post_body.to_json, content_type: 'application/json')
+            CanvasHttp.post(import_start_url, base_request_headers, body: post_body.to_json, content_type: "application/json")
           else
             CanvasHttp.post(import_start_url, base_request_headers, form_data: Rack::Utils.build_nested_query(post_body))
           end
@@ -52,7 +53,7 @@ module Lti
         when (200..201)
           parsed_response = JSON.parse(response.body)
           unless parsed_response.empty?
-            @status_url = parsed_response['status_url']
+            @status_url = parsed_response["status_url"]
           end
         else
           raise "Unable to start import for external tool #{@tool.name} (#{response.code})"
@@ -63,15 +64,15 @@ module Lti
       end
 
       def import_completed?
-        response = Canvas.retriable(on: Timeout::Error) {CanvasHttp.get(@status_url, base_request_headers)} if @status_url
+        response = Canvas.retriable(on: Timeout::Error) { CanvasHttp.get(@status_url, base_request_headers) } if @status_url
         if response&.code.to_i == 200
           parsed_response = JSON.parse(response.body)
-          @export_status = parsed_response['status']
+          @export_status = parsed_response["status"]
           case @export_status
           when SUCCESSFUL_STATUS
             true
           when FAILED_STATUS
-            raise parsed_response['message']
+            raise parsed_response["message"]
           else
             false
           end
@@ -92,9 +93,10 @@ module Lti
 
       def load_tool!
         return @tool if @tool
+
         original_tool = ContextExternalTool.find(@original_tool_id)
         @tool = ContextExternalTool.find_external_tool(original_tool.domain, @course, @original_tool_id).tap do |t|
-          unless t && t.content_migration_configured?
+          unless t&.content_migration_configured?
             raise "Unable to find external tool to import content."
           end
         end

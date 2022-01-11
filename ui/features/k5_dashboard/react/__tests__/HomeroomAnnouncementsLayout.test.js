@@ -17,20 +17,23 @@
  */
 
 import React from 'react'
-import {render} from '@testing-library/react'
+import {render, waitFor} from '@testing-library/react'
+import fetchMock from 'fetch-mock'
 import HomeroomAnnouncementsLayout from '../HomeroomAnnouncementsLayout'
 
 const homeroomAnnouncements = [
   {
-    courseId: 1234,
+    courseId: '1234',
     courseName: 'Homeroom - Mr. Jessie',
     courseUrl: 'http://google.com/course',
     canEdit: true,
     canReadAnnouncements: true,
     announcement: {
+      id: '1234',
       title: 'Welcome to Class!',
       message: '<p>Yayyyy</p>',
       url: 'http://google.com',
+      postedDate: new Date(),
       attachment: {
         display_name: 'exam1.pdf',
         url: 'http://google.com/download',
@@ -40,20 +43,22 @@ const homeroomAnnouncements = [
     published: true
   },
   {
-    courseId: 1235,
+    courseId: '1235',
     courseName: 'Homeroom 0144232',
     courseUrl: 'http://google.com/course2',
     canEdit: true,
     canReadAnnouncements: true,
     announcement: {
+      id: '1235',
       title: 'Sign the permission slip!',
       message: '<p>Hello</p>',
-      url: 'http://google.com/otherclass'
+      url: 'http://google.com/otherclass',
+      postedDate: new Date()
     },
     published: true
   },
   {
-    courseId: 1236,
+    courseId: '1236',
     courseName: 'New Homeroom',
     courseUrl: 'http://google.com',
     canEdit: true,
@@ -69,8 +74,22 @@ describe('HomeroomAnnouncementsLayout', () => {
     ...overrides
   })
 
+  beforeEach(() => {
+    fetchMock.get(
+      /\/api\/v1\/announcements/,
+      {
+        body: '[]',
+        headers: {
+          Link: '</api/v1/announcements>; rel="current",</api/v1/announcements>; rel="first",</api/v1/announcements>; rel="last"'
+        }
+      },
+      {}
+    )
+  })
+
   afterEach(() => {
     localStorage.clear()
+    fetchMock.restore()
   })
 
   it('renders a view for each child passed', () => {
@@ -80,13 +99,13 @@ describe('HomeroomAnnouncementsLayout', () => {
     expect(getByText('New Homeroom')).toBeInTheDocument()
   })
 
-  it('shows text and button for homeroom courses with no announcements to users that can edit', () => {
-    const {getByText} = render(
+  it('shows text and button for homeroom courses with no announcements to users that can edit', async () => {
+    const {findByText, getByText} = render(
       <HomeroomAnnouncementsLayout
         {...getProps({
           homeroomAnnouncements: [
             {
-              courseId: 1236,
+              courseId: '1236',
               courseName: 'New Homeroom',
               courseUrl: 'http://google.com',
               canEdit: true,
@@ -97,18 +116,18 @@ describe('HomeroomAnnouncementsLayout', () => {
       />
     )
     expect(
-      getByText('New announcements show up in this area. Create a new announcement now.')
+      await findByText('New announcements show up in this area. Create a new announcement now.')
     ).toBeInTheDocument()
     expect(getByText('Announcement')).toBeInTheDocument()
   })
 
-  it('does not show prompt to create announcement to students', () => {
+  it('does not show prompt to create announcement to students', async () => {
     const {queryByText} = render(
       <HomeroomAnnouncementsLayout
         {...getProps({
           homeroomAnnouncements: [
             {
-              courseId: 1236,
+              courseId: '1236',
               courseName: 'New Homeroom',
               courseUrl: 'http://google.com',
               canEdit: false,
@@ -118,6 +137,10 @@ describe('HomeroomAnnouncementsLayout', () => {
         })}
       />
     )
+    // The Homeroom header is rendered by default, then removed
+    // if the request for old announcements returns nothing.
+    // Wait for the fetch to complete before continuing.
+    await waitFor(() => fetchMock.done())
     expect(queryByText('New Homeroom')).not.toBeInTheDocument()
     expect(
       queryByText('New announcements show up in this area. Create a new announcement now.')

@@ -18,7 +18,7 @@
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 
 module Lti
-  module Ims
+  module IMS
     # @API Line Items
     #
     # Line Item API for IMS Assignment and Grade Services
@@ -69,7 +69,7 @@ module Lti
       include Concerns::GradebookServices
 
       before_action :prepare_line_item_for_ags!, only: :create
-      before_action :verify_line_item_in_context, only: %i(show update destroy)
+      before_action :verify_line_item_in_context, only: %i[show update destroy]
       before_action :verify_valid_resource_link, only: :create
 
       ACTION_SCOPE_MATCHERS = {
@@ -80,15 +80,15 @@ module Lti
         index: any_of(TokenScopes::LTI_AGS_LINE_ITEM_SCOPE, TokenScopes::LTI_AGS_LINE_ITEM_READ_ONLY_SCOPE)
       }.with_indifferent_access.freeze
 
-      MIME_TYPE = 'application/vnd.ims.lis.v2.lineitem+json'.freeze
-      CONTAINER_MIME_TYPE = 'application/vnd.ims.lis.v2.lineitemcontainer+json'.freeze
+      MIME_TYPE = "application/vnd.ims.lis.v2.lineitem+json"
+      CONTAINER_MIME_TYPE = "application/vnd.ims.lis.v2.lineitemcontainer+json"
 
       rescue_from ActionController::BadRequest do |e|
         unless Rails.env.production?
           logger.error(e.message)
           Lti::Errors::ErrorLogger.log_error(e)
         end
-        render json: {error: e.message}, status: :bad_request
+        render json: { error: e.message }, status: :bad_request
       end
 
       # @API Create a Line Item
@@ -177,6 +177,9 @@ module Lti
       #
       # @returns LineItem
       def show
+        # the LineItem workflow_state still "active" even if the assignment is deleted
+        head :not_found and return if line_item.assignment.deleted?
+
         render json: LineItemsSerializer.new(line_item, line_item_id(line_item)),
                content_type: MIME_TYPE
       end
@@ -213,6 +216,7 @@ module Lti
       # @returns LineItem
       def destroy
         head :unauthorized and return if line_item.coupled
+
         line_item.destroy!
         head :no_content
       end
@@ -220,12 +224,10 @@ module Lti
       private
 
       def line_item_params
-        @_line_item_params ||= begin
-          params.permit(%i(resourceId resourceLinkId scoreMaximum label tag),
-                        Lti::LineItem::AGS_EXT_SUBMISSION_TYPE => [:type, :external_tool_url]).transform_keys do |k|
-            k.to_s.underscore
-          end.except(:resource_link_id)
-        end
+        @_line_item_params ||= params.permit(%i[resourceId resourceLinkId scoreMaximum label tag],
+                                             Lti::LineItem::AGS_EXT_SUBMISSION_TYPE => [:type, :external_tool_url]).transform_keys do |k|
+          k.to_s.underscore
+        end.except(:resource_link_id)
       end
 
       def assignment
@@ -258,15 +260,15 @@ module Lti
 
       def index_query
         rlid = params[:resource_link_id]
-        assignments = Assignment.
-          active.
-          joins(rlid.present? ? { line_items: :resource_link } : :line_items).
-          where(
-            {
-              context: context,
-              lti_line_items: { client_id: developer_key.global_id }
-            }.merge!(rlid.present? ? { lti_resource_links: { resource_link_uuid: rlid } } : {})
-          )
+        assignments = Assignment
+                      .active
+                      .joins(rlid.present? ? { line_items: :resource_link } : :line_items)
+                      .where(
+                        {
+                          context: context,
+                          lti_line_items: { client_id: developer_key.global_id }
+                        }.merge!(rlid.present? ? { lti_resource_links: { resource_link_uuid: rlid } } : {})
+                      )
 
         {
           assignment: assignments,
@@ -282,13 +284,14 @@ module Lti
       def verify_valid_resource_link
         return unless params[:resourceLinkId]
         raise ActiveRecord::RecordNotFound if resource_link.blank?
+
         head :precondition_failed if check_for_bad_resource_link
       end
 
       def check_for_bad_resource_link
         resource_link.line_items.active.blank? ||
-        assignment&.context != context ||
-        !assignment&.active?
+          assignment&.context != context ||
+          !assignment&.active?
       end
 
       def scopes_matcher

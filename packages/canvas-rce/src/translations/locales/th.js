@@ -17,6 +17,7 @@
  */
 
 import formatMessage from '../../format-message'
+import '../tinymce/th'
 
 const locale = {
   "access_the_pretty_html_editor_37168efe": {
@@ -48,6 +49,9 @@ const locale = {
   "announcement_list_da155734": { "message": "รายการประกาศ" },
   "announcements_a4b8ed4a": { "message": "ประกาศ" },
   "apply_781a2546": { "message": "ปรับใช้" },
+  "apply_changes_to_all_instances_of_this_button_and__3a3bea34": {
+    "message": "ปรับใช้การเปลี่ยนแปลงกับส่วนรายการทั้งหมดปุ่มและไอคอนนี้ในบทเรียนนี้"
+  },
   "apps_54d24a47": { "message": "แอพ" },
   "aspect_ratio_will_be_preserved_cb5fdfb8": {
     "message": "สัดส่วนจะถูกรักษาไว้ตามเดิม"
@@ -62,9 +66,6 @@ const locale = {
   },
   "auto_saved_content_exists_would_you_like_to_load_t_fee528f2": {
     "message": "มีเนื้อหาบันทึกอัตโนมัติ ต้องการโหลดเนื้อหาบันทึกอัตโนมัติแทนหรือไม่"
-  },
-  "automatically_open_an_in_line_preview_preview_disp_ed784ffe": {
-    "message": "เปิดอัตโนมัติในการแสดงตัวอย่างแบบ in-line (แสดงตัวอย่างหลังจากบันทึกแล้วเท่านั้น)"
   },
   "available_folders_694d0436": { "message": "โฟลเดอร์ที่ใช้ได้" },
   "below_81d4dceb": { "message": "ด้านล่าง" },
@@ -105,6 +106,9 @@ const locale = {
     "message": "ปิดเมนูหรือกล่องโต้ตอบ และนำคุณกลับไปที่โปรแกรมแก้ไข"
   },
   "close_d634289d": { "message": "ปิด" },
+  "closed_caption_file_must_be_less_than_maxkb_kb_5880f752": {
+    "message": "ไฟล์คำบรรยายแบบปิดได้จะต้องมีขนาดน้อยกว่า { maxKb } kb"
+  },
   "closed_captions_subtitles_e6aaa016": { "message": "คำบรรยายแบบซ่อนได้" },
   "collaborations_5c56c15f": { "message": "การประสานความร่วมมือ" },
   "collapse_to_hide_types_1ab46d2e": { "message": "ย่อเพื่อซ่อน { types }" },
@@ -134,6 +138,8 @@ const locale = {
   "creative_commons_license_725584ae": {
     "message": "สิทธิ์ใช้งาน Creative Commons:"
   },
+  "crop_image_807ebb08": { "message": "ครอปภาพ" },
+  "current_image_f16c249c": { "message": "ภาพปัจจุบัน" },
   "custom_6979cd81": { "message": "กำหนดเอง" },
   "date_added_ed5ad465": { "message": "วันที่ที่เพิ่ม" },
   "decorative_image_3c28aa7d": { "message": "ภาพตกแต่ง" },
@@ -149,9 +155,6 @@ const locale = {
   "details_98a31b68": { "message": "รายละเอียด" },
   "dimensions_45ddb7b7": { "message": "ขนาด" },
   "directionality_26ae9e08": { "message": "ทิศทาง" },
-  "disable_in_line_preview_2a675175": {
-    "message": "ปิดในส่วนแสดงตัวอย่างแบบ In-Line"
-  },
   "discussions_a5f96392": { "message": "การพูดคุย" },
   "discussions_index_6c36ced": { "message": "ดัชนีการพูดคุย" },
   "display_options_315aba85": { "message": "แสดงตัวเลือก" },
@@ -283,11 +286,11 @@ const locale = {
   "middle_27dc1d5": { "message": "ตรงกลาง" },
   "miscellaneous_e9818229": { "message": "เบ็ดเตล็ด" },
   "modules_c4325335": { "message": "หน่วยการเรียน" },
+  "multi_color_image_63d7372f": { "message": "ภาพหลายสี" },
   "must_be_at_least_width_x_height_px_41dc825e": {
     "message": "จะต้องเท่ากับอย่างน้อย { width } x { height }px"
   },
   "my_files_2f621040": { "message": "ไฟล์ของฉัน" },
-  "my_images_427f9b0c": { "message": "ภาพของฉัน" },
   "name_1aed4a1b": { "message": "ชื่อ" },
   "navigate_through_the_menu_or_toolbar_415a4e50": {
     "message": "ดูรายการเมนูหรือแถบเครื่องมือ"
@@ -306,6 +309,7 @@ const locale = {
     "message": "ไม่พบผลลัพธ์สำหรับ { term }"
   },
   "none_3b5e34d2": { "message": "ไม่มี" },
+  "none_selected_b93d56d2": { "message": "ไม่ได้เลือกรายการใด" },
   "octagon_e48be9f": { "message": "แปดเหลี่ยม" },
   "open_this_keyboard_shortcuts_dialog_9658b83a": {
     "message": "เปิดกล่องโต้ตอบชอร์ตคัทแป้นพิมพ์นี้"
@@ -356,6 +360,7 @@ const locale = {
   "saved_buttons_and_icons_8278eed2": { "message": "ปุ่มและไอคอนที่บันทึกไว้" },
   "search_280d00bd": { "message": "ค้นหา" },
   "search_term_b2d2235": { "message": "คำค้นหา" },
+  "select_crop_shape_d441feeb": { "message": "เลือกรูปทรงการครอป" },
   "select_language_7c93a900": { "message": "เลือกภาษา" },
   "selected_274ce24f": { "message": "เลือกแล้ว" },
   "shift_o_to_open_the_pretty_html_editor_55ff5a31": {
@@ -365,9 +370,10 @@ const locale = {
   "show_image_options_1e2ecc6b": { "message": "แสดงตัวเลือกสำหรับภาพ" },
   "show_link_options_545338fd": { "message": "แสดงตัวเลือกสำหรับลิงค์" },
   "show_video_options_6ed3721a": { "message": "แสดงตัวเลือกสำหรับวิดีโอ" },
+  "single_color_image_4e5d4dbc": { "message": "ภาพสีเดียว" },
   "size_b30e1077": { "message": "ขนาด" },
-  "size_of_file_is_greater_than_the_maximum_max_mb_al_6eb3fa9a": {
-    "message": "ขนาด { file } มากกว่าขนาดไฟล์สูงสุดที่ { max } MB"
+  "size_of_caption_file_is_greater_than_the_maximum_m_bff5f86e": {
+    "message": "ขนาดของไฟล์คำบรรยายจะต้องมากกว่าขนาดสูงสุดที่อนุญาตที่ { max } kb"
   },
   "small_b070434a": { "message": "เล็ก" },
   "something_went_wrong_89195131": { "message": "มีบางอย่างผิดปกติ" },

@@ -19,17 +19,18 @@
 #
 
 class DiscussionFilterType < Types::BaseEnum
-  graphql_name 'DiscussionFilterType'
-  description 'Search types that can be associated with discussions'
-  value 'all'
-  value 'unread'
-  value 'deleted'
+  graphql_name "DiscussionFilterType"
+  description "Search types that can be associated with discussions"
+  value "all"
+  value "unread"
+  value "drafts"
+  value "deleted"
 end
 
 class DiscussionSortOrderType < Types::BaseEnum
-  graphql_name 'DiscussionSortOrderType'
-  value 'asc', value: :asc
-  value 'desc', value: :desc
+  graphql_name "DiscussionSortOrderType"
+  value "asc", value: :asc
+  value "desc", value: :desc
 end
 
 module Types
@@ -43,7 +44,6 @@ module Types
 
     global_id_field :id
     field :title, String, null: true
-    field :message, String, null: true
     field :context_id, ID, null: false
     field :context_type, String, null: false
     field :delayed_post_at, Types::DateTimeType, null: true
@@ -53,6 +53,7 @@ module Types
     field :posted_at, Types::DateTimeType, null: true
     field :podcast_has_student_posts, Boolean, null: true
     field :discussion_type, String, null: true
+    field :anonymous_state, String, null: true
     field :position, Int, null: true
     field :allow_rating, Boolean, null: true
     field :only_graders_can_rate, Boolean, null: true
@@ -60,6 +61,20 @@ module Types
     field :is_announcement, Boolean, null: false
     field :is_section_specific, Boolean, null: true
     field :require_initial_post, Boolean, null: true
+
+    field :message, String, null: true
+    delegate :message, to: :object
+
+    field :available_for_user, Boolean, null: false
+    def available_for_user
+      locked_info = object.locked_for?(current_user, check_policies: true)
+
+      if locked_info
+        !locked_info[:unlock_at]
+      else
+        !locked_info
+      end
+    end
 
     field :initial_post_required_for_current_user, Boolean, null: false
     def initial_post_required_for_current_user
@@ -96,6 +111,11 @@ module Types
       get_entries(args)
     end
 
+    field :discussion_entry_drafts_connection, Types::DiscussionEntryDraftType.connection_type, null: true
+    def discussion_entry_drafts_connection
+      Loaders::DiscussionEntryDraftLoader.for(current_user: current_user).load(object)
+    end
+
     field :entry_counts, Types::DiscussionEntryCountsType, null: true
     def entry_counts
       Loaders::DiscussionEntryCountsLoader.for(current_user: current_user).load(object)
@@ -125,14 +145,65 @@ module Types
       end
     end
 
-    field :author, Types::UserType, null: true
-    def author
-      load_association(:user)
+    field :author, Types::UserType, null: true do
+      argument :course_id, ID, required: false, prepare: GraphQLHelpers.relay_or_legacy_id_prepare_func("Course")
+      argument :role_types, [String], "Return only requested base role types", required: false
+      argument :built_in_only, Boolean, "Only return default/built_in roles", required: false
+    end
+    def author(course_id: nil, role_types: nil, built_in_only: true)
+      if object.anonymous? && !course_id
+        nil
+      else
+        load_association(:user).then do |user|
+          if !object.anonymous? || !user
+            user
+          else
+            Loaders::CourseRoleLoader.for(course_id: course_id, role_types: role_types, built_in_only: built_in_only).load(user).then do |roles|
+              if roles&.include?("TeacherEnrollment") || roles&.include?("TaEnrollment")
+                user
+              end
+            end
+          end
+        end
+      end
     end
 
-    field :editor, Types::UserType, null: true
-    def editor
-      load_association(:editor)
+    field :anonymous_author, Types::AnonymousUserType, null: true
+    def anonymous_author
+      if object.anonymous?
+        Loaders::DiscussionTopicParticipantLoader.for(object.id).load(object.user_id).then do |participant|
+          {
+            id: participant.id.to_s(36),
+            short_name: object.user_id == current_user.id ? "current_user" : participant.id.to_s(36),
+            avatar_url: nil
+          }
+        end
+      else
+        nil
+      end
+    end
+
+    field :editor, Types::UserType, null: true do
+      argument :course_id, ID, required: false, prepare: GraphQLHelpers.relay_or_legacy_id_prepare_func("Course")
+      argument :role_types, [String], "Return only requested base role types", required: false
+      argument :built_in_only, Boolean, "Only return default/built_in roles", required: false
+    end
+    def editor(course_id: nil, role_types: nil, built_in_only: true)
+      if object.anonymous? && !course_id
+        nil
+      else
+        load_association(:editor).then do |user|
+          if !object.anonymous? || !user
+            user
+          else
+            Loaders::CourseRoleLoader.for(course_id: course_id, role_types: role_types, built_in_only: built_in_only).load(user).then do |roles|
+              if roles&.include?("TeacherEnrollment") || roles&.include?("TaEnrollment")
+                user
+              end
+            end
+          end
+        end
+      end
     end
 
     field :permissions, Types::DiscussionPermissionsType, null: true
@@ -189,15 +260,15 @@ module Types
       argument :filter, DiscussionFilterType, required: false
     end
     def search_entry_count(**args)
-      get_entries(args).then do |entries|
-        entries.count
-      end
+      get_entries(args).then(&:count)
     end
 
     field :mentionable_users_connection, Types::MessageableUserType.connection_type, null: true do
       argument :search_term, String, required: false
     end
     def mentionable_users_connection(search_term: nil)
+      return nil if object.anonymous?
+
       Loaders::MentionableUserLoader.for(
         current_user: current_user,
         search_term: search_term
@@ -206,6 +277,7 @@ module Types
 
     def get_entries(search_term: nil, filter: nil, sort_order: :asc, root_entries: false)
       return [] if object.initial_post_required?(current_user, session)
+
       Loaders::DiscussionEntryLoader.for(
         current_user: current_user,
         search_term: search_term,

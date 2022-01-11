@@ -16,16 +16,127 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import React from 'react'
+import React, {useReducer, useState, useEffect} from 'react'
 
 import formatMessage from '../../../../../../format-message'
-import {MyImages} from './MyImages'
-import {Group} from '../Group'
+import reducer, {actions, initialState, modes} from '../../../reducers/imageSection'
+import {actions as svgActions} from '../../../reducers/svgSettings'
 
-export const ImageSection = ({editor}) => (
-  <Group as="section" defaultExpanded summary={formatMessage('Image')}>
-    <Group as="div" padding="none" size="small" summary={formatMessage('My Images')}>
-      <MyImages editor={editor} />
+import {Flex} from '@instructure/ui-flex'
+import {Text} from '@instructure/ui-text'
+import {Group} from '../Group'
+import ModeSelect from './ModeSelect'
+import Course from './Course'
+import PreviewIcon from '../../../../shared/PreviewIcon'
+import {ImageCropper} from '../ImageCropper'
+import {IconCropSolid} from '@instructure/ui-icons'
+import {Modal} from '@instructure/ui-modal'
+import {Heading} from '@instructure/ui-heading'
+import {Button, CloseButton} from '@instructure/ui-buttons'
+import {TruncateText} from '@instructure/ui-truncate-text'
+import {View} from '@instructure/ui-view'
+
+export const ImageSection = ({onChange}) => {
+  const [openCropModal, setOpenCropModal] = useState(false)
+  const [state, dispatch] = useReducer(reducer, initialState)
+  const allowedModes = {[modes.courseImages.type]: Course}
+
+  useEffect(() => {
+    onChange({
+      type: svgActions.SET_ENCODED_IMAGE,
+      payload: state.image
+    })
+  }, [state.image])
+
+  useEffect(() => {
+    onChange({
+      type: svgActions.SET_ENCODED_IMAGE_TYPE,
+      payload: state.mode
+    })
+  }, [state.mode])
+
+  return (
+    <Group as="section" defaultExpanded summary={formatMessage('Image')}>
+      <Flex direction="column" margin="small">
+        <Flex.Item>
+          <Text weight="bold">{formatMessage('Current Image')}</Text>
+        </Flex.Item>
+        <Flex.Item>
+          <Flex>
+            <Flex.Item shouldGrow>
+              <Flex>
+                <Flex.Item margin="0 small 0 0">
+                  <PreviewIcon
+                    variant="large"
+                    testId="selected-image-preview"
+                    image={state.image}
+                    loading={state.loading}
+                  />
+                </Flex.Item>
+              </Flex>
+            </Flex.Item>
+            <Flex.Item>
+              <View maxWidth="200px" as="div">
+                <TruncateText>
+                  <Text>{state.imageName ? state.imageName : formatMessage('None Selected')}</Text>
+                </TruncateText>
+              </View>
+            </Flex.Item>
+            <Flex.Item>
+              <ModeSelect dispatch={dispatch} />
+            </Flex.Item>
+          </Flex>
+        </Flex.Item>
+        <Flex.Item>
+          {!!allowedModes[state.mode] && React.createElement(allowedModes[state.mode], {dispatch})}
+        </Flex.Item>
+        <Flex.Item>
+          <Button
+            renderIcon={IconCropSolid}
+            onClick={() => {
+              setOpenCropModal(true)
+            }}
+          />
+          {openCropModal && (
+            <Modal
+              size="large"
+              open={openCropModal}
+              onDismiss={() => {
+                setOpenCropModal(false)
+              }}
+              shouldCloseOnDocumentClick={false}
+            >
+              <Modal.Header>
+                <CloseButton
+                  placement="end"
+                  offset="small"
+                  onClick={() => {
+                    setOpenCropModal(false)
+                  }}
+                  screenReaderLabel="Close"
+                />
+                <Heading>{formatMessage('Crop Image')}</Heading>
+              </Modal.Header>
+              <Modal.Body>
+                <ImageCropper />
+              </Modal.Body>
+              <Modal.Footer>
+                <Button
+                  onClick={() => {
+                    setOpenCropModal(false)
+                  }}
+                  margin="0 x-small 0 0"
+                >
+                  {formatMessage('Cancel')}
+                </Button>
+                <Button color="primary" type="submit">
+                  {formatMessage('Save')}
+                </Button>
+              </Modal.Footer>
+            </Modal>
+          )}
+        </Flex.Item>
+      </Flex>
     </Group>
-  </Group>
-)
+  )
+}

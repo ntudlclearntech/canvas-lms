@@ -21,7 +21,8 @@ import {
   getSpeedGraderUrl,
   updateDiscussionTopicEntryCounts,
   responsiveQuerySizes,
-  isTopicAuthor
+  isTopicAuthor,
+  getDisplayName
 } from '../../utils'
 import {AlertManagerContext} from '@canvas/alerts/react/AlertManager'
 import {CollapseReplies} from '../../components/CollapseReplies/CollapseReplies'
@@ -39,7 +40,7 @@ import {Flex} from '@instructure/ui-flex'
 import {Highlight} from '../../components/Highlight/Highlight'
 import I18n from 'i18n!discussion_topics_post'
 import LoadingIndicator from '@canvas/loading-indicator'
-import {PER_PAGE, SearchContext} from '../../utils/constants'
+import {SearchContext} from '../../utils/constants'
 import {DiscussionEntryContainer} from '../DiscussionEntryContainer/DiscussionEntryContainer'
 import PropTypes from 'prop-types'
 import React, {useContext, useEffect, useState, useCallback} from 'react'
@@ -51,36 +52,7 @@ import {ThreadActions} from '../../components/ThreadActions/ThreadActions'
 import {ThreadingToolbar} from '../../components/ThreadingToolbar/ThreadingToolbar'
 import {useMutation, useQuery} from 'react-apollo'
 import {View} from '@instructure/ui-view'
-
-export const mockThreads = {
-  discussionEntry: {
-    id: '432',
-    author: {
-      displayName: 'Jeffrey Johnson',
-      avatarUrl: 'someURL'
-    },
-    createdAt: '2021-02-08T13:36:05-07:00',
-    message:
-      '<p>This is the post that never ends. It goes on and on my friends. This is the post that never ends. It goes on and on my friends. This is the post that never ends. It goes on and on my friends. This is the post that never ends. It goes on and on my friends. This is the post that never ends. It goes on and on my friends. This is the post that never ends. It goes on and on my friends. This is the post that never ends. It goes on and on my friends. This is the post that never ends. It goes on and on my friends. This is the post that never ends. It goes on and on my friends. This is the post that never ends. It goes on and on my friends.</p>',
-    read: true,
-    lastReply: null,
-    rootEntryParticipantCounts: {
-      unreadCount: 0,
-      repliesCount: 0
-    },
-    subentriesCount: 0,
-    permissions: {
-      attach: true,
-      create: true,
-      delete: true,
-      rate: true,
-      read: true,
-      reply: true,
-      update: true,
-      viewRating: true
-    }
-  }
-}
+import {ReportReply} from '../../components/ReportReply/ReportReply'
 
 export const DiscussionThreadContainer = props => {
   const {searchTerm, sort, filter} = useContext(SearchContext)
@@ -89,17 +61,21 @@ export const DiscussionThreadContainer = props => {
   const [isEditing, setIsEditing] = useState(false)
   const [editorExpanded, setEditorExpanded] = useState(false)
   const [threadRefCurrent, setThreadRefCurrent] = useState(null)
+  const [showReportModal, setShowReportModal] = useState(false)
+  const [reportModalIsLoading, setReportModalIsLoading] = useState(false)
+  const [reportingError, setReportingError] = useState(false)
 
   const updateCache = (cache, result) => {
     const newDiscussionEntry = result.data.createDiscussionEntry.discussionEntry
     const variables = {
       discussionEntryID: newDiscussionEntry.parentId,
-      first: PER_PAGE,
+      first: ENV.per_page,
       sort,
       courseID: window.ENV?.course_id
     }
 
     updateDiscussionTopicEntryCounts(cache, props.discussionTopic.id, {repliesCountChange: 1})
+    props.removeDraftFromDiscussionCache(cache, result)
     addReplyToDiscussionEntry(cache, variables, newDiscussionEntry)
   }
 
@@ -168,6 +144,24 @@ export const DiscussionThreadContainer = props => {
     }
   })
 
+  const [updateDiscussionEntryReported] = useMutation(UPDATE_DISCUSSION_ENTRY_PARTICIPANT, {
+    onCompleted: data => {
+      if (!data || !data.updateDiscussionEntryParticipant) {
+        return null
+      }
+      setReportModalIsLoading(false)
+      setShowReportModal(false)
+      setOnSuccess(I18n.t('You have reported this reply.'), false)
+    },
+    onError: () => {
+      setReportModalIsLoading(false)
+      setReportingError(true)
+      setTimeout(() => {
+        setReportingError(false)
+      }, 3000)
+    }
+  })
+
   const toggleRating = () => {
     updateDiscussionEntryParticipant({
       variables: {
@@ -182,7 +176,7 @@ export const DiscussionThreadContainer = props => {
       variables: {
         discussionEntryId: props.discussionEntry._id,
         read: !props.discussionEntry.entryParticipant?.read,
-        forcedReadState: props.discussionEntry.entryParticipant?.forcedReadState || null
+        forcedReadState: true
       }
     })
   }
@@ -190,13 +184,26 @@ export const DiscussionThreadContainer = props => {
   const marginDepth = `calc(${theme.variables.spacing.xxLarge} * ${props.depth})`
   const replyMarginDepth = `calc(${theme.variables.spacing.xxLarge} * ${props.depth + 1})`
 
+  const findDraftMessage = () => {
+    let rootEntryDraftMessage = ''
+    props.discussionTopic?.discussionEntryDraftsConnection?.nodes.every(draftEntry => {
+      if (draftEntry.rootEntryId === props.discussionEntry._id && !draftEntry.discussionEntryId) {
+        rootEntryDraftMessage = draftEntry.message
+        return false
+      }
+      return true
+    })
+    return rootEntryDraftMessage
+  }
+
   const threadActions = []
   if (props.discussionEntry.permissions.reply) {
     threadActions.push(
       <ThreadingToolbar.Reply
         key={`reply-${props.discussionEntry._id}`}
-        authorName={props.discussionEntry.author.displayName}
+        authorName={getDisplayName(props.discussionEntry)}
         delimiterKey={`reply-delimiter-${props.discussionEntry._id}`}
+        hasDraftEntry={!!findDraftMessage()}
         onClick={() => {
           const newEditorExpanded = !editorExpanded
           setEditorExpanded(newEditorExpanded)
@@ -221,8 +228,8 @@ export const DiscussionThreadContainer = props => {
         key={`like-${props.discussionEntry._id}`}
         delimiterKey={`like-delimiter-${props.discussionEntry._id}`}
         onClick={toggleRating}
-        authorName={props.discussionEntry.author.displayName}
-        isLiked={props.discussionEntry.entryParticipant?.rating}
+        authorName={getDisplayName(props.discussionEntry)}
+        isLiked={!!props.discussionEntry.entryParticipant?.rating}
         likeCount={props.discussionEntry.ratingSum || 0}
         interaction={props.discussionEntry.permissions.rate ? 'enabled' : 'disabled'}
       />
@@ -277,14 +284,7 @@ export const DiscussionThreadContainer = props => {
   }
 
   const onOpenInSpeedGrader = () => {
-    window.open(
-      getSpeedGraderUrl(
-        ENV.course_id,
-        props.discussionTopic.assignment._id,
-        props.discussionEntry.author._id
-      ),
-      '_blank'
-    )
+    window.open(getSpeedGraderUrl(props.discussionEntry.author._id), '_blank')
   }
 
   // Scrolling auto listener to mark messages as read
@@ -345,9 +345,11 @@ export const DiscussionThreadContainer = props => {
               <Flex padding={responsiveProps.padding}>
                 <Flex.Item shouldShrink shouldGrow>
                   <DiscussionEntryContainer
+                    discussionTopic={props.discussionTopic}
+                    discussionEntry={props.discussionEntry}
                     isTopic={false}
                     postUtilities={
-                      !props.discussionEntry.deleted ? (
+                      filter !== 'drafts' && !props.discussionEntry.deleted ? (
                         <ThreadActions
                           id={props.discussionEntry._id}
                           isUnread={!props.discussionEntry.entryParticipant?.read}
@@ -374,10 +376,20 @@ export const DiscussionThreadContainer = props => {
                                 }
                           }
                           goToTopic={props.goToTopic}
+                          onReport={
+                            ENV?.student_reporting_enabled &&
+                            props.discussionTopic.permissions?.studentReporting
+                              ? () => {
+                                  setShowReportModal(true)
+                                }
+                              : null
+                          }
+                          isReported={props.discussionEntry?.entryParticipant?.reportType != null}
                         />
                       ) : null
                     }
                     author={props.discussionEntry.author}
+                    anonymousAuthor={props.discussionEntry.anonymousAuthor}
                     message={props.discussionEntry.message}
                     isEditing={isEditing}
                     onSave={onUpdate}
@@ -403,6 +415,8 @@ export const DiscussionThreadContainer = props => {
                       props.discussionTopic.author,
                       props.discussionEntry.author
                     )}
+                    updateDraftCache={props.updateDraftCache}
+                    attachment={props.discussionEntry.attachment}
                   >
                     {threadActions.length > 0 && (
                       <View as="div" padding="x-small none none">
@@ -418,6 +432,23 @@ export const DiscussionThreadContainer = props => {
                       </View>
                     )}
                   </DiscussionEntryContainer>
+                  <ReportReply
+                    onCloseReportModal={() => {
+                      setShowReportModal(false)
+                    }}
+                    onSubmit={reportType => {
+                      updateDiscussionEntryReported({
+                        variables: {
+                          discussionEntryId: props.discussionEntry._id,
+                          reportType
+                        }
+                      })
+                      setReportModalIsLoading(true)
+                    }}
+                    showReportModal={showReportModal}
+                    isLoading={reportModalIsLoading}
+                    errorSubmitting={reportingError}
+                  />
                 </Flex.Item>
               </Flex>
             </div>
@@ -432,6 +463,7 @@ export const DiscussionThreadContainer = props => {
                 margin="none none x-small none"
               >
                 <DiscussionEdit
+                  discussionAnonymousState={props.discussionTopic.anonymousState}
                   onSubmit={text => {
                     onReplySubmit(text)
                   }}
@@ -482,7 +514,9 @@ DiscussionThreadContainer.propTypes = {
   parentRefCurrent: PropTypes.object,
   onOpenIsolatedView: PropTypes.func,
   goToTopic: PropTypes.func,
-  highlightEntryId: PropTypes.string
+  highlightEntryId: PropTypes.string,
+  removeDraftFromDiscussionCache: PropTypes.func,
+  updateDraftCache: PropTypes.func
 }
 
 DiscussionThreadContainer.defaultProps = {
@@ -496,7 +530,7 @@ const DiscussionSubentries = props => {
   const {sort} = useContext(SearchContext)
   const variables = {
     discussionEntryID: props.discussionEntryId,
-    first: PER_PAGE,
+    first: ENV.per_page,
     sort,
     courseID: window.ENV?.course_id
   }
@@ -521,6 +555,8 @@ const DiscussionSubentries = props => {
       discussionTopic={props.discussionTopic}
       markAsRead={props.markAsRead}
       parentRefCurrent={props.parentRefCurrent}
+      removeDraftFromDiscussionCache={props.removeDraftFromDiscussionCache}
+      updateDraftCache={props.updateDraftCache}
     />
   ))
 }
@@ -530,5 +566,7 @@ DiscussionSubentries.propTypes = {
   discussionEntryId: PropTypes.string,
   depth: PropTypes.number,
   markAsRead: PropTypes.func,
-  parentRefCurrent: PropTypes.object
+  parentRefCurrent: PropTypes.object,
+  removeDraftFromDiscussionCache: PropTypes.func,
+  updateDraftCache: PropTypes.func
 }

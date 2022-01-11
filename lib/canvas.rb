@@ -24,11 +24,11 @@ module Canvas
   mattr_accessor :protected_attribute_error
 
   def self.active_record_foreign_key_check(name, type, options)
-    if name.to_s =~ /_id\z/ && type.to_s == 'integer' && options[:limit].to_i < 8
-      raise ArgumentError, <<-EOS
+    if name.to_s.end_with?("_id") && type.to_s == "integer" && options[:limit].to_i < 8
+      raise ArgumentError, <<~TEXT
         All foreign keys need to be at least 8-byte integers. #{name}
         looks like a foreign key, please add this option: `:limit => 8`
-      EOS
+      TEXT
     end
   end
 
@@ -50,38 +50,38 @@ module Canvas
 
   def self.cache_store_config_for(cluster)
     yaml_config = ConfigFile.load("cache_store", cluster)
-    consul_config = YAML.load(Canvas::DynamicSettings.find(tree: :private, cluster: cluster)["cache_store.yml"] || "{}") || {}
+    consul_config = YAML.safe_load(Canvas::DynamicSettings.find(tree: :private, cluster: cluster)["cache_store.yml"] || "{}") || {}
     consul_config = consul_config.with_indifferent_access if consul_config.is_a?(Hash)
 
     consul_config.presence || yaml_config
   end
 
   def self.lookup_cache_store(config, cluster)
-    config = {'cache_store' => 'nil_store'}.merge(config)
-    if config['cache_store'] == 'redis_store'
+    config = { "cache_store" => "nil_store" }.merge(config)
+    if config["cache_store"] == "redis_store"
       ActiveSupport::Deprecation.warn("`redis_store` is no longer supported. Please change to `redis_cache_store`, and change `servers` to `url`.")
-      config['cache_store'] = 'redis_cache_store'
-      config['url'] = config['servers'] if config['servers']
+      config["cache_store"] = "redis_cache_store"
+      config["url"] = config["servers"] if config["servers"]
     end
 
-    case config.delete('cache_store')
-    when 'redis_cache_store'
+    case config.delete("cache_store")
+    when "redis_cache_store"
       Canvas::Redis.patch
       # if cache and redis data are configured identically, we want to share connections
-      if config.except('expires_in') == {} && cluster == Rails.env && Canvas.redis_enabled?
+      if config.except("expires_in") == {} && cluster == Rails.env && Canvas.redis_enabled?
         ActiveSupport::Cache.lookup_store(:redis_cache_store, redis: Canvas.redis)
       else
         # merge in redis.yml, but give precedence to cache_store.yml
-        redis_config = (ConfigFile.load('redis', cluster) || {})
+        redis_config = (ConfigFile.load("redis", cluster) || {})
         config = redis_config.merge(config) if redis_config.is_a?(Hash)
         # back compat
         config[:url] = config[:servers] if config[:servers]
         # config has to be a vanilla hash, with symbol keys, to auto-convert to kwargs
         ActiveSupport::Cache.lookup_store(:redis_cache_store, config.to_h.symbolize_keys)
       end
-    when 'memory_store'
+    when "memory_store"
       ActiveSupport::Cache.lookup_store(:memory_store)
-    when 'nil_store', 'null_store'
+    when "nil_store", "null_store"
       ActiveSupport::Cache.lookup_store(:null_store)
     end
   end
@@ -89,7 +89,8 @@ module Canvas
   # `sample` reports KB, not B
   if File.directory?("/proc")
     # linux w/ proc fs
-    LINUX_PAGE_SIZE = (size = `getconf PAGESIZE`.to_i; size > 0 ? size : 4096)
+    LINUX_PAGE_SIZE = (size = `getconf PAGESIZE`.to_i
+                       size > 0 ? size : 4096)
     def self.sample_memory
       s = File.read("/proc/#{Process.pid}/statm").to_i rescue 0
       s * LINUX_PAGE_SIZE / 1024
@@ -114,46 +115,48 @@ module Canvas
   #     Canvas.reloadable_plugin(File.dirname(__FILE__))
   def self.reloadable_plugin(dirname)
     return unless Rails.env.development?
+
     base_path = File.expand_path(dirname)
-    base_path.gsub(%r{/lib/[^/]*$}, '')
-    ActiveSupport::Dependencies.autoload_once_paths.reject! { |p|
+    base_path.gsub(%r{/lib/[^/]*$}, "")
+    ActiveSupport::Dependencies.autoload_once_paths.reject! do |p|
       p[0, base_path.length] == base_path
-    }
+    end
   end
 
   def self.revision
     return @revision if defined?(@revision)
-    @revision = if File.file?(Rails.root+"VERSION")
-      File.readlines(Rails.root+"VERSION").first.try(:strip)
-    else
-      nil
+
+    @revision = if Rails.root.join("VERSION").file?
+                  Rails.root.join("VERSION").readlines.first.try(:strip)
+                else
+                  nil
+                end
+  end
+
+  DEFAULT_RETRY_CALLBACK = lambda do |ex, tries|
+    Rails.logger.debug do
+      {
+        error_class: ex.class,
+        error_message: ex.message,
+        error_backtrace: ex.backtrace,
+        tries: tries,
+        message: "Retrying service call!"
+      }.to_json
     end
   end
 
-  DEFAULT_RETRY_CALLBACK = -> (ex, tries) {
-      Rails.logger.debug do
-        {
-          error_class: ex.class,
-          error_message: ex.message,
-          error_backtrace: ex.backtrace,
-          tries: tries,
-          message: "Retrying service call!"
-        }.to_json
-      end
-    }
-
   DEFAULT_RETRIABLE_OPTIONS = {
-    interval: -> (attempts) { 0.5 + 4 ** (attempts - 1) }, # Sleeps: 0.5, 4.5, 16.5
+    interval: ->(attempts) { 0.5 + (4**(attempts - 1)) }, # Sleeps: 0.5, 4.5, 16.5
     on_retry: DEFAULT_RETRY_CALLBACK,
     tries: 3,
   }.freeze
   def self.retriable(opts = {}, &block)
     if opts[:on_retry]
       original_callback = opts[:on_retry]
-      opts[:on_retry] = -> (ex, tries) {
+      opts[:on_retry] = lambda do |ex, tries|
         original_callback.call(ex, tries)
         DEFAULT_RETRY_CALLBACK.call(ex, tries)
-      }
+      end
     end
     options = DEFAULT_RETRIABLE_OPTIONS.merge(opts)
     Retriable.retriable(options, &block)
@@ -187,7 +190,7 @@ module Canvas
   #
   # all the configurable params have service-specific Settings with fallback to
   # generic Settings.
-  def self.timeout_protection(service_name, options={}, &block)
+  def self.timeout_protection(service_name, options = {}, &block)
     timeout = (Setting.get("service_#{service_name}_timeout", nil) || options[:fallback_timeout_length] || Setting.get("service_generic_timeout", 15.seconds.to_s)).to_f
 
     if Canvas.redis_enabled?
@@ -201,14 +204,15 @@ module Canvas
     end
   rescue TimeoutCutoff, Timeout::Error => e
     log_message = if e.is_a?(TimeoutCutoff)
-      "Skipping service call due to error count: #{service_name} #{e.error_count}"
-    else
-      "Timeout during service call: #{service_name}"
-    end
+                    "Skipping service call due to error count: #{service_name} #{e.error_count}"
+                  else
+                    "Timeout during service call: #{service_name}"
+                  end
     Rails.logger.error(log_message)
     Canvas::Errors.capture_exception(:service_timeout, e, :warn)
     raise if options[:raise_on_timeout]
-    return nil
+
+    nil
   end
 
   def self.timeout_protection_cutoff(service_name)
@@ -222,12 +226,12 @@ module Canvas
 
     error_count = redis.get(redis_key)
     if error_count.to_i >= cutoff
-      raise TimeoutCutoff.new(error_count)
+      raise TimeoutCutoff, error_count
     end
 
     begin
       Timeout.timeout(timeout, &block)
-    rescue Timeout::Error => e
+    rescue Timeout::Error
       error_ttl = timeout_protection_error_ttl(service_name)
       redis.incrby(redis_key, 1)
       redis.expire(redis_key, error_ttl)
@@ -256,7 +260,7 @@ module Canvas
 
     protection_activated_key = "#{redis_key}:protection_activated"
     protection_activated = redis.get(protection_activated_key)
-    raise TimeoutCutoff.new(cutoff) if protection_activated
+    raise TimeoutCutoff, cutoff if protection_activated
 
     counter_window = timeout_protection_failure_counter_window(service_name)
     min_samples = timeout_protection_failure_min_samples(service_name)
@@ -272,7 +276,7 @@ module Canvas
       error_ttl = timeout_protection_error_ttl(service_name)
       redis.set(protection_activated_key, "true")
       redis.expire(protection_activated_key, error_ttl)
-      raise TimeoutCutoff.new(failure_rate)
+      raise TimeoutCutoff, failure_rate
     end
 
     begin
@@ -288,6 +292,7 @@ module Canvas
     attr_accessor :error_count
 
     def initialize(error_count)
+      super()
       @error_count = error_count
     end
   end
@@ -317,8 +322,8 @@ module Canvas
   # As long as all authorized console users are provisioned with siteadmin
   # pseudonyms that share their username, this will look up their associated user record.
   # Otherwise it's still safe, it will just return a nil user.
-  def self.infer_user(username=nil)
-    unix_user = username || ENV['SUDO_USER'] || ENV['USER']
+  def self.infer_user(username = nil)
+    unix_user = username || ENV["SUDO_USER"] || ENV["USER"]
     Account.site_admin.pseudonyms.active.by_unique_id(unix_user).first&.user
   end
 end

@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU Affero General Public License along
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 #
-require 'inst-jobs'
+require "inst-jobs"
 
 module Canvas
   module Apm
@@ -44,6 +44,7 @@ module Canvas
 
           def instrument(job)
             return yield job unless tracer&.enabled
+
             job_name = job.name
             tracer.trace("inst_jobs", service: "canvas_jobs", resource: job_name) do |span|
               span.set_tag("inst_jobs.id", job.id)
@@ -51,9 +52,9 @@ module Canvas
               span.set_tag("inst_jobs.priority", job.priority)
               span.set_tag("inst_jobs.attempts", job.attempts)
               span.set_tag("inst_jobs.strand", job.strand) if job.strand.present?
-              span.set_tag('shard', job.shard_id.to_s) if job.shard_id.present?
+              span.set_tag("shard", job.shard_id.to_s) if job.shard_id.present?
               act_global_id = job.account_id
-              span.set_tag('root_account', act_global_id.to_s) if act_global_id.present?
+              span.set_tag("root_account", act_global_id.to_s) if act_global_id.present?
               span.span_type = "worker"
               yield job
             end
@@ -66,6 +67,7 @@ module Canvas
 
           def tracer
             return @tracer if @tracer.present?
+
             Datadog.tracer
           end
         end

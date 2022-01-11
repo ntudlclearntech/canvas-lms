@@ -19,7 +19,7 @@
 import {AlertManagerContext} from '@canvas/alerts/react/AlertManager'
 import {COURSES_QUERY, CONVERSATIONS_QUERY} from '../../graphql/Queries'
 import {DELETE_CONVERSATIONS, UPDATE_CONVERSATION_PARTICIPANTS} from '../../graphql/Mutations'
-import {CourseSelect} from '../components/CourseSelect/CourseSelect'
+import {CourseSelect, ALL_COURSES_ID} from '../components/CourseSelect/CourseSelect'
 import {Flex} from '@instructure/ui-flex'
 import I18n from 'i18n!conversations_2'
 import {MailboxSelectionDropdown} from '../components/MailboxSelectionDropdown/MailboxSelectionDropdown'
@@ -29,11 +29,20 @@ import {useQuery, useMutation} from 'react-apollo'
 import React, {useContext} from 'react'
 import {reduceDuplicateCourses} from '../../util/courses_helper'
 import {View} from '@instructure/ui-view'
+import {AddressBookContainer} from './AddressBookContainer/AddressBookContainer'
 
 const MessageListActionContainer = props => {
   const {setOnFailure, setOnSuccess} = useContext(AlertManagerContext)
-  const conversationsQuery = CONVERSATIONS_QUERY
   const userID = ENV.current_user_id?.toString()
+  const variables = {
+    userID,
+    scope: props.scope,
+    course: props.course
+  }
+  const options = {
+    query: CONVERSATIONS_QUERY,
+    variables: {...variables}
+  }
 
   const selectedReadStates = () => {
     const selectedStates =
@@ -56,14 +65,7 @@ const MessageListActionContainer = props => {
   const hasSelectedConversations = () => props.selectedConversations.length > 0
 
   const removeDeletedConversationsFromCache = (cache, result) => {
-    const conversationsFromCache = JSON.parse(
-      JSON.stringify(
-        cache.readQuery({
-          query: conversationsQuery,
-          variables: {userID, scope: props.scope, course: props.course}
-        })
-      )
-    )
+    const conversationsFromCache = JSON.parse(JSON.stringify(cache.readQuery(options)))
 
     const conversationIDsFromResult = result.data.deleteConversations.conversationIds
 
@@ -74,11 +76,7 @@ const MessageListActionContainer = props => {
     )
 
     conversationsFromCache.legacyNode.conversationsConnection.nodes = updatedCPs
-    cache.writeQuery({
-      query: conversationsQuery,
-      variables: {userID, scope: props.scope, course: props.course},
-      data: conversationsFromCache
-    })
+    cache.writeQuery({...options, data: conversationsFromCache})
   }
 
   const handleDeleteComplete = data => {
@@ -116,15 +114,7 @@ const MessageListActionContainer = props => {
       return
     }
 
-    const conversationsFromCache = JSON.parse(
-      JSON.stringify(
-        cache.readQuery({
-          query: conversationsQuery,
-          variables: {userID, scope: props.scope, course: props.course}
-        })
-      )
-    )
-
+    const conversationsFromCache = JSON.parse(JSON.stringify(cache.readQuery(options)))
     const conversationParticipantIDsFromResult =
       result.data.updateConversationParticipants.conversationParticipants.map(cp => cp._id)
 
@@ -132,13 +122,8 @@ const MessageListActionContainer = props => {
       conversationParticipant =>
         !conversationParticipantIDsFromResult.includes(conversationParticipant._id)
     )
-
     conversationsFromCache.legacyNode.conversationsConnection.nodes = updatedCPs
-    cache.writeQuery({
-      query: conversationsQuery,
-      variables: {userID, scope: props.scope, course: props.course},
-      data: conversationsFromCache
-    })
+    cache.writeQuery({...options, data: conversationsFromCache})
   }
 
   const handleArchiveComplete = data => {
@@ -160,18 +145,22 @@ const MessageListActionContainer = props => {
     }
   }
 
-  const handleReadStateComplete = data => {
-    const readStateChangeSuccessMsg = I18n.t(
+  const handleUnarchiveComplete = data => {
+    const unarchiveSuccessMsg = I18n.t(
       {
-        one: 'Read state Changed!',
-        other: 'Read states Changed!'
+        one: 'Message Unarchived!',
+        other: 'Messages Unarchived!'
       },
       {count: props.selectedConversations.length}
     )
     if (data.updateConversationParticipants.errors) {
-      setOnFailure(I18n.t('Read state change operation failed'))
+      // keep delete button enabled since deletion returned errors
+      props.archiveToggler(true)
+      setOnFailure(I18n.t('Unarchive operation failed'))
     } else {
-      setOnSuccess(readStateChangeSuccessMsg)
+      props.archiveToggler(false)
+      props.onConversationRemove(props.selectedConversations)
+      setOnSuccess(unarchiveSuccessMsg) // screenReaderOnly
     }
   }
 
@@ -185,9 +174,31 @@ const MessageListActionContainer = props => {
     }
   })
 
+  const [unarchiveConversationParticipants] = useMutation(UPDATE_CONVERSATION_PARTICIPANTS, {
+    update: removeOutOfScopeConversationsFromCache,
+    onCompleted(data) {
+      handleUnarchiveComplete(data)
+    },
+    onError() {
+      setOnFailure(I18n.t('Unarchive operation failed'))
+    }
+  })
+
   const [readStateChangeConversationParticipants] = useMutation(UPDATE_CONVERSATION_PARTICIPANTS, {
     onCompleted(data) {
-      handleReadStateComplete(data)
+      if (data.updateConversationParticipants.errors) {
+        setOnFailure(I18n.t('Read state change operation failed'))
+      } else {
+        setOnSuccess(
+          I18n.t(
+            {
+              one: 'Read state Changed!',
+              other: 'Read states Changed!'
+            },
+            {count: props.selectedConversations.length}
+          )
+        )
+      }
     },
     onError() {
       setOnFailure(I18n.t('Read state change failed'))
@@ -300,7 +311,7 @@ const MessageListActionContainer = props => {
 
     const confirmResult = window.confirm(unarchiveConfirmMsg) // eslint-disable-line no-alert
     if (confirmResult) {
-      archiveConversationParticipants({
+      unarchiveConversationParticipants({
         variables: {
           conversationIds: props.selectedConversations.map(convo => convo._id),
           workflowState: 'read'
@@ -353,6 +364,13 @@ const MessageListActionContainer = props => {
           <CourseSelect
             mainPage
             options={{
+              allCourses: [
+                {
+                  _id: ALL_COURSES_ID,
+                  contextName: I18n.t('All Courses'),
+                  assetString: 'all_courses'
+                }
+              ],
               favoriteCourses: data?.legacyNode?.favoriteCoursesConnection?.nodes,
               moreCourses,
               concludedCourses: [],
@@ -381,6 +399,7 @@ const MessageListActionContainer = props => {
             markAsRead={handleMarkAsRead}
             reply={props.onReply}
             replyAll={props.onReplyAll}
+            replyDisabled={!hasSelectedConversations()}
             star={!firstConversationIsStarred ? () => handleStar(true) : null}
             unstar={firstConversationIsStarred ? () => handleStar(false) : null}
             settingsDisabled={!hasSelectedConversations()}
@@ -388,6 +407,9 @@ const MessageListActionContainer = props => {
             shouldRenderMarkAsUnread={shouldRenderMarkAsUnread()}
             hasMultipleSelectedMessages={hasMultipleSelectedMessages()}
           />
+        </Flex.Item>
+        <Flex.Item padding="none none none x-small" shouldGrow shouldShrink>
+          <AddressBookContainer />
         </Flex.Item>
       </Flex>
     </View>

@@ -16,7 +16,7 @@
 #
 # You should have received a copy of the GNU Affero General Public License along
 # with this program. If not, see <http://www.gnu.org/licenses/>.
-require 'dynamic_settings'
+require "dynamic_settings"
 
 module Canvas
   # temporary shim rather than replacing all callsites at once
@@ -32,7 +32,7 @@ module Canvas
       # these used to be in an initializer, but initializing this
       # library in 2 places seems like a recipe for confusion, so
       # config/initializers/consul.rb got moved in here
-      reloader = -> do
+      reloader = lambda do
         settings = ConfigFile.load("consul").dup
 
         if settings.present?
@@ -55,8 +55,8 @@ module Canvas
       # dependency injection stuff from when
       # this got pulled out into a local gem
       ::DynamicSettings.cache = LocalCache
-      ::DynamicSettings.fallback_recovery_lambda = ->(e){ Canvas::Errors.capture_exception(:consul, e, :warn) }
-      ::DynamicSettings.retry_lambda = ->(e){ Canvas::Errors.capture_exception(:consul, e, :warn) }
+      ::DynamicSettings.fallback_recovery_lambda = ->(e) { Canvas::Errors.capture_exception(:consul, e, :warn) }
+      ::DynamicSettings.retry_lambda = ->(e) { Canvas::Errors.capture_exception(:consul, e, :warn) }
       ::DynamicSettings.logger = Rails.logger
     end
   end

@@ -19,7 +19,6 @@
 
 module Quizzes::QuizQuestion::AnswerSerializers
   class Essay < Quizzes::QuizQuestion::AnswerSerializers::AnswerSerializer
-
     # @param answer_html [String]
     #   The textual/HTML answer. Will be HTML escaped.
     #
@@ -31,7 +30,7 @@ module Quizzes::QuizQuestion::AnswerSerializers
       rc = SerializedAnswer.new
 
       unless answer_html.is_a?(String)
-        return rc.reject :invalid_type, 'answer', String
+        return rc.reject :invalid_type, "answer", String
       end
 
       answer_html = Util.sanitize_html answer_html
@@ -46,12 +45,10 @@ module Quizzes::QuizQuestion::AnswerSerializers
 
     # @return [String|NilClass]
     #   The HTML-escaped textual answer, or nil if no response was received.
-    def deserialize(submission_data, full=false)
+    def deserialize(submission_data, full: false)
       text = submission_data[question_key]
 
-      if text.present?
-        text
-      end
+      text.presence
     end
   end
 end

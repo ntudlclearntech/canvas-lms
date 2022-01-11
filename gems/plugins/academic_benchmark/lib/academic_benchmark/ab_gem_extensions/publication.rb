@@ -17,17 +17,17 @@
 # You should have received a copy of the GNU Affero General Public License along
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 
-require_relative 'common'
+require_relative "common"
 
 module AcademicBenchmarks
   module Standards
     class Publication
       include Common
-      def build_outcomes(ratings={}, _parent=nil)
+      def build_outcomes(ratings = {}, _parent = nil)
         build_common_outcomes(ratings).merge!({
-          title: description,
-          description: description,
-        })
+                                                title: description,
+                                                description: description,
+                                              })
       end
     end
   end

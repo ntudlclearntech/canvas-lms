@@ -18,13 +18,12 @@
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 
 module BroadcastPolicy
-
   class NotificationPolicy
     attr_accessor :dispatch, :to, :whenever, :data, :recipient_filter
 
     def initialize(dispatch)
       self.dispatch = dispatch
-      self.recipient_filter = lambda { |record, user| record }
+      self.recipient_filter = ->(record, _user) { record }
     end
 
     # This should be called for an instance.  It can only be sent out if the
@@ -37,13 +36,13 @@ module BroadcastPolicy
     # reasons.
     def broadcast(record)
       return if record.respond_to?(:skip_broadcasts) && record.skip_broadcasts
-      return unless record.instance_eval &self.whenever
+      return unless record.instance_eval(&whenever)
 
-      notification = BroadcastPolicy.notification_finder.by_name(self.dispatch)
+      notification = BroadcastPolicy.notification_finder.by_name(dispatch)
       return if notification.nil?
 
       record.class.connection.after_transaction_commit do
-        to_list = record.instance_eval(&self.to)
+        to_list = record.instance_eval(&to)
         to_list = Array(to_list).flatten
         next if to_list.empty?
 
@@ -51,7 +50,7 @@ module BroadcastPolicy
         to_list.each_slice(NotificationPolicy.slice_size) do |to_slice|
           BroadcastPolicy.notifier.send_notification(
             record,
-            self.dispatch,
+            dispatch,
             notification,
             to_slice,
             data
@@ -66,11 +65,10 @@ module BroadcastPolicy
     # For 99% of broadcasts this will not change anything.
     def self.slice_size
       if defined?(Setting)
-        Setting.get('broadcast_policy_slice_size', 500).to_i
+        Setting.get("broadcast_policy_slice_size", 500).to_i
       else
         500
       end
     end
   end
-
 end

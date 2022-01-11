@@ -26,18 +26,18 @@ module QuizzesNext
       def begin_export(course, opts)
         selected_assignment_ids = nil
         if opts[:selective]
-          selected_assignment_ids = opts[:exported_assets].map{|asset| (match = asset.match(/assignment_(\d+)/)) && match[1]}.compact
+          selected_assignment_ids = opts[:exported_assets].filter_map { |asset| (match = asset.match(/assignment_(\d+)/)) && match[1] }
           return unless selected_assignment_ids.any?
         end
         assignments = QuizzesNext::Service.active_lti_assignments_for_course(course, selected_assignment_ids: selected_assignment_ids)
         return if assignments.empty?
 
         {
-          "original_course_uuid": course.uuid,
-          "assignments": assignments.map do |assignment|
+          original_course_uuid: course.uuid,
+          assignments: assignments.map do |assignment|
             {
-              "original_resource_link_id": assignment.lti_resource_link_id,
-              "original_assignment_id": assignment.id,
+              original_resource_link_id: assignment.lti_resource_link_id,
+              original_assignment_id: assignment.id,
               "$canvas_assignment_id": assignment.id # transformed to new id
             }
           end
@@ -67,7 +67,7 @@ module QuizzesNext
           old_assignment = Assignment.find(old_assignment_id)
 
           new_assignment.duplicate_of = old_assignment
-          new_assignment.workflow_state = 'duplicating'
+          new_assignment.workflow_state = "duplicating"
           new_assignment.duplication_started_at = Time.zone.now
           new_assignment.save!
         end
@@ -78,7 +78,8 @@ module QuizzesNext
               original_course_uuid: imported_content[:original_course_uuid],
               new_course_uuid: new_course.uuid,
               new_course_resource_link_id: new_course.lti_context_id,
-              domain: new_course.root_account&.domain(ApplicationController.test_cluster_name)
+              domain: new_course.root_account&.domain(ApplicationController.test_cluster_name),
+              new_course_name: new_course.name
             }
           )
         end

@@ -22,9 +22,6 @@ class FixNanGroupWeights < ActiveRecord::Migration[4.2]
 
   def up
     DataFixup::FixNanGroupWeights.delay_if_production(priority: Delayed::LOWER_PRIORITY,
-        n_strand: "data_fixups:#{Shard.current.database_server.id}").run
-  end
-
-  def down
+                                                      n_strand: "data_fixups:#{Shard.current.database_server.id}").run
   end
 end

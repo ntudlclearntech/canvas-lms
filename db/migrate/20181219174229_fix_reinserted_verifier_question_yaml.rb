@@ -17,10 +17,10 @@
 # You should have received a copy of the GNU Affero General Public License along
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 
-class FixReinsertedVerifierQuestionYaml  < ActiveRecord::Migration[5.1]
+class FixReinsertedVerifierQuestionYaml < ActiveRecord::Migration[5.1]
   tag :postdeploy
 
   def up
-    DataFixup::FixReinsertedVerifierQuestionYaml.delay_if_production(priority: Delayed::LOW_PRIORITY, n_strand: 'long_datafixups').run
+    DataFixup::FixReinsertedVerifierQuestionYaml.delay_if_production(priority: Delayed::LOW_PRIORITY, n_strand: "long_datafixups").run
   end
 end

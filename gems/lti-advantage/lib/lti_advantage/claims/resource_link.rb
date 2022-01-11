@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'active_model'
+require "active_model"
 
 module LtiAdvantage::Claims
   # Class represeting an LTI 1.3 message "resource_link" claim.
@@ -9,7 +9,7 @@ module LtiAdvantage::Claims
     include ActiveModel::Model
 
     attr_accessor :description, :id, :title
-    validates_presence_of :id
 
+    validates_presence_of :id
   end
 end

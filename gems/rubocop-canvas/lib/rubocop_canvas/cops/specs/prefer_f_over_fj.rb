@@ -24,14 +24,15 @@ module RuboCop
         include RuboCop::Cop::Consts::JQuerySelectors
 
         SUSPECT_METHOD_NAMES = {
-          fj: 'f',
-          ffj: 'ff'
+          fj: "f",
+          ffj: "ff"
         }.freeze
 
         def on_send(node)
           _receiver, method_name, *args = *node
-          return unless SUSPECT_METHOD_NAMES.keys.include?(method_name)
+          return unless SUSPECT_METHOD_NAMES.key?(method_name)
           return if jquery_necessary?(args.to_a.first.children.first)
+
           add_offense node, message: error_msg(method_name), severity: :warning
         end
 
@@ -40,6 +41,7 @@ module RuboCop
         def jquery_necessary?(selector)
           # TODO: inspect the value of the variable
           return true unless selector.is_a?(String)
+
           selector =~ JQUERY_SELECTORS_REGEX
         end
 

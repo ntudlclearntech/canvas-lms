@@ -59,7 +59,7 @@ describe Mutations::HideAssignmentGradesForSections do
     CanvasSchema.execute(mutation_str, context: context)
   end
 
-  before(:each) do
+  before do
     @section1_student = section1.enroll_user(User.create!, "StudentEnrollment", "active").user
     @section2_student = section2.enroll_user(User.create!, "StudentEnrollment", "active").user
   end
@@ -110,7 +110,7 @@ describe Mutations::HideAssignmentGradesForSections do
       assignment.update!(anonymous_grading: true)
       assignment.post_submissions
       result = execute_query(mutation_str(assignment_id: assignment.id, section_ids: [section1.id]), context)
-      expect(result.dig("errors")).to be nil
+      expect(result["errors"]).to be nil
     end
 
     it "does not allow hiding by section for moderated assignments that have not had grades published yet" do
@@ -124,15 +124,15 @@ describe Mutations::HideAssignmentGradesForSections do
       now = Time.zone.now
       assignment.update!(moderated_grading: true, grader_count: 2, final_grader: teacher, grades_published_at: now)
       result = execute_query(mutation_str(assignment_id: assignment.id, section_ids: [section1.id]), context)
-      expect(result.dig("errors")).to be nil
+      expect(result["errors"]).to be nil
     end
 
     describe "hiding the grades" do
-      let(:hide_submissions_job) { Delayed::Job.where(tag:"Assignment#hide_submissions").order(:id).last }
+      let(:hide_submissions_job) { Delayed::Job.where(tag: "Assignment#hide_submissions").order(:id).last }
       let(:section1_student_submission) { assignment.submissions.find_by(user: @section1_student) }
       let(:section2_student_submission) { assignment.submissions.find_by(user: @section2_student) }
 
-      before(:each) do
+      before do
         now = Time.zone.now
         section1_student_submission.update!(posted_at: now)
         section2_student_submission.update!(posted_at: now)
@@ -191,18 +191,18 @@ describe Mutations::HideAssignmentGradesForSections do
       context "when the hider has limited visibility" do
         let(:ta) { User.create! }
 
-        before(:each) do
+        before do
           course.enroll_ta(ta, enrollment_state: "active", section: section1, limit_privileges_to_course_section: true)
         end
 
         it "does not hide grades for the requested sections if the user cannot see them" do
-          execute_query(mutation_str(assignment_id: assignment.id, section_ids: [section1.id, section2.id]), {current_user: ta})
+          execute_query(mutation_str(assignment_id: assignment.id, section_ids: [section1.id, section2.id]), { current_user: ta })
           hide_submissions_job.invoke_job
           expect(assignment.submission_for_student(@section2_student).posted_at).not_to be nil
         end
 
         it "stores only the user ids of affected students on the Progress object" do
-          result = execute_query(mutation_str(assignment_id: assignment.id, section_ids: [section1.id, section2.id]), {current_user: ta})
+          result = execute_query(mutation_str(assignment_id: assignment.id, section_ids: [section1.id, section2.id]), { current_user: ta })
           hide_submissions_job.invoke_job
           progress = Progress.find(result.dig("data", "hideAssignmentGradesForSections", "progress", "_id"))
           expect(progress.results[:user_ids]).to match_array [@section1_student.id]

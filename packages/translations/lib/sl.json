@@ -92,6 +92,9 @@
     "apply_781a2546": {
         "message": "Uporabi"
     },
+    "apply_changes_to_all_instances_of_this_button_and__3a3bea34": {
+        "message": "Uveljavi spremembe za vse primerke tega gumba in ikone v predmetu"
+    },
     "apps_54d24a47": {
         "message": "Aplikacije"
     },
@@ -148,9 +151,6 @@
     },
     "auto_saved_content_exists_would_you_like_to_load_t_fee528f2": {
         "message": "Obstaja samodejno shranjena vsebina. Ali želite namesto tega naložiti samodejno shranjeno vsebino?"
-    },
-    "automatically_open_an_in_line_preview_preview_disp_ed784ffe": {
-        "message": "Samodejno odpri v predogledu v vrstici. (Predogled se prikaže šele po shranjevanju)"
     },
     "available_folders_694d0436": {
         "message": "Razpoložljive mape"
@@ -245,6 +245,9 @@
     "close_opportunity_center_popup_9907d981": {
         "message": "Zapri pojavno okno Središče za priložnosti"
     },
+    "closed_caption_file_must_be_less_than_maxkb_kb_5880f752": {
+        "message": "Datoteka z razširjenimi podnapisi mora biti manjša od { maxKb } kb"
+    },
     "closed_captions_subtitles_e6aaa016": {
         "message": "Razširjeni podnapisi/podnapisi"
     },
@@ -326,6 +329,12 @@
     "creative_commons_license_725584ae": {
         "message": "Licenca Creative Commons:"
     },
+    "crop_image_807ebb08": {
+        "message": "Obreži sliko"
+    },
+    "current_image_f16c249c": {
+        "message": "Trenutna slika"
+    },
     "custom_6979cd81": {
         "message": "Po meri"
     },
@@ -374,14 +383,17 @@
     "details_a6f427c3": {
         "message": "Podrobnosti:"
     },
+    "diamond_b8dfe7ae": {
+        "message": "Diamant"
+    },
+    "dimension_type_55c83e4e": {
+        "message": "Vrsta mere"
+    },
     "dimensions_45ddb7b7": {
         "message": "Mere"
     },
     "directionality_26ae9e08": {
         "message": "Usmerjenost"
-    },
-    "disable_in_line_preview_2a675175": {
-        "message": "Onemogoči predogled v vrstici."
     },
     "discussion_6719c51d": {
         "message": "Razprava"
@@ -547,6 +559,9 @@
     },
     "feedback_6dcc1991": {
         "message": "Povratne informacije"
+    },
+    "file_name_8fd421ff": {
+        "message": "Ime datoteke"
     },
     "file_url_c12b64be": {
         "message": "URL datoteke"
@@ -830,6 +845,12 @@
     "modules_c4325335": {
         "message": "Moduli"
     },
+    "multi_color_image_63d7372f": {
+        "message": "Večbarvna slika"
+    },
+    "must_be_at_least_percentage_22e373b6": {
+        "message": "Mora biti vsaj { percentage }%."
+    },
     "must_be_at_least_width_x_height_px_41dc825e": {
         "message": "Mora biti vsaj { width } x { height } px."
     },
@@ -838,9 +859,6 @@
     },
     "my_grades_98834476": {
         "message": "Moje ocene"
-    },
-    "my_images_427f9b0c": {
-        "message": "Moje slike"
     },
     "name_1aed4a1b": {
         "message": "Ime"
@@ -892,6 +910,9 @@
     },
     "none_3b5e34d2": {
         "message": "Brez"
+    },
+    "none_selected_b93d56d2": {
+        "message": "Nobena ni izbrana"
     },
     "nothing_due_this_week_d45c9ef9": {
         "message": "Ta teden ni nobenega roka"
@@ -965,8 +986,17 @@
     "peer_review_for_itemtitle_358cb413": {
         "message": "Ocenjevanje kolegov za { itemTitle }"
     },
+    "pentagon_17d82ea3": {
+        "message": "Peterokotnik"
+    },
     "people_b4ebb13c": {
         "message": "Sodelujoči"
+    },
+    "percentage_34ab7c2c": {
+        "message": "Odstotek"
+    },
+    "pixels_52ece7d1": {
+        "message": "Slikovne pike"
     },
     "points_bceb5005": {
         "message": "točk"
@@ -1076,6 +1106,9 @@
     "search_term_b2d2235": {
         "message": "Iskalni izraz"
     },
+    "select_crop_shape_d441feeb": {
+        "message": "Izberite obliko izrezovanja"
+    },
     "select_language_7c93a900": {
         "message": "Izberite jezik"
     },
@@ -1103,11 +1136,14 @@
     "show_video_options_6ed3721a": {
         "message": "Prikaži možnosti videoposnetka"
     },
+    "single_color_image_4e5d4dbc": {
+        "message": "Enobarvna slika"
+    },
     "size_b30e1077": {
         "message": "Velikost"
     },
-    "size_of_file_is_greater_than_the_maximum_max_mb_al_6eb3fa9a": {
-        "message": "Velikost { file } je večja od največje dovoljene velikosti datoteke { max } MB."
+    "size_of_caption_file_is_greater_than_the_maximum_m_bff5f86e": {
+        "message": "Velikost je večja od največje dovoljene velikosti datoteke { max } kB."
     },
     "small_b070434a": {
         "message": "Majhna"

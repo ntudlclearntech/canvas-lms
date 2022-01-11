@@ -18,18 +18,18 @@
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-require File.expand_path(File.dirname(__FILE__) + '/../api_spec_helper')
+require_relative "../api_spec_helper"
 
 describe "Services API", type: :request do
   before :once do
-    user_with_pseudonym(:active_all => true)
+    user_with_pseudonym(active_all: true)
   end
 
-  before :each do
+  before do
     stub_kaltura
   end
 
-  it "should check for auth" do
+  it "checks for auth" do
     get("/api/v1/services/kaltura")
     assert_status(401)
   end
@@ -40,72 +40,72 @@ describe "Services API", type: :request do
     expect(response.body).to include("must be logged in to use Kaltura")
   end
 
-  it "should return the config information for kaltura" do
+  it "returns the config information for kaltura" do
     json = api_call(:get, "/api/v1/services/kaltura",
-              :controller => "services_api", :action => "show_kaltura_config", :format => "json")
+                    controller: "services_api", action: "show_kaltura_config", format: "json")
     expect(json).to eq({
-      'enabled' => true,
-      'domain' => 'kaltura.example.com',
-      'resource_domain' => 'cdn.kaltura.example.com',
-      'rtmp_domain' => 'rtmp.kaltura.example.com',
-      'partner_id' => '100',
-    })
+                         "enabled" => true,
+                         "domain" => "kaltura.example.com",
+                         "resource_domain" => "cdn.kaltura.example.com",
+                         "rtmp_domain" => "rtmp.kaltura.example.com",
+                         "partner_id" => "100",
+                       })
   end
 
-  it "should degrade gracefully if kaltura is disabled or not configured" do
+  it "degrades gracefully if kaltura is disabled or not configured" do
     allow(CanvasKaltura::ClientV3).to receive(:config).and_return(nil)
     json = api_call(:get, "/api/v1/services/kaltura",
-              :controller => "services_api", :action => "show_kaltura_config", :format => "json")
+                    controller: "services_api", action: "show_kaltura_config", format: "json")
     expect(json).to eq({
-      'enabled' => false,
-    })
+                         "enabled" => false,
+                       })
   end
 
-  it "should return a new kaltura session" do
-    kal = double('CanvasKaltura::ClientV3')
+  it "returns a new kaltura session" do
+    kal = double("CanvasKaltura::ClientV3")
     expect(kal).to receive(:startSession).and_return "new_session_id_here"
     allow(CanvasKaltura::ClientV3).to receive(:new).and_return(kal)
     json = api_call(:post, "/api/v1/services/kaltura_session",
-                    :controller => "services_api", :action => "start_kaltura_session", :format => "json")
-    expect(json.delete_if { |k| %w(serverTime).include?(k) }).to eq({
-      'ks' => "new_session_id_here",
-      'subp_id' => '10000',
-      'partner_id' => '100',
-      'uid' => "#{@user.id}_#{Account.default.id}",
-    })
+                    controller: "services_api", action: "start_kaltura_session", format: "json")
+    expect(json.delete_if { |k| %w[serverTime].include?(k) }).to eq({
+                                                                      "ks" => "new_session_id_here",
+                                                                      "subp_id" => "10000",
+                                                                      "partner_id" => "100",
+                                                                      "uid" => "#{@user.id}_#{Account.default.id}",
+                                                                    })
   end
 
-  it "should return a new kaltura session with upload config if param provided" do
-    kal = double('CanvasKaltura::ClientV3')
+  it "returns a new kaltura session with upload config if param provided" do
+    kal = double("CanvasKaltura::ClientV3")
     expect(kal).to receive(:startSession).and_return "new_session_id_here"
     allow(CanvasKaltura::ClientV3).to receive(:new).and_return(kal)
     json = api_call(:post, "/api/v1/services/kaltura_session",
-                    :controller => "services_api", :action => "start_kaltura_session",
-                    :format => "json", :include_upload_config => 1)
-    expect(json.delete_if { |k| %w(serverTime).include?(k) }).to eq({
-      'ks' => "new_session_id_here",
-      'subp_id' => '10000',
-      'partner_id' => '100',
-      'uid' => "#{@user.id}_#{Account.default.id}",
-      'kaltura_setting' => {
-        'domain'=>'kaltura.example.com',
-        'kcw_ui_conf'=>'1',
-        "max_file_size_bytes"=>534773760,
-        'partner_id'=>'100',
-        'player_ui_conf'=>'1',
-        'resource_domain'=>'cdn.kaltura.example.com',
-        'rtmp_domain'=>'rtmp.kaltura.example.com',
-        'subpartner_id'=>'10000',
-        'upload_ui_conf'=>'1',
-        'entryUrl' => 'http://kaltura.example.com/index.php/partnerservices2/addEntry',
-        'uiconfUrl' => 'http://kaltura.example.com/index.php/partnerservices2/getuiconf',
-        'uploadUrl' => 'http://kaltura.example.com/index.php/partnerservices2/upload',
-        'partner_data' => {
-          'root_account_id'=>@user.account.root_account.id,
-          'sis_source_id'=>nil,
-          'sis_user_id'=>nil
-        },
-      },
-    })
+                    controller: "services_api", action: "start_kaltura_session",
+                    format: "json", include_upload_config: 1)
+    expect(json.delete_if { |k| %w[serverTime].include?(k) }).to eq({
+                                                                      "ks" => "new_session_id_here",
+                                                                      "subp_id" => "10000",
+                                                                      "partner_id" => "100",
+                                                                      "uid" => "#{@user.id}_#{Account.default.id}",
+                                                                      "kaltura_setting" => {
+                                                                        "domain" => "kaltura.example.com",
+                                                                        "kcw_ui_conf" => "1",
+                                                                        "max_file_size_bytes" => 534_773_760,
+                                                                        "partner_id" => "100",
+                                                                        "player_ui_conf" => "1",
+                                                                        "resource_domain" => "cdn.kaltura.example.com",
+                                                                        "rtmp_domain" => "rtmp.kaltura.example.com",
+                                                                        "subpartner_id" => "10000",
+                                                                        "upload_ui_conf" => "1",
+                                                                        "entryUrl" => "http://kaltura.example.com/index.php/partnerservices2/addEntry",
+                                                                        "uiconfUrl" => "http://kaltura.example.com/index.php/partnerservices2/getuiconf",
+                                                                        "uploadUrl" => "http://kaltura.example.com/index.php/partnerservices2/upload",
+                                                                        "partner_data" => {
+                                                                          "root_account_id" => @user.account.root_account.id,
+                                                                          "sis_source_id" => nil,
+                                                                          "sis_user_id" => nil
+                                                                        },
+                                                                      },
+                                                                    })
   end
 end

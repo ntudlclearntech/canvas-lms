@@ -21,7 +21,7 @@ module Types
   class AssignmentGroupType < ApplicationObjectType
     graphql_name "AssignmentGroup"
 
-    alias assignment_group object
+    alias_method :assignment_group, :object
 
     implements GraphQL::Types::Relay::Node
     implements Interfaces::TimestampInterface
@@ -38,9 +38,9 @@ module Types
       graphql_name "GradesEnrollmentFilter"
 
       argument :enrollment_ids, [ID],
-        "only include users with the given enrollment ids",
-        prepare: GraphQLHelpers.relay_or_legacy_ids_prepare_func("Enrollment"),
-        required: false
+               "only include users with the given enrollment ids",
+               prepare: GraphQLHelpers.relay_or_legacy_ids_prepare_func("Enrollment"),
+               required: false
     end
 
     global_id_field :id
@@ -52,9 +52,9 @@ module Types
 
     implements Interfaces::AssignmentsConnectionInterface
     def assignments_connection(filter: {})
-      load_association(:context).then { |course|
+      load_association(:context).then do |course|
         super(course: course, filter: filter)
-      }
+      end
     end
 
     field :grades_connection, GradesType.connection_type, null: true do

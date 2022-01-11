@@ -53,7 +53,14 @@ describe('MessageListActionContainer', () => {
     return render(
       <ApolloProvider client={mswClient}>
         <AlertManagerContext.Provider value={{setOnFailure: jest.fn(), setOnSuccess: jest.fn()}}>
-          <MessageListActionContainer {...overrideProps} />
+          <MessageListActionContainer
+            activeMailbox="inbox"
+            onCompose={jest.fn()}
+            onReply={jest.fn()}
+            onReplyAll={jest.fn()}
+            onSelectMailbox={jest.fn()}
+            {...overrideProps}
+          />
         </AlertManagerContext.Provider>
       </ApolloProvider>
     )
@@ -63,6 +70,13 @@ describe('MessageListActionContainer', () => {
     it('should render', () => {
       const component = setup()
       expect(component.container).toBeTruthy()
+    })
+
+    it('should render All Courses option', async () => {
+      const {findByTestId, queryByText} = setup()
+      const courseDropdown = await findByTestId('course-select')
+      fireEvent.click(courseDropdown)
+      expect(await queryByText('All Courses')).toBeInTheDocument()
     })
 
     it('should call onCourseFilterSelect when course selected', async () => {
@@ -122,6 +136,30 @@ describe('MessageListActionContainer', () => {
 
       const mailboxDropdown = await component.findByDisplayValue('Sent')
       expect(mailboxDropdown).toBeTruthy()
+    })
+  })
+
+  describe('reply buttons', () => {
+    it('should disable replying when no conversations are selected', async () => {
+      const component = setup({
+        selectedConversations: []
+      })
+
+      const replyButton = await component.findByTestId('reply')
+      const replyAllButton = await component.findByTestId('reply-all')
+      expect(replyButton).toBeDisabled()
+      expect(replyAllButton).toBeDisabled()
+    })
+
+    it('should enable replying when conversations are selected', async () => {
+      const component = setup({
+        selectedConversations: [{}]
+      })
+
+      const replyButton = await component.findByTestId('reply')
+      const replyAllButton = await component.findByTestId('reply-all')
+      expect(replyButton).not.toBeDisabled()
+      expect(replyAllButton).not.toBeDisabled()
     })
   })
 

@@ -17,19 +17,18 @@
 # You should have received a copy of the GNU Affero General Public License along
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 #
-require File.expand_path(File.dirname(__FILE__) + '/../../../spec_helper')
 
 describe Canvas::Security::LoginRegistry do
-  let(:registry){ Canvas::Security::LoginRegistry }
+  let(:registry) { Canvas::Security::LoginRegistry }
 
   describe ".audit_login" do
     before do
       skip("requires redis config to run") unless Canvas.redis_enabled?
-      Setting.set('login_attempts_total', '2')
-      Setting.set('login_attempts_per_ip', '1')
-      u = user_with_pseudonym :active_user => true,
-        :username => "nobody@example.com",
-        :password => "asdfasdf"
+      Setting.set("login_attempts_total", "2")
+      Setting.set("login_attempts_per_ip", "1")
+      u = user_with_pseudonym active_user: true,
+                              username: "nobody@example.com",
+                              password: "asdfasdf"
       u.save!
       @p = u.pseudonym
     end
@@ -49,13 +48,13 @@ describe Canvas::Security::LoginRegistry do
     end
 
     describe "internal implementation" do
-      it "should be limited for the same ip" do
+      it "is limited for the same ip" do
         expect(registry.allow_login_attempt?(@p, "5.5.5.5")).to eq true
         registry.failed_login!(@p, "5.5.5.5")
         expect(registry.allow_login_attempt?(@p, "5.5.5.5")).to eq false
       end
 
-      it "should have a higher limit for other ips" do
+      it "has a higher limit for other ips" do
         registry.failed_login!(@p, "5.5.5.5")
         expect(registry.allow_login_attempt?(@p, "5.5.5.6")).to eq true
         registry.failed_login!(@p, "5.5.5.7")
@@ -63,21 +62,21 @@ describe Canvas::Security::LoginRegistry do
         expect(registry.allow_login_attempt?(@p, nil)).to eq false # no ip but too many total failures
       end
 
-      it "should not block other users with the same ip" do
+      it "does not block other users with the same ip" do
         registry.failed_login!(@p, "5.5.5.5")
         # schools like to NAT hundreds of people to the same IP, so we don't
         # ever block the IP address as a whole
-        u2 = user_with_pseudonym(:active_user => true, :username => "second@example.com", :password => "12341234")
+        u2 = user_with_pseudonym(active_user: true, username: "second@example.com", password: "12341234")
         u2.save!
         expect(registry.allow_login_attempt?(u2.pseudonym, "5.5.5.5")).to eq true
         expect(registry.allow_login_attempt?(u2.pseudonym, "5.5.5.6")).to eq true
       end
 
-      it "should timeout the login block after a waiting period" do
-        Setting.set('login_attempts_ttl', 5.seconds)
+      it "timeouts the login block after a waiting period" do
+        Setting.set("login_attempts_ttl", 5.seconds)
         registry.failed_login!(@p, "5.5.5.5")
-        expect(registry.time_until_login_allowed(@p, '5.5.5.6')).to eq 0
-        expect(registry.time_until_login_allowed(@p, '5.5.5.5')).to be <= 5
+        expect(registry.time_until_login_allowed(@p, "5.5.5.6")).to eq 0
+        expect(registry.time_until_login_allowed(@p, "5.5.5.5")).to be <= 5
       end
     end
   end

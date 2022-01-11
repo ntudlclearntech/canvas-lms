@@ -74,7 +74,7 @@ class AuditLogFieldExtension < GraphQL::Schema::FieldExtension
     # this method will have to know how to resolve a root account for every
     # object that is logged by a mutation
     def root_account_ids_for(entry)
-      if Progress === entry
+      if entry.is_a?(Progress)
         entry = entry.context
       end
 
@@ -112,7 +112,7 @@ class AuditLogFieldExtension < GraphQL::Schema::FieldExtension
     def truncate_params!(o)
       case o
       when Hash
-        o.each { |k,v| o[k] = truncate_params!(v) }
+        o.each { |k, v| o[k] = truncate_params!(v) }
       when Array
         o.map! { |x| truncate_params!(x) }
       when String
@@ -131,11 +131,15 @@ class AuditLogFieldExtension < GraphQL::Schema::FieldExtension
     Setting.get("graphql_mutations_ddb_table_name", "graphql_mutations")
   end
 
-  def resolve(object:, arguments:, context:, **rest)
+  def resolve(object:, arguments:, context:, **)
     yield(object, arguments).tap do |value|
       next unless AuditLogFieldExtension.enabled?
 
       mutation = field.mutation
+      # DiscussionEntryDrafts are not objects that need audit logs, they are
+      # only allowed to be created by the user, and they have timestamps, so
+      # skip audit logs for this mutation.
+      next if mutation == Mutations::CreateDiscussionEntryDraft
 
       logger = Logger.new(mutation, context, arguments)
 
@@ -143,7 +147,8 @@ class AuditLogFieldExtension < GraphQL::Schema::FieldExtension
       # should make them on the arguments too???
       mutation.fields.each do |_, return_field|
         next if return_field.original_name == :errors
-        if entry = value[return_field.original_name]
+
+        if (entry = value[return_field.original_name])
           # technically we could be returning lists of lists but gosh dang i
           # hope we never do that
           if entry.respond_to?(:each)

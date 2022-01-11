@@ -19,16 +19,15 @@
 #
 
 module Factories
-  def pace_plan_model(opts={})
+  def pace_plan_model(opts = {})
     course = opts.delete(:course) || opts[:context] || course_model(reusable: true)
     @pace_plan = factory_with_protected_attributes(course.pace_plans, valid_pace_plan_attributes.merge(opts))
   end
 
   def valid_pace_plan_attributes
     {
-      workflow_state: 'active',
-      start_date: Time.current,
-      end_date: 1.month.from_now,
+      workflow_state: "active",
+      end_date: "2021-09-30",
       exclude_weekends: true,
       hard_end_dates: true,
       published_at: Time.current

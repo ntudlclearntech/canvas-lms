@@ -16,7 +16,9 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+import {AnonymousUser} from './AnonymousUser'
 import {DiscussionEntry} from './DiscussionEntry'
+import {DiscussionEntryDraft} from './DiscussionEntryDraft'
 import {Discussion} from './Discussion'
 import {Error} from '../../../shared/graphql/Error'
 import gql from 'graphql-tag'
@@ -34,13 +36,13 @@ export const DELETE_DISCUSSION_TOPIC = gql`
   ${Error.fragment}
 `
 
-// TODO: Support read state
 export const UPDATE_DISCUSSION_ENTRY_PARTICIPANT = gql`
   mutation UpdateDiscussionEntryParticipant(
     $discussionEntryId: ID!
     $read: Boolean
     $rating: RatingInputType
     $forcedReadState: Boolean
+    $reportType: ReportType
   ) {
     updateDiscussionEntryParticipant(
       input: {
@@ -48,6 +50,7 @@ export const UPDATE_DISCUSSION_ENTRY_PARTICIPANT = gql`
         read: $read
         rating: $rating
         forcedReadState: $forcedReadState
+        reportType: $reportType
       }
     ) {
       discussionEntry {
@@ -149,12 +152,16 @@ export const CREATE_DISCUSSION_ENTRY = gql`
         author {
           ...User
         }
+        anonymousAuthor {
+          ...AnonymousUser
+        }
       }
       errors {
         ...Error
       }
     }
   }
+  ${AnonymousUser.fragment}
   ${User.fragment}
   ${DiscussionEntry.fragment}
   ${Error.fragment}
@@ -235,4 +242,29 @@ export const UPDATE_ISOLATED_VIEW_DEEPLY_NESTED_ALERT = gql`
     }
   }
   ${User.fragment}
+`
+
+export const CREATE_DISCUSSION_ENTRY_DRAFT = gql`
+  mutation CreateDiscussionEntryDraft(
+    $discussionTopicId: ID!
+    $message: String!
+    $discussionEntryId: ID
+    $parentId: ID
+    $fileId: ID
+  ) {
+    createDiscussionEntryDraft(
+      input: {
+        discussionTopicId: $discussionTopicId
+        discussionEntryId: $discussionEntryId
+        message: $message
+        parentId: $parentId
+        fileId: $fileId
+      }
+    ) {
+      discussionEntryDraft {
+        ...DiscussionEntryDraft
+      }
+    }
+  }
+  ${DiscussionEntryDraft.fragment}
 `

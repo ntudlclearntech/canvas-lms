@@ -32,7 +32,6 @@ require_relative "../rerun_argument"
 #  * video capture (selenium + xvfb)
 module ErrorContext
   class BaseFormatter < ::RSpec::Core::Formatters::BaseFormatter
-
     attr_reader :summary
 
     def example_started(notification)
@@ -48,11 +47,12 @@ module ErrorContext
     end
 
     def self.inherited(klass)
+      super
       ::RSpec::Core::Formatters.register klass,
-        :example_started,
-        :example_failed,
-        :example_pending,
-        :example_passed
+                                         :example_started,
+                                         :example_failed,
+                                         :example_pending,
+                                         :example_passed
 
       # TODO: once https://github.com/rspec/rspec-core/pull/2387 lands,
       # remove this and change the register call to use example_finished.
@@ -80,6 +80,7 @@ module ErrorContext
       # beyond a certain point
       MAX_FAILURES_TO_RECORD = 20
       attr_writer :num_failures
+
       def num_failures
         @num_failures ||= 0
       end
@@ -87,6 +88,8 @@ module ErrorContext
       def start(example)
         @summary ||= begin
           summary = new(example)
+          @errors_path = nil
+          @base_error_path = nil
           summary.start
           summary
         end
@@ -95,6 +98,7 @@ module ErrorContext
 
       def finish
         return unless @summary
+
         note_recent_spec_run @summary.example
         @summary.finish
         @summary = nil
@@ -119,7 +123,7 @@ module ErrorContext
       end
 
       def base_error_path
-        @base_error_path ||= ENV.fetch("ERROR_CONTEXT_BASE_PATH", Rails.root.join("log", "spec_failures"))
+        @base_error_path ||= ENV.fetch("ERROR_CONTEXT_BASE_PATH", Rails.root.join("log/spec_failures/Initial"))
       end
     end
 
@@ -135,6 +139,7 @@ module ErrorContext
 
     def selenium?
       return @selenium unless @selenium.nil?
+
       @selenium = defined?(SeleniumDependencies) && example.example_group.include?(SeleniumDependencies)
     end
 
@@ -149,7 +154,7 @@ module ErrorContext
         # TODO: does not work with new docker builds
         # discard_video! if capturing_video?
       else
-        save_screenshot! if capture_screenshot?
+        save_screenshot! if capture_screenshot? # rubocop:disable Style/IfInsideElse
         # TODO: does not work with new docker builds
         # save_video! if capturing_video?
       end
@@ -181,7 +186,7 @@ module ErrorContext
     end
 
     def page_html
-      example.metadata[:page_html] || 'Page HTML was not captured.'
+      example.metadata[:page_html] || "Page HTML was not captured."
     end
 
     def capture_screenshot?
@@ -210,7 +215,7 @@ module ErrorContext
     end
 
     def spec_path
-      @spec_path ||= RerunArgument.for(example).sub(/\A[.\/]+/, "")
+      @spec_path ||= RerunArgument.for(example).sub(%r{\A[./]+}, "")
     end
 
     def errors_path

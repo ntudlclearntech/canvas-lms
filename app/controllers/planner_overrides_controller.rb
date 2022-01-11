@@ -99,7 +99,7 @@ class PlannerOverridesController < ApplicationController
   # @returns [PlannerOverride]
   def index
     planner_overrides = Api.paginate(PlannerOverride.for_user(@current_user).active, self, api_v1_planner_overrides_url)
-    render :json => planner_overrides.map { |po| planner_override_json(po, @current_user, session) }
+    render json: planner_overrides.map { |po| planner_override_json(po, @current_user, session) }
   end
 
   # @API Show a planner override
@@ -159,7 +159,7 @@ class PlannerOverridesController < ApplicationController
     plannable_type = PlannerHelper::PLANNABLE_TYPES[params[:plannable_type]]
     plannable = plannable_type.constantize.find(params[:plannable_id])
     planner_override = PlannerOverride.new(plannable: plannable, marked_complete: value_to_boolean(params[:marked_complete]),
-      user: @current_user, dismissed: value_to_boolean(params[:dismissed]))
+                                           user: @current_user, dismissed: value_to_boolean(params[:dismissed]))
     sync_module_requirement_done(plannable, @current_user, value_to_boolean(params[:marked_complete]))
 
     begin

@@ -17,11 +17,11 @@
 # You should have received a copy of the GNU Affero General Public License along
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 
-require 'uri'
-require 'ipaddr'
-require 'resolv'
-require 'canvas_http/circuit_breaker'
-require 'logger'
+require "uri"
+require "ipaddr"
+require "resolv"
+require "canvas_http/circuit_breaker"
+require "logger"
 
 module CanvasHttp
   class Error < ::StandardError
@@ -34,17 +34,24 @@ module CanvasHttp
   end
 
   class TooManyRedirectsError < CanvasHttp::Error; end
+
   class InvalidResponseCodeError < CanvasHttp::Error
     attr_reader :code
+
     def initialize(code, body = nil)
       super(body)
       @code = code
     end
   end
+
   class RelativeUriError < CanvasHttp::Error; end
+
   class InsecureUriError < CanvasHttp::Error; end
+
   class UnresolvableUriError < CanvasHttp::Error; end
+
   class CircuitBreakerError < CanvasHttp::Error; end
+
   class ResponseTooLargeError < CanvasHttp::Error; end
 
   def self.put(*args, **kwargs, &block)
@@ -80,7 +87,7 @@ module CanvasHttp
   #
   # Eventually it may be expanded to optionally do cert verification as well.
   def self.request(request_class, url_str, other_headers = {}, redirect_limit: 3, form_data: nil, multipart: false,
-    streaming: false, body: nil, content_type: nil, redirect_spy: nil, max_response_body_length: nil)
+                   streaming: false, body: nil, content_type: nil, redirect_spy: nil, max_response_body_length: nil)
     last_scheme = nil
     last_host = nil
     current_host = nil
@@ -92,6 +99,7 @@ module CanvasHttp
       _, uri = CanvasHttp.validate_url(url_str, host: last_host, scheme: last_scheme, check_host: true) # uses the last host and scheme for relative redirects
       current_host = uri.host
       raise CircuitBreakerError if CircuitBreaker.tripped?(current_host)
+
       http = CanvasHttp.connection_for_uri(uri)
 
       request = request_class.new(uri.request_uri, other_headers)
@@ -110,7 +118,7 @@ module CanvasHttp
           redirect_spy.call(response) if redirect_spy.is_a?(Proc)
           last_host = uri.host
           last_scheme = uri.scheme
-          url_str = response['Location']
+          url_str = response["Location"]
           logger.info("CANVAS_HTTP CONSUME REDIRECT | url: #{url_str} | elapsed: #{elapsed_time} s")
           redirect_limit -= 1
         else
@@ -138,7 +146,7 @@ module CanvasHttp
   def self.read_body_max_length(response, max_length)
     body = nil
     response.read_body do |chunk|
-      body ||= +''
+      body ||= +""
       raise ResponseTooLargeError if body.length + chunk.length > max_length
 
       body << chunk
@@ -154,24 +162,25 @@ module CanvasHttp
       else
         request.body, header = Multipart::Post.new.prepare_query(form_data)
       end
-      request.content_type = header['Content-type']
+      request.content_type = header["Content-type"]
     elsif form_data.is_a?(String)
       request.body = form_data
-      request.content_type = 'application/x-www-form-urlencoded'
+      request.content_type = "application/x-www-form-urlencoded"
     else
       request.set_form_data(form_data)
     end
   end
 
   # returns [normalized_url_string, URI] if valid, raises otherwise
-  def self.validate_url(value, host: nil, scheme: nil, allowed_schemes: %w{http https}, check_host: false)
+  def self.validate_url(value, host: nil, scheme: nil, allowed_schemes: %w[http https], check_host: false)
     value = value.strip
     raise ArgumentError if value.empty?
+
     uri = nil
     begin
       uri = URI.parse(value)
     rescue URI::InvalidURIError => e
-      if e.message =~ /URI must be ascii only/
+      if e.message.include?("URI must be ascii only")
         uri = URI.parse(Addressable::URI.normalized_encode(value).chomp("/"))
         value = uri.to_s
       else
@@ -191,27 +200,29 @@ module CanvasHttp
     end
     raise ArgumentError if !allowed_schemes.nil? && !allowed_schemes.include?(uri.scheme.downcase)
     raise(RelativeUriError) if uri.host.nil? || uri.host.strip.empty?
-    raise InsecureUriError if check_host && self.insecure_host?(uri.host)
+    raise InsecureUriError if check_host && insecure_host?(uri.host)
 
-    return value, uri
+    [value, uri]
   end
 
   def self.insecure_host?(host)
-    return unless filters = self.blocked_ip_filters
+    return unless (filters = blocked_ip_filters)
+
     resolved_addrs = Resolv.getaddresses(host)
     unless resolved_addrs.any?
       # this is actually a different condition than the host being insecure,
       # and having separate telemetry is helpful for understanding transient failures.
       raise UnresolvableUriError, "#{host} cannot be resolved to any address"
     end
-    ip_addrs = resolved_addrs.map do |ip|
+
+    ip_addrs = resolved_addrs.filter_map do |ip|
       ::IPAddr.new(ip)
     rescue IPAddr::InvalidAddressError
       # this should never happen, Resolv should only be passing back IPs, but
       # let's make sure we can see if the impossible occurs
       logger.warn("CANVAS_HTTP WARNING | host: #{host} | invalid_ip: #{ip}")
       nil
-    end.compact
+    end
     unless ip_addrs.any?
       raise UnresolvableUriError, "#{host} resolves to only unparseable IPs..."
     end
@@ -231,10 +242,10 @@ module CanvasHttp
   # returns a Net::HTTP connection object for the given URI object
   def self.connection_for_uri(uri)
     http = Net::HTTP.new(uri.host, uri.port)
-    http.use_ssl = (uri.scheme == 'https')
+    http.use_ssl = (uri.scheme == "https")
     http.ssl_timeout = http.open_timeout = open_timeout
     http.read_timeout = read_timeout
-    return http
+    http
   end
 
   def self.open_timeout
@@ -254,7 +265,7 @@ module CanvasHttp
   end
 
   def self.default_logger
-    @_default_logger ||= Logger.new(STDOUT)
+    @_default_logger ||= Logger.new($stdout)
   end
 
   class << self
@@ -276,7 +287,7 @@ module CanvasHttp
   def self.tempfile_for_uri(uri)
     basename = File.basename(uri.path)
     basename, ext = basename.split(".", 2)
-    basename = basename.slice(0,100)
+    basename = basename.slice(0, 100)
     tmpfile = if ext
                 Tempfile.new([basename, ext])
               else

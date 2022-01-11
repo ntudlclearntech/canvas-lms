@@ -17,7 +17,6 @@
 # You should have received a copy of the GNU Affero General Public License along
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 
-require 'spec_helper'
 require_dependency "users/access_verifier"
 
 module Users
@@ -48,7 +47,7 @@ module Users
 
       it "success on an issued verifier" do
         verifier = Users::AccessVerifier.generate(user: user)
-        expect{ Users::AccessVerifier.validate(verifier) }.not_to raise_exception
+        expect { Users::AccessVerifier.validate(verifier) }.not_to raise_exception
       end
 
       it "returns verified user claim on success" do
@@ -83,7 +82,7 @@ module Users
       end
 
       it "returns verified oauth host claim on success" do
-        host = 'oauth-host'
+        host = "oauth-host"
         verifier = Users::AccessVerifier.generate(user: user, oauth_host: host)
         verified = Users::AccessVerifier.validate(verifier)
         expect(verified).to have_key(:oauth_host)
@@ -93,14 +92,14 @@ module Users
       it "raises InvalidVerifier if too old" do
         verifier = Users::AccessVerifier.generate(user: user)
         Timecop.freeze(10.minutes.from_now) do
-          expect{ Users::AccessVerifier.validate(verifier) }.to raise_exception(Canvas::Security::TokenExpired)
+          expect { Users::AccessVerifier.validate(verifier) }.to raise_exception(Canvas::Security::TokenExpired)
         end
       end
 
       it "raises InvalidVerifier if tampered with user" do
         verifier = Users::AccessVerifier.generate(user: user)
-        tampered = verifier.merge(sf_verifier: 'tampered')
-        expect{ Users::AccessVerifier.validate(tampered) }.to raise_exception(Users::AccessVerifier::InvalidVerifier)
+        tampered = verifier.merge(sf_verifier: "tampered")
+        expect { Users::AccessVerifier.validate(tampered) }.to raise_exception(Users::AccessVerifier::InvalidVerifier)
       end
     end
   end

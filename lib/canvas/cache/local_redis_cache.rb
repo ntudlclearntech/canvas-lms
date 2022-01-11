@@ -44,7 +44,7 @@ module Canvas
       # commands
       def clear(force: false)
         if force
-          GuardRail.activate(:deploy){ super }
+          GuardRail.activate(:deploy) { super }
         else
           # this makes sure only 1 process on a sighup'd box
           # will clear the cache, the others will find that the
@@ -56,12 +56,12 @@ module Canvas
       # canvas redis is patched to disallow "scan" operations,
       # but clearing the whole thing does technically remove any
       # keys matching this pattern
-      def delete_matched(pattern)
+      def delete_matched(_pattern)
         clear
       end
 
       def write_set(hash, ttl: nil)
-        opts = {expires_in: ttl}
+        opts = { expires_in: ttl }
         ms = 1000 * Benchmark.realtime do
           redis.pipelined do # send more commands before awaiting answer
             redis.multi do # make everything atomic in here
@@ -71,7 +71,7 @@ module Canvas
             end
           end
         end
-        Rails.logger.debug("  #{"LOCAL REDIS (%.2fms)" % [ms]}  write_set {#{hash.keys.join(',')}}")
+        Rails.logger.debug("  #{"LOCAL REDIS (%.2fms)" % [ms]}  write_set {#{hash.keys.join(",")}}")
       end
     end
   end

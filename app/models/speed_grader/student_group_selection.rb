@@ -47,15 +47,15 @@ module SpeedGrader
         resolved_group = group_containing_student(student_id: student_id)
         if resolved_group != initial_group
           reason_for_change = if resolved_group.blank?
-            # We couldn't find a group for this student
-            :student_in_no_groups
-          elsif initial_group.blank?
-            # No group was selected initially, but we found one
-            :no_group_selected
-          else
-            # We switched from one group to another because this student wasn't in the initial group
-            :student_not_in_selected_group
-          end
+                                # We couldn't find a group for this student
+                                :student_in_no_groups
+                              elsif initial_group.blank?
+                                # No group was selected initially, but we found one
+                                :no_group_selected
+                              else
+                                # We switched from one group to another because this student wasn't in the initial group
+                                :student_not_in_selected_group
+                              end
         end
       elsif initial_group.blank? || initial_group.group_memberships.active.where(moderator: [false, nil]).none?
         # We weren't given a specific student, but either we didn't previously
@@ -71,26 +71,26 @@ module SpeedGrader
     end
 
     def group_containing_student(student_id:)
-      return initial_group if initial_group.present? && initial_group.group_memberships.active.exists?(user_id: student_id)
+      return initial_group if initial_group.present? && initial_group.group_memberships.active.where(user_id: student_id).exists?
 
-      Group.active.joins(:group_memberships).
-        where(context_id: course.id, context_type: "Course").
-        where(group_memberships: {user_id: student_id}).
-        merge(GroupMembership.active).
-        order(:id).
-        first
+      Group.active.joins(:group_memberships)
+           .where(context_id: course.id, context_type: "Course")
+           .where(group_memberships: { user_id: student_id })
+           .merge(GroupMembership.active)
+           .order(:id)
+           .first
     end
 
     def first_group_containing_students
-      course.groups.active.joins(:group_memberships).
-        where("EXISTS (?)", GroupMembership.active.where("group_id = groups.id AND moderator IS NOT TRUE")).
-        order(:id).
-        first
+      course.groups.active.joins(:group_memberships)
+            .where("EXISTS (?)", GroupMembership.active.where("group_id = groups.id AND moderator IS NOT TRUE"))
+            .order(:id)
+            .first
     end
 
     def initial_group
       @initial_group ||= begin
-        selected_group_id = current_user.get_preference(:gradebook_settings, course.global_id)&.dig('filter_rows_by', 'student_group_id')
+        selected_group_id = current_user.get_preference(:gradebook_settings, course.global_id)&.dig("filter_rows_by", "student_group_id")
         selected_group_id.present? ? Group.find_by(id: selected_group_id) : nil
       end
     end

@@ -17,19 +17,19 @@
 # You should have received a copy of the GNU Affero General Public License along
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 
-require 'tsort'
+require "tsort"
 
 module Autoextend
   Extension = Struct.new(:const_name,
-      :module,
-      :method,
-      :block,
-      :singleton,
-      :after_load,
-      :optional,
-      :before,
-      :after,
-      :used) do
+                         :module,
+                         :method, # rubocop:disable Lint/StructNewOverride
+                         :block,
+                         :singleton,
+                         :after_load,
+                         :optional,
+                         :before,
+                         :after,
+                         :used) do
     # Once on ruby 2.5, use keyword_init: true for clarity
 
     def module_name
@@ -42,6 +42,7 @@ module Autoextend
 
     def extend(const, source: nil)
       return if after_load && source == :inherited
+
       self.used = true
 
       target = singleton ? const.singleton_class : const

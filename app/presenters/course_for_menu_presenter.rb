@@ -21,7 +21,7 @@ class CourseForMenuPresenter
   include I18nUtilities
   include Rails.application.routes.url_helpers
 
-  def initialize(course, user = nil, context = nil, session = nil, opts={})
+  def initialize(course, user = nil, context = nil, session = nil, opts = {})
     @course = course
     @user = user
     @context = context
@@ -30,7 +30,6 @@ class CourseForMenuPresenter
   end
   attr_reader :course
 
-
   def default_url_options
     { protocol: HostUrl.protocol, host: HostUrl.context_host(@course.root_account) }
   end
@@ -38,9 +37,9 @@ class CourseForMenuPresenter
   def to_h
     position = @user.dashboard_positions[course.asset_string]
 
-    observee = if course.primary_enrollment_type == 'ObserverEnrollment'
-      ObserverEnrollment.observed_students(course, @user)&.keys&.map(&:name).join(', ')
-    end
+    observee = if course.primary_enrollment_type == "ObserverEnrollment"
+                 ObserverEnrollment.observed_students(course, @user)&.keys&.map(&:name)&.join(", ")
+               end
 
     {
       longName: "#{course.name} - #{course.short_name}",
@@ -67,15 +66,15 @@ class CourseForMenuPresenter
     }.tap do |hash|
       if @opts[:tabs]
         tabs = course.tabs_available(@user, {
-          session: @session,
-          only_check: @opts[:tabs],
-          precalculated_permissions: {
-            # we can assume they can read the course at this point
-            read: true,
-          },
-          include_external: false,
-          include_hidden_unused: false,
-        })
+                                       session: @session,
+                                       only_check: @opts[:tabs],
+                                       precalculated_permissions: {
+                                         # we can assume they can read the course at this point
+                                         read: true,
+                                       },
+                                       include_external: false,
+                                       include_hidden_unused: false,
+                                     })
         hash[:links] = tabs.map do |tab|
           presenter = SectionTabPresenter.new(tab, course)
           presenter.to_h
@@ -91,12 +90,12 @@ class CourseForMenuPresenter
   private
 
   def subtitle
-    label = if course.primary_enrollment_state == 'invited'
-      before_label('#shared.menu_enrollment.labels.invited_as', 'invited as')
-    else
-      before_label('#shared.menu_enrollment.labels.enrolled_as', 'enrolled as')
-    end
-    [ label, course.primary_enrollment_role.try(:label) ].join(' ')
+    label = if course.primary_enrollment_state == "invited"
+              before_label("#shared.menu_enrollment.labels.invited_as", "invited as")
+            else
+              before_label("#shared.menu_enrollment.labels.enrolled_as", "enrolled as")
+            end
+    [label, course.primary_enrollment_role.try(:label)].join(" ")
   end
 
   def term

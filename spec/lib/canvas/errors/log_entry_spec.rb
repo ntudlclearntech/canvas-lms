@@ -17,16 +17,15 @@
 # You should have received a copy of the GNU Affero General Public License along
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 
-require 'spec_helper'
 require_dependency "canvas/errors/log_entry"
 
 module Canvas
   class Errors
     describe LogEntry do
-      let(:data){ {tags: { foo: "bar"}} }
+      let(:data) { { tags: { foo: "bar" } } }
 
       describe "with an exception" do
-        before(:each) do
+        before do
           @raised_error = nil
           raise ArgumentError, "Test Message"
         rescue ArgumentError => e
@@ -35,7 +34,7 @@ module Canvas
         end
 
         describe "#message" do
-          let(:message){ @entry.message }
+          let(:message) { @entry.message }
 
           it "includes an easily greppable tag" do
             expect(message).to include("[CANVAS_ERRORS]")
@@ -71,24 +70,24 @@ module Canvas
       end
 
       describe "a nested exception" do
-        before(:each) do
+        before do
           @raised_error = nil
           begin
             begin
-              raise RuntimeError, "FOO"
+              raise "FOO"
             rescue RuntimeError
               raise ArgumentError, "Test Message"
             end
-          rescue ArgumentError => e
+          rescue ArgumentError
             raise StandardError, "TopException"
           end
-        rescue StandardError => e
+        rescue => e
           @raised_error = e
           @entry = LogEntry.new(e, data)
         end
 
         describe "#message" do
-          let(:message){ @entry.message }
+          let(:message) { @entry.message }
 
           it "includes an easily greppable tag" do
             expect(message).to include("[CANVAS_ERRORS]")

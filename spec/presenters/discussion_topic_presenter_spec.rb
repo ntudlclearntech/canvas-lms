@@ -18,25 +18,22 @@
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-require File.expand_path(File.dirname(__FILE__) + '/../spec_helper')
-require File.expand_path(File.dirname(__FILE__) + '/../sharding_spec_helper.rb')
-
 describe DiscussionTopicPresenter do
-  let (:topic)      { DiscussionTopic.new(:title => 'Test Topic', :assignment => assignment) }
-  let (:user)       { user_model }
-  let (:presenter)  { DiscussionTopicPresenter.new(topic, user) }
-  let (:course)     { course_model }
-  let (:assignment) {
-    Assignment.new(:title => 'Test Topic',
-                   :due_at => Time.now,
-                   :lock_at => Time.now + 1.week,
-                   :unlock_at => Time.now - 1.week,
-                   :submission_types => 'discussion_topic')
-  }
+  let(:topic)      { DiscussionTopic.new(title: "Test Topic", assignment: assignment) }
+  let(:user)       { user_model }
+  let(:presenter)  { DiscussionTopicPresenter.new(topic, user) }
+  let(:course)     { course_model }
+  let(:assignment) do
+    Assignment.new(title: "Test Topic",
+                   due_at: Time.now,
+                   lock_at: Time.now + 1.week,
+                   unlock_at: Time.now - 1.week,
+                   submission_types: "discussion_topic")
+  end
 
   before do
-    allow(AssignmentOverrideApplicator).to receive(:assignment_overridden_for).
-      with(topic.assignment,user).and_return assignment
+    allow(AssignmentOverrideApplicator).to receive(:assignment_overridden_for)
+      .with(topic.assignment, user).and_return assignment
   end
 
   describe "#initialize" do
@@ -50,15 +47,15 @@ describe DiscussionTopicPresenter do
 
     context "when discussion_topic and current_user args passed" do
       it "returns the overridden assignment if topic is for assignment" do
-        expect(AssignmentOverrideApplicator).to receive(:assignment_overridden_for).
-          with(topic.assignment,user).and_return assignment
-        presenter = DiscussionTopicPresenter.new(topic,user)
+        expect(AssignmentOverrideApplicator).to receive(:assignment_overridden_for)
+          .with(topic.assignment, user).and_return assignment
+        presenter = DiscussionTopicPresenter.new(topic, user)
         expect(presenter.assignment).to eq assignment
       end
 
       it "will have a nil assignment if topic not for grading" do
         expect(DiscussionTopicPresenter.new(
-          DiscussionTopic.new(:title => "no assignment")
+          DiscussionTopic.new(title: "no assignment")
         ).assignment).to be_nil
       end
     end
@@ -66,8 +63,8 @@ describe DiscussionTopicPresenter do
 
   describe "#has_attached_rubric?" do
     it "returns true if assignment has a rubric association with a rubric" do
-      expect(assignment).to receive(:rubric).
-        and_return double
+      expect(assignment).to receive(:rubric)
+        .and_return double
       expect(presenter.has_attached_rubric?).to eq true
     end
 
@@ -79,9 +76,9 @@ describe DiscussionTopicPresenter do
 
   describe "#should_show_rubric?" do
     it "returns false if no assignment on the topic" do
-        expect(DiscussionTopicPresenter.new(
-          DiscussionTopic.new(:title => "no assignment")
-        ).should_show_rubric?(user)).to eq false
+      expect(DiscussionTopicPresenter.new(
+        DiscussionTopic.new(title: "no assignment")
+      ).should_show_rubric?(user)).to eq false
     end
 
     it "returns true if has_attached_rubric? is true" do
@@ -102,50 +99,45 @@ describe DiscussionTopicPresenter do
         expect(presenter.should_show_rubric?(user)).to eq false
       end
     end
-
   end
 
   describe "#comments_disabled?" do
-    it "only returns true when topic is assignment, its context is a course, "+
-      "and the course settings lock all announcements" do
+    it "only returns true when topic is assignment, its context is a course, and the course settings lock all announcements" do
       course_factory
       @course.lock_all_announcements = true
       @course.save!
-      announcement = Announcement.new(:title => "Announcement", :context => @course)
-      expect(DiscussionTopicPresenter.new(announcement).comments_disabled?).
-        to eq true
+      announcement = Announcement.new(title: "Announcement", context: @course)
+      expect(DiscussionTopicPresenter.new(announcement).comments_disabled?)
+        .to eq true
     end
 
     it "returns false for announcements or other criteria not met" do
       expect(presenter.comments_disabled?).to eq false
       course_factory
-      announcement = Announcement.new(:title => "b", :context => @course)
-      expect(DiscussionTopicPresenter.new(announcement).comments_disabled?).
-        to eq false
+      announcement = Announcement.new(title: "b", context: @course)
+      expect(DiscussionTopicPresenter.new(announcement).comments_disabled?)
+        .to eq false
     end
   end
 
   describe "#large_roster?" do
-    it "returns true when context responds to large_roster and context " +
-      "has a large roster" do
-      topic.context = Course.new(:name => "Canvas")
+    it "returns true when context responds to large_roster and context has a large roster" do
+      topic.context = Course.new(name: "Canvas")
       topic.context.large_roster = true
       expect(presenter.large_roster?).to eq true
     end
 
-    it "returns false when context responds to large roster and context " +
-      "doesn't have a large roster" do
-      topic.context = Course.new(:name => "Canvas")
+    it "returns false when context responds to large roster and context doesn't have a large roster" do
+      topic.context = Course.new(name: "Canvas")
       topic.context.large_roster = false
       expect(presenter.large_roster?).to eq false
     end
 
     context "topic's context isn't a course" do
-
       before do
-        @group = Group.new(:name => "Canvas")
+        @group = Group.new(name: "Canvas")
         topic.context = @group
-        @group.context = Course.new(:name => "Canvas")
+        @group.context = Course.new(name: "Canvas")
         @group.context.large_roster = true
       end
 
@@ -157,22 +149,19 @@ describe DiscussionTopicPresenter do
       it "returns true if topic's context's context has large_roster?" do
         expect(presenter.large_roster?).to eq true
       end
-
     end
   end
 
   describe "#allows_speed_grader?" do
-
     it "returns false when course is large roster" do
-      topic.context = Course.new(name: 'Canvas')
+      topic.context = Course.new(name: "Canvas")
       topic.context.large_roster = true
       expect(presenter.allows_speed_grader?).to eq false
     end
 
     context "with assignment" do
-
       before do
-        course = topic.context = Course.create!(name: 'Canvas')
+        course = topic.context = Course.create!(name: "Canvas")
         assignment.context = course
         assignment.save!
         topic.assignment = assignment
@@ -199,7 +188,7 @@ describe DiscussionTopicPresenter do
       assignment.peer_reviews = true
       assignment.save!
       [user, user2, user3].map do |u|
-        course.enroll_student(u, {enrollment_state: 'active'})
+        course.enroll_student(u, { enrollment_state: "active" })
       end
       assignment.assign_peer_review(user, user2)
     end
@@ -223,5 +212,4 @@ describe DiscussionTopicPresenter do
       end
     end
   end
-
 end

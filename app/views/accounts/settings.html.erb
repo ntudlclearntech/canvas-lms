@@ -83,7 +83,7 @@
       <li><a href="#tab-alerts" id="tab-alerts-link"><%= t(:tab_alerts, "Alerts") %></a></li>
     <% end %>
     <% if can_do(@context, @current_user, :view_feature_flags) %>
-      <li><a href="#tab-features" id="tab-features-link"><%= t("Feature Previews") %></a></li>
+      <li><a href="#tab-features" id="tab-features-link"><%= t("Feature Options") %></a></li>
     <% end %>
     <% if @account.root_account.feature_enabled?(:javascript_csp) && can_do(@context, @current_user, :manage_account_settings) && !@account.site_admin? %>
       <li><a href="#tab-security" id="tab-security-link"><%= t("Security") %></a></li>
@@ -183,7 +183,7 @@
                     <tr>
                       <td><%= settings.blabel :default_dashboard_view, t("Default View for Dashboard") %></td>
                       <td>
-                        <%= settings.select :default_dashboard_view, options_for_select(dashboard_view_options(@account), @account.default_dashboard_view) %>
+                        <%= settings.select :default_dashboard_view, options_for_select(dashboard_view_options, @account.default_dashboard_view) %>
                         <p style="font-size: 0.9em;"><%= settings.check_box :force_default_dashboard_view, :checked => false %>  <%= settings.label :force_default_dashboard_view, t("Overwrite all users' existing default dashboard preferences") %></p>
                       </td>
                     </tr>
@@ -321,17 +321,24 @@
                   <% end %>
                 <% end %>
 
-                <% if @account.feature_allowed?(:rce_enhancements) %>
-                  <%= settings.fields_for :disable_rce_media_uploads do |r| %>
-                    <% hash = @account.disable_rce_media_uploads %>
-                    <% disabled = hash[:locked] && hash[:inherited] %>
-                    <tr>
-                      <td colspan="2">
-                        <%= r.check_box :value, checked: hash[:value], disabled: disabled %>
-                        <%= r.label :value, t("Disable uploads to Canvas Media from the enhanced rich content editor") %>
-                      </td>
-                    </tr>
-                  <% end %>
+                <%= settings.fields_for :disable_rce_media_uploads do |r| %>
+                  <% hash = @account.disable_rce_media_uploads %>
+                  <% disabled = hash[:locked] && hash[:inherited] %>
+                  <tr>
+                    <td colspan="2">
+                      <%= r.check_box :value, checked: hash[:value], disabled: disabled %>
+                      <%= r.label :value, t("Disable uploads to Canvas Media from the enhanced rich content editor") %>
+                    </td>
+                  </tr>
+                <% end %>
+
+                <% if Account.site_admin.feature_enabled?(:gradebook_show_first_last_names) %>
+                  <tr>
+                    <td colspan="2">
+                      <%= settings.check_box :allow_gradebook_show_first_last_names, checked: @account.allow_gradebook_show_first_last_names? %>
+                      <%= settings.label :allow_gradebook_show_first_last_names, t("Allow gradebook users to view and export student first and last names in separate columns") %>
+                    </td>
+                  </tr>
                 <% end %>
               <% end %>
             <% end %>
@@ -761,7 +768,7 @@
               <!-- put all of the helpful dialogs describing what each service does in here
                    the magic is in giving it an id of "<name_of_service>_help_dialog" and class="service_help_dialog" -->
               <div class="service_help_dialog" title="<%= t(:about_google_docs_tooltip, "About Google Docs Previews") %>" id="google_docs_previews_help_dialog">
-                <%= mt(:about_google_docs, <<-TEXT, :terms_url => "https://docs.google.com/viewer/TOS")
+                <%= mt(:about_google_docs, <<~TEXT, :terms_url => "https://docs.google.com/viewer/TOS")
 Google Docs Previews allow users to view documents from
 within Canvas, rather than having to download them and
 open the corresponding program (e.g. Word or Excel).
@@ -823,20 +830,24 @@ acknowledge that you have read and agreed to the
           <fieldset>
             <h2 class="screenreader-only"><%= t('Who Can Create New Courses') %></h2>
             <legend><%= t(:create_courses_title, "Who Can Create New Courses") %></legend>
-            <div style="font-size: 0.8em;"><%= t(:create_courses_description, "(Account Administrators can always create courses)") %></div>
-            <%= f.fields_for :settings do |settings| %>
-              <div>
-                <%= settings.check_box :teachers_can_create_courses, :checked => @account.teachers_can_create_courses? %>
-                <%= settings.label :teachers_can_create_courses, :en => "Teachers" %>
-              </div>
-              <div>
-                <%= settings.check_box :students_can_create_courses, :checked => @account.students_can_create_courses? %>
-                <%= settings.label :students_can_create_courses, :en => "Students" %>
-              </div>
-              <div>
-                <%= settings.check_box :no_enrollments_can_create_courses, :checked => @account.no_enrollments_can_create_courses? %>
-                <%= settings.label :no_enrollments_can_create_courses, :en => "Users with no enrollments" %>
-              </div>
+            <% if @account.feature_enabled?(:create_course_subaccount_picker) %>
+              <div id="course_creation_settings"></div>
+            <% else %>
+              <div style="font-size: 0.8em;"><%= t(:create_courses_description, "(Account Administrators can always create courses)") %></div>
+              <%= f.fields_for :settings do |settings| %>
+                <div>
+                  <%= settings.check_box :teachers_can_create_courses, :checked => @account.teachers_can_create_courses? %>
+                  <%= settings.label :teachers_can_create_courses, :en => "Teachers" %>
+                </div>
+                <div>
+                  <%= settings.check_box :students_can_create_courses, :checked => @account.students_can_create_courses? %>
+                  <%= settings.label :students_can_create_courses, :en => "Students" %>
+                </div>
+                <div>
+                  <%= settings.check_box :no_enrollments_can_create_courses, :checked => @account.no_enrollments_can_create_courses? %>
+                  <%= settings.label :no_enrollments_can_create_courses, :en => "Users with no enrollments" %>
+                </div>
+              <% end %>
             <% end %>
           </fieldset>
         <% end %>
@@ -1066,104 +1077,7 @@ acknowledge that you have read and agreed to the
 
   <div id="tab-announcements">
     <h2><%= t(:global_announcements_title, "Global Announcements") %></h2>
-    <ul class="announcements_list unstyled_list">
-      <%= will_paginate(@announcements, params: {anchor: "tab-announcements"}) %>
-      <% @announcements.each do |announcement| %>
-        <li class="announcements_list_item">
-          <div class="ic-notification ic-notification--admin-created ic-notification--<%= notification_container_classname(announcement) %>">
-            <div class="ic-notification__icon" role="presentation">
-              <i class="<%= notification_icon_classname(announcement) %>"></i>
-              <span class="screenreader-only">
-                <%= accessible_message_icon_text(notification_icon_type(announcement)) %>
-              </span>
-            </div>
-            <div class="notification_account_content">
-              <div class="ic-notification__content">
-                <div class="ic-notification__message">
-                  <h2 class="ic-notification__title notification_subject">
-                    <%= announcement.subject %>
-                  </h2>
-                  <span class="notification_message">
-                    <%= user_content(announcement.message) %>
-                  </span>
-                  <% if can_do(@account, @current_user, :manage_alerts) %>
-                    <div class="ic-notification__admin-actions">
-                      <button
-                        id="<%= "notification_edit_#{announcement.id}" %>"
-                        class="Button Button--icon-action element_toggler edit_notification_toggle_focus"
-                        aria-controls="<%= "edit_notification_form_#{announcement.id}" %>"
-                        data-edit-toggle-id="<%= announcement.id %>"
-                      >
-                        <span class="screenreader-only"><%= t("Edit announcement %{title}", :title => announcement.subject) %></span>
-                        <i class="icon-edit"></i>
-                      </button>
-                      <a href="#" rel="<%= context_url(@account, :context_account_notification_url, announcement) %>" class="Button Button--icon-action delete_notification_link" title="<%= t("Delete announcement %{title}", :title => announcement.subject) %>">
-                        <span class="screenreader-only"><%= t("Delete announcement %{title}", :title => announcement.subject) %></span>
-                        <i class="icon-trash"></i>
-                      </a>
-                    </div>
-                  <% end %>
-                </div>
-              </div>
-              <span class="notification_account_content_text">
-                <% if @account.site_admin? %>
-                  <%= t("This is a message from *Canvas Administration*", wrapper: '<b>\1</b>') %>
-                <% else %>
-                  <%= t("This is a message from *%{name}*", name: announcement.account.name, wrapper: '<b>\1</b>') %>
-                <% end %>
-              </span>
-            </div>
-
-          </div>
-          <div class="announcement-details">
-            <div class="announcement-details-post-info">
-              <div class="announcement-details-post-info__datetime">
-                <%= t(:alert_timespan, "from %{start_at} to %{end_at}",
-                      :start_at => datetime_string(announcement.start_at),
-                      :end_at => datetime_string(announcement.end_at)) %>
-              </div>
-              <div class="announcement-details-post-info__sender">
-                <%= link_to(context_user_name(@account, announcement.user_id), user_path(announcement.user_id)) %>
-              </div>
-            </div>
-            <% if announcement.required_account_service %>
-              <div>
-                <%= AccountServices.allowable_services[announcement.required_account_service.to_sym].try(:[], :name) %>
-              </div>
-            <% end %>
-            <% unless announcement.account_notification_roles.empty? %>
-              <div class="announcement-details-roles">
-                <%= t "Send only to the following types of users:" %>
-                <%= roles_message(@account) %>
-                <ul>
-                  <% announcement.account_notification_roles.each do |r| %>
-                    <% @course_roles.select {|rt| rt[:id] == r.role_id }.each do |rt| %>
-                      <li><%= rt[:label] %></li>
-                    <% end %>
-                    <% # NilEnrollment is a special case %>
-                    <% if r.role_id.nil? %>
-                      <li><%= t :no_enrollment_roles, "Unenrolled users" %></li>
-                    <% end %>
-                    <% @account_roles.select {|rt| rt[:id] == r.role_id }.each do |rt| %>
-                      <li><%= rt[:label]  %></li>
-                    <% end %>
-                  <% end %>
-                </ul>
-              </div>
-            <% end %>
-            <% if announcement.months_in_display_cycle %>
-              <div>
-                <%= t :announcement_sent_to_subset, "Sent to 1 / %{denominator} users each month", denominator: announcement.months_in_display_cycle %>
-              </div>
-            <% end %>
-            <% if can_do(@account, @current_user, :manage_alerts) %>
-              <%= render(:partial => "edit_account_notification", :locals => {:announcement => announcement}) %>
-            <% end %>
-          </div>
-        </li>
-      <% end %>
-    </ul>
-    <% if can_do(@account, @current_user, :manage_alerts) %>
+        <% if can_do(@account, @current_user, :manage_alerts) %>
       <button id="add_announcement_button" class="Button Button--primary element_toggler add_notification_toggle_focus" aria-controls="add_notification_form" title="<%= t('Add New Announcement') %>" aria-label="<%= t('Add New Announcement') %>">
         <i class="icon-plus"></i> <%= t("New Announcement") %>
       </button>
@@ -1344,6 +1258,103 @@ acknowledge that you have read and agreed to the
         </div>
       <% end %>
     <% end %>
+    <ul class="announcements_list unstyled_list">
+      <%= will_paginate(@announcements, params: {anchor: "tab-announcements"}) %>
+      <% @announcements.each do |announcement| %>
+        <li class="announcements_list_item">
+          <div class="ic-notification ic-notification--admin-created ic-notification--<%= notification_container_classname(announcement) %>">
+            <div class="ic-notification__icon" role="presentation">
+              <i class="<%= notification_icon_classname(announcement) %>"></i>
+              <span class="screenreader-only">
+                <%= accessible_message_icon_text(notification_icon_type(announcement)) %>
+              </span>
+            </div>
+            <div class="notification_account_content">
+              <div class="ic-notification__content">
+                <div class="ic-notification__message">
+                  <h2 class="ic-notification__title notification_subject">
+                    <%= announcement.subject %>
+                  </h2>
+                  <span class="notification_message">
+                    <%= user_content(announcement.message) %>
+                  </span>
+                  <% if can_do(@account, @current_user, :manage_alerts) %>
+                    <div class="ic-notification__admin-actions">
+                      <button
+                        id="<%= "notification_edit_#{announcement.id}" %>"
+                        class="Button Button--icon-action element_toggler edit_notification_toggle_focus"
+                        aria-controls="<%= "edit_notification_form_#{announcement.id}" %>"
+                        data-edit-toggle-id="<%= announcement.id %>"
+                      >
+                        <span class="screenreader-only"><%= t("Edit announcement %{title}", :title => announcement.subject) %></span>
+                        <i class="icon-edit"></i>
+                      </button>
+                      <a href="#" rel="<%= context_url(@account, :context_account_notification_url, announcement) %>" class="Button Button--icon-action delete_notification_link" title="<%= t("Delete announcement %{title}", :title => announcement.subject) %>">
+                        <span class="screenreader-only"><%= t("Delete announcement %{title}", :title => announcement.subject) %></span>
+                        <i class="icon-trash"></i>
+                      </a>
+                    </div>
+                  <% end %>
+                </div>
+              </div>
+              <span class="notification_account_content_text">
+                <% if @account.site_admin? %>
+                  <%= t("This is a message from *Canvas Administration*", wrapper: '<b>\1</b>') %>
+                <% else %>
+                  <%= t("This is a message from *%{name}*", name: announcement.account.name, wrapper: '<b>\1</b>') %>
+                <% end %>
+              </span>
+            </div>
+
+          </div>
+          <div class="announcement-details">
+            <div class="announcement-details-post-info">
+              <div class="announcement-details-post-info__datetime">
+                <%= t(:alert_timespan, "from %{start_at} to %{end_at}",
+                      :start_at => datetime_string(announcement.start_at),
+                      :end_at => datetime_string(announcement.end_at)) %>
+              </div>
+              <div class="announcement-details-post-info__sender">
+                <%= link_to(context_user_name(@account, announcement.user_id), user_path(announcement.user_id)) %>
+              </div>
+            </div>
+            <% if announcement.required_account_service %>
+              <div>
+                <%= AccountServices.allowable_services[announcement.required_account_service.to_sym].try(:[], :name) %>
+              </div>
+            <% end %>
+            <% unless announcement.account_notification_roles.empty? %>
+              <div class="announcement-details-roles">
+                <%= t "Send only to the following types of users:" %>
+                <%= roles_message(@account) %>
+                <ul>
+                  <% announcement.account_notification_roles.each do |r| %>
+                    <% @course_roles.select {|rt| rt[:id] == r.role_id }.each do |rt| %>
+                      <li><%= rt[:label] %></li>
+                    <% end %>
+                    <% # NilEnrollment is a special case %>
+                    <% if r.role_id.nil? %>
+                      <li><%= t :no_enrollment_roles, "Unenrolled users" %></li>
+                    <% end %>
+                    <% @account_roles.select {|rt| rt[:id] == r.role_id }.each do |rt| %>
+                      <li><%= rt[:label]  %></li>
+                    <% end %>
+                  <% end %>
+                </ul>
+              </div>
+            <% end %>
+            <% if announcement.months_in_display_cycle %>
+              <div>
+                <%= t :announcement_sent_to_subset, "Sent to 1 / %{denominator} users each month", denominator: announcement.months_in_display_cycle %>
+              </div>
+            <% end %>
+            <% if can_do(@account, @current_user, :manage_alerts) %>
+              <%= render(:partial => "edit_account_notification", :locals => {:announcement => announcement}) %>
+            <% end %>
+          </div>
+        </li>
+      <% end %>
+    </ul>
   </div>
   <% if can_do(@context, @current_user, :read_reports) %>
     <div id="tab-reports">

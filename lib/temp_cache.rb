@@ -40,13 +40,13 @@ class TempCache
   end
 
   def self.create_key(*args)
-    args.map{|arg| arg.is_a?(ActiveRecord::Base) ? arg.global_asset_string : arg.to_s }.join("/")
+    args.map { |arg| arg.is_a?(ActiveRecord::Base) ? arg.global_asset_string : arg.to_s }.join("/")
   end
 
   def self.cache(*args)
     if @enabled
       key = create_key(*args)
-      if @cache.has_key?(key)
+      if @cache.key?(key)
         @cache[key]
       else
         @cache[key] = yield
