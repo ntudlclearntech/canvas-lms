@@ -79,10 +79,10 @@ class RoleOverride < ActiveRecord::Base
   end
 
   def self.get_custom_role_label(custom_name)
-    if custom_name == "旁聽生" || custom_name.downcase == "auditor"
-      return t("roles.auditor", "Auditor")
+    if custom_name && (custom_name == "旁聽生" || custom_name.downcase == "auditor")
+      t("roles.auditor", "Auditor")
     else
-      return custom_name
+      custom_name
     end
   end
 
