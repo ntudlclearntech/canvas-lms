@@ -20,6 +20,7 @@ import getCookie from 'get-cookie'
 import gql from 'graphql-tag'
 import {ApolloClient} from 'apollo-client'
 import {InMemoryCache, IntrospectionFragmentMatcher} from 'apollo-cache-inmemory'
+import {persistCache} from 'apollo-cache-persist'
 import {HttpLink} from 'apollo-link-http'
 import {onError} from 'apollo-link-error'
 import {ApolloLink} from 'apollo-link'
@@ -27,6 +28,8 @@ import {ApolloProvider, Query} from 'react-apollo'
 import introspectionQueryResultData from './fragmentTypes.json'
 import {withClientState} from 'apollo-link-state'
 import InstAccess from './InstAccess'
+
+import EncryptedForage from '../encrypted-forage'
 
 function createConsoleErrorReportLink() {
   return onError(({graphQLErrors, networkError}) => {
@@ -67,13 +70,24 @@ function createCache() {
   return new InMemoryCache({
     addTypename: true,
     dataIdFromObject: object => {
+      let cacheKey
+
       if (object.id) {
-        return object.id
+        cacheKey = object.id
       } else if (object._id && object.__typename) {
-        return object.__typename + object._id
+        cacheKey = object.__typename + object._id
       } else {
         return null
       }
+
+      // Multiple distinct RubricAssessments (and likely other versionable
+      // objects) may be represented by the same ID and type. Add the
+      // artifactAttempt field to the cache key to assessments for different
+      // attempts don't collide.
+      if (object.__typename === 'RubricAssessment' && object.artifactAttempt != null) {
+        cacheKey = `${cacheKey}:${object.artifactAttempt}`
+      }
+      return cacheKey
     },
     fragmentMatcher: new IntrospectionFragmentMatcher({
       introspectionQueryResultData
@@ -81,8 +95,17 @@ function createCache() {
   })
 }
 
-function createClient(opts = {}) {
+async function createPersistentCache(passphrase = null) {
   const cache = createCache()
+  await persistCache({
+    cache,
+    storage: new EncryptedForage(passphrase)
+  })
+  return cache
+}
+
+function createClient(opts = {}) {
+  const cache = opts.cache || createCache()
   const defaults = opts.defaults || {}
   const resolvers = opts.resolvers || {}
   const stateLink = withClientState({
@@ -138,4 +161,4 @@ function createClient(opts = {}) {
   return client
 }
 
-export {createClient, gql, ApolloProvider, Query, createCache}
+export {createClient, gql, ApolloProvider, Query, createCache, createPersistentCache}

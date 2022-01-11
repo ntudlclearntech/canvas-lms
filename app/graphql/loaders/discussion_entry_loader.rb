@@ -20,6 +20,7 @@
 
 class Loaders::DiscussionEntryLoader < GraphQL::Batch::Loader
   def initialize(current_user:, search_term: nil, sort_order: :desc, filter: nil, root_entries: false, relative_entry_id: nil, before_relative_entry: true, include_relative_entry: true)
+    super()
     @current_user = current_user
     @search_term = search_term
     @sort_order = sort_order
@@ -34,23 +35,47 @@ class Loaders::DiscussionEntryLoader < GraphQL::Batch::Loader
     objects.each do |object|
       scope = scope_for(object)
       scope = scope.reorder("created_at #{@sort_order}")
+
+      if @filter == "drafts"
+        object.shard.activate do
+          drafts = scope.map do |draft|
+            de = DiscussionEntry.new(id: -draft.id,
+                                     message: draft.message,
+                                     root_entry_id: draft.root_entry_id,
+                                     parent_id: draft.parent_id,
+                                     discussion_topic_id: draft.discussion_topic_id,
+                                     user_id: @current_user.id,
+                                     created_at: draft.created_at,
+                                     updated_at: draft.updated_at,
+                                     workflow_state: "active")
+            de.readonly!
+            de
+          end
+          return fulfill(object, drafts)
+        end
+      end
+
       scope = scope.where(parent_id: nil) if @root_entries
       if @search_term.present?
         # search results cannot look at the messages from deleted
         # discussion_entries, so they need to be excluded.
-        scope = scope.active.joins(:user).where(UserSearch.like_condition('message'), pattern: UserSearch.like_string_for(@search_term))
-          .or(scope.joins(:user).where(UserSearch.like_condition('users.name'), pattern: UserSearch.like_string_for(@search_term)))
+        scope = if object.is_a?(DiscussionTopic) && object.anonymous_state != "full_anonymity"
+                  scope.active.joins(:user).where(UserSearch.like_condition("message"), pattern: UserSearch.like_string_for(@search_term))
+                       .or(scope.joins(:user).where(UserSearch.like_condition("users.name"), pattern: UserSearch.like_string_for(@search_term)))
+                else
+                  scope.active.where(UserSearch.like_condition("message"), pattern: UserSearch.like_string_for(@search_term))
+                end
       end
 
       if @root_entries
         sort_sql = ActiveRecord::Base.sanitize_sql("COALESCE(children.created_at, discussion_entries.created_at) #{@sort_order}")
         scope = scope
-          .joins("LEFT OUTER JOIN #{DiscussionEntry.quoted_table_name} AS children
+                .joins("LEFT OUTER JOIN #{DiscussionEntry.quoted_table_name} AS children
                   ON children.root_entry_id=discussion_entries.id
                   AND children.created_at = (SELECT MAX(children2.created_at)
                                              FROM #{DiscussionEntry.quoted_table_name} AS children2
                                              WHERE children2.root_entry_id=discussion_entries.id)")
-          .reorder(Arel.sql(sort_sql))
+                .reorder(Arel.sql(sort_sql))
       end
 
       if @relative_entry_id
@@ -61,17 +86,19 @@ class Loaders::DiscussionEntryLoader < GraphQL::Batch::Loader
       end
 
       # unread filter is used like search results and need to exclude deleted entries
-      scope = scope.active.unread_for_user(@current_user) if @filter == 'unread'
-      scope = scope.where(workflow_state: 'deleted') if @filter == 'deleted'
+      scope = scope.active.unread_for_user(@current_user) if @filter == "unread"
+      scope = scope.where(workflow_state: "deleted") if @filter == "deleted"
       scope = scope.preload(:user, :editor)
       fulfill(object, scope)
     rescue ActiveRecord::RecordNotFound
-      raise GraphQL::ExecutionError, 'relative entry not found'
+      raise GraphQL::ExecutionError, "relative entry not found"
     end
   end
 
   def scope_for(object)
-    if object.is_a?(DiscussionTopic)
+    if @filter == "drafts"
+      object.discussion_entry_drafts.where(user: @current_user, discussion_entry_id: nil)
+    elsif object.is_a?(DiscussionTopic)
       object.discussion_entries
     elsif object.is_a?(DiscussionEntry)
       if object.root_entry_id.nil?
@@ -83,5 +110,4 @@ class Loaders::DiscussionEntryLoader < GraphQL::Batch::Loader
       end
     end
   end
-
 end

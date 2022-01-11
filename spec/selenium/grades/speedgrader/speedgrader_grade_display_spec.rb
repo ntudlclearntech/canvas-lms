@@ -19,7 +19,7 @@
 
 require_relative "../../common"
 require_relative "../../helpers/speed_grader_common"
-require_relative '../../helpers/gradebook_common'
+require_relative "../../helpers/gradebook_common"
 require_relative "../pages/speedgrader_page"
 
 describe "speed grader - grade display" do
@@ -29,28 +29,28 @@ describe "speed grader - grade display" do
   include GradebookCommon
 
   context "grade display" do
-    POINTS = 10.0
-    GRADE = 3.0
+    let(:points) { 10.0 }
+    let(:grade) { 3.0 }
 
-    before(:each) do
+    before do
       course_with_teacher_logged_in
       create_and_enroll_students(2)
-      @assignment = @course.assignments.create(name: 'assignment', points_possible: POINTS)
-      @assignment.grade_student(@students[0], grade: GRADE, grader: @teacher)
+      @assignment = @course.assignments.create(name: "assignment", points_possible: points)
+      @assignment.grade_student(@students[0], grade: grade, grader: @teacher)
       Speedgrader.visit(@course.id, @assignment.id)
     end
 
-    it "displays the score on the sidebar", priority: "1", test_id: 283993 do
-      expect(Speedgrader.grade_value).to eq GRADE.to_int.to_s
+    it "displays the score on the sidebar", priority: "1" do
+      expect(Speedgrader.grade_value).to eq grade.to_int.to_s
     end
 
-    it "displays total number of graded assignments to students", priority: "1", test_id: 283994 do
+    it "displays total number of graded assignments to students", priority: "1" do
       expect(Speedgrader.fraction_graded).to include_text("1/2")
     end
 
-    it "displays average submission grade for total assignment submissions", priority: "1", test_id: 283995 do
-      average = (GRADE / POINTS * 100).to_int
-      expect(Speedgrader.average_grade).to include_text("#{GRADE.to_int} / #{POINTS.to_int} (#{average}%)")
+    it "displays average submission grade for total assignment submissions", priority: "1" do
+      average = (grade / points * 100).to_int
+      expect(Speedgrader.average_grade).to include_text("#{grade.to_int} / #{points.to_int} (#{average}%)")
     end
   end
 
@@ -64,20 +64,20 @@ describe "speed grader - grade display" do
       grade_assignments
     end
 
-    before(:each) do
+    before do
       user_session(@teacher)
     end
 
     it "shows late pill" do
       Speedgrader.visit(@course.id, @a1.id)
-      expect(Speedgrader.submission_status_pill('late')).to be_displayed
+      expect(Speedgrader.submission_status_pill("late")).to be_displayed
     end
 
     it "shows late deduction and final grade" do
       Speedgrader.visit(@course.id, @a1.id)
 
-      late_penalty_value = "-" + @course.students[0].submissions.find_by(assignment_id:@a1.id).points_deducted.to_s
-      final_grade_value = @course.students[0].submissions.find_by(assignment_id:@a1.id).published_grade
+      late_penalty_value = "-" + @course.students[0].submissions.find_by(assignment_id: @a1.id).points_deducted.to_s
+      final_grade_value = @course.students[0].submissions.find_by(assignment_id: @a1.id).published_grade
 
       # the data from rails and data from ui are not in the same format
       expect(Speedgrader.late_points_deducted_text.to_f.to_s).to eq late_penalty_value
@@ -87,50 +87,62 @@ describe "speed grader - grade display" do
     it "shows missing pill" do
       Speedgrader.visit(@course.id, @a2.id)
 
-      expect(Speedgrader.submission_status_pill('missing')).to be_displayed
+      expect(Speedgrader.submission_status_pill("missing")).to be_displayed
+    end
+
+    context "remove_missing_status_when_graded enabled" do
+      before do
+        Account.site_admin.enable_feature!(:remove_missing_status_when_graded)
+      end
+
+      it "removes missing pill" do
+        Speedgrader.visit(@course.id, @a2.id)
+
+        expect(find_all_with_jquery(".submission-missing-pill:contains('missing')").length).to eq 0
+      end
     end
   end
 
   context "keyboard shortcuts" do
-    FIRST_GRADE = 5
-    LAST_GRADE = 10
+    let(:first_grade) { 5 }
+    let(:last_grade) { 10 }
 
-    before(:each) do
+    before do
       course_with_teacher_logged_in
       create_and_enroll_students(2)
       @assignment = @course.assignments.create!(
-        title: 'assignment',
-        grading_type: 'points',
+        title: "assignment",
+        grading_type: "points",
         points_possible: 100,
         due_at: 1.day.since(now),
-        submission_types: 'online_text_entry'
+        submission_types: "online_text_entry"
       )
       # submit assignemnt with different content for each student
-      @assignment.submit_homework(@course.students.first, body: 'submitting my homework')
-      @assignment.submit_homework(@course.students.second, body: 'submitting my different homework')
+      @assignment.submit_homework(@course.students.first, body: "submitting my homework")
+      @assignment.submit_homework(@course.students.second, body: "submitting my different homework")
       # as a teacher grade the assignment with different scores
-      @assignment.grade_student(@course.students.first, grade: FIRST_GRADE, grader: @teacher)
-      @assignment.grade_student(@course.students.second, grade: LAST_GRADE, grader: @teacher)
+      @assignment.grade_student(@course.students.first, grade: first_grade, grader: @teacher)
+      @assignment.grade_student(@course.students.second, grade: last_grade, grader: @teacher)
       Speedgrader.visit(@course.id, @assignment.id)
     end
 
     it "shows correct student and submission using command+Home/command+end shortcut" do
-      student_select = f('#combo_box_container .ui-selectmenu .ui-selectmenu-item-header')
+      student_select = f("#combo_box_container .ui-selectmenu .ui-selectmenu-item-header")
       driver.action.double_click(student_select).perform
       driver.action.key_down(:meta).key_down(:end).key_up(:meta).key_up(:end).perform
-      last_student = f('#combo_box_container .ui-selectmenu .ui-selectmenu-item-header').text
-      last_grade = f('#grade_container #grading-box-extended').attribute('value')
+      last_student = f("#combo_box_container .ui-selectmenu .ui-selectmenu-item-header").text
+      last_grade = f("#grade_container #grading-box-extended").attribute("value")
 
-      expect(last_grade).to eql(LAST_GRADE.to_s)
+      expect(last_grade).to eql(last_grade.to_s)
       expect(last_student).to eql(@course.students.last.name)
 
-      student_select = f('#combo_box_container .ui-selectmenu .ui-selectmenu-item-header')
+      student_select = f("#combo_box_container .ui-selectmenu .ui-selectmenu-item-header")
       driver.action.double_click(student_select).perform
       driver.action.key_down(:meta).key_down(:home).key_up(:meta).key_up(:end).perform
-      first_student = f('#combo_box_container .ui-selectmenu .ui-selectmenu-item-header').text
-      first_grade = f('#grade_container #grading-box-extended').attribute('value')
+      first_student = f("#combo_box_container .ui-selectmenu .ui-selectmenu-item-header").text
+      first_grade = f("#grade_container #grading-box-extended").attribute("value")
 
-      expect(first_grade).to eql(FIRST_GRADE.to_s)
+      expect(first_grade).to eql(first_grade.to_s)
       expect(first_student).to eql(@course.students.first.name)
     end
   end

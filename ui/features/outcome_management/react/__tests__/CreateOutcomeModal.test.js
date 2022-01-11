@@ -146,6 +146,28 @@ describe('CreateOutcomeModal', () => {
         expect(getByText('Create').closest('button')).toHaveAttribute('disabled')
       })
 
+      it('shows error message if friendly description > 255 characters', async () => {
+        const {getByText, getByLabelText} = render(<CreateOutcomeModal {...defaultProps()} />, {
+          mocks: [...smallOutcomeTree()]
+        })
+        await act(async () => jest.runOnlyPendingTimers())
+        fireEvent.change(getByLabelText('Name'), {target: {value: 'Outcome 123'}})
+        fireEvent.change(getByLabelText('Friendly Name'), {target: {value: 'Display name'}})
+        fireEvent.change(getByLabelText('Friendly description (for parent/student display)'), {
+          target: {value: 'Friendly description'}
+        })
+        fireEvent.click(getByText('Root account folder'))
+        // make sure good FD doesnt disable
+        expect(getByText('Create').closest('button')).not.toBeDisabled()
+
+        // but a bad one does
+        fireEvent.change(getByLabelText('Friendly description (for parent/student display)'), {
+          target: {value: 'a'.repeat(256)}
+        })
+        expect(getByText('Must be 255 characters or less')).toBeInTheDocument()
+        expect(getByText('Create').closest('button')).toBeDisabled()
+      })
+
       it('calls onCloseHandler & onSuccess on Create button click', async () => {
         const {getByLabelText, getByText} = render(<CreateOutcomeModal {...defaultProps()} />, {
           mocks: [...smallOutcomeTree()]
@@ -247,7 +269,7 @@ describe('CreateOutcomeModal', () => {
         await act(async () => jest.runOnlyPendingTimers())
         await waitFor(() => {
           expect(showFlashAlertSpy).toHaveBeenCalledWith({
-            message: 'Outcome "Outcome 123" was successfully created.',
+            message: '"Outcome 123" was successfully created.',
             type: 'success'
           })
         })
@@ -273,8 +295,7 @@ describe('CreateOutcomeModal', () => {
         fireEvent.click(getByText('Create'))
         await waitFor(() => {
           expect(showFlashAlertSpy).toHaveBeenCalledWith({
-            message:
-              'An error occurred while creating this outcome: GraphQL error: mutation failed.',
+            message: 'An error occurred while creating this outcome. Please try again.',
             type: 'error'
           })
         })
@@ -301,7 +322,7 @@ describe('CreateOutcomeModal', () => {
         await act(async () => jest.runOnlyPendingTimers())
         await waitFor(() => {
           expect(showFlashAlertSpy).toHaveBeenCalledWith({
-            message: 'An error occurred while creating this outcome: mutation failed.',
+            message: 'An error occurred while creating this outcome. Please try again.',
             type: 'error'
           })
         })
@@ -334,8 +355,7 @@ describe('CreateOutcomeModal', () => {
         await act(async () => jest.runOnlyPendingTimers())
         await waitFor(() => {
           expect(showFlashAlertSpy).toHaveBeenCalledWith({
-            message:
-              'An error occurred while creating this outcome: GraphQL error: mutation failed.',
+            message: 'An error occurred while creating this outcome. Please try again.',
             type: 'error'
           })
         })
@@ -388,7 +408,7 @@ describe('CreateOutcomeModal', () => {
         await act(async () => jest.runOnlyPendingTimers())
         await waitFor(() => {
           expect(showFlashAlertSpy).toHaveBeenCalledWith({
-            message: 'Outcome "Outcome 123" was successfully created.',
+            message: '"Outcome 123" was successfully created.',
             type: 'success'
           })
         })
@@ -427,7 +447,7 @@ describe('CreateOutcomeModal', () => {
           // if setFriendlyDescription mutation is called the expectation below will fail
           await waitFor(() => {
             expect(showFlashAlertSpy).toHaveBeenCalledWith({
-              message: 'Outcome "Outcome 123" was successfully created.',
+              message: '"Outcome 123" was successfully created.',
               type: 'success'
             })
           })

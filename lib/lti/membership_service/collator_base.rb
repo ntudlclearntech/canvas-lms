@@ -22,7 +22,7 @@ module Lti::MembershipService
   class CollatorBase
     attr_reader :next_page, :role, :per_page, :page, :context
 
-    def initialize(context, opts={})
+    def initialize(context, opts = {})
       per_page = opts[:per_page].to_i
       @next_page = true
       @role = opts[:role]
@@ -36,17 +36,17 @@ module Lti::MembershipService
     end
 
     def memberships
-      raise 'Abstract Method'
+      raise "Abstract Method"
     end
 
     protected
 
     def scope
-      raise 'Abstract Method'
+      raise "Abstract Method"
     end
 
     def membership_type
-      raise 'Abstract Method'
+      raise "Abstract Method"
     end
 
     def bookmarked_collection

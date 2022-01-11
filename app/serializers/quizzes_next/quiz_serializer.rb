@@ -24,19 +24,19 @@ module QuizzesNext
     root :quiz
 
     attributes :id, :title, :description, :quiz_type, :due_at, :lock_at, :unlock_at,
-                :published, :points_possible, :can_update,
-                :assignment_id, :assignment_group_id, :migration_id, :only_visible_to_overrides,
-                :post_to_sis, :allowed_attempts, :permissions,
-                :html_url, :mobile_url, :can_duplicate,
-                :course_id, :original_course_id, :original_assignment_id,
-                :workflow_state, :original_assignment_name, :original_quiz_id,
-                :require_lockdown_browser, :require_lockdown_browser_for_results,
-                :require_lockdown_browser_monitor, :lockdown_browser_monitor_data, :access_code
+               :published, :points_possible, :can_update,
+               :assignment_id, :assignment_group_id, :migration_id, :only_visible_to_overrides,
+               :post_to_sis, :allowed_attempts, :permissions,
+               :html_url, :mobile_url, :can_duplicate,
+               :course_id, :original_course_id, :original_assignment_id,
+               :workflow_state, :original_assignment_name, :original_quiz_id,
+               :require_lockdown_browser, :require_lockdown_browser_for_results,
+               :require_lockdown_browser_monitor, :lockdown_browser_monitor_data, :access_code
 
     def_delegators :@controller
 
     def quiz_type
-      'quizzes.next'
+      "quizzes.next"
     end
 
     def published
@@ -88,23 +88,23 @@ module QuizzesNext
     end
 
     def require_lockdown_browser
-      object.settings&.dig('lockdown_browser', 'require_lockdown_browser') || false
+      object.settings&.dig("lockdown_browser", "require_lockdown_browser") || false
     end
 
     def require_lockdown_browser_for_results
-      object.settings&.dig('lockdown_browser', 'require_lockdown_browser_for_results') || false
+      object.settings&.dig("lockdown_browser", "require_lockdown_browser_for_results") || false
     end
 
     def require_lockdown_browser_monitor
-      object.settings&.dig('lockdown_browser', 'require_lockdown_browser_monitor') || false
+      object.settings&.dig("lockdown_browser", "require_lockdown_browser_monitor") || false
     end
 
     def lockdown_browser_monitor_data
-      object.settings&.dig('lockdown_browser', 'lockdown_browser_monitor_data')
+      object.settings&.dig("lockdown_browser", "lockdown_browser_monitor_data")
     end
 
     def access_code
-      object.settings&.dig('lockdown_browser', 'access_code')
+      object.settings&.dig("lockdown_browser", "access_code")
     end
   end
 end

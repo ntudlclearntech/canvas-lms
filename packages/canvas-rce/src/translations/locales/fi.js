@@ -17,6 +17,7 @@
  */
 
 import formatMessage from '../../format-message'
+import '../tinymce/fi'
 
 const locale = {
   "access_the_pretty_html_editor_37168efe": {
@@ -50,6 +51,9 @@ const locale = {
   "announcement_list_da155734": { "message": "Ilmoitusluettelo" },
   "announcements_a4b8ed4a": { "message": "Ilmoitukset" },
   "apply_781a2546": { "message": "Käytä" },
+  "apply_changes_to_all_instances_of_this_button_and__3a3bea34": {
+    "message": "Käytä muutoksia kaikkiin tämän kurssipainikkeen esiintymiin ja kuvakkeeseen kurssilla"
+  },
   "apps_54d24a47": { "message": "Sovellukset" },
   "aspect_ratio_will_be_preserved_cb5fdfb8": {
     "message": "Kuvasuhde säilytetään"
@@ -64,9 +68,6 @@ const locale = {
   },
   "auto_saved_content_exists_would_you_like_to_load_t_fee528f2": {
     "message": "Automaattisesti tallennettua sisältöä on olemassa. Haluaisitko ladata automaattisesti tallennetun sisällön tämän sijasta?"
-  },
-  "automatically_open_an_in_line_preview_preview_disp_ed784ffe": {
-    "message": "Avaa automaattisesti tekstiin sidottu esikatselu. (Esikatselu näkyy vain tallentamisen jälkeen)"
   },
   "available_folders_694d0436": { "message": "Saatavissa olevat kansiot" },
   "below_81d4dceb": { "message": "Alle" },
@@ -109,6 +110,9 @@ const locale = {
     "message": "Sulje valikko tai valintaikkuna Palauttaa sinut myös editorialueelle"
   },
   "close_d634289d": { "message": "Sulje" },
+  "closed_caption_file_must_be_less_than_maxkb_kb_5880f752": {
+    "message": "Suljetun tekstitystiedoston täytyy olla alle { maxKb } kb"
+  },
   "closed_captions_subtitles_e6aaa016": {
     "message": "Suljetut kuvatekstit/Tekstitykset"
   },
@@ -142,6 +146,8 @@ const locale = {
   "creative_commons_license_725584ae": {
     "message": "Creative Commons -lisenssi:"
   },
+  "crop_image_807ebb08": { "message": "Rajaa kuva" },
+  "current_image_f16c249c": { "message": "Nykyinen kuva" },
   "custom_6979cd81": { "message": "Mukauta" },
   "date_added_ed5ad465": { "message": "Lisäyspäivämäärä" },
   "decorative_image_3c28aa7d": { "message": "Koristeellinen kuva" },
@@ -157,9 +163,6 @@ const locale = {
   "details_98a31b68": { "message": "Lisätiedot" },
   "dimensions_45ddb7b7": { "message": "Mitat" },
   "directionality_26ae9e08": { "message": "Suuntaisuus" },
-  "disable_in_line_preview_2a675175": {
-    "message": "Poista tekstiin sidottu esikatselu."
-  },
   "discussions_a5f96392": { "message": "Keskustelut" },
   "discussions_index_6c36ced": { "message": "Keskustelujen indeksi" },
   "display_options_315aba85": { "message": "Näytä vaihtoehdot" },
@@ -297,11 +300,11 @@ const locale = {
   "middle_27dc1d5": { "message": "Kohtalainen" },
   "miscellaneous_e9818229": { "message": "Muut asiat" },
   "modules_c4325335": { "message": "Moduulit" },
+  "multi_color_image_63d7372f": { "message": "Monivärinen kuva" },
   "must_be_at_least_width_x_height_px_41dc825e": {
     "message": "Täytyy olla vähintään { width } x { height }px."
   },
   "my_files_2f621040": { "message": "Omat tiedostot" },
-  "my_images_427f9b0c": { "message": "Omat kuvat" },
   "name_1aed4a1b": { "message": "Nimi" },
   "navigate_through_the_menu_or_toolbar_415a4e50": {
     "message": "Siirry valikon tai työkalupalkin läpi"
@@ -320,6 +323,7 @@ const locale = {
     "message": "Tuloksia ei löytynyt kohteelle { term }."
   },
   "none_3b5e34d2": { "message": "Ei mitään" },
+  "none_selected_b93d56d2": { "message": "Ei valintoja" },
   "octagon_e48be9f": { "message": "Kahdeksankulmio" },
   "open_this_keyboard_shortcuts_dialog_9658b83a": {
     "message": "Avaa tämä näppäimistön pikakuvakkeiden valintaruutu"
@@ -370,6 +374,7 @@ const locale = {
   },
   "search_280d00bd": { "message": "Hae" },
   "search_term_b2d2235": { "message": "Hakutermi" },
+  "select_crop_shape_d441feeb": { "message": "Valitse rajauksen muoto" },
   "select_language_7c93a900": { "message": "Valitse kieli" },
   "selected_274ce24f": { "message": "Valittu" },
   "shift_o_to_open_the_pretty_html_editor_55ff5a31": {
@@ -379,9 +384,10 @@ const locale = {
   "show_image_options_1e2ecc6b": { "message": "Näytä kuva-asetukset" },
   "show_link_options_545338fd": { "message": "Näytä linkin asetukset" },
   "show_video_options_6ed3721a": { "message": "Näytä videoasetukset" },
+  "single_color_image_4e5d4dbc": { "message": "Yksivärinen kuva" },
   "size_b30e1077": { "message": "Koko" },
-  "size_of_file_is_greater_than_the_maximum_max_mb_al_6eb3fa9a": {
-    "message": "{ file } on kooltaan suurempi kuin suurin sallittu tiedostokoko { max } MB."
+  "size_of_caption_file_is_greater_than_the_maximum_m_bff5f86e": {
+    "message": "Tekstitystiedosto on kooltaan suurempi kuin suurin sallittu tiedostokoko { max } kb."
   },
   "small_b070434a": { "message": "Pieni" },
   "something_went_wrong_89195131": { "message": "Jotakin meni pieleen." },

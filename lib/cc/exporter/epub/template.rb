@@ -30,14 +30,16 @@ module CC::Exporter::Epub
       @base_template = base_template
       @exporter = exporter
       @title = Exporter::RESOURCE_TITLES[@reference] || @content[:title]
-      css = File.expand_path("../templates/css_template.css", __FILE__)
+      css = File.expand_path("templates/css_template.css", __dir__)
       @style = File.read(css)
     end
     attr_reader :content, :base_template, :exporter, :title, :reference, :style
+
     delegate :get_item, :sort_by_content, :unsupported_files, to: :exporter
 
-    def build(item=nil)
+    def build(item = nil)
       return if item.try(:empty?)
+
       template_path = template(item) || base_template
       template = File.expand_path(template_path, __FILE__)
       if File.exist?(template)
@@ -56,12 +58,13 @@ module CC::Exporter::Epub
 
     def template(item)
       return unless item
+
       Exporter.resource_template(resource_type(item))
     end
 
     def remove_empty_ids!(node)
       node.search("a[id='']").each do |tag|
-        tag.remove_attribute('id')
+        tag.remove_attribute("id")
       end
       node
     end
@@ -82,11 +85,12 @@ module CC::Exporter::Epub
     end
 
     def display_prerequisites(prerequisites)
-      prerequisites.map {|prerequisite| prerequisite[:title] }.join(', ')
+      prerequisites.pluck(:title).join(", ")
     end
 
     def friendly_date(date)
       return unless date
+
       datetime_string(Date.parse(date))
     end
 
@@ -101,7 +105,7 @@ module CC::Exporter::Epub
     end
 
     def item_details_present?(item)
-      details = [:due_at, :unlock_at, :lock_at, :grading_type, :points_possible, :submission_types]
+      details = %i[due_at unlock_at lock_at grading_type points_possible submission_types]
       details.any? { |detail| item[detail].present? }
     end
   end

@@ -18,16 +18,16 @@
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-require_relative '../../spec_helper'
+require_relative "../../spec_helper"
 
 describe Login::ExternalAuthObserversController do
-  describe 'POST #redirect_login' do
+  describe "POST #redirect_login" do
     let(:params) do
       {
-          "user" => {"name" => "parent", "terms_of_use" => "1", "initial_enrollment_type" => "observer"},
-          "pseudonym" => {"unique_id" => "parent@test.com"},
-          "observee" => {"unique_id" => "childstudent"},
-          "authenticity_token" => "9fHC1DSto0V"
+        "user" => { "name" => "parent", "terms_of_use" => "1", "initial_enrollment_type" => "observer" },
+        "pseudonym" => { "unique_id" => "parent@test.com" },
+        "observee" => { "unique_id" => "childstudent" },
+        "authenticity_token" => "9fHC1DSto0V"
       }
     end
 

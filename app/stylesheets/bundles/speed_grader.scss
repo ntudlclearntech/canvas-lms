@@ -65,6 +65,13 @@ $gradebook_header_height: 3.5em;
       width: 230px;
       z-index: 100;
     }
+
+    &:focus-within {
+      // Firefox
+      outline: thin dotted var(--ic-brand-global-nav-menu-item__text-color);
+      // Webkit/Chrome
+      outline: 5px auto -webkit-focus-ring-color;
+    }
   }
 
   /*
@@ -931,4 +938,20 @@ body .ui-selectmenu-dropdown:hover .ui-selectmenu-icon, body .ui-state-active .u
 
 #library-suggestions {
   float: direction(right);
+}
+
+.secondary_mount_point_container {
+  position: relative;
+
+  #speed_grader_edit_status_secondary_mount_point {
+    position: absolute;
+    right: 24px;
+    top: 33px;
+  }
+}
+
+.do-not-show-again {
+  float: left;
+  display: inline-block;
+  margin-top: 1em;
 }

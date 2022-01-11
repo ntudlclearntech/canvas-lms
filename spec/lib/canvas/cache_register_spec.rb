@@ -17,11 +17,8 @@
 # You should have received a copy of the GNU Affero General Public License along
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 
-require_relative '../../sharding_spec_helper'
-
 describe Canvas::CacheRegister do
-
-  before :each do
+  before do
     skip("require redis") unless Canvas.redis_enabled?
     allow(Canvas::CacheRegister).to receive(:enabled?).and_return(true)
   end
@@ -42,7 +39,7 @@ describe Canvas::CacheRegister do
   end
 
   context "reading" do
-    it "should automatically set the key to the current time if it doesn't exist" do
+    it "automatically sets the key to the current time if it doesn't exist" do
       Timecop.freeze(time1) do
         @key = @user.cache_key(:enrollments)
         expect(@key).to include(to_stamp(time1))
@@ -53,7 +50,7 @@ describe Canvas::CacheRegister do
       end
     end
 
-    it "should use updated_at if reverted" do
+    it "uses updated_at if reverted" do
       set_revert!
       Timecop.freeze(time1) do
         key = @user.cache_key(:enrollments)
@@ -62,22 +59,22 @@ describe Canvas::CacheRegister do
       end
     end
 
-    it "should separate keys by type" do
+    it "separates keys by type" do
       Timecop.freeze(time1) { @user.cache_key(:enrollments) }
-      Timecop.freeze(time2) { expect(@user.cache_key(:account_users)).to include(to_stamp(time2))}
+      Timecop.freeze(time2) { expect(@user.cache_key(:account_users)).to include(to_stamp(time2)) }
     end
 
-    it "should separate keys by user" do
+    it "separates keys by user" do
       user2 = User.create!
       Timecop.freeze(time1) { @user.cache_key(:enrollments) }
-      Timecop.freeze(time2) { expect(user2.cache_key(:enrollments)).to include(to_stamp(time2))}
+      Timecop.freeze(time2) { expect(user2.cache_key(:enrollments)).to include(to_stamp(time2)) }
     end
 
-    it "should check the types in dev/test" do
+    it "checks the types in dev/test" do
       expect { @user.cache_key(:blah) }.to raise_error("invalid cache_key type 'blah' for User")
     end
 
-    it "should use the same redis node for each object" do
+    it "uses the same redis node for each object" do
       real_redis = Canvas.redis # may not actually be distributed so we'll make do
       fake_redis = double
       allow(Canvas).to receive(:redis).and_return(fake_redis)
@@ -91,9 +88,9 @@ describe Canvas::CacheRegister do
 
   context "invalidation" do
     context "for a single record" do
-      it "should update specified cache types" do
+      it "updates specified cache types" do
         Timecop.freeze(time1) do
-          [:enrollments, :account_users, :groups].each do |k|
+          %i[enrollments account_users groups].each do |k|
             @user.cache_key(k)
           end
         end
@@ -108,17 +105,17 @@ describe Canvas::CacheRegister do
         end
       end
 
-      it "should check the types in dev/test" do
+      it "checks the types in dev/test" do
         expect { @user.clear_cache_key(:blah) }.to raise_error("invalid cache_key type 'blah' for User")
       end
 
-      it "shouldn't do anything if reverted" do
+      it "does not do anything if reverted" do
         set_revert!
-        expect(Canvas::CacheRegister).to receive(:redis).never
+        expect(Canvas::CacheRegister).not_to receive(:redis)
         @user.clear_cache_key(:enrollments)
       end
 
-      it "should use the same redis node for each object" do
+      it "uses the same redis node for each object" do
         real_redis = Canvas.redis # may not actually be distributed so we'll make do
         fake_redis = double
         allow(Canvas).to receive(:redis).and_return(fake_redis)
@@ -130,8 +127,8 @@ describe Canvas::CacheRegister do
     end
 
     context "multiple users" do
-      it "should work with an array of users" do
-        users = (0..2).map{ User.create! }
+      it "works with an array of users" do
+        users = (0..2).map { User.create! }
         Timecop.freeze(time1) do
           users.each do |u|
             u.cache_key(:enrollments)
@@ -149,8 +146,8 @@ describe Canvas::CacheRegister do
         end
       end
 
-      it "should work with a relation" do
-        course_with_teacher(:active_all => true)
+      it "works with a relation" do
+        course_with_teacher(active_all: true)
         Timecop.freeze(time1) do
           @teacher.cache_key(:enrollments)
         end
@@ -162,10 +159,10 @@ describe Canvas::CacheRegister do
         end
       end
 
-      it "should be able to touch the users as well (unless skipped)" do
-        users = (0..2).map{ User.create! }
+      it "is able to touch the users as well (unless skipped)" do
+        users = (0..2).map { User.create! }
         Timecop.freeze(time1) do
-          users.each {|u| u.cache_key(:enrollments) }
+          users.each { |u| u.cache_key(:enrollments) }
         end
 
         Timecop.freeze(time2) do
@@ -191,7 +188,7 @@ describe Canvas::CacheRegister do
       context "with sharding" do
         specs_require_sharding
 
-        before :each do
+        before do
           @users = []
           @users << User.create!
           @shard1.activate { @users << User.create! }
@@ -211,7 +208,7 @@ describe Canvas::CacheRegister do
           end
         end
 
-        it "should work with a multi-shard array" do
+        it "works with a multi-shard array" do
           User.clear_cache_keys(@users, :enrollments)
           Timecop.freeze(time2) do
             @users.each do |u|
@@ -221,15 +218,15 @@ describe Canvas::CacheRegister do
           end
         end
 
-        it "should fail trying to clear things that aren't resolvable by to a global id" do
-          weird_hash = {:what => @users.first}
-          expect {
+        it "fails trying to clear things that aren't resolvable by to a global id" do
+          weird_hash = { what: @users.first }
+          expect do
             User.clear_cache_keys(weird_hash, :enrollments)
-          }.to raise_error("invalid argument for cache clearing #{weird_hash.to_a.first}")
+          end.to raise_error("invalid argument for cache clearing #{weird_hash.to_a.first}")
         end
 
-        it "should work with a multi-shard relation" do
-          User.where(:id => @users.map(&:global_id)).clear_cache_keys(:enrollments)
+        it "works with a multi-shard relation" do
+          User.where(id: @users.map(&:global_id)).clear_cache_keys(:enrollments)
           Timecop.freeze(time2) do
             @users.each do |u|
               expect(u.cache_key(:enrollments)).to include(to_stamp(time2))
@@ -272,12 +269,12 @@ describe Canvas::CacheRegister do
       end
     end
 
-    it "should be able to do a fetch using new cache keys in a single call" do
+    it "is able to do a fetch using new cache keys in a single call" do
       expect(Rails.cache).to receive(:fetch_with_cache_register).at_least(:once).and_call_original
       check_cache
     end
 
-    it "should still work with expiration" do
+    it "still works with expiration" do
       some_key = "some_base_key/withstuff"
       some_value = "some value"
       some_other_value = "some other value"
@@ -301,7 +298,7 @@ describe Canvas::CacheRegister do
       end
     end
 
-    it "should be separate by user" do
+    it "is separate by user" do
       some_key = "some_base_key/withstuff"
       some_value = "some value"
       some_other_value = "some other value"
@@ -318,22 +315,22 @@ describe Canvas::CacheRegister do
       end
     end
 
-    it "should fall back to a regular fetch (appending the keys) if not using a redis cache store" do
+    it "falls back to a regular fetch (appending the keys) if not using a redis cache store" do
       enable_cache(:memory_store) do
-        expect(Rails.cache).to receive(:fetch_with_cache_register).never
+        expect(Rails.cache).not_to receive(:fetch_with_cache_register)
         check_cache
       end
     end
 
-    it "should check the key types" do
-      expect {
+    it "checks the key types" do
+      expect do
         Rails.cache.fetch_with_batched_keys("k", batch_object: @user, batched_keys: :blah) { "v" }
-      }.to raise_error("invalid cache_key type 'blah' for User")
+      end.to raise_error("invalid cache_key type 'blah' for User")
     end
   end
 
   context "without an object" do
-    it "should try to find the cache key by the id alone" do
+    it "tries to find the cache key by the id alone" do
       @user2 = User.create!
       Timecop.freeze(time1) do
         @user.cache_key(:enrollments)
@@ -345,7 +342,7 @@ describe Canvas::CacheRegister do
       end
     end
 
-    it "should return nil if cache register is disabled" do
+    it "returns nil if cache register is disabled" do
       set_revert!
       Timecop.freeze(time1) do
         @user.cache_key(:enrollments)
@@ -355,7 +352,7 @@ describe Canvas::CacheRegister do
       end
     end
 
-    it "should check the types in dev/test" do
+    it "checks the types in dev/test" do
       expect { User.cache_key_for_id(@user.id, :blah) }.to raise_error("invalid cache_key type 'blah' for User")
     end
   end
@@ -364,7 +361,7 @@ describe Canvas::CacheRegister do
     specs_require_sharding
     specs_require_cache(:redis_cache_store)
 
-    before :each do
+    before do
       @user = @shard1.activate { User.create! }
       @base_key = User.base_cache_register_key_for(@user)
     end
@@ -373,17 +370,17 @@ describe Canvas::CacheRegister do
       expect(Canvas::CacheRegister).to receive(:redis).with(@base_key, @user.shard).and_call_original
     end
 
-    it "should pass the object's shard when looking up node for cache_key" do
-      expect(Canvas::CacheRegister).to receive(:redis).with(@base_key, @user.shard, :prefer_multi_cache => false).and_call_original
+    it "passes the object's shard when looking up node for cache_key" do
+      expect(Canvas::CacheRegister).to receive(:redis).with(@base_key, @user.shard, prefer_multi_cache: false).and_call_original
       @user.cache_key(:enrollments)
     end
 
-    it "should pass the object's shard when looking up node for clear_cache_keys" do
+    it "passes the object's shard when looking up node for clear_cache_keys" do
       expect_redis_call
       User.clear_cache_keys([@user.id], :enrollments)
     end
 
-    it "should pass the object's shard when looking up node for fetch_with_batched_keys" do
+    it "passes the object's shard when looking up node for fetch_with_batched_keys" do
       expect_redis_call
       Rails.cache.fetch_with_batched_keys("somekey", batch_object: @user, batched_keys: [:enrollments]) do
         "something"
@@ -392,21 +389,21 @@ describe Canvas::CacheRegister do
   end
 
   context "multi-cache preference" do
-    it "should retrieve multi-cache redis when preferred" do
+    it "retrieves multi-cache redis when preferred" do
       allow(Canvas::CacheRegister).to receive(:can_use_multi_cache_redis?).and_return(true)
       mock_redis = double
-      cache = double(:redis => mock_redis)
+      cache = double(redis: mock_redis)
       allow(MultiCache).to receive(:cache).and_return(cache)
       expect(Canvas::CacheRegister.redis("key", Shard.default, prefer_multi_cache: true)).to eq mock_redis
     end
 
-    it "should prefer multi-cache when retreiving a configured key" do
+    it "prefers multi-cache when retreiving a configured key" do
       base_key = Account.base_cache_register_key_for(Account.default)
-      expect(Canvas::CacheRegister).to receive(:redis).with(base_key, Shard.default, :prefer_multi_cache => true).and_call_original
+      expect(Canvas::CacheRegister).to receive(:redis).with(base_key, Shard.default, prefer_multi_cache: true).and_call_original
       Account.default.cache_key(:feature_flags)
     end
 
-    it "should use multi-cache delete when clearing a configured key" do
+    it "uses multi-cache delete when clearing a configured key" do
       key = Account.base_cache_register_key_for(Account.default) + "/feature_flags"
       allow(Canvas::CacheRegister).to receive(:can_use_multi_cache_redis?).and_return(true)
       expect(Canvas::CacheRegister).to_not receive(:redis)

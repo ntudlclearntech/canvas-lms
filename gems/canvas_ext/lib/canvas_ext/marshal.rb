@@ -22,11 +22,11 @@ module CanvasExt
     # load the class if Rails has not loaded it yet
     def load(*args)
       viewed_class_names = []
-      
+
       begin
         super
       rescue ArgumentError => e
-        if e.message =~ /undefined class\/module (.+)/
+        if e.message =~ %r{undefined class/module (.+)}
           class_name = $1
           raise e if viewed_class_names.include?(class_name)
 
@@ -39,9 +39,9 @@ module CanvasExt
         else
           raise
         end
-      end      
+      end
     end
-  end  
+  end
 end
 
 Marshal.singleton_class.prepend(CanvasExt::Marshal)

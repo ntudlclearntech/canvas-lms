@@ -45,7 +45,7 @@ module Lti::Concerns
       )
 
       Canvas.timeout_protection("cross-shard LTI launch", raise_on_timeout: true) do
-        HTTParty.get url, headers: { 'Authorization' => request.headers['Authorization'] }
+        HTTParty.get url, headers: { "Authorization" => request.headers["Authorization"] }
       end
     end
 
@@ -106,6 +106,7 @@ module Lti::Concerns
       end
 
       return module_item_link(options[:module_item], session_token) if options[:module_item].present?
+
       course_or_account_launch_link(context, tool, session_token, options[:launch_url])
     end
 
@@ -129,7 +130,7 @@ module Lti::Concerns
 
     def course_or_account_launch_link(context, tool, session_token, launch_url)
       context_type = context.class.to_s.downcase
-      self.send(
+      send(
         "#{context_type}_external_tool_url",
         context.id,
         id: tool.id,

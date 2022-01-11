@@ -57,17 +57,19 @@
 module MicrosoftSync
   class StateMachineJob
     class InternalError < ArgumentError; end
+
     class RetriesExhaustedError < StandardError
       attr_reader :cause
 
       def initialize(cause)
+        super()
         @cause = cause
       end
     end
 
     # NOTE: if we ever use this class for something besides SyncerSteps, we may want
     # to change this and the capture_exception() calls which just group by microsoft_sync_smj
-    STATSD_PREFIX = 'microsoft_sync.smj'
+    STATSD_PREFIX = "microsoft_sync.smj"
 
     # job_state_record is assumed to be a model with the following used here:
     #  - global_id
@@ -111,7 +113,8 @@ module MicrosoftSync
     # memory_state is passed into the next step.
     class NextStep
       attr_reader :step, :memory_state
-      def initialize(step, memory_state=nil)
+
+      def initialize(step, memory_state = nil)
         @step = step or raise InternalError
         @memory_state = memory_state
       end
@@ -119,17 +122,16 @@ module MicrosoftSync
 
     class DelayedNextStep
       attr_reader :step, :delay_amount, :job_state_data
-      def initialize(step, delay_amount, job_state_data=nil)
+
+      def initialize(step, delay_amount, job_state_data = nil)
         @step = step or raise InternalError
         @delay_amount = delay_amount
         @job_state_data = job_state_data
       end
     end
 
-    class Complete; end
-
     # Return this when your job is done:
-    COMPLETE = Complete.new
+    COMPLETE = Object.new
 
     # Signals that this step of the job failed, but the job may be retriable.
     #
@@ -148,6 +150,7 @@ module MicrosoftSync
     #
     class Retry
       attr_reader :error, :delay_amount, :job_state_data, :step, :stash_block
+
       def initialize(error:, delay_amount: nil, job_state_data: nil, step: nil, &stash_block)
         @error = error
         @delay_amount = delay_amount
@@ -169,20 +172,20 @@ module MicrosoftSync
     INITIAL_STEP = :step_initial
 
     # Mostly used for debugging. May use sleep!
-    def run_synchronously(initial_mem_state=nil)
+    def run_synchronously(initial_mem_state = nil)
       run_with_delay(initial_mem_state: initial_mem_state, synchronous: true)
     rescue IRB::Abort => e
       update_state_record_to_errored_and_cleanup(e)
       raise
     end
 
-    def run_later(initial_mem_state=nil)
+    def run_later(initial_mem_state = nil)
       run_with_delay(initial_mem_state: initial_mem_state)
     end
 
     private
 
-    def run(step, initial_mem_state, synchronous=false)
+    def run(step, initial_mem_state, synchronous = false)
       job_state = job_state_record.job_state
 
       # Record has been deleted since we were enqueued:
@@ -239,10 +242,10 @@ module MicrosoftSync
         log { "Dropping duplicate job, initial_mem_state=#{initial_mem_state.inspect}" }
       else
         if synchronous
-          raise InternalError, 'A job is waiting to be retried; use run_later() to enqueue another'
+          raise InternalError, "A job is waiting to be retried; use run_later() to enqueue another"
         end
 
-        self.delay(strand: strand, run_at: currently_retrying_job.run_at + 1)
+        delay(strand: strand, run_at: currently_retrying_job.run_at + 1)
           .run(nil, initial_mem_state)
       end
     end
@@ -271,9 +274,9 @@ module MicrosoftSync
           end
         end
 
-        log { "step #{current_step} finished with #{result.class.name.split('::').last}" }
+        log { "step #{current_step} finished with #{result.class.name.split("::").last}" }
         case result
-        when Complete
+        when COMPLETE
           job_state_record&.update_unless_deleted(
             workflow_state: :completed, job_state: nil, last_error: nil
           )
@@ -295,8 +298,8 @@ module MicrosoftSync
       end
     end
 
-    def statsd_increment(bucket, step, error=nil)
-      tags = {category: error&.class&.name&.tr(':', '_'), microsoft_sync_step: step.to_s}.compact
+    def statsd_increment(bucket, step, error = nil)
+      tags = { category: error&.class&.name&.tr(":", "_"), microsoft_sync_step: step.to_s }.compact
       InstStatsd::Statsd.increment("#{STATSD_PREFIX}.#{bucket}", tags: tags)
     end
 
@@ -318,7 +321,7 @@ module MicrosoftSync
         return
       end
 
-      self.delay(strand: strand, run_at: delay_amount&.seconds&.from_now)
+      delay(strand: strand, run_at: delay_amount&.seconds&.from_now)
         .run(step, initial_mem_state)
     end
 
@@ -340,14 +343,14 @@ module MicrosoftSync
     end
 
     def capture_exception(err)
-      Canvas::Errors.capture(err, {tags: {type: 'microsoft_sync_smj'}}, :error)
+      Canvas::Errors.capture(err, { tags: { type: "microsoft_sync_smj" } }, :error)
     end
 
     def handle_delayed_next_step(delayed_next_step, synchronous)
       return unless update_state_record_to_retrying(
         step: delayed_next_step.step,
         data: delayed_next_step.job_state_data,
-        retries_by_step: job_state_record.reload.job_state&.dig(:retries_by_step),
+        retries_by_step: job_state_record.reload.job_state&.dig(:retries_by_step)
       )
 
       run_with_delay(
@@ -360,8 +363,9 @@ module MicrosoftSync
     # Ensure delay amount is not too long so as to make the job look stalled:
     def clip_delay_amount(delay_amount)
       max_delay = steps_object.max_delay.to_f
-      delay_amount.to_f.clamp(0, max_delay).tap do |clipped|
-        log { "Clipped delay #{delay_amount} to #{clipped}" } if clipped != delay_amount.to_f
+      delay_amount = delay_amount.to_f
+      delay_amount.clamp(0, max_delay).tap do |clipped|
+        log { "Clipped delay #{delay_amount} to #{clipped}" } unless clipped.equal?(delay_amount)
       end
     end
 
@@ -385,7 +389,7 @@ module MicrosoftSync
         raise retry_object.error
       end
 
-      statsd_increment('retry', current_step, retry_object.error)
+      statsd_increment("retry", current_step, retry_object.error)
 
       retry_object.stash_block&.call
 
@@ -394,7 +398,7 @@ module MicrosoftSync
         data: retry_object.job_state_data,
         retries_by_step: retries_by_step.merge(retry_step.to_s => retries + 1),
         # for debugging only:
-        retried_on_error: "#{retry_object.error.class}: #{retry_object.error.message}",
+        retried_on_error: "#{retry_object.error.class}: #{retry_object.error.message}"
       )
 
       delay_amount = retry_object.delay_amount
@@ -414,7 +418,7 @@ module MicrosoftSync
     def find_delayed_job(strand, &args_selector)
       Delayed::Job.where(strand: strand).find_each.find do |job|
         job != Delayed::Worker.current_job && args_selector[
-          YAML.unsafe_load(job.handler)['args']
+          YAML.unsafe_load(job.handler)["args"]
         ]
       end
     end

@@ -21,7 +21,6 @@
 require "spec_helper"
 
 describe CanvasCassandra::DatabaseBuilder do
-
   let(:logger_klass) do
     Class.new do
       attr_reader :logs
@@ -36,12 +35,12 @@ describe CanvasCassandra::DatabaseBuilder do
     end
   end
 
-  before(:each) do
-    target_location = Pathname.new(File.join(File.dirname(__FILE__), '..', 'fixtures'))
+  before do
+    target_location = Pathname.new(File.join(File.dirname(__FILE__), "..", "fixtures"))
     allow(Rails).to receive(:root).and_return(target_location)
   end
 
-  around(:each) do |example|
+  around do |example|
     @logger_obj = logger_klass.new
     prev_logger = CanvasCassandra.logger
     CanvasCassandra.logger = @logger_obj
@@ -59,7 +58,7 @@ describe CanvasCassandra::DatabaseBuilder do
 
   describe ".from_config" do
     it "boots a DB instance from config" do
-      allow(CassandraCQL::Database).to receive(:new).and_return(double())
+      allow(CassandraCQL::Database).to receive(:new).and_return(double)
       db = CanvasCassandra::DatabaseBuilder.from_config("foobars")
       expect(@logger_obj.logs[0]).to be_nil
       expect(db).to be_a(CanvasCassandra::Database)
@@ -69,7 +68,7 @@ describe CanvasCassandra::DatabaseBuilder do
   describe ".read_consistency_setting" do
     it "loads setting from store" do
       store_klass = Class.new do
-        def initialize(data={})
+        def initialize(data = {})
           @settings = data
         end
 
@@ -79,7 +78,7 @@ describe CanvasCassandra::DatabaseBuilder do
       end
       prev_store = CanvasCassandra.settings_store(true)
       settings = {
-        'event_stream.read_consistency.foobars' => 'local_quorum'
+        "event_stream.read_consistency.foobars" => "local_quorum"
       }
       CanvasCassandra.settings_store = store_klass.new(settings)
       val = CanvasCassandra::DatabaseBuilder.read_consistency_setting("foobars")

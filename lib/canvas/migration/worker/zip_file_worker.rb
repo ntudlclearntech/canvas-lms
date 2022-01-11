@@ -18,8 +18,9 @@
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 class Canvas::Migration::Worker::ZipFileWorker < Canvas::Migration::Worker::Base
-  def perform(cm=nil)
+  def perform(cm = nil)
     cm ||= ContentMigration.find migration_id
+    cm.save if cm.capture_job_id
 
     cm.workflow_state = :importing
     cm.migration_settings[:skip_import_notification] = true
@@ -38,30 +39,29 @@ class Canvas::Migration::Worker::ZipFileWorker < Canvas::Migration::Worker::Base
 
       folder = cm.context.folders.find(cm.migration_settings[:folder_id])
 
-      update_callback = lambda{|pct|
+      update_callback = lambda do |pct|
         percent_complete = pct * 100
 
         scaled = percent_complete
 
         if cm.import_immediately?
-          scaled = scaled / 2 + 50
+          scaled = (scaled / 2) + 50
         end
 
         # Only update if progress has incremented 1 percent
         if scaled - cm.progress >= 1
           cm.update_import_progress(percent_complete)
         end
-      }
+      end
 
       UnzipAttachment.process(
-              :context => cm.context,
-              :root_directory => folder,
-              :filename => zipfile.path,
-              :callback => update_callback
+        context: cm.context,
+        root_directory: folder,
+        filename: zipfile.path,
+        callback: update_callback
       )
 
       zipfile.close
-      zipfile = nil
 
       cm.workflow_state = :imported
       cm.save
@@ -70,13 +70,12 @@ class Canvas::Migration::Worker::ZipFileWorker < Canvas::Migration::Worker::Base
       cm.fail_with_error!(e)
       raise e
     end
-
   end
 
   def self.enqueue(content_migration)
     Delayed::Job.enqueue(new(content_migration.id),
-                         :priority => Delayed::LOW_PRIORITY,
-                         :max_attempts => 1,
-                         :strand => content_migration.strand)
+                         priority: Delayed::LOW_PRIORITY,
+                         max_attempts: 1,
+                         strand: content_migration.strand)
   end
 end

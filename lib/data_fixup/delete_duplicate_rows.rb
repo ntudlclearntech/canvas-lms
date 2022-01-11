@@ -15,17 +15,17 @@
 # details.
 #
 # You should have received a copy of the GNU Affero General Public License along
-# 
+#
 
 module DataFixup
   module DeleteDuplicateRows
     def self.run(base_scope, *unique_columns, order: nil, strategy: nil, batch_size: 10_000)
       model = base_scope.is_a?(ActiveRecord::Relation) ? base_scope.klass : base_scope
-      partition_by = unique_columns.map { |c| model.connection.quote_column_name(c) }.join(', ')
+      partition_by = unique_columns.map { |c| model.connection.quote_column_name(c) }.join(", ")
       order ||= model.primary_key
       inner_scope = base_scope
-        .select(model.primary_key)
-        .select("ROW_NUMBER() OVER (PARTITION BY #{partition_by} ORDER BY #{order}) AS row_num")
+                    .select(model.primary_key)
+                    .select("ROW_NUMBER() OVER (PARTITION BY #{partition_by} ORDER BY #{order}) AS row_num")
       middle_scope = model.from(inner_scope).select(:id).where("row_num>1")
       outer_scope = model.where(id: middle_scope)
       outer_scope.in_batches(of: batch_size, strategy: strategy).delete_all

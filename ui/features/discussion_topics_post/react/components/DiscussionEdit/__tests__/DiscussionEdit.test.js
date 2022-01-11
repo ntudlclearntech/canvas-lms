@@ -17,7 +17,7 @@
  */
 import React from 'react'
 import {DiscussionEdit} from '../DiscussionEdit'
-import {render, fireEvent} from '@testing-library/react'
+import {render, fireEvent, waitFor} from '@testing-library/react'
 
 const setup = props => {
   return render(<DiscussionEdit {...props} />)
@@ -27,12 +27,18 @@ const defaultProps = ({
   show = undefined,
   value = undefined,
   onCancel = jest.fn(),
-  onSubmit = jest.fn()
+  onSubmit = jest.fn(),
+  updateDraft = jest.fn(),
+  draftSaved = false,
+  discussionAnonymousState = null
 } = {}) => ({
   show,
   value,
+  draftSaved,
+  updateDraft,
   onCancel,
-  onSubmit
+  onSubmit,
+  discussionAnonymousState
 })
 
 describe('DiscussionEdit', () => {
@@ -53,6 +59,13 @@ describe('DiscussionEdit', () => {
       const container = getByTestId('DiscussionEdit-container')
       expect(container.style.display).toBe('')
     })
+
+    it('should render anonymous response selector when topic is anonymous', () => {
+      ENV.current_user = {display_name: 'Ronald Weasley'}
+      ENV.current_user_roles = ['student']
+      const container = setup(defaultProps({discussionAnonymousState: 'full_anonymity'}))
+      expect(container.queryByTestId('anonymous-response-selector')).toBeTruthy()
+    })
   })
 
   describe('Callbacks', () => {
@@ -70,6 +83,26 @@ describe('DiscussionEdit', () => {
       const submitButton = getByTestId('DiscussionEdit-submit')
       fireEvent.click(submitButton)
       expect(onSubmitMock.mock.calls.length).toBe(1)
+    })
+  })
+
+  describe('Draft messages', () => {
+    beforeAll(() => {
+      window.ENV = {
+        draft_discussions: true
+      }
+    })
+
+    it('should find draft saving text', () => {
+      const container = setup(defaultProps({draftSaved: false}))
+      expect(container.queryByText('Saving')).toBeTruthy()
+      expect(container.queryByText('Saved')).toBeNull()
+    })
+
+    it('should find draft saved text', async () => {
+      const container = setup(defaultProps({draftSaved: true}))
+      await waitFor(() => expect(container.queryByText('Saving')).toBeNull())
+      expect(container.queryByText('Saved')).toBeTruthy()
     })
   })
 })

@@ -82,6 +82,7 @@ export const FIND_GROUP_OUTCOMES = gql`
     $outcomeIsImported: Boolean!
     $searchQuery: String
     $outcomesCursor: String
+    $targetGroupId: ID
   ) {
     group: legacyNode(type: LearningOutcomeGroup, _id: $id) {
       ... on LearningOutcomeGroup {
@@ -90,6 +91,7 @@ export const FIND_GROUP_OUTCOMES = gql`
         contextType
         contextId
         outcomesCount(searchQuery: $searchQuery)
+        notImportedOutcomesCount(targetGroupId: $targetGroupId)
         outcomes(searchQuery: $searchQuery, first: 10, after: $outcomesCursor) {
           pageInfo {
             hasNextPage
@@ -106,6 +108,13 @@ export const FIND_GROUP_OUTCOMES = gql`
                   targetContextType: $outcomesContextType
                   targetContextId: $outcomesContextId
                 ) @include(if: $outcomeIsImported)
+                friendlyDescription(
+                  contextId: $outcomesContextId
+                  contextType: $outcomesContextType
+                ) {
+                  _id
+                  description
+                }
               }
             }
           }
@@ -122,6 +131,7 @@ export const SEARCH_GROUP_OUTCOMES = gql`
     $outcomesContextId: ID!
     $outcomesContextType: String!
     $searchQuery: String
+    $targetGroupId: ID
   ) {
     group: legacyNode(type: LearningOutcomeGroup, _id: $id) {
       ... on LearningOutcomeGroup {
@@ -129,6 +139,7 @@ export const SEARCH_GROUP_OUTCOMES = gql`
         description
         title
         outcomesCount(searchQuery: $searchQuery)
+        notImportedOutcomesCount(targetGroupId: $targetGroupId)
         outcomes(searchQuery: $searchQuery, first: 10, after: $outcomesCursor) {
           pageInfo {
             hasNextPage

@@ -21,20 +21,20 @@
 class Mutations::DeleteCommentBankItem < Mutations::BaseMutation
   graphql_name "DeleteCommentBankItem"
 
-  argument :id, ID, required: true, prepare: GraphQLHelpers.relay_or_legacy_id_prepare_func('CommentBankItem')
+  argument :id, ID, required: true, prepare: GraphQLHelpers.relay_or_legacy_id_prepare_func("CommentBankItem")
   field :comment_bank_item_id, ID, null: false
 
   def resolve(input:)
     record = CommentBankItem.active.find_by(id: input[:id])
-    raise GraphQL::ExecutionError, I18n.t('Unable to find CommentBankItem') if record.nil?
+    raise GraphQL::ExecutionError, I18n.t("Unable to find CommentBankItem") if record.nil?
 
     verify_authorized_action!(record, :delete)
     context[:deleted_models][:comment_bank_item] = record
 
     if record.destroy
-      {comment_bank_item_id: record.id}
+      { comment_bank_item_id: record.id }
     else
-      raise GraphQL::ExecutionError, I18n.t('Unable to delete CommentBankItem')
+      raise GraphQL::ExecutionError, I18n.t("Unable to delete CommentBankItem")
     end
   end
 

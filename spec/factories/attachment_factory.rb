@@ -23,7 +23,9 @@ Attachment.class_eval do
   # Marshal.load. since there's only a single spec in the entire suite
   # that wants a non-downloadable attachment, this is going to be a more
   # performant approach
-  def downloadable?; true; end
+  def downloadable?
+    true
+  end
 
   # fix so we can once-ler attachment instances. in order to
   # Marshal.dump, you can't have any singleton methods (which our
@@ -41,7 +43,7 @@ Attachment.class_eval do
 end
 
 module Factories
-  def attachment_model(opts={})
+  def attachment_model(opts = {})
     attrs = valid_attachment_attributes(opts).merge(opts)
     attrs.delete(:filename) if attrs.key?(:uploaded_data)
     @attachment = factory_with_protected_attributes(Attachment, attrs, false)
@@ -49,23 +51,23 @@ module Factories
     @attachment
   end
 
-  def valid_attachment_attributes(opts={})
-    @context = opts[:context] || @context || @course || course_model(:reusable => true)
-    if opts.has_key?(:folder)
+  def valid_attachment_attributes(opts = {})
+    @context = opts[:context] || @context || @course || course_model(reusable: true)
+    if opts.key?(:folder)
       folder = opts[:folder]
     else
       if @context.respond_to?(:folders)
-        @folder = Folder.root_folders(@context).find{|f| f.name == 'unfiled'} || Folder.root_folders(@context).first
+        @folder = Folder.root_folders(@context).find { |f| f.name == "unfiled" } || Folder.root_folders(@context).first
       end
       @folder ||= folder_model
       folder = @folder
     end
     @attributes_res = {
-      :context => @context,
-      :size => 100,
-      :folder => folder,
-      :content_type => 'application/loser',
-      :filename => 'unknown.loser'
+      context: @context,
+      size: 100,
+      folder: folder,
+      content_type: "application/loser",
+      filename: "unknown.loser"
     }
   end
 
@@ -78,44 +80,44 @@ module Factories
     sio
   end
 
-  def stub_png_data(filename = 'test my file? hai!&.png', data = nil)
-    stub_file_data(filename, data, 'image/png')
+  def stub_png_data(filename = "test my file? hai!&.png", data = nil)
+    stub_file_data(filename, data, "image/png")
   end
 
   def jpeg_data_frd
-    fixture_path = 'test_image.jpg'
-    fixture_file_upload(fixture_path, 'image/jpeg', true)
+    fixture_path = "test_image.jpg"
+    fixture_file_upload(fixture_path, "image/jpeg", true)
   end
 
   def one_hundred_megapixels_of_highly_compressed_png_data
-    fixture_path = '100mpx.png'
-    fixture_file_upload(fixture_path, 'image/png', true)
+    fixture_path = "100mpx.png"
+    fixture_file_upload(fixture_path, "image/png", true)
   end
 
-  def crocodocable_attachment_model(opts={})
-    attachment_model({:content_type => 'application/pdf'}.merge(opts))
+  def crocodocable_attachment_model(opts = {})
+    attachment_model({ content_type: "application/pdf" }.merge(opts))
   end
 
-  alias :canvadocable_attachment_model :crocodocable_attachment_model
+  alias_method :canvadocable_attachment_model, :crocodocable_attachment_model
 
-  def attachment_obj_with_context(obj, opts={})
+  def attachment_obj_with_context(obj, opts = {})
     @attachment = factory_with_protected_attributes(Attachment, valid_attachment_attributes.merge(opts))
     @attachment.context = obj
     @attachment
   end
 
-  def attachment_with_context(obj, opts={})
+  def attachment_with_context(obj, opts = {})
     attachment_obj_with_context(obj, opts)
     @attachment.save!
     @attachment
   end
 
-  def create_attachment_for_file_upload_submission!(submission, opts={})
+  def create_attachment_for_file_upload_submission!(submission, opts = {})
     defaults = {
-      :filename => "doc.doc",
-      :display_name => "doc.doc",
-      :user => @user,
-      :uploaded_data => dummy_io,
+      filename: "doc.doc",
+      display_name: "doc.doc",
+      user: @user,
+      uploaded_data: dummy_io,
     }
     submission.attachments.create! defaults.merge(opts)
   end

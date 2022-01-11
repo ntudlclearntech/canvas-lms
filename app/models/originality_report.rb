@@ -30,12 +30,12 @@ class OriginalityReport < ActiveRecord::Base
   belongs_to :originality_report_attachment, class_name: "Attachment"
   belongs_to :root_account, class_name: "Account"
 
-  has_one :lti_link, class_name: 'Lti::Link', as: :linkable, inverse_of: :linkable, dependent: :destroy
+  has_one :lti_link, class_name: "Lti::Link", as: :linkable, inverse_of: :linkable, dependent: :destroy
   accepts_nested_attributes_for :lti_link, allow_destroy: true
 
   validates :submission, presence: true
   validates :workflow_state, inclusion: { in: ORDERED_VALID_WORKFLOW_STATES }
-  validates :originality_score, inclusion: { in: 0..100, message: 'score must be between 0 and 100' }, allow_nil: true
+  validates :originality_score, inclusion: { in: 0..100, message: "score must be between 0 and 100" }, allow_nil: true
 
   alias_attribute :file_id, :attachment_id
   alias_attribute :originality_report_file_id, :originality_report_attachment_id
@@ -48,7 +48,7 @@ class OriginalityReport < ActiveRecord::Base
   end
 
   def state
-    if workflow_state != 'scored'
+    if workflow_state != "scored"
       return workflow_state
     end
 
@@ -61,7 +61,7 @@ class OriginalityReport < ActiveRecord::Base
       h[:originality_report_file_id] = h.delete :originality_report_attachment_id
       if lti_link.present?
         h[:tool_setting] = { resource_url: lti_link.resource_url,
-                             resource_type_code:lti_link.resource_type_code }
+                             resource_type_code: lti_link.resource_type_code }
       end
     end
   end
@@ -69,10 +69,10 @@ class OriginalityReport < ActiveRecord::Base
   def report_launch_path
     if lti_link.present?
       course_assignment_resource_link_id_path(course_id: assignment.context_id,
-                                             assignment_id: assignment.id,
-                                             resource_link_id: lti_link.resource_link_id,
-                                             host: HostUrl.context_host(assignment.context),
-                                             display: 'borderless')
+                                              assignment_id: assignment.id,
+                                              resource_link_id: lti_link.resource_link_id,
+                                              host: HostUrl.context_host(assignment.context),
+                                              display: "borderless")
     else
       originality_report_url
     end
@@ -80,6 +80,7 @@ class OriginalityReport < ActiveRecord::Base
 
   def asset_key
     return Attachment.asset_string(attachment_id) if attachment_id.present?
+
     if submission_time.present?
       "#{Submission.asset_string(submission_id)}_#{submission_time&.utc&.iso8601}"
     else
@@ -87,8 +88,8 @@ class OriginalityReport < ActiveRecord::Base
     end
   end
 
-  def self.copy_to_group_submissions!(report_id: , user_id: )
-    report = self.find(report_id)
+  def self.copy_to_group_submissions!(report_id:, user_id:)
+    report = find(report_id)
     report.copy_to_group_submissions!
   rescue ActiveRecord::RecordNotFound => e
     user = User.where(id: user_id).first
@@ -105,9 +106,10 @@ class OriginalityReport < ActiveRecord::Base
 
   def copy_to_group_submissions!
     return if submission.group_id.blank?
+
     group_submissions = assignment.submissions.where.not(id: submission.id).where(group: submission.group)
     group_submissions.find_each do |s|
-      copy_of_report = self.dup
+      copy_of_report = dup
       copy_of_report.submission_time = nil
 
       # We don't want a single submission to have
@@ -136,9 +138,10 @@ class OriginalityReport < ActiveRecord::Base
   end
 
   def infer_workflow_state
-    self.workflow_state = 'error' if error_message.present?
-    return if self.workflow_state == 'error'
-    self.workflow_state = self.originality_score.present? ? 'scored' : 'pending'
+    self.workflow_state = "error" if error_message.present?
+    return if workflow_state == "error"
+
+    self.workflow_state = originality_score.present? ? "scored" : "pending"
   end
 
   def set_root_account

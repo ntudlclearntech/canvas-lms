@@ -18,7 +18,7 @@
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-require 'crocodoc'
+require "crocodoc"
 
 class CrocodocDocument < ActiveRecord::Base
   include Canvadocs::Session
@@ -27,7 +27,7 @@ class CrocodocDocument < ActiveRecord::Base
 
   has_many :canvadocs_submissions
 
-  MIME_TYPES = %w(
+  MIME_TYPES = %w[
     application/pdf
     application/msword
     application/vnd.openxmlformats-officedocument.wordprocessingml.document
@@ -36,7 +36,7 @@ class CrocodocDocument < ActiveRecord::Base
     application/excel
     application/vnd.ms-excel
     application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
-  ).freeze
+  ].freeze
 
   def upload
     return if uuid.present?
@@ -53,8 +53,8 @@ class CrocodocDocument < ActiveRecord::Base
       raise Canvas::Crocodoc::TimeoutError, "not uploading due to timeout error"
     end
 
-    if response && response['uuid']
-      update :uuid => response['uuid'], :process_state => 'QUEUED'
+    if response && response["uuid"]
+      update uuid: response["uuid"], process_state: "QUEUED"
     elsif response.nil?
       raise "no response received"
     else
@@ -86,9 +86,10 @@ class CrocodocDocument < ActiveRecord::Base
 
   def session_url(opts = {})
     return canvadocs_session_url opts.merge(canvadoc_options) if should_migrate_to_canvadocs?
+
     defaults = {
-      :annotations => true,
-      :downloadable => true,
+      annotations: true,
+      downloadable: true,
     }.with_indifferent_access
 
     opts = defaults.merge(opts)
@@ -100,26 +101,26 @@ class CrocodocDocument < ActiveRecord::Base
       opts[:user] = user.crocodoc_user
     end
 
-    crocodoc_ids = opts[:moderated_grading_allow_list]&.map {|h| h["crocodoc_id"] }
+    crocodoc_ids = opts[:moderated_grading_allow_list]&.map { |h| h["crocodoc_id"] }
     opts.merge! permissions_for_user(user, crocodoc_ids)
 
     unless annotations_on
-      opts[:filter] = 'none'
+      opts[:filter] = "none"
       opts[:editable] = false
     end
 
     Canvas.timeout_protection("crocodoc_session", raise_on_timeout: true) do
       response = crocodoc_api.session(uuid, opts)
-      session = response['session']
+      session = response["session"]
       crocodoc_api.view(session)
     end
   end
 
   def permissions_for_user(user, allow_list = nil)
     opts = {
-      :filter => 'none',
-      :admin => false,
-      :editable => false,
+      filter: "none",
+      admin: false,
+      editable: false,
     }
 
     if user.blank?
@@ -130,7 +131,7 @@ class CrocodocDocument < ActiveRecord::Base
     end
 
     if submissions.any? { |s| s.grants_right? user, :read_grade }
-      opts[:filter] = 'all'
+      opts[:filter] = "all"
 
       if submissions.any? { |s| s.grants_right? user, :grade }
         opts[:admin] = true
@@ -139,7 +140,7 @@ class CrocodocDocument < ActiveRecord::Base
 
     if submissions.map(&:assignment).any? { |a| a.peer_reviews? && a.anonymous_peer_reviews? }
       opts[:editable] = false
-      opts[:filter] = 'none'
+      opts[:filter] = "none"
     end
 
     apply_allow_list(user, opts, allow_list) if allow_list
@@ -148,19 +149,19 @@ class CrocodocDocument < ActiveRecord::Base
   end
 
   def submissions
-    self.canvadocs_submissions.
-      preload(submission: :assignment).
-      map(&:submission)
+    canvadocs_submissions
+      .preload(submission: :assignment)
+      .map(&:submission)
   end
 
   def apply_allow_list(user, opts, allow_list)
     allowed_users = case opts[:filter]
-                    when 'all'
+                    when "all"
                       allow_list
-                    when 'none'
+                    when "none"
                       []
                     else
-                      opts[:filter].to_s.split(',').map(&:to_i) & allow_list
+                      opts[:filter].to_s.split(",").map(&:to_i) & allow_list
                     end
 
     unless allowed_users.include?(user.crocodoc_id!)
@@ -169,30 +170,31 @@ class CrocodocDocument < ActiveRecord::Base
     end
 
     opts[:filter] = if allowed_users.empty?
-      'none'
-    else
-      allowed_users.join(',')
-    end
+                      "none"
+                    else
+                      allowed_users.join(",")
+                    end
   end
 
   def available?
-    !!(uuid && process_state != 'ERROR' && Canvas::Crocodoc.config)
+    !!(uuid && process_state != "ERROR" && Canvas::Crocodoc.config)
   end
 
   def crocodoc_api
     raise "Crocodoc isn't configured" unless Canvas::Crocodoc.config
+
     @api ||= CrocodocDocument.crocodoc_api
   end
   private :crocodoc_api
 
   def self.crocodoc_api
-    Crocodoc::API.new(:token => Canvas::Crocodoc.config['api_key'])
+    Crocodoc::API.new(token: Canvas::Crocodoc.config["api_key"])
   end
 
   def self.update_process_states
-    bs = Setting.get('crocodoc_status_check_batch_size', '45').to_i
+    bs = Setting.get("crocodoc_status_check_batch_size", "45").to_i
     GuardRail.activate(:secondary) do
-      CrocodocDocument.where(:process_state => %w(QUEUED PROCESSING)).find_in_batches do |docs|
+      CrocodocDocument.where(process_state: %w[QUEUED PROCESSING]).find_in_batches do |docs|
         GuardRail.activate(:primary) do
           statuses = []
           docs.each_slice(bs) do |sub_docs|
@@ -204,24 +206,23 @@ class CrocodocDocument < ActiveRecord::Base
           bulk_updates = {}
           error_uuids = []
           statuses.each do |status|
-            uuid, state = status['uuid'], status['status']
-            bulk_updates[status['status']] ||= []
-            bulk_updates[status['status']] << status['uuid']
-            if status['status'] == 'ERROR'
-              error = status['error'] || 'No explanation given'
-              error_uuids << status['uuid']
-              Canvas::Errors.capture 'crocodoc', message: error
-            end
+            bulk_updates[status["status"]] ||= []
+            bulk_updates[status["status"]] << status["uuid"]
+            next unless status["status"] == "ERROR"
+
+            error = status["error"] || "No explanation given"
+            error_uuids << status["uuid"]
+            Canvas::Errors.capture "crocodoc", message: error
           end
 
           bulk_updates.each do |status, uuids|
-            CrocodocDocument.
-                where(:uuid => uuids).
-                update_all(:process_state => status)
+            CrocodocDocument
+              .where(uuid: uuids)
+              .update_all(process_state: status)
           end
 
           if error_uuids.present?
-            error_docs = CrocodocDocument.where(:uuid => error_uuids)
+            error_docs = CrocodocDocument.where(uuid: error_uuids)
             attachment_ids = error_docs.pluck(:attachment_id)
             if Canvadocs.enabled?
               Attachment.delay(n_strand: "canvadocs").submit_to_canvadocs(attachment_ids)

@@ -18,7 +18,6 @@
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 
 class Attachments::Storage
-
   def self.store_for_attachment(attachment, data)
     if InstFS.enabled?
       instfs_uuid = InstFS.direct_upload(
@@ -42,22 +41,22 @@ class Attachments::Storage
       data.original_filename
     elsif data.respond_to?(:filename)
       data.filename
-    elsif data.class == File
+    elsif data.instance_of?(File)
       File.basename(data)
     end
   end
 
   def self.detect_mimetype(data)
-    if data && data.respond_to?(:content_type) && (data.content_type.blank? || data.content_type.strip == "application/octet-stream")
+    if data.respond_to?(:content_type) && (data.content_type.blank? || data.content_type.strip == "application/octet-stream")
       res = nil
       res ||= File.mime_type?(data.original_filename) if data.respond_to?(:original_filename)
       res ||= File.mime_type?(data)
       res ||= "text/plain" unless data.respond_to?(:path)
-      res || 'unknown/unknown'
+      res || "unknown/unknown"
     elsif data.respond_to?(:content_type)
       data.content_type
     else
-      'unknown/unknown'
+      "unknown/unknown"
     end
   end
 end

@@ -20,6 +20,7 @@
 /config/saml/*.pem
 /config/credentials.yml.enc
 !/config/credentials.test.yml
+!/config/crystalball.yml
 /config/environments/*-local.rb
 /config/locales/generated/
 /config/RAILS6_1
@@ -70,6 +71,7 @@ docker-compose/api-gateway.override.yml
 /packages/*/es
 /packages/*/lib
 /packages/*/coverage/
+/packages/*/coverage-js/
 /packages/canvas-planner/.babel-cache
 
 # pact artifacts

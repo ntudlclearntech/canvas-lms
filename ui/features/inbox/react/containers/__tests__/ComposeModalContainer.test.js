@@ -126,6 +126,15 @@ describe('ComposeModalContainer', () => {
     })
   })
 
+  describe('Media', () => {
+    it('opens the media upload modal', async () => {
+      const container = setup()
+      const mediaButton = await container.findByTestId('media-upload')
+      fireEvent.click(mediaButton)
+      expect(await container.findByText('Upload Media')).toBeInTheDocument()
+    })
+  })
+
   describe('Subject', () => {
     it('allows setting the subject', async () => {
       const {findByTestId} = setup()
@@ -168,6 +177,13 @@ describe('ComposeModalContainer', () => {
 
       const selectOptions = await component.findAllByText('Fighting Magneto 101')
       expect(selectOptions.length).toBeGreaterThan(0)
+    })
+
+    it('does not render All Courses option', async () => {
+      const {findByTestId, queryByText} = setup()
+      const courseDropdown = await findByTestId('course-select')
+      fireEvent.click(courseDropdown)
+      expect(await queryByText('All Courses')).not.toBeInTheDocument()
     })
   })
 
@@ -254,19 +270,19 @@ describe('ComposeModalContainer', () => {
     it('allows replying all to a conversation', async () => {
       const mockedSetOnSuccess = jest.fn().mockResolvedValue({})
       const component = setup(jest.fn(), mockedSetOnSuccess, false, true, {
-        _id: 1,
+        _id: '1',
         conversationMessagesConnection: {
           nodes: [
             {
               author: {
-                _id: 1337
+                _id: '1337'
               },
               recipients: [
                 {
-                  _id: 1337
+                  _id: '1337'
                 },
                 {
-                  _id: 1338
+                  _id: '1338'
                 }
               ]
             }

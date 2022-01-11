@@ -16,7 +16,7 @@
 #
 # You should have received a copy of the GNU Affero General Public License along
 # with this program. If not, see <http://www.gnu.org/licenses/>.
-require_relative './job_live_events_context'
+require_relative "./job_live_events_context"
 Delayed::Job.include(JobLiveEventsContext)
 
 Delayed::Backend::Base.class_eval do
@@ -33,7 +33,7 @@ Delayed::Backend::Base.class_eval do
   end
 
   def to_log_format
-    logged_attributes = [:tag, :strand, :priority, :attempts, :created_at, :max_attempts, :source, :account_id]
+    logged_attributes = %i[tag strand priority attempts created_at max_attempts source account_id]
     log_hash = attributes.with_indifferent_access.slice(*logged_attributes)
     log_hash[:shard_id] = current_shard&.id
     log_hash[:jobs_cluster] = "NONE"
@@ -59,48 +59,47 @@ module Delayed::Backend::DefaultJobAccount
 end
 Delayed::Backend::ActiveRecord::Job.include(Delayed::Backend::DefaultJobAccount)
 
-Delayed::Settings.default_job_options        = ->{ { current_shard: Shard.current }}
-Delayed::Settings.fetch_batch_size           = ->{ Setting.get('jobs_get_next_batch_size', '5').to_i }
-Delayed::Settings.job_detailed_log_format    = ->(job){ job.to_log_format }
+Delayed::Settings.default_job_options        = -> { { current_shard: Shard.current } }
+Delayed::Settings.fetch_batch_size           = -> { Setting.get("jobs_get_next_batch_size", "5").to_i }
+Delayed::Settings.job_detailed_log_format    = ->(job) { job.to_log_format }
 Delayed::Settings.max_attempts               = 1
-Delayed::Settings.num_strands                = ->(strand_name){ Setting.get("#{strand_name}_num_strands", nil) }
+Delayed::Settings.num_strands                = ->(strand_name) { Setting.get("#{strand_name}_num_strands", nil) }
 Delayed::Settings.pool_procname_suffix       = " (#{Canvas.revision})" if Canvas.revision
 Delayed::Settings.queue                      = "canvas_queue"
-Delayed::Settings.select_random_from_batch   = ->{ Setting.get('jobs_select_random', 'false') == 'true' }
-Delayed::Settings.sleep_delay                = ->{ Setting.get('delayed_jobs_sleep_delay', '2.0').to_f }
-Delayed::Settings.sleep_delay_stagger        = ->{ Setting.get('delayed_jobs_sleep_delay_stagger', '2.0').to_f }
-Delayed::Settings.worker_procname_prefix     = ->{ "#{Shard.current(:delayed_jobs).id}~" }
-Delayed::Settings.worker_health_check_type   = Delayed::CLI.instance&.config&.dig('health_check', 'type')&.to_sym || :none
-Delayed::Settings.worker_health_check_config = Delayed::CLI.instance&.config&.[]('health_check')
+Delayed::Settings.select_random_from_batch   = -> { Setting.get("jobs_select_random", "false") == "true" }
+Delayed::Settings.sleep_delay                = -> { Setting.get("delayed_jobs_sleep_delay", "2.0").to_f }
+Delayed::Settings.sleep_delay_stagger        = -> { Setting.get("delayed_jobs_sleep_delay_stagger", "2.0").to_f }
+Delayed::Settings.worker_procname_prefix     = -> { "#{Shard.current(:delayed_jobs).id}~" }
+Delayed::Settings.worker_health_check_type   = Delayed::CLI.instance&.config&.dig("health_check", "type")&.to_sym || :none
+Delayed::Settings.worker_health_check_config = Delayed::CLI.instance&.config&.[]("health_check")
 # transitional
-Delayed::Settings.infer_strand_from_singleton = -> { Setting.get('infer_strand_from_singleton', true) == 'true' }
+Delayed::Settings.infer_strand_from_singleton = -> { Setting.get("infer_strand_from_singleton", true) == "true" }
 
 # load our periodic_jobs.yml (cron overrides config file)
-Delayed::Periodic.add_overrides(ConfigFile.load('periodic_jobs').dup || {})
+Delayed::Periodic.add_overrides(ConfigFile.load("periodic_jobs").dup || {})
 
-if ActiveRecord::Base.configurations[Rails.env]['queue']
+if ActiveRecord::Base.configurations[Rails.env]["queue"]
   ActiveSupport::Deprecation.warn("A queue section in database.yml is no longer supported. Please run migrations, then remove it.")
 end
-
 
 Rails.application.config.after_initialize do
   # configure autoscaling plugin
   if (config = Delayed::CLI.instance&.config&.[](:auto_scaling))
-    require 'jobs_autoscaling'
+    require "jobs_autoscaling"
     actions = [JobsAutoscaling::LoggerAction.new]
     if config[:asg_name]
       aws_config = config[:aws_config] || {}
       aws_config[:region] ||= ApplicationController.region
       actions << JobsAutoscaling::AwsAction.new(asg_name: config[:asg_name],
-                                              aws_config: aws_config,
-                                              instance_id: ApplicationController.instance_id)
+                                                aws_config: aws_config,
+                                                instance_id: ApplicationController.instance_id)
     end
     autoscaler = JobsAutoscaling::Monitor.new(action: actions)
     autoscaler.activate!
   end
 end
 
-Delayed::Worker.on_max_failures = proc do |job, err|
+Delayed::Worker.on_max_failures = proc do |_job, err|
   # We don't want to keep around max_attempts failed jobs that failed because the
   # underlying AR object was destroyed.
   # All other failures are kept for inspection.
@@ -110,11 +109,11 @@ end
 module DelayedJobConfig
   class << self
     def config
-      @config ||= YAML.load(Canvas::DynamicSettings.find(tree: :private)['delayed_jobs.yml'] || '{}')
+      @config ||= YAML.safe_load(Canvas::DynamicSettings.find(tree: :private)["delayed_jobs.yml"] || "{}")
     end
 
     def strands_to_send_to_statsd
-      @strands_to_send_to_statsd ||= (config['strands_to_send_to_statsd'] || []).to_set
+      @strands_to_send_to_statsd ||= (config["strands_to_send_to_statsd"] || []).to_set
     end
 
     def reload
@@ -136,8 +135,8 @@ Delayed::Worker.lifecycle.around(:perform) do |worker, job, &block|
   # context for our custom logger
   Thread.current[:context] = {
     # these 2 keys aren't terribly well named for this, since they were intended for http requests
-    :request_id => job.id,
-    :session_id => worker.name,
+    request_id: job.id,
+    session_id: worker.name,
   }
 
   LiveEvents.set_context(job.live_events_context)
@@ -146,16 +145,16 @@ Delayed::Worker.lifecycle.around(:perform) do |worker, job, &block|
   old_root_account = Attachment.current_root_account
   Attachment.current_root_account = job.account
 
-  starting_mem = Canvas.sample_memory()
-  starting_cpu = Process.times()
+  starting_mem = Canvas.sample_memory
+  starting_cpu = Process.times
 
   begin
     RequestCache.enable do
       block.call(worker, job)
     end
   ensure
-    ending_cpu = Process.times()
-    ending_mem = Canvas.sample_memory()
+    ending_cpu = Process.times
+    ending_mem = Canvas.sample_memory
     user_cpu = ending_cpu.utime - starting_cpu.utime
     system_cpu = ending_cpu.stime - starting_cpu.stime
 
@@ -209,7 +208,7 @@ WARNABLE_DELAYED_EXCEPTIONS = [
 ].freeze
 
 Delayed::Worker.lifecycle.before(:error) do |worker, job, exception|
-  is_warnable = WARNABLE_DELAYED_EXCEPTIONS.any?{|klass| exception.is_a?(klass) }
+  is_warnable = WARNABLE_DELAYED_EXCEPTIONS.any? { |klass| exception.is_a?(klass) }
   error_level = is_warnable ? :warn : :error
   info = Canvas::Errors::JobInfo.new(job, worker)
   begin
@@ -228,4 +227,4 @@ module CanvasDelayedMessageSending
     delay(sender: sender, **kwargs.merge(synchronous: !Rails.env.production?))
   end
 end
-Object.send(:include, CanvasDelayedMessageSending)
+Object.include CanvasDelayedMessageSending

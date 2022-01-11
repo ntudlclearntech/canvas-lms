@@ -18,8 +18,7 @@
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-require 'spec_helper'
-require_relative '../graphql_spec_helper'
+require_relative "../graphql_spec_helper"
 
 RSpec.describe Mutations::UpdateIsolatedViewDeeplyNestedAlert do
   before(:once) do
@@ -45,22 +44,22 @@ RSpec.describe Mutations::UpdateIsolatedViewDeeplyNestedAlert do
 
   def run_mutation(opts = {}, current_user = @teacher)
     result = CanvasSchema.execute(mutation_str(opts), context: {
-      current_user: current_user,
-      domain_root_account: @course.account.root_account,
-      request: ActionDispatch::TestRequest.create
-    })
+                                    current_user: current_user,
+                                    domain_root_account: @course.account.root_account,
+                                    request: ActionDispatch::TestRequest.create
+                                  })
     result.to_h.with_indifferent_access
   end
 
-  it 'changes isolatedViewDeeplyNestedAlert to TRUE' do
-    result = run_mutation({isolated_view_deeply_nested_alert: true})
-    expect(result.dig('errors')).to be nil
+  it "changes isolatedViewDeeplyNestedAlert to TRUE" do
+    result = run_mutation({ isolated_view_deeply_nested_alert: true })
+    expect(result["errors"]).to be nil
     expect(@teacher.should_show_deeply_nested_alert?).to be true
   end
 
-  it 'changes isolatedViewDeeplyNestedAlert to FALSE' do
-    result = run_mutation({isolated_view_deeply_nested_alert: false})
-    expect(result.dig('errors')).to be nil
+  it "changes isolatedViewDeeplyNestedAlert to FALSE" do
+    result = run_mutation({ isolated_view_deeply_nested_alert: false })
+    expect(result["errors"]).to be nil
     expect(@teacher.should_show_deeply_nested_alert?).to be false
   end
 end

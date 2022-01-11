@@ -189,6 +189,7 @@ module.exports = {
     // These are things we care about
     'react/jsx-filename-extension': ['error', {extensions: ['.js', 'ts', 'tsx']}],
     'eslint-comments/no-unused-disable': 'error',
+    'jest/no-disabled-tests': 'off',
     'import/extensions': ['error', 'ignorePackages', {js: 'never', ts: 'never', tsx: 'never'}],
     'import/no-commonjs': 'off', // This is overridden where it counts
     'import/no-extraneous-dependencies': ['error', {devDependencies: true}],
@@ -208,6 +209,7 @@ module.exports = {
     ],
     'no-unused-expressions': 'off', // the babel version allows optional chaining a?.b
     'babel/no-unused-expressions': ['error', {allowShortCircuit: true, allowTernary: true}],
+    'prettier/prettier': 'warn',
 
     // Some rules need to be replaced with typescript versions to work with TS
     'no-redeclare': 'off',
@@ -278,7 +280,6 @@ module.exports = {
       rules: {
         'react/prop-types': 'off',
         'prefer-const': 'warn',
-        'prettier/prettier': 'off',
         'react/no-string-refs': 'warn'
       }
     }

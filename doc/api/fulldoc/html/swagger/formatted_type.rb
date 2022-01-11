@@ -21,8 +21,8 @@
 # This class is used to guess type information. Normally, its examples are fed
 # from data given by API docs' "@object {}" descriptions.
 class FormattedType
-  DATE_RE = /^\d\d\d\d-\d\d-\d\d$/
-  DATETIME_RE = /^\d\d\d\d-\d\d-\d\d[T ]\d\d:\d\d:\d\dZ?$/
+  DATE_RE = /^\d\d\d\d-\d\d-\d\d$/.freeze
+  DATETIME_RE = /^\d\d\d\d-\d\d-\d\d[T ]\d\d:\d\d:\d\dZ?$/.freeze
 
   def initialize(example)
     @example = example
@@ -31,6 +31,7 @@ class FormattedType
   def integer?
     return true if @example.is_a?(Integer)
     return false if @example.is_a?(Float)
+
     begin # try to convert string to integer
       Integer(@example)
       true
@@ -42,6 +43,7 @@ class FormattedType
   def float?
     return true if @example.is_a?(Float)
     return false if integer?
+
     begin # try to convert string to float
       Float(@example)
       true
@@ -51,11 +53,7 @@ class FormattedType
   end
 
   def boolean?
-    if @example == true || @example == false
-      true
-    else
-      false
-    end
+    @example == true || @example == false
   end
 
   def string?
@@ -81,9 +79,7 @@ class FormattedType
       ["string", "date-time"]
     elsif date?
       ["string", "date"]
-    elsif string?
-      ["string", nil]
-    else
+    else # string?
       ["string", nil]
     end
   end

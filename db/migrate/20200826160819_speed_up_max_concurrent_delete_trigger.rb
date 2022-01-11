@@ -8,13 +8,13 @@ class SpeedUpMaxConcurrentDeleteTrigger < ActiveRecord::Migration[4.2]
   end
 
   def up
-    if connection.adapter_name == 'PostgreSQL'
+    if connection.adapter_name == "PostgreSQL"
       search_path = Shard.current.name
       # tl;dr sacrifice some responsiveness to max_concurrent changes for faster performance
       # don't get the count every single time - it's usually safe to just set the next one in line
       # since the max_concurrent doesn't change all that often for a strand
-      execute(<<-SQL)
-        CREATE OR REPLACE FUNCTION #{connection.quote_table_name('delayed_jobs_after_delete_row_tr_fn')} () RETURNS trigger AS $$
+      execute(<<~SQL) # rubocop:disable Rails/SquishedSQLHeredocs
+        CREATE OR REPLACE FUNCTION #{connection.quote_table_name("delayed_jobs_after_delete_row_tr_fn")} () RETURNS trigger AS $$
         DECLARE
           running_count integer;
           should_lock boolean;
@@ -23,18 +23,18 @@ class SpeedUpMaxConcurrentDeleteTrigger < ActiveRecord::Migration[4.2]
           IF OLD.strand IS NOT NULL THEN
             should_lock := true;
             should_be_precise := OLD.id % (OLD.max_concurrent * 4) = 0;
-        
+
             IF NOT should_be_precise AND OLD.max_concurrent > 16 THEN
               running_count := (SELECT COUNT(*) FROM (
                 SELECT 1 as one FROM delayed_jobs WHERE strand = OLD.strand AND next_in_strand = 't' LIMIT OLD.max_concurrent
               ) subquery_for_count);
               should_lock := running_count < OLD.max_concurrent;
             END IF;
-        
+
             IF should_lock THEN
               PERFORM pg_advisory_xact_lock(half_md5_as_bigint(OLD.strand));
             END IF;
-        
+
             IF should_be_precise THEN
               running_count := (SELECT COUNT(*) FROM (
                 SELECT 1 as one FROM delayed_jobs WHERE strand = OLD.strand AND next_in_strand = 't' LIMIT OLD.max_concurrent
@@ -66,10 +66,10 @@ class SpeedUpMaxConcurrentDeleteTrigger < ActiveRecord::Migration[4.2]
   end
 
   def down
-    if connection.adapter_name == 'PostgreSQL'
+    if connection.adapter_name == "PostgreSQL"
       search_path = Shard.current.name
-      execute(<<-SQL)
-        CREATE OR REPLACE FUNCTION #{connection.quote_table_name('delayed_jobs_after_delete_row_tr_fn')} () RETURNS trigger AS $$
+      execute(<<~SQL) # rubocop:disable Rails/SquishedSQLHeredocs
+        CREATE OR REPLACE FUNCTION #{connection.quote_table_name("delayed_jobs_after_delete_row_tr_fn")} () RETURNS trigger AS $$
         DECLARE
           running_count integer;
         BEGIN
@@ -98,4 +98,3 @@ class SpeedUpMaxConcurrentDeleteTrigger < ActiveRecord::Migration[4.2]
     end
   end
 end
-

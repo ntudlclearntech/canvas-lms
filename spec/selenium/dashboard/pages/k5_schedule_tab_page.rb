@@ -17,8 +17,8 @@
 # You should have received a copy of the GNU Affero General Public License along
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 
-require_relative '../../common'
-require_relative '../../helpers/color_common'
+require_relative "../../common"
+require_relative "../../helpers/color_common"
 
 module K5ScheduleTabPageObject
   include ColorCommon
@@ -105,7 +105,7 @@ module K5ScheduleTabPageObject
 
   def beginning_of_week_date
     date_block = ff(week_date_selector)
-    date_block[0].text == 'Today' ? date_block[1].text : date_block[0].text
+    date_block[0].text == "Today" ? date_block[1].text : date_block[0].text
   end
 
   def calendar_event_modal
@@ -190,7 +190,6 @@ module K5ScheduleTabPageObject
 
   #----------------------- Actions & Methods -------------------------
 
-
   #----------------------- Click Items -------------------------------
 
   def click_close_calendar_event_modal
@@ -231,7 +230,6 @@ module K5ScheduleTabPageObject
 
   #------------------------------Retrieve Text----------------------#
 
-
   #----------------------------Element Management---------------------#
 
   def calendar_modal_exists?
@@ -256,13 +254,13 @@ module K5ScheduleTabPageObject
 
   def update_todo_title(old_todo_title, new_todo_title)
     todo_element = todo_title_input(old_todo_title)
-    todo_element.send_keys([:command, 'a'], :backspace, new_todo_title)
+    todo_element.send_keys([:command, "a"], :backspace, new_todo_title)
   end
 
   #------------------------Helper Methods------------------------#
 
   def beginning_weekday_calculation(current_date)
-      (current_date.beginning_of_week(:sunday)).strftime("%B %-d")
+    (current_date.beginning_of_week(:sunday)).strftime("%B %-d")
   end
 
   def ending_weekday_calculation(current_date)

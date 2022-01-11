@@ -121,8 +121,9 @@ class Header extends React.Component {
     if (submission.gradingStatus === 'excused') {
       return null
     }
+    const attemptGrade = submission.gradingStatus !== 'needs_grading' ? submission.grade : null
 
-    const formattedGrade = GradeFormatHelper.formatGrade(submission.grade, {
+    const formattedGrade = GradeFormatHelper.formatGrade(attemptGrade, {
       defaultValue: I18n.t('N/A'),
       formatType: 'points_out_of_fraction',
       gradingType: assignment.gradingType,
@@ -159,21 +160,26 @@ class Header extends React.Component {
     return (
       <>
         <div data-testid="unread_comments_badge">
-          <Badge
-            margin="x-small"
-            count={this.props.submission.unreadCommentCount || null}
-            countUntil={100}
-          >
-            <Button
-              renderIcon={IconChatLine}
-              onClick={this.openCommentsTray}
-              disabled={addCommentsDisabled}
-            >
-              {this.props.submission.feedbackForCurrentAttempt
-                ? I18n.t('View Feedback')
-                : I18n.t('Add Comment')}
-            </Button>
-          </Badge>
+          <StudentViewContext.Consumer>
+            {context => (
+              <Badge
+                margin="x-small"
+                count={this.props.submission.unreadCommentCount || null}
+                countUntil={100}
+              >
+                <Button
+                  renderIcon={IconChatLine}
+                  onClick={this.openCommentsTray}
+                  disabled={addCommentsDisabled}
+                >
+                  {this.props.submission.feedbackForCurrentAttempt ||
+                  !context.allowChangesToSubmission
+                    ? I18n.t('View Feedback')
+                    : I18n.t('Add Comment')}
+                </Button>
+              </Badge>
+            )}
+          </StudentViewContext.Consumer>
           {addCommentsDisabled && (
             <Popover
               renderTrigger={

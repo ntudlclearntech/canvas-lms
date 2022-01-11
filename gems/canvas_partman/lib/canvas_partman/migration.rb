@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU Affero General Public License along
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 
-require 'active_record/migration'
+require "active_record/migration"
 
 module CanvasPartman
   parent = ActiveRecord::Migration.respond_to?(:[]) ? ActiveRecord::Migration[4.2] : ActiveRecord::Migration
@@ -56,7 +56,7 @@ module CanvasPartman
     end
 
     def find_partition_tables
-      return [ @partition_scope ] if @partition_scope
+      return [@partition_scope] if @partition_scope
 
       partition_manager.partition_tables
     end

@@ -18,7 +18,7 @@
 
 import React from 'react'
 import ReactDOM from 'react-dom'
-import {CreateCourseModal} from '../k5_dashboard/react/CreateCourseModal'
+import {CreateCourseModal} from '@canvas/create-course-modal/react/CreateCourseModal'
 import $ from 'jquery'
 import I18n from 'i18n!course_list'
 import ready from '@instructure/ready'
@@ -69,26 +69,19 @@ ready(() => {
   })
 
   const startButton = document.getElementById('start_new_course')
-  if (startButton && ENV.K5_USER) {
+  if (startButton && (ENV.K5_USER || ENV.FEATURES?.create_course_subaccount_picker)) {
     const container = document.getElementById('create_subject_modal_container')
     if (container) {
       startButton.addEventListener('click', () => {
-        let role
-        if (ENV.current_user_roles.includes('admin')) {
-          role = 'admin'
-        } else if (ENV.current_user_roles.includes('teacher')) {
-          role = 'teacher'
-        } else {
-          // should never get here
-          return
-        }
         ReactDOM.render(
           <CreateCourseModal
             isModalOpen
             setModalOpen={isOpen => {
               if (!isOpen) ReactDOM.unmountComponentAtNode(container)
             }}
-            permissions={role}
+            permissions={ENV.CREATE_COURSES_PERMISSIONS.PERMISSION}
+            restrictToMCCAccount={ENV.CREATE_COURSES_PERMISSIONS.RESTRICT_TO_MCC_ACCOUNT}
+            isK5User={ENV.K5_USER}
           />,
           container
         )

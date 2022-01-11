@@ -90,6 +90,7 @@ def webpackStage(stages) {
 def featureFlagStage(stages, buildConfig) {
   { ->
     extendedStage('Linters - feature-flag')
+      .hooks(buildSummaryReportHooks.call())
       .nodeRequirements(container: 'feature-flag')
       .obeysAllowStages(false)
       .required(filesChangedStage.hasFeatureFlagFiles(buildConfig))
@@ -127,7 +128,7 @@ def groovyStage(stages, buildConfig) {
     callableWithDelegate(queueTestStage())(stages,
       name: 'groovy',
       required: env.GERRIT_PROJECT == 'canvas-lms' && filesChangedStage.hasGroovyFiles(buildConfig),
-      command: 'npx npm-groovy-lint --path \".\" --ignorepattern \"**/node_modules/**\" --files \"**/*.groovy,**/Jenkinsfile*\" --config \".groovylintrc.json\" --loglevel info --failon info',
+      command: 'npx npm-groovy-lint --path \".\" --ignorepattern \"**/node_modules/**\" --files \"**/*.groovy,**/Jenkinsfile*\" --config \".groovylintrc.json\" --loglevel info --failon warning',
     )
   }
 }
@@ -136,6 +137,7 @@ def queueTestStage() {
   { opts, stages ->
     extendedStage("Linters - ${opts.name}")
       .envVars(opts.containsKey('envVars') ? opts.envVars : [])
+      .hooks(buildSummaryReportHooks.call())
       .nodeRequirements(container: opts.name)
       .required(opts.containsKey('required') ? opts.required : true)
       .queue(stages) {

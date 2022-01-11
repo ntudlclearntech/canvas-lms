@@ -17,6 +17,7 @@
  */
 
 import formatMessage from '../../format-message'
+import '../tinymce/sl'
 
 const locale = {
   "access_the_pretty_html_editor_37168efe": {
@@ -50,6 +51,9 @@ const locale = {
   "announcement_list_da155734": { "message": "Seznam obvestil" },
   "announcements_a4b8ed4a": { "message": "Obvestila" },
   "apply_781a2546": { "message": "Uporabi" },
+  "apply_changes_to_all_instances_of_this_button_and__3a3bea34": {
+    "message": "Uveljavi spremembe za vse primerke tega gumba in ikone v predmetu"
+  },
   "apps_54d24a47": { "message": "Aplikacije" },
   "aspect_ratio_will_be_preserved_cb5fdfb8": {
     "message": "Razmerje med širino in višino bo ohranjeno."
@@ -64,9 +68,6 @@ const locale = {
   },
   "auto_saved_content_exists_would_you_like_to_load_t_fee528f2": {
     "message": "Obstaja samodejno shranjena vsebina. Ali želite namesto tega naložiti samodejno shranjeno vsebino?"
-  },
-  "automatically_open_an_in_line_preview_preview_disp_ed784ffe": {
-    "message": "Samodejno odpri v predogledu v vrstici. (Predogled se prikaže šele po shranjevanju)"
   },
   "available_folders_694d0436": { "message": "Razpoložljive mape" },
   "below_81d4dceb": { "message": "Spodaj" },
@@ -113,6 +114,9 @@ const locale = {
     "message": "Zapri meni ali pogovorno okno Prav tako vas vrne v območje urejevalnika"
   },
   "close_d634289d": { "message": "Zapri" },
+  "closed_caption_file_must_be_less_than_maxkb_kb_5880f752": {
+    "message": "Datoteka z razširjenimi podnapisi mora biti manjša od { maxKb } kb"
+  },
   "closed_captions_subtitles_e6aaa016": {
     "message": "Razširjeni podnapisi/podnapisi"
   },
@@ -146,6 +150,8 @@ const locale = {
   "creative_commons_license_725584ae": {
     "message": "Licenca Creative Commons:"
   },
+  "crop_image_807ebb08": { "message": "Obreži sliko" },
+  "current_image_f16c249c": { "message": "Trenutna slika" },
   "custom_6979cd81": { "message": "Po meri" },
   "date_added_ed5ad465": { "message": "Datum dodajanja" },
   "decorative_image_3c28aa7d": { "message": "Dekorativna slika" },
@@ -161,9 +167,6 @@ const locale = {
   "details_98a31b68": { "message": "Podrobnosti" },
   "dimensions_45ddb7b7": { "message": "Mere" },
   "directionality_26ae9e08": { "message": "Usmerjenost" },
-  "disable_in_line_preview_2a675175": {
-    "message": "Onemogoči predogled v vrstici."
-  },
   "discussions_a5f96392": { "message": "Razprave" },
   "discussions_index_6c36ced": { "message": "Kazalo razprav" },
   "display_options_315aba85": { "message": "Prikaz možnosti" },
@@ -297,11 +300,11 @@ const locale = {
   "middle_27dc1d5": { "message": "Sredina" },
   "miscellaneous_e9818229": { "message": "Drugo" },
   "modules_c4325335": { "message": "Moduli" },
+  "multi_color_image_63d7372f": { "message": "Večbarvna slika" },
   "must_be_at_least_width_x_height_px_41dc825e": {
     "message": "Mora biti vsaj { width } x { height } px."
   },
   "my_files_2f621040": { "message": "Moje datoteke" },
-  "my_images_427f9b0c": { "message": "Moje slike" },
   "name_1aed4a1b": { "message": "Ime" },
   "navigate_through_the_menu_or_toolbar_415a4e50": {
     "message": "Navigirajte skozi meni ali orodno vrstico"
@@ -320,6 +323,7 @@ const locale = {
     "message": "Ni najdenih rezultatov za { term }."
   },
   "none_3b5e34d2": { "message": "Brez" },
+  "none_selected_b93d56d2": { "message": "Nobena ni izbrana" },
   "octagon_e48be9f": { "message": "Osmerokotnik" },
   "open_this_keyboard_shortcuts_dialog_9658b83a": {
     "message": "Odpri to pogovorno okno z bližnjicami"
@@ -374,6 +378,7 @@ const locale = {
   "saved_buttons_and_icons_8278eed2": { "message": "Shranjeni gumbi in ikone" },
   "search_280d00bd": { "message": "Iskanje" },
   "search_term_b2d2235": { "message": "Iskalni izraz" },
+  "select_crop_shape_d441feeb": { "message": "Izberite obliko izrezovanja" },
   "select_language_7c93a900": { "message": "Izberite jezik" },
   "selected_274ce24f": { "message": "Izbrano" },
   "shift_o_to_open_the_pretty_html_editor_55ff5a31": {
@@ -385,9 +390,10 @@ const locale = {
   "show_video_options_6ed3721a": {
     "message": "Prikaži možnosti videoposnetka"
   },
+  "single_color_image_4e5d4dbc": { "message": "Enobarvna slika" },
   "size_b30e1077": { "message": "Velikost" },
-  "size_of_file_is_greater_than_the_maximum_max_mb_al_6eb3fa9a": {
-    "message": "Velikost { file } je večja od največje dovoljene velikosti datoteke { max } MB."
+  "size_of_caption_file_is_greater_than_the_maximum_m_bff5f86e": {
+    "message": "Velikost je večja od največje dovoljene velikosti datoteke { max } kB."
   },
   "small_b070434a": { "message": "Majhna" },
   "something_went_wrong_89195131": { "message": "Prišlo je do težav." },

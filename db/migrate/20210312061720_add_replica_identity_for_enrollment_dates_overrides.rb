@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 #
 # Copyright (C) 2021 - present Instructure, Inc.
 #
@@ -21,11 +22,11 @@ class AddReplicaIdentityForEnrollmentDatesOverrides < ActiveRecord::Migration[6.
   disable_ddl_transaction!
 
   def up
-    add_replica_identity 'EnrollmentDatesOverride', :context_id, 0
+    add_replica_identity "EnrollmentDatesOverride", :context_id, 0
   end
 
   def down
-    remove_replica_identity 'EnrollmentDatesOverride'
+    remove_replica_identity "EnrollmentDatesOverride"
     change_column_null :enrollment_dates_overrides, :context_id, true
   end
 end

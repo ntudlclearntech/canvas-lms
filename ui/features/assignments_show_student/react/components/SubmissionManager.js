@@ -19,7 +19,7 @@
 import {AlertManagerContext} from '@canvas/alerts/react/AlertManager'
 import {Assignment} from '@canvas/assignments/graphql/student/Assignment'
 import AttemptTab from './AttemptTab'
-import {Button, CloseButton} from '@instructure/ui-buttons'
+import {Button} from '@instructure/ui-buttons'
 import Confetti from '@canvas/confetti/react/Confetti'
 import {
   CREATE_SUBMISSION,
@@ -37,7 +37,6 @@ import I18n from 'i18n!assignments_2_file_upload'
 import {IconCheckSolid, IconEndSolid, IconRefreshSolid} from '@instructure/ui-icons'
 import LoadingIndicator from '@canvas/loading-indicator'
 import MarkAsDoneButton from './MarkAsDoneButton'
-import {Modal} from '@instructure/ui-modal'
 import {Mutation, useMutation} from 'react-apollo'
 import PropTypes from 'prop-types'
 import React, {Component} from 'react'
@@ -163,7 +162,6 @@ export default class SubmissionManager extends Component {
     draftStatus: null,
     editingDraft: false,
     focusAttemptOnInit: false,
-    openSubmitModal: false,
     similarityPledgeChecked: false,
     showConfetti: false,
     submittingAssignment: false,
@@ -188,16 +186,23 @@ export default class SubmissionManager extends Component {
   }
 
   getActiveSubmissionTypeFromProps() {
-    if (this.props.assignment.submissionTypes.length > 1) {
-      return this.props.submission?.submissionDraft?.activeSubmissionType || null
-    } else {
+    // use the draft's active type if one exists
+    if (this.props.submission?.submissionDraft != null) {
+      return this.props.submission?.submissionDraft.activeSubmissionType
+    }
+
+    // default to the assignment's submission type if there's only one
+    if (this.props.assignment.submissionTypes.length === 1) {
       return this.props.assignment.submissionTypes[0]
     }
+
+    // otherwise, don't stipulate an active submission type
+    return null
   }
 
-  updateActiveSubmissionType = activeSubmissionType => {
+  updateActiveSubmissionType = (activeSubmissionType, selectedExternalTool = null) => {
     const focusAttemptOnInit = this.props.assignment.submissionTypes.length > 1
-    this.setState({activeSubmissionType, focusAttemptOnInit})
+    this.setState({activeSubmissionType, focusAttemptOnInit, selectedExternalTool})
   }
 
   updateEditingDraft = editingDraft => {
@@ -216,7 +221,7 @@ export default class SubmissionManager extends Component {
   }
 
   updateCachedSubmissionDraft = (cache, newDraft) => {
-    const {assignment} = JSON.parse(
+    const {assignment, submission} = JSON.parse(
       JSON.stringify(
         cache.readQuery({
           query: STUDENT_VIEW_QUERY,
@@ -228,12 +233,14 @@ export default class SubmissionManager extends Component {
       )
     )
 
-    assignment.submissionsConnection.nodes[0].submissionDraft = newDraft
-
+    submission.submissionDraft = newDraft
     cache.writeQuery({
       query: STUDENT_VIEW_QUERY,
-      variables: {assignmentLid: this.props.assignment._id, submissionID: this.props.submission.id},
-      data: {assignment}
+      variables: {
+        assignmentLid: this.props.assignment._id,
+        submissionID: this.props.submission.id
+      },
+      data: {assignment, submission}
     })
   }
 
@@ -254,6 +261,15 @@ export default class SubmissionManager extends Component {
     this.setState({submittingAssignment: true})
 
     switch (this.state.activeSubmissionType) {
+      case 'basic_lti_launch':
+        if (this.props.submission.submissionDraft.ltiLaunchUrl) {
+          await this.submitToGraphql(submitMutation, {
+            resourceLinkLookupUuid: this.props.submission.submissionDraft.resourceLinkLookupUuid,
+            url: this.props.submission.submissionDraft.ltiLaunchUrl,
+            type: this.state.activeSubmissionType
+          })
+        }
+        break
       case 'media_recording':
         if (this.props.submission.submissionDraft.mediaObject?._id) {
           await this.submitToGraphql(submitMutation, {
@@ -326,16 +342,24 @@ export default class SubmissionManager extends Component {
       context.isLatestAttempt &&
       context.allowChangesToSubmission &&
       !this.props.assignment.lockInfo.isLocked &&
-      !this.shouldRenderNewAttempt(context)
+      !this.shouldRenderNewAttempt(context) &&
+      context.lastSubmittedSubmission?.gradingStatus !== 'excused'
     )
   }
 
-  handleDraftComplete(success) {
+  handleDraftComplete(success, body, context) {
+    if (!context.allowChangesToSubmission) {
+      return
+    }
     this.updateUploadingFiles(false)
+    const element = document.createElement('div')
+    element.insertAdjacentHTML('beforeend', body)
 
     if (success) {
-      this.setState({draftStatus: 'saved'})
-      this.context.setOnSuccess(I18n.t('Submission draft updated'))
+      if (!element.querySelector(`[data-placeholder-for]`)) {
+        this.setState({draftStatus: 'saved'})
+        this.context.setOnSuccess(I18n.t('Submission draft updated'))
+      }
     } else {
       this.setState({draftStatus: 'error'})
       this.context.setOnFailure(I18n.t('Error updating submission draft'))
@@ -344,15 +368,26 @@ export default class SubmissionManager extends Component {
 
   handleSubmitConfirmation(submitMutation) {
     this.submitAssignment(submitMutation)
-    this.setState({openSubmitModal: false, draftStatus: null})
+    this.setState({draftStatus: null})
   }
 
-  handleSubmitButton(submitMutation) {
+  async handleSubmitButton(submitMutation) {
     if (multipleTypesDrafted(this.props.submission)) {
-      this.setState({openSubmitModal: true})
-    } else {
-      this.handleSubmitConfirmation(submitMutation)
+      const confirmed = await showConfirmationDialog({
+        body: I18n.t(
+          'You are submitting a %{submissionType} submission. Only one submission type is allowed. All other submission types will be deleted.',
+          {submissionType: friendlyTypeName(this.state.activeSubmissionType)}
+        ),
+        confirmText: I18n.t('Okay'),
+        label: I18n.t('Confirm Submission')
+      })
+
+      if (!confirmed) {
+        return
+      }
     }
+
+    this.handleSubmitConfirmation(submitMutation)
   }
 
   handleSuccess() {
@@ -366,12 +401,18 @@ export default class SubmissionManager extends Component {
     }, 4000)
   }
 
-  renderAttemptTab() {
+  renderAttemptTab(context) {
     return (
       <Mutation
         mutation={CREATE_SUBMISSION_DRAFT}
-        onCompleted={data => this.handleDraftComplete(!data.createSubmissionDraft.errors)}
-        onError={() => this.handleDraftComplete(false)}
+        onCompleted={data =>
+          this.handleDraftComplete(
+            !data.createSubmissionDraft.errors,
+            data.createSubmissionDraft.submissionDraft.body,
+            context
+          )
+        }
+        onError={() => this.handleDraftComplete(false, null, context)}
         update={this.updateSubmissionDraftCache}
       >
         {createSubmissionDraft => (
@@ -385,6 +426,10 @@ export default class SubmissionManager extends Component {
               onContentsChanged={() => {
                 this.setState({draftStatus: 'saving'})
               }}
+              selectedExternalTool={
+                this.state.selectedExternalTool ||
+                this.props.submission?.submissionDraft?.externalTool
+              }
               submission={this.props.submission}
               updateActiveSubmissionType={this.updateActiveSubmissionType}
               updateEditingDraft={this.updateEditingDraft}
@@ -394,49 +439,6 @@ export default class SubmissionManager extends Component {
           </View>
         )}
       </Mutation>
-    )
-  }
-
-  renderSubmitConfirmation(submitMutation) {
-    return (
-      <Modal
-        data-testid="submission-confirmation-modal"
-        label={I18n.t('Submit Confirmation')}
-        onDismiss={() => this.setState({openSubmitModal: false})}
-        open={this.state.openSubmitModal}
-        size="small"
-      >
-        <Modal.Body>
-          <CloseButton
-            offset="x-small"
-            onClick={() => this.setState({openSubmitModal: false})}
-            placement="end"
-            variant="icon"
-          >
-            {I18n.t('Close')}
-          </CloseButton>
-          {I18n.t(
-            'You are submitting a %{submissionType} submission. Only one submission type is allowed. All other submission types will be deleted.',
-            {submissionType: friendlyTypeName(this.state.activeSubmissionType)}
-          )}
-          <div>
-            <Button
-              data-testid="cancel-submit"
-              margin="x-small x-small 0 0"
-              onClick={() => this.setState({openSubmitModal: false})}
-            >
-              {I18n.t('Cancel')}
-            </Button>
-            <Button
-              data-testid="confirm-submit"
-              onClick={() => this.handleSubmitConfirmation(submitMutation)}
-              variant="primary"
-            >
-              {I18n.t('Okay')}
-            </Button>
-          </div>
-        </Modal.Body>
-      </Modal>
     )
   }
 
@@ -572,6 +574,11 @@ export default class SubmissionManager extends Component {
       case 'student_annotation':
         activeTypeMeetsCriteria =
           this.props.submission?.submissionDraft?.meetsStudentAnnotationCriteria
+        break
+      case 'basic_lti_launch':
+        activeTypeMeetsCriteria =
+          this.props.submission?.submissionDraft?.meetsBasicLtiLaunchCriteria
+        break
     }
 
     return (
@@ -607,7 +614,6 @@ export default class SubmissionManager extends Component {
             >
               {I18n.t('Submit Assignment')}
             </Button>
-            {this.state.openSubmitModal && this.renderSubmitConfirmation(submitMutation)}
           </>
         )}
       </Mutation>
@@ -633,18 +639,22 @@ export default class SubmissionManager extends Component {
 
   render() {
     return (
-      <>
-        {this.state.submittingAssignment ? <LoadingIndicator /> : this.renderAttemptTab()}
-        <StudentViewContext.Consumer>
-          {context => (
+      <StudentViewContext.Consumer>
+        {context => (
+          <>
+            {this.state.submittingAssignment ? (
+              <LoadingIndicator />
+            ) : (
+              this.renderAttemptTab(context)
+            )}
             <>
               {this.renderSimilarityPledge(context)}
               {this.renderFooter(context)}
             </>
-          )}
-        </StudentViewContext.Consumer>
-        {this.state.showConfetti ? <Confetti /> : null}
-      </>
+            {this.state.showConfetti ? <Confetti /> : null}
+          </>
+        )}
+      </StudentViewContext.Consumer>
     )
   }
 }

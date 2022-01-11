@@ -20,29 +20,31 @@
 
 module BasicLTI
   class QuizzesNextLtiResponse < BasicLTI::BasicOutcomes::LtiResponse
-
     protected
 
     # this is an override of parent method
     def handle_replace_result(tool, assignment, user)
       self.body = "<replaceResultResponse />"
       return true unless valid_request?(assignment)
-      quiz_lti_submission = QuizzesNextVersionedSubmission.new(assignment, user)
-      quiz_lti_submission = quiz_lti_submission.
-        with_params(
-          submission_type: 'basic_lti_launch',
-          submitted_at: submitted_at_date,
-          graded_at: graded_at_date
-        )
+
+      quiz_lti_submission = QuizzesNextVersionedSubmission.new(assignment, user, prioritize_non_tool_grade: prioritize_non_tool_grade?)
+      quiz_lti_submission = quiz_lti_submission
+                            .with_params(
+                              submission_type: "basic_lti_launch",
+                              submitted_at: submitted_at_date,
+                              graded_at: graded_at_date
+                            )
       return quiz_lti_submission.revert_history(result_url, -tool.id) if submission_reopened?
+
       quiz_lti_submission.commit_history(result_url, grade, -tool.id)
     end
 
     private
 
-    def error_message(message)
-      self.code_major = 'failure'
+    def report_failure(code, message)
+      self.code_major = "failure"
       self.description = message
+      self.error_code = code
     end
 
     def result_url
@@ -61,6 +63,7 @@ module BasicLTI
 
     def result_data_text_json
       return nil if result_data_text.blank?
+
       json = JSON.parse(result_data_text)
       json.with_indifferent_access
     rescue JSON::ParserError
@@ -70,23 +73,25 @@ module BasicLTI
     def submission_reopened?
       json = result_data_text_json
       return false if json.blank?
+
       json[:reopened]
     end
 
     def grade
       return raw_score if raw_score.present?
       return nil unless valid_percentage_score?
+
       "#{round_if_whole(percentage_score * 100)}%"
     end
 
     def raw_score
-      Float(self.result_total_score)
+      Float(result_total_score)
     rescue
       nil
     end
 
     def percentage_score
-      Float(self.result_score)
+      Float(result_score)
     rescue
       nil
     end
@@ -98,18 +103,21 @@ module BasicLTI
     def valid_score?
       # don't check score for reopen requests
       return true if submission_reopened?
+
       if raw_score.blank? && percentage_score.blank?
-        error_message(I18n.t('lib.basic_lti.no_score', "No score given"))
+        report_failure(:no_score, I18n.t("lib.basic_lti.no_score", "No score given"))
         return false
       end
       return true if raw_score.present?
+
       valid_percentage_score?
     end
 
     def valid_percentage_score?
       return false if percentage_score.blank?
+
       unless (0.0..1.0).cover?(percentage_score)
-        error_message(I18n.t('lib.basic_lti.bad_score', "Score is not between 0 and 1"))
+        report_failure(:bad_score, I18n.t("lib.basic_lti.bad_score", "Score is not between 0 and 1"))
         return false
       end
       true
@@ -117,7 +125,8 @@ module BasicLTI
 
     def valid_points_possible?(assignment)
       return true if assignment.grading_type == "pass_fail" || assignment.points_possible.present?
-      error_message(I18n.t('lib.basic_lti.no_points_possible', 'Assignment has no points possible.'))
+
+      report_failure(:no_points_possible, I18n.t("lib.basic_lti.no_points_possible", "Assignment has no points possible."))
       false
     end
   end

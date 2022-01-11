@@ -18,36 +18,31 @@
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-require File.expand_path(File.dirname(__FILE__) + '/../spec_helper.rb')
-require File.expand_path(File.dirname(__FILE__) + '/../sharding_spec_helper')
-
 describe CourseProgress do
-  let(:progress_error) { {:error=>{:message=>'no progress available because this course is not module based (has modules and module completion requirements) or the user is not enrolled as a student in this course'}} }
+  let(:progress_error) { { error: { message: "no progress available because this course is not module based (has modules and module completion requirements) or the user is not enrolled as a student in this course" } } }
 
-  before :each do
-    class CourseProgress
-      def course_context_modules_item_redirect_url(opts = {})
-        "course_context_modules_item_redirect_url(:course_id => #{opts[:course_id]}, :id => #{opts[:id]}, :host => HostUrl.context_host(Course.find(#{opts[:course_id]}))"
-      end
+  before do
+    allow_any_instance_of(CourseProgress).to receive(:course_context_modules_item_redirect_url) do |_, opts = {}|
+      "course_context_modules_item_redirect_url(:course_id => #{opts[:course_id]}, :id => #{opts[:id]}, :host => HostUrl.context_host(Course.find(#{opts[:course_id]}))"
     end
   end
 
   before :once do
-    course_with_teacher(:active_all => true)
+    course_with_teacher(active_all: true)
   end
 
-  def submit_homework(assignment, user=nil)
+  def submit_homework(assignment, user = nil)
     user ||= @user
-    assignment.submit_homework(user, submission_type: 'online_text_entry', body: '42')
+    assignment.submit_homework(user, submission_type: "online_text_entry", body: "42")
   end
 
-  it "should return nil for non module_based courses" do
-    user = student_in_course(:active_all => true)
+  it "returns nil for non module_based courses" do
+    user = student_in_course(active_all: true)
     progress = CourseProgress.new(@course, user).to_json
     expect(progress).to eq progress_error
   end
 
-  it "should return nil for non student users" do
+  it "returns nil for non student users" do
     user = user_model
     allow(@course).to receive(:module_based?).and_return(true)
     progress = CourseProgress.new(@course, user).to_json
@@ -56,29 +51,29 @@ describe CourseProgress do
 
   context "module based and for student" do
     before :once do
-      @module = @course.context_modules.create!(:name => "some module", :require_sequential_progress => true, :position => 1)
-      @module2 = @course.context_modules.create!(:name => "another module", :require_sequential_progress => true, :position => 2)
-      @module3 = @course.context_modules.create!(:name => "another module again", :require_sequential_progress => true, :position => 3)
+      @module = @course.context_modules.create!(name: "some module", require_sequential_progress: true, position: 1)
+      @module2 = @course.context_modules.create!(name: "another module", require_sequential_progress: true, position: 2)
+      @module3 = @course.context_modules.create!(name: "another module again", require_sequential_progress: true, position: 3)
 
-      @assignment = @course.assignments.create!(:title => "some assignment")
-      @assignment2 = @course.assignments.create!(:title => "some assignment2")
-      @assignment3 = @course.assignments.create!(:title => "some assignment3")
-      @assignment4 = @course.assignments.create!(:title => "some assignment4")
-      @assignment5 = @course.assignments.create!(:title => "some assignment5")
+      @assignment = @course.assignments.create!(title: "some assignment")
+      @assignment2 = @course.assignments.create!(title: "some assignment2")
+      @assignment3 = @course.assignments.create!(title: "some assignment3")
+      @assignment4 = @course.assignments.create!(title: "some assignment4")
+      @assignment5 = @course.assignments.create!(title: "some assignment5")
 
-      @tag = @module.add_item({:id => @assignment.id, :type => 'assignment'})
-      @tag2 = @module.add_item({:id => @assignment2.id, :type => 'assignment'})
+      @tag = @module.add_item({ id: @assignment.id, type: "assignment" })
+      @tag2 = @module.add_item({ id: @assignment2.id, type: "assignment" })
 
-      @tag3 = @module2.add_item({:id => @assignment3.id, :type => 'assignment'})
-      @tag4 = @module2.add_item({:id => @assignment4.id, :type => 'assignment'})
+      @tag3 = @module2.add_item({ id: @assignment3.id, type: "assignment" })
+      @tag4 = @module2.add_item({ id: @assignment4.id, type: "assignment" })
 
-      @tag5 = @module3.add_item({:id => @assignment5.id, :type => 'assignment'})
+      @tag5 = @module3.add_item({ id: @assignment5.id, type: "assignment" })
 
-      @module.completion_requirements = {@tag.id => {:type => 'must_submit'},
-                                         @tag2.id => {:type => 'must_submit'}}
-      @module2.completion_requirements = {@tag3.id => {:type => 'must_submit'},
-                                          @tag4.id => {:type => 'must_submit'}}
-      @module3.completion_requirements = {@tag5.id => {:type => 'must_submit'}}
+      @module.completion_requirements = { @tag.id => { type: "must_submit" },
+                                          @tag2.id => { type: "must_submit" } }
+      @module2.completion_requirements = { @tag3.id => { type: "must_submit" },
+                                           @tag4.id => { type: "must_submit" } }
+      @module3.completion_requirements = { @tag5.id => { type: "must_submit" } }
 
       [@module, @module2, @module3].each do |m|
         m.require_sequential_progress = true
@@ -86,58 +81,58 @@ describe CourseProgress do
         m.save!
       end
 
-      student_in_course(:active_all => true)
+      student_in_course(active_all: true)
     end
 
-    it "should return correct progress for newly enrolled student" do
+    it "returns correct progress for newly enrolled student" do
       progress = CourseProgress.new(@course, @user).to_json
       expect(progress).to eq({
-          requirement_count: 5,
-          requirement_completed_count: 0,
-          next_requirement_url: "course_context_modules_item_redirect_url(:course_id => #{@course.id}, :id => #{@tag.id}, :host => HostUrl.context_host(Course.find(#{@course.id}))",
-          completed_at: nil
-      })
+                               requirement_count: 5,
+                               requirement_completed_count: 0,
+                               next_requirement_url: "course_context_modules_item_redirect_url(:course_id => #{@course.id}, :id => #{@tag.id}, :host => HostUrl.context_host(Course.find(#{@course.id}))",
+                               completed_at: nil
+                             })
     end
 
-    it "should only run item visibility methods once" do
+    it "only runs item visibility methods once" do
       expect(AssignmentStudentVisibility).to receive(:visible_assignment_ids_in_course_by_user).once.and_call_original
       progress = CourseProgress.new(@course, @user).to_json
       expect(progress[:requirement_count]).to eq 5
     end
 
-    it "should return correct progress for student who has completed some requirements" do
+    it "returns correct progress for student who has completed some requirements" do
       # turn in first two assignments (module 1)
       submit_homework(@assignment)
       submit_homework(@assignment2)
       progress = CourseProgress.new(@course, @user).to_json
       expect(progress).to eq({
-          requirement_count: 5,
-          requirement_completed_count: 2,
-          next_requirement_url: "course_context_modules_item_redirect_url(:course_id => #{@course.id}, :id => #{@tag3.id}, :host => HostUrl.context_host(Course.find(#{@course.id}))",
-          completed_at: nil
-      })
+                               requirement_count: 5,
+                               requirement_completed_count: 2,
+                               next_requirement_url: "course_context_modules_item_redirect_url(:course_id => #{@course.id}, :id => #{@tag3.id}, :host => HostUrl.context_host(Course.find(#{@course.id}))",
+                               completed_at: nil
+                             })
     end
 
-    it "should return correct progress for student in read-only mode" do
+    it "returns correct progress for student in read-only mode" do
       # turn in first two assignments (module 1)
       submit_homework(@assignment)
       submit_homework(@assignment2)
 
       [@module, @module2, @module3].each do |m|
         m.evaluate_for(@user)
-        expect_any_instantiation_of(m).to receive(:evaluate_for).never # shouldn't re-evaluate
+        expect_any_instantiation_of(m).not_to receive(:evaluate_for) # shouldn't re-evaluate
       end
 
       progress = CourseProgress.new(@course, @user, read_only: true).to_json
       expect(progress).to eq({
-        requirement_count: 5,
-        requirement_completed_count: 2,
-        next_requirement_url: "course_context_modules_item_redirect_url(:course_id => #{@course.id}, :id => #{@tag3.id}, :host => HostUrl.context_host(Course.find(#{@course.id}))",
-        completed_at: nil
-      })
+                               requirement_count: 5,
+                               requirement_completed_count: 2,
+                               next_requirement_url: "course_context_modules_item_redirect_url(:course_id => #{@course.id}, :id => #{@tag3.id}, :host => HostUrl.context_host(Course.find(#{@course.id}))",
+                               completed_at: nil
+                             })
     end
 
-    it "should return correct progress for student who has completed all requirements" do
+    it "returns correct progress for student who has completed all requirements" do
       # turn in all assignments
       submit_homework(@assignment)
       submit_homework(@assignment2)
@@ -147,11 +142,11 @@ describe CourseProgress do
 
       progress = CourseProgress.new(@course, @user).to_json
       expect(progress).to eq({
-          requirement_count: 5,
-          requirement_completed_count: 5,
-          next_requirement_url: nil,
-          completed_at: @module3.context_module_progressions.first.completed_at.iso8601
-      })
+                               requirement_count: 5,
+                               requirement_completed_count: 5,
+                               next_requirement_url: nil,
+                               completed_at: @module3.context_module_progressions.first.completed_at.iso8601
+                             })
     end
 
     it "treats a nil requirements_met as an incomplete requirement" do
@@ -159,11 +154,11 @@ describe CourseProgress do
       ContextModuleProgression.create!(user: @user, context_module: @module)
       progress = CourseProgress.new(@course, @user).to_json
       expect(progress).to eq({
-          requirement_count: 5,
-          requirement_completed_count: 0,
-          next_requirement_url: "course_context_modules_item_redirect_url(:course_id => #{@course.id}, :id => #{@tag.id}, :host => HostUrl.context_host(Course.find(#{@course.id}))",
-          completed_at: nil
-      })
+                               requirement_count: 5,
+                               requirement_completed_count: 0,
+                               next_requirement_url: "course_context_modules_item_redirect_url(:course_id => #{@course.id}, :id => #{@tag.id}, :host => HostUrl.context_host(Course.find(#{@course.id}))",
+                               completed_at: nil
+                             })
     end
 
     it "does not count obsolete requirements" do
@@ -172,7 +167,7 @@ describe CourseProgress do
       submit_homework(@assignment2)
 
       # remove assignment 2 from the list of requirements
-      @module.completion_requirements = [{id: @tag.id, type: 'must_submit'}]
+      @module.completion_requirements = [{ id: @tag.id, type: "must_submit" }]
       @module.save
 
       progress = CourseProgress.new(@course, @user).to_json
@@ -214,7 +209,7 @@ describe CourseProgress do
       # move the requirement to module 2
       @tag.context_module = @module2
       @tag.save!
-      @module2.completion_requirements = {@tag.id => {:type => 'must_submit'}}
+      @module2.completion_requirements = { @tag.id => { type: "must_submit" } }
       @module2.save
 
       # check progress
@@ -260,7 +255,7 @@ describe CourseProgress do
       specs_require_sharding
 
       it "can return correct progress" do
-        @shard1.activate { @shard_user = User.create!(name: 'outofshard') }
+        @shard1.activate { @shard_user = User.create!(name: "outofshard") }
         @course.enroll_student(@shard_user).accept!
 
         submit_homework(@assignment, @shard_user)
@@ -272,31 +267,31 @@ describe CourseProgress do
   end
 
   context "module that requires only one item completed" do
-    it 'should return the correct course progress when completing one of the requirements' do
-      @module1 = @course.context_modules.create!(:name => "module 01", :requirement_count => nil)
-      @module2 = @course.context_modules.create!(:name => "module 02", :requirement_count => 1)
+    it "returns the correct course progress when completing one of the requirements" do
+      @module1 = @course.context_modules.create!(name: "module 01", requirement_count: nil)
+      @module2 = @course.context_modules.create!(name: "module 02", requirement_count: 1)
 
-      @assignment1 = @course.assignments.create!(:title => "some assignment1")
-      @assignment2 = @course.assignments.create!(:title => "some assignment2")
-      @assignment3 = @course.assignments.create!(:title => "some assignment3")
-      @assignment4 = @course.assignments.create!(:title => "some assignment4")
-      @assignment5 = @course.assignments.create!(:title => "some assignment5")
+      @assignment1 = @course.assignments.create!(title: "some assignment1")
+      @assignment2 = @course.assignments.create!(title: "some assignment2")
+      @assignment3 = @course.assignments.create!(title: "some assignment3")
+      @assignment4 = @course.assignments.create!(title: "some assignment4")
+      @assignment5 = @course.assignments.create!(title: "some assignment5")
 
-      @tag1 = @module1.add_item({:id => @assignment1.id, :type => 'assignment'})
-      @tag2 = @module1.add_item({:id => @assignment2.id, :type => 'assignment'})
-      @tag3 = @module1.add_item({:id => @assignment3.id, :type => 'assignment'})
+      @tag1 = @module1.add_item({ id: @assignment1.id, type: "assignment" })
+      @tag2 = @module1.add_item({ id: @assignment2.id, type: "assignment" })
+      @tag3 = @module1.add_item({ id: @assignment3.id, type: "assignment" })
 
-      @tag4 = @module2.add_item({:id => @assignment4.id, :type => 'assignment'})
-      @tag5 = @module2.add_item({:id => @assignment5.id, :type => 'assignment'})
+      @tag4 = @module2.add_item({ id: @assignment4.id, type: "assignment" })
+      @tag5 = @module2.add_item({ id: @assignment5.id, type: "assignment" })
 
       @module1.completion_requirements = {
-        @tag1.id => {:type => 'must_submit'},
-        @tag2.id => {:type => 'must_submit'},
-        @tag3.id => {:type => 'must_submit'}
+        @tag1.id => { type: "must_submit" },
+        @tag2.id => { type: "must_submit" },
+        @tag3.id => { type: "must_submit" }
       }
       @module2.completion_requirements = {
-        @tag4.id => {:type => 'must_submit'},
-        @tag5.id => {:type => 'must_submit'}
+        @tag4.id => { type: "must_submit" },
+        @tag5.id => { type: "must_submit" }
       }
 
       [@module1, @module2].each do |m|
@@ -304,7 +299,7 @@ describe CourseProgress do
         m.save!
       end
 
-      student_in_course(:active_all => true)
+      student_in_course(active_all: true)
 
       submit_homework(@assignment1)
       submit_homework(@assignment2)
@@ -314,21 +309,21 @@ describe CourseProgress do
 
       progress = CourseProgress.new(@course, @user).to_json
       expect(progress).to eq({
-        requirement_count: 5,
-        requirement_completed_count: 4,
-        next_requirement_url: nil,
-        completed_at: @module2.context_module_progressions.first.completed_at.iso8601
-      })
+                               requirement_count: 5,
+                               requirement_completed_count: 4,
+                               next_requirement_url: nil,
+                               completed_at: @module2.context_module_progressions.first.completed_at.iso8601
+                             })
     end
 
-    it 'should still count as complete if the module has no requirements to speak of' do
-      @module1 = @course.context_modules.create!(:name => "module 01", :requirement_count => 1)
-      @module2 = @course.context_modules.create!(:name => "module 02", :requirement_count => nil)
+    it "still counts as complete if the module has no requirements to speak of" do
+      @module1 = @course.context_modules.create!(name: "module 01", requirement_count: 1)
+      @module2 = @course.context_modules.create!(name: "module 02", requirement_count: nil)
 
-      @assignment1 = @course.assignments.create!(:title => "some assignment1")
-      @tag1 = @module2.add_item({:id => @assignment1.id, :type => 'assignment'})
+      @assignment1 = @course.assignments.create!(title: "some assignment1")
+      @tag1 = @module2.add_item({ id: @assignment1.id, type: "assignment" })
       @module2.completion_requirements = {
-        @tag1.id => {:type => 'must_submit'},
+        @tag1.id => { type: "must_submit" },
       }
 
       [@module1, @module2].each do |m|
@@ -336,46 +331,46 @@ describe CourseProgress do
         m.save!
       end
 
-      student_in_course(:active_all => true)
+      student_in_course(active_all: true)
 
       submit_homework(@assignment1)
 
       progress = CourseProgress.new(@course, @user).to_json
       expect(progress).to eq({
-        requirement_count: 1,
-        requirement_completed_count: 1,
-        next_requirement_url: nil,
-        completed_at: @user.context_module_progressions.maximum(:completed_at).iso8601
-      })
+                               requirement_count: 1,
+                               requirement_completed_count: 1,
+                               next_requirement_url: nil,
+                               completed_at: @user.context_module_progressions.maximum(:completed_at).iso8601
+                             })
     end
 
-    it 'should not be complete if not each module complete' do
-      @module1 = @course.context_modules.create!(:name => "module 01", :requirement_count => 1)
-      @module2 = @course.context_modules.create!(:name => "module 02", :requirement_count => 1)
-      @module3 = @course.context_modules.create!(:name => "module 03", :requirement_count => 1)
+    it "is not complete if not each module complete" do
+      @module1 = @course.context_modules.create!(name: "module 01", requirement_count: 1)
+      @module2 = @course.context_modules.create!(name: "module 02", requirement_count: 1)
+      @module3 = @course.context_modules.create!(name: "module 03", requirement_count: 1)
 
-      @assignment1 = @course.assignments.create!(:title => "some assignment1")
-      @assignment2 = @course.assignments.create!(:title => "some assignment2")
-      @assignment3 = @course.assignments.create!(:title => "some assignment3")
-      @assignment4 = @course.assignments.create!(:title => "some assignment4")
-      @assignment5 = @course.assignments.create!(:title => "some assignment5")
+      @assignment1 = @course.assignments.create!(title: "some assignment1")
+      @assignment2 = @course.assignments.create!(title: "some assignment2")
+      @assignment3 = @course.assignments.create!(title: "some assignment3")
+      @assignment4 = @course.assignments.create!(title: "some assignment4")
+      @assignment5 = @course.assignments.create!(title: "some assignment5")
 
-      @tag1 = @module1.add_item({:id => @assignment1.id, :type => 'assignment'})
-      @tag2 = @module1.add_item({:id => @assignment2.id, :type => 'assignment'})
-      @tag3 = @module1.add_item({:id => @assignment3.id, :type => 'assignment'})
-      @tag4 = @module2.add_item({:id => @assignment4.id, :type => 'assignment'})
-      @tag5 = @module3.add_item({:id => @assignment5.id, :type => 'assignment'})
+      @tag1 = @module1.add_item({ id: @assignment1.id, type: "assignment" })
+      @tag2 = @module1.add_item({ id: @assignment2.id, type: "assignment" })
+      @tag3 = @module1.add_item({ id: @assignment3.id, type: "assignment" })
+      @tag4 = @module2.add_item({ id: @assignment4.id, type: "assignment" })
+      @tag5 = @module3.add_item({ id: @assignment5.id, type: "assignment" })
 
       @module1.completion_requirements = {
-        @tag1.id => {:type => 'must_submit'},
-        @tag2.id => {:type => 'must_submit'},
-        @tag3.id => {:type => 'must_submit'}
+        @tag1.id => { type: "must_submit" },
+        @tag2.id => { type: "must_submit" },
+        @tag3.id => { type: "must_submit" }
       }
       @module2.completion_requirements = {
-        @tag4.id => {:type => 'must_submit'}
+        @tag4.id => { type: "must_submit" }
       }
       @module3.completion_requirements = {
-        @tag5.id => {:type => 'must_submit'}
+        @tag5.id => { type: "must_submit" }
       }
 
       [@module1, @module2, @module3].each do |m|
@@ -383,7 +378,7 @@ describe CourseProgress do
         m.save!
       end
 
-      student_in_course(:active_all => true)
+      student_in_course(active_all: true)
 
       submit_homework(@assignment1)
       submit_homework(@assignment2)
@@ -392,11 +387,11 @@ describe CourseProgress do
 
       progress = CourseProgress.new(@course, @user).to_json
       expect(progress).to eq({
-        requirement_count: 5,
-        requirement_completed_count: 3,
-        next_requirement_url: nil,
-        completed_at: nil
-      })
+                               requirement_count: 5,
+                               requirement_completed_count: 3,
+                               next_requirement_url: nil,
+                               completed_at: nil
+                             })
     end
   end
 end

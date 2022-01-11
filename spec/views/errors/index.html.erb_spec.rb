@@ -18,8 +18,7 @@
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-require 'spec_helper'
-require_relative '../views_helper'
+require_relative "../views_helper"
 
 describe "/errors/index" do
   before do
@@ -32,8 +31,8 @@ describe "/errors/index" do
     )])
   end
 
-  it "should render" do
-    render 'errors/index'
+  it "renders" do
+    render "errors/index"
     expect(response).not_to be_nil
   end
 end

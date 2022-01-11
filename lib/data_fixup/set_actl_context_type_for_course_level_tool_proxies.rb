@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU Affero General Public License along
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 
-module DataFixup::SetACTLContextTypeForCourseLevelToolProxies
+module DataFixup::SetActlContextTypeForCourseLevelToolProxies
   # The ACTL (AccountConfigurationToolLookup) context_type was added with a
   # default of "Account". This DataFixup finds ACTLs for courses that only have
   # a course-level tool installation -- they don't have an account-level tool
@@ -33,8 +33,8 @@ module DataFixup::SetACTLContextTypeForCourseLevelToolProxies
   end
 
   class ProductFamilyFixer
-    COURSE_CONTEXT_TYPE = 'Course'.freeze
-    ACCOUNT_CONTEXT_TYPE = 'Account'.freeze
+    COURSE_CONTEXT_TYPE = "Course"
+    ACCOUNT_CONTEXT_TYPE = "Account"
 
     attr_reader :product_family
 
@@ -52,7 +52,8 @@ module DataFixup::SetACTLContextTypeForCourseLevelToolProxies
       course_ids_with_tool.each do |course_id|
         course = Course.find_by(id: course_id)
         next unless course
-        next if course.account_chain_ids.any?{|a| account_ids_with_tool.include?(a)}
+        next if course.account_chain_ids.any? { |a| account_ids_with_tool.include?(a) }
+
         change_all_actls_for_course(course_id)
       end
     end

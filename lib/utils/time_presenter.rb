@@ -19,18 +19,20 @@
 module Utils
   class TimePresenter
     attr_reader :time, :zone
-    def initialize(time, zone=nil)
+
+    def initialize(time, zone = nil)
       zone ||= ::Time.zone
       @time = time.in_time_zone(zone) rescue time
       @zone = zone
     end
 
-    def as_string(options={})
+    def as_string(options = {})
       return nil unless time
+
       range_time = get_range_time(options[:display_as_range])
       if is_range?(range_time)
         other = TimePresenter.new(range_time, zone)
-        I18n.t('time.ranges.times', "%{start_time} to %{end_time}",
+        I18n.t("time.ranges.times", "%{start_time} to %{end_time}",
                start_time: formatted_result, end_time: other.as_string)
       else
         formatted_result
@@ -38,6 +40,7 @@ module Utils
     end
 
     private
+
     def formatted_result
       I18n.l(time, format: format)
     end

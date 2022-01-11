@@ -67,8 +67,8 @@ class DynamoQuery
     self
   end
 
-  def each
-    query.items.each { |item| yield item }
+  def each(&block)
+    query.items.each(&block)
   end
 
   def map
@@ -87,6 +87,7 @@ class DynamoQuery
 
   def query
     return @query if defined? @query
+
     params = {
       table_name: @table,
       key_condition_expression: @key_condition_expression,

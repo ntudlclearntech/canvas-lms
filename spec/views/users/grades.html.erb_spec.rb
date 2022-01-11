@@ -33,16 +33,16 @@ describe "users/grades" do
       view_context(course, teacher)
       student_enrollment.scores.create!(course_score: true, current_score: 73.0, override_score: 89.2)
       ScoreStatisticsGenerator.update_course_score_statistic(course.id)
-      current_active_enrollments = teacher.
-        enrollments.
-        current.
-        preload(:course, :enrollment_state, :scores).
-        shard(teacher).
-        to_a
+      current_active_enrollments = teacher
+                                   .enrollments
+                                   .current
+                                   .preload(:course, :enrollment_state, :scores)
+                                   .shard(teacher)
+                                   .to_a
       presenter = GradesPresenter.new(current_active_enrollments)
       assign(:presenter, presenter)
       render "users/grades"
-      expect(Nokogiri::HTML5(response.body).css('.teacher_grades .percent').text).to include "73.00%"
+      expect(Nokogiri::HTML5(response.body).css(".teacher_grades .percent").text).to include "73.00%"
     end
   end
 end

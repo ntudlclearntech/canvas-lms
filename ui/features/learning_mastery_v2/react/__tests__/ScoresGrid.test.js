@@ -32,7 +32,8 @@ describe('ScoresGrid', () => {
               rating: {
                 points: 3,
                 color: 'green',
-                description: 'mastery'
+                description: 'mastery',
+                mastery: false
               }
             }
           ]
@@ -40,13 +41,24 @@ describe('ScoresGrid', () => {
       ],
       students: [
         {
-          id: '1'
+          id: '1',
+          name: 'Student Name',
+          display_name: 'Student Name'
         }
       ],
       outcomes: [
         {
           id: '1',
-          mastery_points: 3
+          title: 'Outcome Title',
+          mastery_points: 3,
+          ratings: [
+            {
+              points: 5,
+              color: 'green',
+              description: 'Description',
+              mastery: true
+            }
+          ]
         }
       ],
       ...props

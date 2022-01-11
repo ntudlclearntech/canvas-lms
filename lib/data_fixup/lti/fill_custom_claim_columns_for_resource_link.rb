@@ -28,23 +28,23 @@ module DataFixup::Lti::FillCustomClaimColumnsForResourceLink
   end
 
   def self.drop_resource_links_without_a_context
-    Lti::LineItem.connection.execute(%{
+    Lti::LineItem.connection.execute(<<~SQL.squish)
       DELETE FROM #{Lti::LineItem.quoted_table_name}
       WHERE lti_resource_link_id IN (
         SELECT ID FROM #{Lti::ResourceLink.quoted_table_name}
         WHERE context_type IS NULL OR context_id IS NULL
       );
-    })
+    SQL
 
-    Lti::ResourceLink.connection.execute(%{
+    Lti::ResourceLink.connection.execute(<<~SQL.squish)
       DELETE FROM #{Lti::ResourceLink.quoted_table_name}
       WHERE context_type IS NULL OR context_id IS NULL;
-    })
+    SQL
   end
 
   def self.update_context!
-    Lti::ResourceLink.
-      joins("INNER JOIN #{Assignment.quoted_table_name} ON assignments.lti_context_id = lti_resource_links.resource_link_id").
-      update_all("context_type = 'Assignment', context_id = assignments.id")
+    Lti::ResourceLink
+      .joins("INNER JOIN #{Assignment.quoted_table_name} ON assignments.lti_context_id = lti_resource_links.resource_link_id")
+      .update_all("context_type = 'Assignment', context_id = assignments.id")
   end
 end

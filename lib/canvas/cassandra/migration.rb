@@ -26,20 +26,21 @@ module Canvas
           # fail but actually succeded in a way that seems like timeout issues. For a migration we'll just override the
           # statement timeout to be 3 minutes. (It should hopefully never take 3 minutes.)
           @cassandra ||= CanvasCassandra::DatabaseBuilder.from_config(cassandra_cluster,
-            override_options: { 'timeout' => 180 })
+                                                                      override_options: { "timeout" => 180 })
         end
 
         def runnable?
           raise "cassandra_cluster is required to be defined" unless respond_to?(:cassandra_cluster) && cassandra_cluster.present?
+
           Switchman::Shard.current == Switchman::Shard.birth && CanvasCassandra::DatabaseBuilder.configured?(cassandra_cluster)
         end
 
         def cassandra_table_exists?(table)
-          cql = %{
+          cql = <<~SQL.squish
             SELECT *
             FROM #{table}
             LIMIT 1
-          }
+          SQL
           cassandra.execute(cql)
           true
         rescue CassandraCQL::Error::InvalidRequestException
@@ -47,11 +48,11 @@ module Canvas
         end
 
         def cassandra_column_exists?(table, column)
-          cql = %{
+          cql = <<~SQL.squish
             SELECT #{column}
             FROM #{table}
             LIMIT 1
-          }
+          SQL
           cassandra.execute(cql)
           true
         rescue CassandraCQL::Error::InvalidRequestException

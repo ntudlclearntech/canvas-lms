@@ -17,13 +17,13 @@
 # You should have received a copy of the GNU Affero General Public License along
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 
-require_relative '../common'
-require_relative 'pages/new_user_search_page'
-require_relative 'pages/new_course_search_page'
-require_relative 'pages/new_user_edit_modal_page.rb'
-require_relative 'pages/edit_existing_user_modal_page.rb'
-require_relative 'pages/masquerade_page.rb'
-require_relative '../conversations/conversations_new_message_modal_page.rb'
+require_relative "../common"
+require_relative "pages/new_user_search_page"
+require_relative "pages/new_course_search_page"
+require_relative "pages/new_user_edit_modal_page"
+require_relative "pages/edit_existing_user_modal_page"
+require_relative "pages/masquerade_page"
+require_relative "../conversations/conversations_new_message_modal_page"
 
 describe "new account user search" do
   include_context "in-process server selenium tests"
@@ -36,7 +36,7 @@ describe "new account user search" do
 
   before :once do
     @account = Account.default
-    account_admin_user(:account => @account, :active_all => true)
+    account_admin_user(account: @account, active_all: true)
   end
 
   before do
@@ -44,7 +44,7 @@ describe "new account user search" do
   end
 
   def wait_for_loading_to_disappear
-    expect(f('[data-automation="users list"]')).not_to contain_css('tr:nth-child(2)')
+    expect(f('[data-automation="users list"]')).not_to contain_css("tr:nth-child(2)")
   end
 
   describe "with default page visit" do
@@ -53,46 +53,46 @@ describe "new account user search" do
       visit_users(@account)
     end
 
-    it "should bring up user page when clicking name", priority: "1", test_id: 3399648 do
+    it "brings up user page when clicking name", priority: "1" do
       click_user_link(@user.sortable_name)
       expect(f("#content h2")).to include_text @user.name
     end
 
-    it "should open the edit user modal when clicking the edit user icon" do
+    it "opens the edit user modal when clicking the edit user icon" do
       click_edit_button(@user.name)
-      expect(edit_full_name_input.attribute('value')).to eq(@user.name)
+      expect(edit_full_name_input.attribute("value")).to eq(@user.name)
     end
 
-    it "should open the act as page when clicking the masquerade button", priority: "1", test_id: 3453424 do
+    it "opens the act as page when clicking the masquerade button", priority: "1" do
       click_masquerade_button(@user.name)
       expect(act_as_label).to include_text @user.name
     end
 
-    it "should open the conversation page when clicking the send message button", priority: "1", test_id: 3453435 do
+    it "opens the conversation page when clicking the send message button", priority: "1" do
       click_message_button(@user.name)
       expect(message_recipient_input).to include_text @user.name
     end
 
-    it "should search but not find bogus user", priority: "1", test_id: 3399649 do
-      enter_search('jtsdumbthing')
-      expect(f('#content h2')).to include_text('No users found')
+    it "searches but not find bogus user", priority: "1" do
+      enter_search("jtsdumbthing")
+      expect(f("#content h2")).to include_text("No users found")
       expect(results_body).not_to contain_css(results_row)
     end
 
-    it "should link to the user group page" do
+    it "links to the user group page" do
       click_people_more_options
       click_view_user_groups_option
       expect(driver.current_url).to include("/accounts/#{@account.id}/groups")
     end
 
-    it "should link to the user avatar page" do
+    it "links to the user avatar page" do
       click_people_more_options
       click_manage_profile_pictures_option
       expect(driver.current_url).to include("/accounts/#{@account.id}/avatars")
     end
 
-    it "should search by name" do
-      user_with_pseudonym(:account => @account, :name => "diffrient user")
+    it "searches by name" do
+      user_with_pseudonym(account: @account, name: "diffrient user")
       refresh_page
       user_search_box.send_keys("Test")
       wait_for_loading_to_disappear
@@ -106,28 +106,28 @@ describe "new account user search" do
       @sub_account = Account.create!(name: "sub", parent_account: @account)
     end
 
-    it "should not show the people tab without permission" do
-      @account.role_overrides.create! :role => admin_role, :permission => 'read_roster', :enabled => false
+    it "does not show the people tab without permission" do
+      @account.role_overrides.create! role: admin_role, permission: "read_roster", enabled: false
       visit_users(@account)
       expect(left_navigation).not_to include_text("People")
     end
 
-    it "should show the create users button user has permission on the root_account" do
+    it "shows the create users button user has permission on the root_account" do
       visit_subaccount(@sub_account)
       expect(results_body).to contain_jqcss(add_people_button_jqcss)
     end
 
-    it "should not show the create users button for non-root accounts" do
+    it "does not show the create users button for non-root accounts" do
       account_admin_user(account: @sub_account, active_all: true)
       user_session(@admin)
       visit_subaccount(@sub_account)
       expect(results_body).not_to contain_jqcss(add_people_button_jqcss)
     end
 
-    it "should paginate" do
+    it "paginates" do
       @user.update_attribute(:sortable_name, "Admin")
-      ('A'..'Z').each do |letter|
-        user_with_pseudonym(:account => @account, :name => "Test User#{letter}")
+      ("A".."Z").each do |letter|
+        user_with_pseudonym(account: @account, name: "Test User#{letter}")
       end
       visit_users(@account)
 
@@ -146,9 +146,9 @@ describe "new account user search" do
       expect(all_results_users).not_to include_text("UserA, Test")
     end
 
-    it "should be able to toggle between 'People' and 'Courses' tabs" do
-      user_with_pseudonym(:account => @account, :name => "Test User")
-      course_factory(:account => @account, :course_name => "Test Course")
+    it "is able to toggle between 'People' and 'Courses' tabs" do
+      user_with_pseudonym(account: @account, name: "Test User")
+      course_factory(account: @account, course_name: "Test Course")
 
       visit_courses(@account)
       2.times do
@@ -166,22 +166,22 @@ describe "new account user search" do
       end
     end
 
-    it "should be able to create users" do
-      name = 'Test User'
-      email = 'someemail@example.com'
+    it "is able to create users" do
+      name = "Test User"
+      email = "someemail@example.com"
       visit_users(@account)
 
       click_add_people
       expect(modal_object).to be_displayed
 
       set_value(full_name_input, name)
-      expect(sortable_name_input.attribute('value')).to eq "User, Test"
+      expect(sortable_name_input.attribute("value")).to eq "User, Test"
 
       set_value(email_input, email)
 
       click_modal_submit
 
-      new_pseudonym = Pseudonym.where(:unique_id => email).first
+      new_pseudonym = Pseudonym.where(unique_id: email).first
       expect(new_pseudonym.user.name).to eq name
 
       # should refresh the users list
@@ -191,12 +191,12 @@ describe "new account user search" do
 
       # should clear out the inputs
       click_add_people
-      expect(full_name_input.attribute('value')).to eq('')
+      expect(full_name_input.attribute("value")).to eq("")
     end
 
-    it "should be able to create users with confirmation disabled", priority: "1", test_id: 3399311 do
-      name = 'Confirmation Disabled'
-      email = 'someemail@example.com'
+    it "is able to create users with confirmation disabled", priority: "1" do
+      name = "Confirmation Disabled"
+      email = "someemail@example.com"
       visit_users(@account)
 
       click_add_people
@@ -207,7 +207,7 @@ describe "new account user search" do
       click_email_creation_check
       click_modal_submit
 
-      new_pseudonym = Pseudonym.where(:unique_id => email).first
+      new_pseudonym = Pseudonym.where(unique_id: email).first
       expect(new_pseudonym.user.name).to eq name
     end
   end

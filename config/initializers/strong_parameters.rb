@@ -41,13 +41,14 @@ module ArbitraryStrongishParams
     slice(*filter.keys).each do |key, value|
       next unless value
 
-      if filter[key] == ActionController::Parameters::EMPTY_ARRAY
+      case filter[key]
+      when ActionController::Parameters::EMPTY_ARRAY
         # Declaration { comment_ids: [] }.
         array_of_permitted_scalars?(self[key]) do |val|
           params[key] = val
         end
-      elsif filter[key] == ANYTHING
-        if filtered = recursive_arbitrary_filter(value)
+      when ANYTHING
+        if (filtered = recursive_arbitrary_filter(value))
           params[key] = filtered
           params.instance_variable_get(:@anythings)[key] = true
         end
@@ -75,7 +76,7 @@ module ArbitraryStrongishParams
       value.each do |v|
         if permitted_scalar?(v)
           arr << v
-        elsif filtered = recursive_arbitrary_filter(v)
+        elsif (filtered = recursive_arbitrary_filter(v))
           arr << filtered
         end
       end
@@ -87,6 +88,7 @@ module ArbitraryStrongishParams
 
   def convert_hashes_to_parameters(key, value, *args)
     return value if @anythings.key?(key)
+
     super
   end
 

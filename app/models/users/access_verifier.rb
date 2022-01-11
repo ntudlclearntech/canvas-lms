@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU Affero General Public License along
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 
-require 'openssl'
+require "openssl"
 
 module Users
   module AccessVerifier
@@ -47,6 +47,7 @@ module Users
 
     def self.validate(fields)
       return {} if fields[:sf_verifier].blank?
+
       claims = Canvas::Security.decode_jwt(fields[:sf_verifier])
 
       real_user = user = User.where(id: claims[:user_id]).first
@@ -66,7 +67,7 @@ module Users
       oauth_host = claims[:oauth_host]
       return_url = claims[:return_url]
 
-      return {
+      {
         user: user,
         real_user: real_user,
         developer_key: developer_key,
@@ -74,7 +75,6 @@ module Users
         oauth_host: oauth_host,
         return_url: return_url
       }
-
     rescue Canvas::Security::InvalidToken
       raise InvalidVerifier
     end

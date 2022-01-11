@@ -19,7 +19,7 @@
 
 module Users
   class CreationNotifyPolicy
-    def initialize(can_manage_users, opts={})
+    def initialize(can_manage_users, opts = {})
       @send_confirmation = opts[:send_confirmation]
       @is_manager = can_manage_users
       @force_self_registration = opts[:force_self_registration]
@@ -31,7 +31,7 @@ module Users
 
     def dispatch!(user, pseudonym, channel)
       if is_self_registration?
-        send_self_registration_email(user, pseudonym)
+        send_self_registration_email(pseudonym)
         return true
       elsif send_confirmation
         send_confirmation_email(user, pseudonym)
@@ -43,9 +43,10 @@ module Users
     end
 
     private
+
     attr_reader :is_manager
 
-    def send_self_registration_email(user, pseudonym)
+    def send_self_registration_email(pseudonym)
       pseudonym.send_confirmation!
     end
 

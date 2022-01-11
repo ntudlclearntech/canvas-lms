@@ -133,10 +133,6 @@ describe('K5Announcement', () => {
   })
 
   describe('with inter-announcement navigation enabled', () => {
-    beforeAll(() => {
-      window.ENV.FEATURES ||= {}
-      window.ENV.FEATURES.k5_homeroom_many_announcements = true
-    })
     afterEach(() => {
       fetchMock.restore()
     })
@@ -232,7 +228,7 @@ describe('K5Announcement', () => {
 
     it('handles 2 announcements with identical posted_at dates', async () => {
       const postedAt = '2021-08-01T18:00:00Z'
-      const props = getProps({}, {postedDate: postedAt})
+      const props = getProps({}, {postedDate: Date.parse(postedAt)})
       fetchMock.get(
         /\/api\/v1\/announcements/,
         {

@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU Affero General Public License along
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 
-module Lti::Ims
+module Lti::IMS
   class NamesAndRolesSerializer
     def initialize(page)
       @page = page
@@ -55,13 +55,13 @@ module Lti::Ims
     def variable_expander(enrollment)
       Lti::VariableExpander.new(
         page[:context].root_account,
-        Lti::Ims::Providers::MembershipsProvider.unwrap(page[:context]),
+        Lti::IMS::Providers::MembershipsProvider.unwrap(page[:context]),
         page[:controller],
         {
-          current_user: Lti::Ims::Providers::MembershipsProvider.unwrap(enrollment.user),
+          current_user: Lti::IMS::Providers::MembershipsProvider.unwrap(enrollment.user),
           tool: page[:tool],
           enrollment: enrollment,
-          variable_whitelist: %w(
+          variable_whitelist: %w[
             Person.name.full
             Person.name.display
             Person.name.family
@@ -82,7 +82,7 @@ module Lti::Ims
             Canvas.user.sisIntegrationId
             Canvas.xapi.url
             Caliper.url
-          )
+          ]
         }
       )
     end
@@ -90,7 +90,7 @@ module Lti::Ims
     def member(enrollment, expander)
       user = enrollment.user
       {
-        status: 'Active',
+        status: "Active",
         name: (user.name if page[:tool].include_name?),
         picture: (user.avatar_url if page[:tool].public?),
         given_name: (user.first_name if page[:tool].include_name?),
@@ -104,12 +104,13 @@ module Lti::Ims
     end
 
     def member_sourced_id(expander)
-      expanded = expander.expand_variables!({value: '$Person.sourcedId'})[:value]
-      expanded == '$Person.sourcedId' ? nil : expanded
+      expanded = expander.expand_variables!({ value: "$Person.sourcedId" })[:value]
+      expanded == "$Person.sourcedId" ? nil : expanded
     end
 
     def message(enrollment, expander)
       return {} if page[:opts].blank? || page[:opts][:rlid].blank?
+
       orig_locale = I18n.locale
       orig_time_zone = Time.zone
       begin
@@ -123,8 +124,8 @@ module Lti::Ims
           return_url: nil,
           opts: {
             # See #variable_expander for additional constraints on custom param expansion
-            claim_group_whitelist: [ :public, :i18n, :custom_params ],
-            extension_whitelist: [ :canvas_user_id, :canvas_user_login_id ]
+            claim_group_whitelist: %i[public i18n custom_params],
+            extension_whitelist: [:canvas_user_id, :canvas_user_login_id]
           }
         ).generate_post_payload_message(validate_launch: false)
       ensure
@@ -133,14 +134,14 @@ module Lti::Ims
       end
 
       # A few straggler fields we can't readily control via white/blacklists
-      launch_hash = launch.to_h.
-        except!("#{LtiAdvantage::Serializers::JwtMessageSerializer::IMS_CLAIM_PREFIX}version").
-        except!("picture")
-      { message: [ launch_hash ] }
+      launch_hash = launch.to_h
+                          .except!("#{LtiAdvantage::Serializers::JwtMessageSerializer::IMS_CLAIM_PREFIX}version")
+                          .except!("picture")
+      { message: [launch_hash] }
     end
 
     def unwrap(wrapped)
-      Lti::Ims::Providers::MembershipsProvider.unwrap(wrapped)
+      Lti::IMS::Providers::MembershipsProvider.unwrap(wrapped)
     end
 
     attr_reader :page

@@ -35,13 +35,13 @@ module PlannerApiHelper
   def formatted_planner_date(input, val, default = nil, end_of_day: false)
     @errors ||= {}
     if val.present? && val.is_a?(String)
-      if val =~ Api::DATE_REGEX
+      if Api::DATE_REGEX.match?(val)
         if end_of_day
           Time.zone.parse(val).end_of_day
         else
           Time.zone.parse(val).beginning_of_day
         end
-      elsif val =~ Api::ISO8601_REGEX
+      elsif Api::ISO8601_REGEX.match?(val)
         Time.zone.parse(val)
       else
         raise(InvalidDates, I18n.t("Invalid date or datetime for %{field}", field: input))
@@ -53,13 +53,15 @@ module PlannerApiHelper
 
   def sync_module_requirement_done(item, user, complete)
     return unless item.is_a?(ContextModuleItem)
+
     doneable = mark_doneable_tag(item)
     return unless doneable
+
     if complete
       doneable.context_module_action(user, :done)
     else
       progression = doneable.progression_for_user(user)
-      if progression&.requirements_met&.find {|req| req[:id] == doneable.id && req[:type] == "must_mark_done" }
+      if progression&.requirements_met&.find { |req| req[:id] == doneable.id && req[:type] == "must_mark_done" }
         progression.uncomplete_requirement(doneable.id)
         progression.evaluate
       end
@@ -69,8 +71,9 @@ module PlannerApiHelper
   def sync_planner_completion(item, user, complete)
     return unless item.is_a?(ContextModuleItem) && item.is_a?(Plannable)
     return unless mark_doneable_tag(item)
+
     planner_override = PlannerOverride.where(user: user, plannable_id: item.id,
-      plannable_type: item.class.to_s).first_or_create
+                                             plannable_type: item.class.to_s).first_or_create
     planner_override.marked_complete = complete
     planner_override.dismissed = complete
     planner_override.save

@@ -19,29 +19,31 @@
 #
 class SisBatchRollBackData < ActiveRecord::Base
   belongs_to :sis_batch, inverse_of: :roll_back_data
-  belongs_to :context, polymorphic: %i{abstract_course account account_user
+  belongs_to :context, polymorphic: %i[abstract_course account account_user
                                        communication_channel course
                                        course_section enrollment enrollment_term
                                        group group_category group_membership
-                                       pseudonym user_observer}
+                                       pseudonym user_observer]
 
-  scope :expired_data, -> {where('created_at < ?', 30.days.ago)}
-  scope :active, -> {where(workflow_state: 'active')}
-  scope :restored, -> {where(workflow_state: 'restored')}
+  scope :expired_data, -> { where("created_at < ?", 30.days.ago) }
+  scope :active, -> { where(workflow_state: "active") }
+  scope :restored, -> { where(workflow_state: "restored") }
 
-  RESTORE_ORDER = %w{Account EnrollmentTerm AbstractCourse Course CourseSection
+  RESTORE_ORDER = %w[Account EnrollmentTerm AbstractCourse Course CourseSection
                      GroupCategory Group Pseudonym CommunicationChannel
-                     Enrollment GroupMembership UserObserver AccountUser}.freeze
+                     Enrollment GroupMembership UserObserver AccountUser].freeze
 
   def self.cleanup_expired_data
     return unless expired_data.exists?
+
     until expired_data.limit(10_000).delete_all < 10_000
     end
   end
 
   def self.build_data(sis_batch:, context:, batch_mode_delete: false)
     return unless SisBatchRollBackData.should_create_roll_back?(context, sis_batch)
-    old_state = (context.id_before_last_save.nil? ? 'non-existent' : context.workflow_state_before_last_save)
+
+    old_state = (context.id_before_last_save.nil? ? "non-existent" : context.workflow_state_before_last_save)
     sis_batch.shard.activate do
       SisBatchRollBackData.new(sis_batch_id: sis_batch.id,
                                context: context,
@@ -50,12 +52,13 @@ class SisBatchRollBackData < ActiveRecord::Base
                                created_at: Time.zone.now,
                                updated_at: Time.zone.now,
                                batch_mode_delete: batch_mode_delete,
-                               workflow_state: 'active')
+                               workflow_state: "active")
     end
   end
 
   def self.build_dependent_data(sis_batch:, contexts:, updated_state:, batch_mode_delete: false)
     return unless sis_batch
+
     data = []
     contexts.each do |context|
       sis_batch.shard.activate do
@@ -66,7 +69,7 @@ class SisBatchRollBackData < ActiveRecord::Base
                                          created_at: Time.zone.now,
                                          updated_at: Time.zone.now,
                                          batch_mode_delete: batch_mode_delete,
-                                         workflow_state: 'active')
+                                         workflow_state: "active")
       end
     end
     data
@@ -74,6 +77,7 @@ class SisBatchRollBackData < ActiveRecord::Base
 
   def self.should_create_roll_back?(object, sis_batch)
     return false unless sis_batch
+
     object.id_before_last_save.nil? || object.workflow_state_before_last_save != object.workflow_state
   end
 
@@ -85,17 +89,16 @@ class SisBatchRollBackData < ActiveRecord::Base
 
   def restore_to_state
     case context_type
-    when 'CommunicationChannel'
-      (previous_workflow_state == 'non-existent') ? 'retired' : previous_workflow_state
-    when 'GroupCategory'
-      (previous_workflow_state == 'active') ? nil : Time.zone.now
+    when "CommunicationChannel"
+      (previous_workflow_state == "non-existent") ? "retired" : previous_workflow_state
+    when "GroupCategory"
+      (previous_workflow_state == "active") ? nil : Time.zone.now
     else
-      (previous_workflow_state == 'non-existent') ? 'deleted' : previous_workflow_state
+      (previous_workflow_state == "non-existent") ? "deleted" : previous_workflow_state
     end
   end
 
   def to_restore_array
     [context_id, restore_to_state]
   end
-
 end

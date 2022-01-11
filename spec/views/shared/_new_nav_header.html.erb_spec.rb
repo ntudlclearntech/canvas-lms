@@ -18,8 +18,7 @@
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-require File.expand_path(File.dirname(__FILE__) + '/../../sharding_spec_helper')
-require File.expand_path(File.dirname(__FILE__) + '/../views_helper')
+require_relative "../views_helper"
 
 describe "shared/_new_nav_header" do
   before do
@@ -27,7 +26,7 @@ describe "shared/_new_nav_header" do
   end
 
   context "'Courses' menu" do
-    it "should render courses with logged in user" do
+    it "renders courses with logged in user" do
       assign(:current_user, user_factory)
       render "shared/_new_nav_header"
       doc = Nokogiri::HTML5(response.body)
@@ -35,7 +34,7 @@ describe "shared/_new_nav_header" do
       expect(doc.at_css("#global_nav_courses_link")).not_to be_nil
     end
 
-    it "should not render courses when not logged in" do
+    it "does not render courses when not logged in" do
       render "shared/_new_nav_header"
       doc = Nokogiri::HTML5(response.body)
 
@@ -44,7 +43,7 @@ describe "shared/_new_nav_header" do
   end
 
   context "'Admin' menu" do
-    it "should render admin accounts link if the user is an admin" do
+    it "renders admin accounts link if the user is an admin" do
       assign(:current_user, account_admin_user)
       render "shared/_new_nav_header"
       doc = Nokogiri::HTML5(response.body)
@@ -52,7 +51,7 @@ describe "shared/_new_nav_header" do
       expect(doc.at_css("#global_nav_accounts_link")).not_to be_nil
     end
 
-    it "should not render admin accounts link if the user is not an admin" do
+    it "does not render admin accounts link if the user is not an admin" do
       assign(:current_user, user_factory)
       render "shared/_new_nav_header"
       doc = Nokogiri::HTML5(response.body)
@@ -63,7 +62,7 @@ describe "shared/_new_nav_header" do
     context "cross-shard" do
       specs_require_sharding
 
-      it "should render admin accounts link if the user is a cross-shard admin" do
+      it "renders admin accounts link if the user is a cross-shard admin" do
         user = user_factory
         @shard1.activate do
           account = Account.create!

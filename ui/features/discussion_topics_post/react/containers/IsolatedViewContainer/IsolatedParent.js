@@ -24,10 +24,10 @@ import {DiscussionEntry} from '../../../graphql/DiscussionEntry'
 import {Flex} from '@instructure/ui-flex'
 import {Highlight} from '../../components/Highlight/Highlight'
 import I18n from 'i18n!discussion_posts'
-import {isTopicAuthor, responsiveQuerySizes} from '../../utils'
+import {getDisplayName, isTopicAuthor, responsiveQuerySizes} from '../../utils'
 import {DiscussionEntryContainer} from '../DiscussionEntryContainer/DiscussionEntryContainer'
 import PropTypes from 'prop-types'
-import React, {useState} from 'react'
+import React, {useContext, useState} from 'react'
 import {ReplyInfo} from '../../components/ReplyInfo/ReplyInfo'
 import {Responsive} from '@instructure/ui-responsive'
 import {Text} from '@instructure/ui-text'
@@ -35,10 +35,13 @@ import {ThreadActions} from '../../components/ThreadActions/ThreadActions'
 import {ThreadingToolbar} from '../../components/ThreadingToolbar/ThreadingToolbar'
 import {
   UPDATE_ISOLATED_VIEW_DEEPLY_NESTED_ALERT,
-  UPDATE_DISCUSSION_THREAD_READ_STATE
+  UPDATE_DISCUSSION_THREAD_READ_STATE,
+  UPDATE_DISCUSSION_ENTRY_PARTICIPANT
 } from '../../../graphql/Mutations'
 import {useMutation, useApolloClient} from 'react-apollo'
 import {View} from '@instructure/ui-view'
+import {ReportReply} from '../../components/ReportReply/ReportReply'
+import {AlertManagerContext} from '@canvas/alerts/react/AlertManager'
 
 export const IsolatedParent = props => {
   const [updateIsolatedViewDeeplyNestedAlert] = useMutation(
@@ -54,14 +57,36 @@ export const IsolatedParent = props => {
     update: resetDiscussionCache
   })
 
+  const {setOnSuccess} = useContext(AlertManagerContext)
   const [isEditing, setIsEditing] = useState(false)
+  const [showReportModal, setShowReportModal] = useState(false)
+  const [reportModalIsLoading, setReportModalIsLoading] = useState(false)
+  const [reportingError, setReportingError] = useState(false)
   const threadActions = []
+
+  const [updateDiscussionEntryReported] = useMutation(UPDATE_DISCUSSION_ENTRY_PARTICIPANT, {
+    onCompleted: data => {
+      if (!data || !data.updateDiscussionEntryParticipant) {
+        return null
+      }
+      setReportModalIsLoading(false)
+      setShowReportModal(false)
+      setOnSuccess(I18n.t('You have reported this reply.'), false)
+    },
+    onError: () => {
+      setReportModalIsLoading(false)
+      setReportingError(true)
+      setTimeout(() => {
+        setReportingError(false)
+      }, 3000)
+    }
+  })
 
   if (props.discussionEntry.permissions.reply) {
     threadActions.push(
       <ThreadingToolbar.Reply
         key={`reply-${props.discussionEntry.id}`}
-        authorName={props.discussionEntry.author.displayName}
+        authorName={getDisplayName(props.discussionEntry)}
         delimiterKey={`reply-delimiter-${props.discussionEntry._id}`}
         onClick={() => props.setRCEOpen(true)}
         isReadOnly={props.RCEOpen}
@@ -82,8 +107,8 @@ export const IsolatedParent = props => {
             props.onToggleRating()
           }
         }}
-        authorName={props.discussionEntry.author.displayName}
-        isLiked={props.discussionEntry.entryParticipant?.rating}
+        authorName={getDisplayName(props.discussionEntry)}
+        isLiked={!!props.discussionEntry.entryParticipant?.rating}
         likeCount={props.discussionEntry.ratingSum || 0}
         interaction={props.discussionEntry.permissions.rate ? 'enabled' : 'disabled'}
       />
@@ -164,6 +189,8 @@ export const IsolatedParent = props => {
               <Flex padding="small">
                 <Flex.Item shouldShrink shouldGrow>
                   <DiscussionEntryContainer
+                    discussionTopic={props.discussionTopic}
+                    discussionEntry={props.discussionEntry}
                     isTopic={false}
                     postUtilities={
                       <ThreadActions
@@ -194,9 +221,19 @@ export const IsolatedParent = props => {
                             }
                           })
                         }
+                        onReport={
+                          ENV?.student_reporting_enabled &&
+                          props.discussionTopic.permissions?.studentReporting
+                            ? () => {
+                                setShowReportModal(true)
+                              }
+                            : null
+                        }
+                        isReported={props.discussionEntry?.entryParticipant?.reportType != null}
                       />
                     }
                     author={props.discussionEntry.author}
+                    anonymousAuthor={props.discussionEntry.anonymousAuthor}
                     message={props.discussionEntry.message}
                     isEditing={isEditing}
                     onSave={message => {
@@ -224,6 +261,8 @@ export const IsolatedParent = props => {
                       props.discussionTopic.author,
                       props.discussionEntry.author
                     )}
+                    updateDraftCache={props.updateDraftCache}
+                    attachment={props.discussionEntry.attachment}
                   >
                     {threadActions.length > 0 && (
                       <View as="div" padding="x-small none none">
@@ -233,6 +272,23 @@ export const IsolatedParent = props => {
                       </View>
                     )}
                   </DiscussionEntryContainer>
+                  <ReportReply
+                    onCloseReportModal={() => {
+                      setShowReportModal(false)
+                    }}
+                    onSubmit={reportType => {
+                      updateDiscussionEntryReported({
+                        variables: {
+                          discussionEntryId: props.discussionEntry._id,
+                          reportType
+                        }
+                      })
+                      setReportModalIsLoading(true)
+                    }}
+                    showReportModal={showReportModal}
+                    isLoading={reportModalIsLoading}
+                    errorSubmitting={reportingError}
+                  />
                 </Flex.Item>
               </Flex>
               {props.children}
@@ -257,5 +313,6 @@ IsolatedParent.propTypes = {
   RCEOpen: PropTypes.bool,
   setRCEOpen: PropTypes.func,
   isHighlighted: PropTypes.bool,
-  goToTopic: PropTypes.func
+  goToTopic: PropTypes.func,
+  updateDraftCache: PropTypes.func
 }

@@ -18,9 +18,9 @@
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-require 'oauth'
-require 'oauth/request_proxy/action_controller_request'
-require 'nokogiri'
+require "oauth"
+require "oauth/request_proxy/action_controller_request"
+require "nokogiri"
 
 class LtiApiController < ApplicationController
   skip_before_action :load_user
@@ -41,7 +41,7 @@ class LtiApiController < ApplicationController
     @xml = Nokogiri::XML.parse(request.body)
 
     lti_response, status = check_outcome BasicLTI::BasicOutcomes.process_request(@tool, @xml)
-    render body: lti_response.to_xml, content_type: 'application/xml', status: status
+    render body: lti_response.to_xml, content_type: "application/xml", status: status
   end
 
   # this similar API implements the older work-in-process BLTI 0.0.4 outcome
@@ -51,7 +51,7 @@ class LtiApiController < ApplicationController
     verify_oauth
 
     lti_response, = check_outcome BasicLTI::BasicOutcomes.process_legacy_request(@tool, params)
-    render body: lti_response.to_xml, content_type: 'application/xml'
+    render body: lti_response.to_xml, content_type: "application/xml"
   end
 
   # examples: https://github.com/adlnet/xAPI-Spec/blob/master/xAPI.md#AppendixA
@@ -85,7 +85,7 @@ class LtiApiController < ApplicationController
     verify_oauth(token.tool)
 
     if request.content_type != "application/json"
-      return head 415
+      return head :unsupported_media_type
     end
 
     Lti::XapiService.log_page_view(token, params)
@@ -138,15 +138,14 @@ class LtiApiController < ApplicationController
 
   def turnitin_outcomes_placement
     verify_oauth
-    assignment, user = BasicLTI::BasicOutcomes.decode_source_id(@tool, params['lis_result_sourcedid'])
+    assignment, user = BasicLTI::BasicOutcomes.decode_source_id(@tool, params["lis_result_sourcedid"])
     assignment.update_attribute(:turnitin_enabled, false) if assignment.turnitin_enabled?
     request.body.rewind
     turnitin_processor = Turnitin::OutcomeResponseProcessor.new(@tool, assignment, user, JSON.parse(request.body.read))
     turnitin_processor.delay(max_attempts: Turnitin::OutcomeResponseProcessor.max_attempts,
-        priority: Delayed::LOW_PRIORITY).process
-    render json: {}, status: 200
+                             priority: Delayed::LOW_PRIORITY).process
+    render json: {}, status: :ok
   end
-
 
   protected
 
@@ -156,40 +155,40 @@ class LtiApiController < ApplicationController
 
     # verify the request oauth signature, timestamp and nonce
     begin
-      @signature = OAuth::Signature.build(request, :consumer_secret => @tool.shared_secret)
+      @signature = OAuth::Signature.build(request, consumer_secret: @tool.shared_secret)
       unless @signature.verify
         Lti::Logging.lti_1_api_signature_verification_failed(@signature.signature_base_string)
         raise OAuth::Unauthorized.new, request
       end
-
     rescue OAuth::Signature::UnknownSignatureMethod, OAuth::Unauthorized => e
-      Canvas::Errors::Reporter.raise_canvas_error(BasicLTI::BasicOutcomes::Unauthorized, "Invalid authorization header", oauth_error_info.merge({error_class: e.class.name}))
+      Canvas::Errors::Reporter.raise_canvas_error(BasicLTI::BasicOutcomes::Unauthorized, "Invalid authorization header", oauth_error_info.merge({ error_class: e.class.name }))
     end
 
     timestamp = Time.zone.at(@signature.request.timestamp.to_i)
     # 90 minutes is suggested by the LTI spec
-    allowed_delta = Setting.get('oauth.allowed_timestamp_delta', 90.minutes.to_s).to_i
+    allowed_delta = Setting.get("oauth.allowed_timestamp_delta", 90.minutes.to_s).to_i
     if timestamp < allowed_delta.seconds.ago || timestamp > allowed_delta.seconds.from_now
       Canvas::Errors::Reporter.raise_canvas_error(BasicLTI::BasicOutcomes::Unauthorized, "Timestamp too old or too far in the future, request has expired", oauth_error_info)
     end
 
     cache_key = "nonce:#{@tool.asset_string}:#{@signature.request.nonce}"
-    unless Lti::Security::check_and_store_nonce(cache_key, timestamp, allowed_delta.seconds)
+    unless Lti::Security.check_and_store_nonce(cache_key, timestamp, allowed_delta.seconds)
       Canvas::Errors::Reporter.raise_canvas_error(BasicLTI::BasicOutcomes::Unauthorized, "Duplicate nonce detected", oauth_error_info)
     end
   end
 
   def oauth_error_info
     return {} unless @signature
+
     {
       generated_signature: @signature.signature
     }
   end
 
   def check_outcome(outcome)
-    return outcome, 200 unless ['unsupported', 'failure'].include? outcome.code_major
+    return outcome, 200 unless ["unsupported", "failure"].include? outcome.code_major
 
-    opts = {type: :grade_passback}
+    opts = { type: :grade_passback }
     error_info = Canvas::Errors::Info.new(request, @domain_root_account, @current_user, opts).to_h
     error_info[:extra][:description] = outcome.description
     error_info[:extra][:message] = outcome.code_major

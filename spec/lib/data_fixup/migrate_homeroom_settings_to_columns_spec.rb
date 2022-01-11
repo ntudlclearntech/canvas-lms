@@ -18,8 +18,6 @@
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-require 'spec_helper'
-
 describe DataFixup::MigrateHomeroomSettingsToColumns do
   before :once do
     @c1 = course_factory
@@ -32,7 +30,7 @@ describe DataFixup::MigrateHomeroomSettingsToColumns do
     @c2.save!
 
     @c3 = course_factory
-    @c3.settings_frd[:homeroom_course_id] = 'null'
+    @c3.settings_frd[:homeroom_course_id] = "null"
     @c3.save!
   end
 

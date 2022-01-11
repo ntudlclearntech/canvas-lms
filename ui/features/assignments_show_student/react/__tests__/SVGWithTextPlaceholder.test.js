@@ -46,9 +46,9 @@ describe('SVGWithTextPlaceholder', () => {
     expect(imgContainer).toHaveLength(1)
   })
 
-  it('renders if null is provided to the text prop', () => {
+  it('renders if empty is provided to the text prop', () => {
     ReactDOM.render(
-      <SVGWithTextPlaceholder url="www.test.com" />,
+      <SVGWithTextPlaceholder url="www.test.com" text="" />,
       document.getElementById('fixtures')
     )
     const imgContainer = $("img[src$='www.test.com']")
@@ -57,7 +57,7 @@ describe('SVGWithTextPlaceholder', () => {
 
   it('renders with null in img prop', () => {
     ReactDOM.render(
-      <SVGWithTextPlaceholder text="coolest test ever" />,
+      <SVGWithTextPlaceholder text="coolest test ever" url="" />,
       document.getElementById('fixtures')
     )
     const textContainer = $('#fixtures:contains("coolest test ever")')
@@ -66,7 +66,7 @@ describe('SVGWithTextPlaceholder', () => {
 
   it('renders when no props provided', () => {
     ReactDOM.render(
-      <SVGWithTextPlaceholder text="coolest test ever" />,
+      <SVGWithTextPlaceholder text="coolest test ever" url="" />,
       document.getElementById('fixtures')
     )
     const imgContainer = $('img')

@@ -18,8 +18,7 @@
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-require File.expand_path(File.dirname(__FILE__) + '/../spec_helper')
-require File.expand_path(File.dirname(__FILE__) + '/messages_helper')
+require_relative "messages_helper"
 
 describe "updated_wiki_page" do
   before :once do
@@ -31,11 +30,11 @@ describe "updated_wiki_page" do
 
   include_examples "a message"
   context "locked Wiki Pages" do
-    it "should send locked notification if availibility date is locked for email" do
+    it "sends locked notification if availibility date is locked for email" do
       enrollment = course_with_student(active_all: true)
-      context_module = @course.context_modules.create!(name: 'some module')
-      page = @course.wiki_pages.create!(:title => "some page")
-      context_module.add_item({:id => page.id, :type => 'wiki_page'})
+      context_module = @course.context_modules.create!(name: "some module")
+      page = @course.wiki_pages.create!(title: "some page")
+      context_module.add_item({ id: page.id, type: "wiki_page" })
       page.reload
 
       context_module.update(
@@ -47,15 +46,15 @@ describe "updated_wiki_page" do
         could_be_locked: true
       )
 
-      message = generate_message(notification_name, :email, page, :user => enrollment.user)
+      message = generate_message(notification_name, :email, page, user: enrollment.user)
       expect(message.body).to include("Wiki page content is locked or not yet available")
     end
 
-    it "should send Wiki Page notification with Wiki Pages content when unlocked for email" do
+    it "sends Wiki Page notification with Wiki Pages content when unlocked for email" do
       enrollment = course_with_student(active_all: true)
-      context_module = @course.context_modules.create!(name: 'some module')
-      page = @course.wiki_pages.create!(:title => "some page")
-      context_module.add_item({:id => page.id, :type => 'wiki_page'})
+      context_module = @course.context_modules.create!(name: "some module")
+      page = @course.wiki_pages.create!(title: "some page")
+      context_module.add_item({ id: page.id, type: "wiki_page" })
       page.reload
 
       context_module.update(
@@ -67,9 +66,8 @@ describe "updated_wiki_page" do
         could_be_locked: true
       )
 
-      message = generate_message(notification_name, :email, page, :user => enrollment.user)
+      message = generate_message(notification_name, :email, page, user: enrollment.user)
       expect(message.body).to include("the content here of the Wiki Page body")
     end
   end
-
 end

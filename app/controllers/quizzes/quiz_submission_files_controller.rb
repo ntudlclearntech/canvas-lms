@@ -58,7 +58,7 @@ class Quizzes::QuizSubmissionFilesController < ApplicationController
   #   }
   def create
     quiz = @context.quizzes.active.find(params[:quiz_id])
-    quiz_submission = quiz.quiz_submissions.where(:user_id => @current_user).first
+    quiz_submission = quiz.quiz_submissions.where(user_id: @current_user).first
 
     # If a user with preview permission and already accessed preview mode of this quiz,
     # after hit this API, the file might be uploaded even if not in preview mode.
@@ -72,10 +72,9 @@ class Quizzes::QuizSubmissionFilesController < ApplicationController
     raise ActiveRecord::RecordNotFound unless quiz_submission
 
     if authorized_action(quiz, @current_user, :submit)
-      json =  api_attachment_preflight_json quiz_submission, request, :file_param => 'file'
+      json = api_attachment_preflight_json quiz_submission, request, file_param: "file"
 
-      render :json => json
+      render json: json
     end
   end
-
 end

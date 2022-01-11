@@ -18,37 +18,39 @@
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-require 'ostruct'
+require "ostruct"
 
 class OpenStruct
-  def as_json(options={})
+  def as_json(**)
     table
   end
 end
 
 class OpenObject < OpenStruct
   attr_accessor :object_type
-  def self.build(type, data={})
+
+  def self.build(type, data = {})
     res = OpenObject.new(data)
     res.object_type = type
     res
   end
 
   def id
-    self.table[:id]
+    table[:id]
   end
 
   def asset_string
-    return self.table[:asset_string] if self.table[:asset_string]
-    return nil unless self.type && self.id
-    "#{self.type.underscore}_#{self.id}"
+    return table[:asset_string] if table[:asset_string]
+    return nil unless type && id
+
+    "#{type.underscore}_#{id}"
   end
 
-  def as_json(options={})
-    object_type ? {object_type => super} : super
+  def as_json(options = {})
+    object_type ? { object_type => super } : super
   end
 
-  def self.process(pre={})
+  def self.process(pre = {})
     pre = pre.dup
     if pre.is_a? Array
       new_list = []
@@ -58,17 +60,18 @@ class OpenObject < OpenStruct
       new_list
     elsif pre
       pre.each do |name, value|
-        if value.is_a? Array
+        case value
+        when Array
           new_list = []
           value.each do |obj|
-            if obj.is_a? Hash
-              new_list << OpenObject.process(obj)
-            else
-              new_list << obj
-            end
+            new_list << if obj.is_a? Hash
+                          OpenObject.process(obj)
+                        else
+                          obj
+                        end
           end
           pre[name] = new_list
-        elsif value.is_a? Hash
+        when Hash
           pre[name] = OpenObject.process(value)
         end
       end

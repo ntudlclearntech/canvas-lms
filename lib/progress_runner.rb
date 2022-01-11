@@ -36,10 +36,10 @@ class ProgressRunner
   # as error messages and recorded in the Progress object.
   #
   # @param elements [Array] The collection of elements to process
-  # @param process_element A block that performs the actually processing on each element. 
+  # @param process_element A block that performs the actually processing on each element.
   #   Passed an individual element as a parameter.
   def do_batch_update(elements, &process_element)
-    raise 'block required' unless block_given?
+    raise "block required" unless process_element
 
     @progress.start!
     update_every = [elements.size / 20, 4].max
@@ -58,7 +58,8 @@ class ProgressRunner
   # @param block The block to call to format the completed message.
   # @see #default_completed_message
   def completed_message(&block)
-    raise 'block required' unless block_given?
+    raise "block required" unless block
+
     @completed_message = block
     self
   end
@@ -66,7 +67,8 @@ class ProgressRunner
   # Provide a custom error message formatter. The provided block overrides the default
   # @param block The block to call to format an error message. See #default_error_message
   def error_message(&block)
-    raise 'block required' unless block_given?
+    raise "block required" unless block
+
     @error_message = block
     self
   end
@@ -74,21 +76,21 @@ class ProgressRunner
   # The default completed message.
   # @param [Integer] completed_count The number of items that were processed successfully.
   def default_completed_message(completed_count)
-    I18n.t('lib.progress_runner.completed_message', {
-        :one => "1 item processed",
-        :other => "%{count} items processed"
-      },
-      :count => completed_count)
+    I18n.t("lib.progress_runner.completed_message", {
+             one: "1 item processed",
+             other: "%{count} items processed"
+           },
+           count: completed_count)
   end
 
   # The default error message formatter.
   # @param message [String] The error message that was encountered for the specified elements.
   # @param elements [Array] A list of elements this error message applies to.
   def default_error_message(message, elements)
-    I18n.t('lib.progress_runner.error_message', "%{error}: %{ids}", :error => message, :ids => elements.join(', '))
+    I18n.t("lib.progress_runner.error_message", "%{error}: %{ids}", error: message, ids: elements.join(", "))
   end
 
-private
+  private
 
   def update_batch(batch, &process_element)
     batch.each do |element|
@@ -96,8 +98,8 @@ private
     end
   end
 
-  def update_element(element, &process_element)
-    process_element.call(element)
+  def update_element(element)
+    yield(element)
     @completed_count += 1
   rescue => e
     (@errors[e.message] ||= []) << element

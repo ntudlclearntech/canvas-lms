@@ -18,18 +18,16 @@
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-require File.expand_path(File.dirname(__FILE__) + '/../../spec_helper')
 require_relative "../graphql_spec_helper"
 
 describe Types::LearningOutcomeGroupType do
-
   before(:once) do
     account_admin_user
     @account_user = Account.default.account_users.first
     @parent_group = outcome_group_model(context: Account.default)
     @child_group = outcome_group_model(context: Account.default)
     @child_group3 = outcome_group_model(context: Account.default)
-    @child_group2 = outcome_group_model(context: Account.default, workflow_state: 'deleted')
+    @child_group2 = outcome_group_model(context: Account.default, workflow_state: "deleted")
     outcome_group_model(context: Account.default, vendor_guid: "vendor_guid")
     @outcome_group.learning_outcome_group = @parent_group
     @outcome_group.save!
@@ -56,6 +54,7 @@ describe Types::LearningOutcomeGroupType do
     expect(outcome_group_type.resolve("vendorGuid")).to eq @outcome_group.vendor_guid
     expect(outcome_group_type.resolve("childGroupsCount")).to eq 2
     expect(outcome_group_type.resolve("outcomesCount")).to be_a Integer
+    expect(outcome_group_type.resolve("notImportedOutcomesCount")).to eq nil
     expect(outcome_group_type.resolve("parentOutcomeGroup { _id }")).to eq @parent_group.id.to_s
     expect(outcome_group_type.resolve("canEdit")).to eq true
     expect(outcome_group_type.resolve("childGroups { nodes { _id } }"))
@@ -64,14 +63,14 @@ describe Types::LearningOutcomeGroupType do
 
   it "gets outcomes ordered by title" do
     expect(outcome_group_type.resolve("outcomes { nodes { ... on LearningOutcome { _id } } }")).to match_array([
-      @outcome2.id.to_s, @outcome1.id.to_s
-    ])
+                                                                                                                 @outcome2.id.to_s, @outcome1.id.to_s
+                                                                                                               ])
   end
 
   it "accepts search_query in outcomes" do
     expect(outcome_group_type.resolve("outcomes(searchQuery: \"BBBB\") { nodes { ... on LearningOutcome { _id } } }")).to match_array([
-      @outcome1.id.to_s
-    ])
+                                                                                                                                        @outcome1.id.to_s
+                                                                                                                                      ])
   end
 
   it "returns isImported for a given context" do
@@ -89,19 +88,19 @@ describe Types::LearningOutcomeGroupType do
     GQL
 
     expect(outcome_group_type.resolve(query)).to match_array([
-      false, false
-    ])
+                                                               false, false
+                                                             ])
 
     root_group.add_outcome(@outcome2)
 
     expect(outcome_group_type.resolve(query)).to match_array([
-      true, false
-    ])
+                                                               true, false
+                                                             ])
   end
 
   context "when doesn't have edit permission" do
     before(:once) do
-      RoleOverride.manage_role_override(@account_user.account, @account_user.role, "manage_outcomes", :override => false)
+      RoleOverride.manage_role_override(@account_user.account, @account_user.role, "manage_outcomes", override: false)
     end
 
     it "returns false for canEdit" do
@@ -110,8 +109,8 @@ describe Types::LearningOutcomeGroupType do
 
     it "returns false for canUnlink on the outcome edge" do
       expect(outcome_group_type.resolve("outcomes { edges { canUnlink } }")).to match_array([
-        false, false
-      ])
+                                                                                              false, false
+                                                                                            ])
     end
   end
 
@@ -120,7 +119,7 @@ describe Types::LearningOutcomeGroupType do
       user_model
     end
 
-    it "returns " do
+    it "returns" do
       expect(outcome_group_type.resolve("_id")).to be_nil
     end
   end
@@ -148,21 +147,45 @@ describe Types::LearningOutcomeGroupType do
     end
   end
 
-  describe '#child_groups_count' do
-    it 'returns the total active outcome groups' do
+  describe "#child_groups_count" do
+    it "returns the total active outcome groups" do
       expect(outcome_group_type.resolve("childGroupsCount")).to eq 2
       @child_group.destroy
       expect(outcome_group_type.resolve("childGroupsCount")).to eq 1
     end
   end
 
-  describe '#outcomes_count' do
-    it 'returns the total outcomes at the nested outcome groups' do
+  describe "#outcomes_count" do
+    it "returns the total outcomes at the nested outcome groups" do
       expect(outcome_group_type.resolve("outcomesCount")).to eq 2
     end
 
     it "accepts search_query in outcomes_count" do
       expect(outcome_group_type.resolve("outcomesCount(searchQuery: \"BBBB\")")).to eq 1
+    end
+  end
+
+  describe "#not_imported_outcomes_count" do
+    before(:once) do
+      @course = course_model name: "course", account: @account, workflow_state: "created"
+      @parent_course_group = @course.learning_outcome_groups.create!(title: "parent course group")
+      @child_course_group1 = @course.learning_outcome_groups.create!(title: "child course group level 1")
+      @child_course_group2 = @course.learning_outcome_groups.create!(title: "child course group level 2")
+      @child_course_group1.learning_outcome_group = @parent_course_group
+      @child_course_group1.save!
+      @child_course_group2.learning_outcome_group = @child_course_group1
+      @child_course_group2.save!
+      @child_course_group1.add_outcome @outcome1
+      @child_course_group2.add_outcome @outcome2
+    end
+
+    it "returns the number of not imported outcomes in the targetGroupId" do
+      expect(outcome_group_type.resolve("notImportedOutcomesCount(targetGroupId: #{@child_course_group1.id})")).to eq 0
+      expect(outcome_group_type.resolve("notImportedOutcomesCount(targetGroupId: #{@child_course_group2.id})")).to eq 1
+    end
+
+    it "returns nil if no targetGroupId provided" do
+      expect(outcome_group_type.resolve("notImportedOutcomesCount")).to eq nil
     end
   end
 
@@ -180,8 +203,8 @@ describe Types::LearningOutcomeGroupType do
       ]
       @rubric.save!
       expect(outcome_group_type.resolve("outcomes { edges { canUnlink } }")).to match_array([
-        true, false
-      ])
+                                                                                              true, false
+                                                                                            ])
     end
   end
 
@@ -197,14 +220,14 @@ describe Types::LearningOutcomeGroupType do
       before do
         account_admin_user_with_role_changes(
           account: Account.site_admin,
-          role_changes: {manage_global_outcomes: false}
+          role_changes: { manage_global_outcomes: false }
         )
       end
 
       it "canUnlink returns false" do
         expect(outcome_group_type.resolve("outcomes { edges { canUnlink } }")).to match_array([
-          false
-        ])
+                                                                                                false
+                                                                                              ])
       end
     end
 
@@ -212,23 +235,23 @@ describe Types::LearningOutcomeGroupType do
       before do
         account_admin_user_with_role_changes(
           account: Account.site_admin,
-          role_changes: {manage_global_outcomes: true}
+          role_changes: { manage_global_outcomes: true }
         )
       end
 
       it "canUnlink returns true" do
         expect(outcome_group_type.resolve("outcomes { edges { canUnlink } }")).to match_array([
-          true
-        ])
+                                                                                                true
+                                                                                              ])
       end
     end
   end
 
-  describe 'group' do
-    it 'returns parent group of an outcome' do
+  describe "group" do
+    it "returns parent group of an outcome" do
       expect(outcome_group_type.resolve("outcomes { edges { group { _id } } }")).to match_array([
-        @outcome_group.id.to_s, @outcome_group.id.to_s
-      ])
+                                                                                                  @outcome_group.id.to_s, @outcome_group.id.to_s
+                                                                                                ])
     end
   end
 end

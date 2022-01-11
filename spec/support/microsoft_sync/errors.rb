@@ -52,7 +52,7 @@ module MicrosoftSync::Matchers
     failure_message do
       msgs = []
       if @is_public_error
-        msgs << 'expected error.class.public_message to call I18n.t' unless @calls_i18n
+        msgs << "expected error.class.public_message to call I18n.t" unless @calls_i18n
         msgs << "localized message: #{@msg_equals_matcher&.failure_message}" unless @msg_equals
       else
         msgs << @is_public_error_matcher.failure_message
@@ -67,7 +67,7 @@ module MicrosoftSync::Matchers
         be_a_microsoft_sync_public_error(expected_matched_message),
         be_a(MicrosoftSync::Errors::GracefulCancelError)
       ]
-      @matches = @matchers.map{|m| m.matches?(actual)}
+      @matches = @matchers.map { |m| m.matches?(actual) }
       @matches.all?
     end
 

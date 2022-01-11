@@ -37,7 +37,6 @@
 #
 
 class InstAccessTokensController < ApplicationController
-
   before_action :require_user, :require_non_jwt_auth
 
   # @API Create InstAccess token
@@ -64,6 +63,9 @@ class InstAccessTokensController < ApplicationController
       canvas_domain: request.host_with_port,
       real_user_uuid: @real_current_user&.uuid,
       real_user_shard_id: @real_current_user&.shard&.id,
+      user_global_id: @current_user.global_id,
+      real_user_global_id: @real_current_user&.global_id,
+      region: ApplicationController.region
     )
     render status: :created, json: { token: token_string_for(token) }
   end

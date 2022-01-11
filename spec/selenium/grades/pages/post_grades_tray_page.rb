@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU Affero General Public License along
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 
-require_relative '../../common'
+require_relative "../../common"
 
 module PostGradesTray
   extend SeleniumDependencies
@@ -31,7 +31,7 @@ module PostGradesTray
   end
 
   def self.unposted_count_indicator
-    f('#PostAssignmentGradesTray__Layout__UnpostedSummary span[id]')
+    f("#PostAssignmentGradesTray__Layout__UnpostedSummary span[id]")
   end
 
   def self.unposted_count
@@ -60,6 +60,7 @@ module PostGradesTray
 
   def self.select_sections(sections:)
     return if sections.empty?
+
     specific_sections_toggle.click
     sections.each do |section|
       section_checkbox(section_name: section.name).click

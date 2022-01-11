@@ -19,31 +19,31 @@
 #
 module CC
   module PacePlans
-    def create_pace_plans(document=nil)
+    def create_pace_plans(document = nil)
       return nil unless @course.pace_plans.primary.not_deleted.any?
 
       if document
         meta_file = nil
         rel_path = nil
       else
-        meta_file = File.new(File.join(@canvas_resource_dir, CCHelper::PACE_PLANS), 'w')
+        meta_file = File.new(File.join(@canvas_resource_dir, CCHelper::PACE_PLANS), "w")
         rel_path = File.join(CCHelper::COURSE_SETTINGS_DIR, CCHelper::PACE_PLANS)
-        document = Builder::XmlMarkup.new(:target=>meta_file, :indent=>2)
+        document = Builder::XmlMarkup.new(target: meta_file, indent: 2)
       end
 
       document.instruct!
       document.pace_plans(
-              "xmlns" => CCHelper::CANVAS_NAMESPACE,
-              "xmlns:xsi"=>"http://www.w3.org/2001/XMLSchema-instance",
-              "xsi:schemaLocation"=> "#{CCHelper::CANVAS_NAMESPACE} #{CCHelper::XSD_URI}"
+        "xmlns" => CCHelper::CANVAS_NAMESPACE,
+        "xmlns:xsi" => "http://www.w3.org/2001/XMLSchema-instance",
+        "xsi:schemaLocation" => "#{CCHelper::CANVAS_NAMESPACE} #{CCHelper::XSD_URI}"
       ) do |pace_plans_node|
         @course.pace_plans.primary.not_deleted.each do |pace_plan|
           next unless export_object?(pace_plan)
+
           pace_plans_node.pace_plan(identifier: create_key(pace_plan)) do |pace_plan_node|
             pace_plan_node.workflow_state pace_plan.workflow_state
-            pace_plan_node.start_date CCHelper::ims_date(pace_plan.start_date) if pace_plan.start_date
-            pace_plan_node.end_date CCHelper::ims_date(pace_plan.end_date) if pace_plan.end_date
-            pace_plan_node.published_at CCHelper::ims_datetime(pace_plan.published_at) if pace_plan.published_at
+            pace_plan_node.end_date CCHelper.ims_date(pace_plan.end_date) if pace_plan.end_date
+            pace_plan_node.published_at CCHelper.ims_datetime(pace_plan.published_at) if pace_plan.published_at
             pace_plan_node.exclude_weekends pace_plan.exclude_weekends
             pace_plan_node.hard_end_dates pace_plan.hard_end_dates
             pace_plan_node.module_items do |module_items_node|
@@ -58,7 +58,7 @@ module CC
         end
       end
 
-      meta_file.close if meta_file
+      meta_file&.close
       rel_path
     end
   end

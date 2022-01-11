@@ -37,7 +37,7 @@ module Types
 
     implements Interfaces::AssetStringInterface
 
-    alias :course :object
+    alias_method :course, :object
 
     class CourseWorkflowState < BaseEnum
       graphql_name "CourseWorkflowState"
@@ -64,16 +64,16 @@ module Types
       graphql_name "CourseUsersFilter"
 
       argument :user_ids, [ID],
-        "only include users with the given ids",
-        prepare: GraphQLHelpers.relay_or_legacy_ids_prepare_func("User"),
-        required: false
+               "only include users with the given ids",
+               prepare: GraphQLHelpers.relay_or_legacy_ids_prepare_func("User"),
+               required: false
 
       argument :enrollment_states, [CourseFilterableEnrollmentWorkflowState],
-        <<~DESC,
-          only return users with the given enrollment state. defaults
-          to `invited`, `creation_pending`, `active`
-        DESC
-        required: false
+               <<~MD,
+                 only return users with the given enrollment state. defaults
+                 to `invited`, `creation_pending`, `active`
+               MD
+               required: false
     end
 
     implements GraphQL::Types::Relay::Node
@@ -88,8 +88,8 @@ module Types
     field :state, CourseWorkflowState, method: :workflow_state, null: false
 
     field :assignment_groups_connection, AssignmentGroupType.connection_type,
-      method: :assignment_groups,
-      null: true
+          method: :assignment_groups,
+          null: true
 
     implements Interfaces::AssignmentsConnectionInterface
     def assignments_connection(filter: {})
@@ -124,24 +124,24 @@ module Types
 
     field :sections_connection, SectionType.connection_type, null: true
     def sections_connection
-      course.active_course_sections.
-        order(CourseSection.best_unicode_collation_key('name'))
+      course.active_course_sections
+            .order(CourseSection.best_unicode_collation_key("name"))
     end
 
     field :modules_connection, ModuleType.connection_type, null: true
     def modules_connection
-      course.modules_visible_to(current_user).
-        order('name')
+      course.modules_visible_to(current_user)
+            .order("name")
     end
 
     field :users_connection, UserType.connection_type, null: true do
-      argument :user_ids, [ID], <<~DOC,
+      argument :user_ids, [ID], <<~MD,
         Only include users with the given ids.
 
         **This field is deprecated, use `filter: {userIds}` instead.**
-        DOC
-        prepare: GraphQLHelpers.relay_or_legacy_ids_prepare_func("User"),
-        required: false
+      MD
+               prepare: GraphQLHelpers.relay_or_legacy_ids_prepare_func("User"),
+               required: false
 
       argument :filter, CourseUsersFilterInputType, required: false
     end
@@ -157,21 +157,25 @@ module Types
 
       user_ids = filter[:user_ids] || user_ids
       if user_ids.present?
-        scope = scope.where(users: {id: user_ids})
+        scope = scope.where(users: { id: user_ids })
       end
 
       scope
     end
 
-    field :enrollments_connection, EnrollmentType.connection_type, null: true
-    def enrollments_connection
+    field :enrollments_connection, EnrollmentType.connection_type, null: true do
+      argument :filter, EnrollmentFilterInputType, required: false
+    end
+    def enrollments_connection(filter: {})
       return nil unless course.grants_any_right?(
         current_user, session,
         :read_roster, :view_all_grades, :manage_grades
       )
 
-      course.apply_enrollment_visibility(course.all_enrollments,
-                                         current_user).active
+      scope = course.apply_enrollment_visibility(course.all_enrollments, current_user).active
+      scope = scope.where(associated_user_id: filter[:associated_user_ids]) if filter[:associated_user_ids].present?
+      scope = scope.where(type: filter[:types]) if filter[:types].present?
+      scope
     end
 
     field :grading_periods_connection, GradingPeriodType.connection_type, null: true
@@ -183,20 +187,20 @@ module Types
       description "all the submissions for assignments in this course"
 
       argument :student_ids, [ID], "Only return submissions for the given students.",
-        prepare: GraphQLHelpers.relay_or_legacy_ids_prepare_func("User"),
-        required: false
+               prepare: GraphQLHelpers.relay_or_legacy_ids_prepare_func("User"),
+               required: false
       argument :order_by, [SubmissionOrderInputType], required: false
       argument :filter, SubmissionFilterInputType, required: false
     end
     def submissions_connection(student_ids: nil, order_by: [], filter: {})
-      if course.grants_any_right?(current_user, session, :manage_grades, :view_all_grades)
-        # TODO: make a preloader for this???
-        allowed_user_ids = course.apply_enrollment_visibility(course.all_student_enrollments, current_user).pluck(:user_id)
-      elsif course.grants_right?(current_user, session, :read_grades)
-        allowed_user_ids = [current_user.id]
-      else
-        allowed_user_ids = []
-      end
+      allowed_user_ids = if course.grants_any_right?(current_user, session, :manage_grades, :view_all_grades)
+                           # TODO: make a preloader for this???
+                           course.apply_enrollment_visibility(course.all_student_enrollments, current_user).pluck(:user_id)
+                         elsif course.grants_right?(current_user, session, :read_grades)
+                           [current_user.id]
+                         else
+                           []
+                         end
 
       if student_ids.present?
         allowed_user_ids &= student_ids.map(&:to_i)
@@ -216,11 +220,14 @@ module Types
       if filter[:graded_since]
         submissions = submissions.where("graded_at > ?", filter[:graded_since])
       end
+      if filter[:updated_since]
+        submissions = submissions.where("submissions.updated_at > ?", filter[:updated_since])
+      end
 
-      (order_by || []).each { |order|
-        direction = order[:direction] == 'descending' ? "DESC NULLS LAST" : "ASC"
+      (order_by || []).each do |order|
+        direction = order[:direction] == "descending" ? "DESC NULLS LAST" : "ASC"
         submissions = submissions.order("#{order[:field]} #{direction}")
-      }
+      end
 
       submissions
     end
@@ -230,16 +237,16 @@ module Types
       # TODO: share this with accounts when groups are added there
       if course.grants_right?(current_user, session, :read_roster)
         course.groups.active
-          .order(GroupCategory::Bookmarker.order_by, Group::Bookmarker.order_by)
-          .eager_load(:group_category)
+              .order(GroupCategory::Bookmarker.order_by, Group::Bookmarker.order_by)
+              .eager_load(:group_category)
       else
         nil
       end
     end
 
-    field :group_sets_connection, GroupSetType.connection_type, <<~DOC, null: true
+    field :group_sets_connection, GroupSetType.connection_type, <<~MD, null: true
       Project group sets for this course.
-    DOC
+    MD
     def group_sets_connection
       if course.grants_any_right?(current_user, :manage_groups, *RoleOverride::GRANULAR_MANAGE_GROUPS_PERMISSIONS)
         course.group_categories.where(role: nil)
@@ -250,7 +257,7 @@ module Types
       argument :filter, ExternalToolFilterInputType, required: false, default_value: {}
     end
     def external_tools_connection(filter:)
-      scope = ContextExternalTool.all_tools_for(course, {placements: filter.placement})
+      scope = ContextExternalTool.all_tools_for(course, { placements: filter.placement })
       filter.state.nil? ? scope : scope.where(workflow_state: filter.state)
     end
 
@@ -260,8 +267,8 @@ module Types
     end
 
     field :permissions, CoursePermissionsType,
-      "returns permission information for the current user in this course",
-      null: true
+          "returns permission information for the current user in this course",
+          null: true
     def permissions
       Loaders::PermissionsLoader.for(
         course,
@@ -272,23 +279,25 @@ module Types
     field :post_policy, PostPolicyType, "A course-specific post policy", null: true
     def post_policy
       return nil unless course.grants_right?(current_user, :manage_grades)
+
       load_association(:default_post_policy)
     end
 
     field :assignment_post_policies, PostPolicyType.connection_type,
-      <<~DOC,
-        PostPolicies for assignments within a course
-      DOC
-      null: true
+          <<~MD,
+            PostPolicies for assignments within a course
+          MD
+          null: true
     def assignment_post_policies
       return nil unless course.grants_right?(current_user, :manage_grades)
+
       course.assignment_post_policies
     end
 
-    field :image_url, UrlType, <<~DOC, null: true
+    field :image_url, UrlType, <<~MD, null: true
       Returns a URL for the course image (this is the image used on dashboard
       course cards)
-    DOC
+    MD
     def image_url
       if course.image_url.present?
         course.image_url
@@ -297,9 +306,9 @@ module Types
           # if `course.image` was a proper AR association, we wouldn't have to
           # do this shard-id stuff
           course.shard.global_id_for(Integer(course.image_id))
-        ).then { |attachment|
+        ).then do |attachment|
           attachment&.public_download_url(1.week)
-        }
+        end
       end
     end
 

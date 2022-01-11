@@ -43,7 +43,7 @@ class Quizzes::QuizParticipant
   #
   # @return [QuizParticipant]
   #   Participant instance ready for use by Quiz Services.
-  def initialize(user, user_code, access_code=nil, ip_address=nil, token=nil)
+  def initialize(user, user_code, access_code = nil, ip_address = nil, token = nil)
     self.user = user
     self.user_code = user_code
     self.access_code = access_code
@@ -59,6 +59,6 @@ class Quizzes::QuizParticipant
   # Note that this does not actually take the Quiz's public-participation status
   # into account, only the fact that the participant is authentic or not.
   def anonymous?
-    self.user.nil? && self.user_code.present?
+    user.nil? && user_code.present?
   end
 end

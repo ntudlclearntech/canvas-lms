@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU Affero General Public License along
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 #
-require 'active_support/core_ext/module/delegation'
+require "active_support/core_ext/module/delegation"
 
 module EventStream::IndexStrategy
   class Cassandra
@@ -27,13 +27,8 @@ module EventStream::IndexStrategy
       @index = index_obj
     end
 
-    def event_stream
-      @index.event_stream
-    end
-
-    def database
-      event_stream.database
-    end
+    delegate :event_stream, to: :index
+    delegate :database, to: :event_stream
 
     def bucket_for_time(time)
       time.to_i - (time.to_i % index.bucket_size)
@@ -49,13 +44,14 @@ module EventStream::IndexStrategy
     def insert(record, key)
       ttl_seconds = event_stream.ttl_seconds(record.created_at)
       return if ttl_seconds < 0
+
       bucket, ordered_id = bookmark_for(record)
       key = create_key(bucket, key)
       database.update(insert_cql, key, ordered_id, record.id, ttl_seconds)
     end
 
     def create_key(bucket, key)
-      [*key, bucket].join('/')
+      [*key, bucket].join("/")
     end
 
     def select_cql
@@ -76,7 +72,7 @@ module EventStream::IndexStrategy
       ids_for_key(key, options)
     end
 
-    def for_key(key, options={})
+    def for_key(key, options = {})
       shard = EventStream.current_shard
       bookmarker = EventStream::IndexStrategy::Cassandra::Bookmarker.new(self)
       BookmarkedCollection.build(bookmarker) do |pager|
@@ -90,7 +86,7 @@ module EventStream::IndexStrategy
     # for each id.  Mostly for use in bulk-scan
     # operations like transferring all data from
     # one store to another.
-    def ids_for_key(key, options={})
+    def ids_for_key(key, options = {})
       shard = EventStream.current_shard
       bookmarker = EventStream::IndexStrategy::Cassandra::Bookmarker.new(self)
       BookmarkedCollection.build(bookmarker) do |pager|
@@ -107,7 +103,7 @@ module EventStream::IndexStrategy
         if item.is_a?(@cass_index.event_stream.record_type)
           @cass_index.bookmark_for(item)
         else
-          [item['bucket'], item['ordered_id']]
+          [item["bucket"], item["ordered_id"]]
         end
       end
 
@@ -163,7 +159,7 @@ module EventStream::IndexStrategy
           if pager.size == pager.per_page
             pager.has_more!
           else
-            pager << row.to_hash.merge('bucket' => bucket)
+            pager << row.to_hash.merge("bucket" => bucket)
           end
         end
         ordered_id = nil

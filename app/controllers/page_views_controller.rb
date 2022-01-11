@@ -156,12 +156,12 @@
 #   }
 
 class PageViewsController < ApplicationController
-  before_action :require_user, :only => [:index]
+  before_action :require_user, only: [:index]
 
   include Api::V1::PageView
 
   def update
-    render :json => {:ok => true}
+    render json: { ok: true }
     # page view update happens in log_page_view after_action
   end
 
@@ -182,19 +182,19 @@ class PageViewsController < ApplicationController
     return unless authorized_action(@user, @current_user, :view_statistics)
 
     date_options = {}
-    url_options = {user_id: @user}
-    if start_time = CanvasTime.try_parse(params[:start_time])
+    url_options = { user_id: @user }
+    if (start_time = CanvasTime.try_parse(params[:start_time]))
       date_options[:oldest] = start_time
       url_options[:start_time] = params[:start_time]
     end
-    if end_time = CanvasTime.try_parse(params[:end_time])
+    if (end_time = CanvasTime.try_parse(params[:end_time]))
       date_options[:newest] = end_time
       url_options[:end_time] = params[:end_time]
     end
     if start_time && end_time && end_time < start_time
       return respond_to do |format|
-        format.json { render json: { error: t('end_time must be after start_time') }, status: 400 }
-        format.any { render plain: t('end_time must be after start_time'), status: 400 }
+        format.json { render json: { error: t("end_time must be after start_time") }, status: :bad_request }
+        format.any { render plain: t("end_time must be after start_time"), status: :bad_request }
       end
     end
 
@@ -204,18 +204,18 @@ class PageViewsController < ApplicationController
       format.json do
         page_views = @user.page_views(date_options)
         url = api_v1_user_page_views_url(url_options)
-        @page_views = Api.paginate(page_views, self, url, :total_entries => nil)
-        render :json => page_views_json(@page_views, @current_user, session)
+        @page_views = Api.paginate(page_views, self, url, total_entries: nil)
+        render json: page_views_json(@page_views, @current_user, session)
       end
       format.csv do
         cancel_cache_buster
 
-        csv = PageView::CsvReport.new(@user, @current_user, date_options).generate
+        csv = PageView::CSVReport.new(@user, @current_user, date_options).generate
 
         options = {
-          type: 'text/csv',
-          filename: t(:download_filename, 'Pageviews For %{user}',
-          user: @user.name.to_s.gsub(/ /, '_')) + '.csv', disposition: 'attachment'
+          type: "text/csv",
+          filename: t(:download_filename, "Pageviews For %{user}",
+                      user: @user.name.to_s.tr(" ", "_")) + ".csv", disposition: "attachment"
         }
         send_data(csv, options)
       end

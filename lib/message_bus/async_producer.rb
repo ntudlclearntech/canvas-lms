@@ -39,14 +39,13 @@ module MessageBus
   # A catastrophic machine failure could dump events still in
   # the memory queue.
   class AsyncProducer
-
     def initialize(start_thread: true)
       Bundler.require(:pulsar)
       @queue = Queue.new
       @logger = MessageBus.logger
       @interval = MessageBus.worker_process_interval
 
-      self.start! if start_thread
+      start! if start_thread
     end
 
     def push(namespace, topic_name, message)
@@ -54,7 +53,14 @@ module MessageBus
         raise ::MessageBus::MemoryQueueFullError, "Pulsar throughput constrained, queue full"
       end
 
-      @queue << [ namespace, topic_name, message, Shard.current.id ]
+      # although it's possible for Shard.current to take a db connection
+      # this action should be happening either inside the parent thread directly
+      # (in which case we're fine to checkout a connection for that thread)
+      # or as an error handler during processing, in which case we should already have
+      # a leased connection within this thread on the default shard and be inside an executor context.
+      # yes, that means multiple threads may address this data structure,
+      # but ruby queues are threadsafe (https://ruby-doc.org/core-2.5.0/Queue.html).
+      @queue << [namespace, topic_name, message, Shard.current.id]
     end
 
     def queue_depth
@@ -63,11 +69,16 @@ module MessageBus
 
     def stop!
       @queue << :stop
-      @thread.join
+      # the background thread may block on autoloading constants
+      # in isolated dev/test cases in which case we need to not deadlock here.
+      # https://guides.rubyonrails.org/threading_and_code_execution.html#permit-concurrent-loads
+      ActiveSupport::Dependencies.interlock.permit_concurrent_loads do
+        @thread.join
+      end
     end
 
     def start!
-      @thread = Thread.new { self.run_thread }
+      @thread = Thread.new { run_thread }
     end
 
     def run_thread
@@ -76,7 +87,7 @@ module MessageBus
       loop do
         # We let push requests build up every interval, and then coalesce.
         # This gives us some cheap throttling.
-        sleep @interval
+        sleep @interval # rubocop:disable Lint/NoSleep
 
         # Block until an item shows up, and attempt
         # to process it.
@@ -107,18 +118,28 @@ module MessageBus
         end
 
         break if stop
+
+        # make sure we release any resources before
+        # the thread sleeps
+        MessageBus.on_work_unit_end&.call
       end
     end
 
     def process_one_queue_item
       work_tuple = @queue.pop
       return :stop if work_tuple == :stop
+
       status = :none
       namespace, topic_name, message, shard_id = *work_tuple
-      Shard.find(shard_id).activate do
-        begin
+      # ensure any autoloading or other thread-aware operations
+      # in our framework invocations have the right hooks into the
+      # thread context.  If we make calls to rails framework items
+      # outside this block, the scope of the wrapping needs to be
+      # expanded. https://guides.rubyonrails.org/threading_and_code_execution.html#wrapping-application-code
+      Rails.application.executor.wrap do
+        Shard.lookup(shard_id).activate do
           status = produce_message(namespace, topic_name, message)
-        rescue StandardError => e
+        rescue => e
           # if we errored, we didn't actually process the message
           # put it back on the queue to try to get to it later.
           # Does this screw up ordering?  yes, absolutely, but ruby queues are one-way.

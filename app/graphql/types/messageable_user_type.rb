@@ -20,7 +20,7 @@
 
 module Types
   class MessageableUserType < ApplicationObjectType
-    graphql_name 'MessageableUser'
+    graphql_name "MessageableUser"
 
     implements GraphQL::Types::Relay::Node
     global_id_field :id  # this is a relay-style "global" identifier
@@ -31,12 +31,12 @@ module Types
     field :common_courses_connection, Types::EnrollmentType.connection_type, null: true
     def common_courses_connection
       Promise.all([
-        load_association(:enrollments).then do |enrollments|
-          enrollments.each do |enrollment|
-            Loaders::AssociationLoader.for(Enrollment, :course).load(enrollment)
-          end
-        end
-      ]).then { object.enrollments.where(course_id: object.common_courses.keys) }
+                    load_association(:enrollments).then do |enrollments|
+                      enrollments.each do |enrollment|
+                        Loaders::AssociationLoader.for(Enrollment, :course).load(enrollment)
+                      end
+                    end
+                  ]).then { object.enrollments.where(course_id: object.common_courses.keys) }
     end
 
     field :common_groups_connection, Types::GroupType.connection_type, null: true

@@ -19,13 +19,12 @@
 #
 
 class PageView
-  class CsvReport
-
+  class CSVReport
     attr_reader :user, :limit
 
     def initialize(user, viewer = nil, options = {})
       @user = user
-      @limit = Setting.get('page_views_csv_export_rows', '300').to_i
+      @limit = Setting.get("page_views_csv_export_rows", "300").to_i
       @options = {}
       @options[:viewer] = viewer if viewer
       @options.merge!(options)
@@ -47,6 +46,7 @@ class PageView
         while accum.length < limit
           accum.concat(batch)
           break unless batch.next_page
+
           batch = page_views(batch.next_page)
         end
         accum.take(limit)

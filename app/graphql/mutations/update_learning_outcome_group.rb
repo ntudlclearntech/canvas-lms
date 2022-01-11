@@ -19,9 +19,9 @@
 #
 
 class Mutations::UpdateLearningOutcomeGroup < Mutations::BaseMutation
-  graphql_name 'UpdateLearningOutcomeGroup'
+  graphql_name "UpdateLearningOutcomeGroup"
 
-  argument :id, ID, required: true, prepare: GraphQLHelpers.relay_or_legacy_id_prepare_func('LearningOutcomeGroup')
+  argument :id, ID, required: true, prepare: GraphQLHelpers.relay_or_legacy_id_prepare_func("LearningOutcomeGroup")
   argument :title, String, required: false
   argument :description, String, required: false
   argument :vendor_guid, String, required: false
@@ -39,7 +39,7 @@ class Mutations::UpdateLearningOutcomeGroup < Mutations::BaseMutation
         new_parent_group = get_parent_group(input[:parent_outcome_group_id])
         raise GraphQL::ExecutionError, I18n.t("Could not update parent group") unless new_parent_group.adopt_outcome_group(@outcome_group)
       end
-      {learning_outcome_group: @outcome_group}
+      { learning_outcome_group: @outcome_group }
     else
       errors_for(@outcome_group)
     end

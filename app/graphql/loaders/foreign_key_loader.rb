@@ -30,11 +30,11 @@
 #       # user ~ course.enrollments.find_by(user_id: 1)
 #     end
 class Loaders::ForeignKeyLoader < GraphQL::Batch::Loader
-
   # +scope+ is any active record scope
   #
   # +fk+ is the column you want to load by
   def initialize(scope, fk)
+    super()
     @scope = scope
     @column = fk
   end
@@ -47,15 +47,15 @@ class Loaders::ForeignKeyLoader < GraphQL::Batch::Loader
 
   # :nodoc:
   def perform(ids)
-    Shard.partition_by_shard(ids) { |sharded_ids|
-      @scope.where(@column => sharded_ids).
-        group_by { |o| o.send(@column).to_s }.
-        each { |id, os|
-          fulfill(Shard.global_id_for(id), os)
-        }
-    }
-    ids.each { |id|
+    Shard.partition_by_shard(ids) do |sharded_ids|
+      @scope.where(@column => sharded_ids)
+            .group_by { |o| o.send(@column).to_s }
+            .each do |id, os|
+        fulfill(Shard.global_id_for(id), os)
+      end
+    end
+    ids.each do |id|
       fulfill(id, nil) unless fulfilled?(id)
-    }
+    end
   end
 end

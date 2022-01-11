@@ -19,16 +19,16 @@
 #
 
 module Factories
-  def external_feed_model(opts={}, do_save=true)
+  def external_feed_model(opts = {}, do_save = true)
     factory_with_protected_attributes(ExternalFeed, valid_external_feed_attributes.merge(opts), do_save)
   end
 
   def valid_external_feed_attributes
     {
-      :context => @course || Account.default.courses.create!,
-      :title => "some feed",
-      :url => "http://www.nowhere.com",
-      :created_at => Time.parse("Jan 1 2000"),
+      context: @course || Account.default.courses.create!,
+      title: "some feed",
+      url: "http://www.nowhere.com",
+      created_at: Time.parse("Jan 1 2000"),
     }
   end
 end

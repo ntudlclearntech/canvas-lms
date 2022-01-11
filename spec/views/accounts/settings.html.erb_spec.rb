@@ -18,8 +18,7 @@
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-require File.expand_path(File.dirname(__FILE__) + '/../../spec_helper')
-require File.expand_path(File.dirname(__FILE__) + '/../views_helper')
+require_relative "../views_helper"
 
 describe "accounts/settings.html.erb" do
   before do
@@ -41,7 +40,7 @@ describe "accounts/settings.html.erb" do
       assign(:announcements, AccountNotification.none.paginate)
     end
 
-    it "should show to sis admin" do
+    it "shows to sis admin" do
       admin = account_admin_user
       view_context(@account, admin)
       assign(:current_user, admin)
@@ -49,8 +48,8 @@ describe "accounts/settings.html.erb" do
       expect(response).to have_tag("input#account_sis_source_id")
     end
 
-    it "should not show to non-sis admin" do
-      admin = account_admin_user_with_role_changes(:role_changes => {'manage_sis' => false})
+    it "does not show to non-sis admin" do
+      admin = account_admin_user_with_role_changes(role_changes: { "manage_sis" => false })
       view_context(@account, admin)
       assign(:current_user, admin)
       render
@@ -71,14 +70,14 @@ describe "accounts/settings.html.erb" do
       view_context(@account, admin)
     end
 
-    it "should show by default" do
+    it "shows by default" do
       render
       expect(response).to have_tag("input#account_settings_open_registration")
       expect(response).not_to have_tag("div#open_registration_delegated_warning_dialog")
     end
 
-    it "should show warning dialog when a delegated auth config is around" do
-      @account.authentication_providers.create!(:auth_type => 'cas')
+    it "shows warning dialog when a delegated auth config is around" do
+      @account.authentication_providers.create!(auth_type: "cas")
       @account.authentication_providers.first.move_to_bottom
       render
       expect(response).to have_tag("input#account_settings_open_registration")
@@ -96,7 +95,7 @@ describe "accounts/settings.html.erb" do
       assign(:announcements, AccountNotification.none.paginate)
     end
 
-    it "should show settings that can only be managed by site admins" do
+    it "shows settings that can only be managed by site admins" do
       admin = site_admin_user
       view_context(@account, admin)
       render
@@ -105,7 +104,7 @@ describe "accounts/settings.html.erb" do
       expect(response).to have_tag("input#account_settings_enable_profiles")
     end
 
-    it "it should not show settings to regular admin user" do
+    it "does not show settings to regular admin user" do
       admin = account_admin_user
       view_context(@account, admin)
       render
@@ -121,7 +120,6 @@ describe "accounts/settings.html.erb" do
         assign(:account_users, [])
         assign(:associated_courses_count, 0)
         assign(:announcements, AccountNotification.none.paginate)
-
 
         @account = account
         assign(:account, @account)
@@ -151,6 +149,70 @@ describe "accounts/settings.html.erb" do
     end
   end
 
+  describe "Admin setting allow_gradebook_show_first_last_names" do
+    context "site admin user" do
+      let_once(:account) { Account.site_admin }
+      let_once(:admin) { account_admin_user(account: account) }
+
+      before do
+        view_context(account, admin)
+        assign(:account, account)
+        assign(:context, account)
+        assign(:root_account, account)
+        assign(:current_user, admin)
+        assign(:announcements, AccountNotification.none.paginate)
+      end
+
+      it "does not show the setting when the gradebook_show_first_last_names feature is enabled" do
+        Account.site_admin.enable_feature!(:gradebook_show_first_last_names)
+        render
+
+        expect(response).to_not have_tag("input#account_settings_allow_gradebook_show_first_last_names")
+      end
+
+      it "does not show the setting when the gradebook_show_first_last_names feature is disabled" do
+        Account.site_admin.disable_feature!(:gradebook_show_first_last_names)
+        render
+
+        expect(response).to_not have_tag("input#account_settings_allow_gradebook_show_first_last_names")
+      end
+    end
+
+    context "account admin user" do
+      let_once(:account) { Account.default }
+      let_once(:admin) { account_admin_user(account: account) }
+
+      before do
+        view_context(account, admin)
+        assign(:account, account)
+        assign(:context, account)
+        assign(:root_account, account)
+        assign(:current_user, admin)
+        assign(:announcements, AccountNotification.none.paginate)
+      end
+
+      it "shows the setting check box when the gradebook_show_first_last_names feature is enabled" do
+        Account.site_admin.enable_feature!(:gradebook_show_first_last_names)
+        render
+
+        expect(response).to have_tag("input#account_settings_allow_gradebook_show_first_last_names")
+      end
+
+      it "does not show the setting by default" do
+        render
+
+        expect(response).to_not have_tag("input#account_settings_allow_gradebook_show_first_last_names")
+      end
+
+      it "does not show the setting when the gradebook_show_first_last_names feature is disabled" do
+        Account.site_admin.disable_feature!(:gradebook_show_first_last_names)
+        render
+
+        expect(response).to_not have_tag("input#account_settings_allow_gradebook_show_first_last_names")
+      end
+    end
+  end
+
   describe "SIS Integration Settings" do
     before do
       assign(:account_users, [])
@@ -158,9 +220,9 @@ describe "accounts/settings.html.erb" do
       assign(:announcements, AccountNotification.none.paginate)
     end
 
-    def do_render(user,account=nil)
-      account = @account unless account
-      view_context(account,user)
+    def do_render(user, account = nil)
+      account ||= @account
+      view_context(account, user)
       render
     end
 
@@ -198,9 +260,10 @@ describe "accounts/settings.html.erb" do
 
     context "regular admin user" do
       let(:current_user) { account_admin_user }
+
       before do
         @account = Account.default
-        @subaccount = @account.sub_accounts.create!(:name => 'sub-account')
+        @subaccount = @account.sub_accounts.create!(name: "sub-account")
 
         assign(:account, @account)
         assign(:root_account, @account)
@@ -265,11 +328,11 @@ describe "accounts/settings.html.erb" do
 
           context "for root account" do
             before do
-              allow(@account).to receive(:sis_syncing).and_return({value: true, locked: true})
+              allow(@account).to receive(:sis_syncing).and_return({ value: true, locked: true })
               do_render(current_user)
             end
 
-            it "should enable all controls under SIS syncing" do
+            it "enables all controls under SIS syncing" do
               expect(response).not_to have_tag("#{sis_syncing}[disabled]")
               expect(response).not_to have_tag("#{sis_syncing_locked}[disabled]")
               expect(response).not_to have_tag("#{default_grade_export}[disabled]")
@@ -283,11 +346,11 @@ describe "accounts/settings.html.erb" do
             context "locked" do
               before do
                 @account.enable_feature!(:post_grades)
-                allow(@account).to receive(:sis_syncing).and_return({value: true, locked: true, inherited: true })
+                allow(@account).to receive(:sis_syncing).and_return({ value: true, locked: true, inherited: true })
                 do_render(current_user, @account)
               end
 
-              it "should disable all controls under SIS syncing" do
+              it "disables all controls under SIS syncing" do
                 expect(response).to have_tag("#{sis_syncing}[disabled]")
                 expect(response).to have_tag("#{sis_syncing_locked}[disabled]")
                 expect(response).to have_tag("#{default_grade_export}[disabled]")
@@ -298,11 +361,11 @@ describe "accounts/settings.html.erb" do
 
             context "not locked" do
               before do
-                allow(@account).to receive(:sis_syncing).and_return({value: true, locked: false, inherited: true })
+                allow(@account).to receive(:sis_syncing).and_return({ value: true, locked: false, inherited: true })
                 do_render(current_user)
               end
 
-              it "should enable all controls under SIS syncing" do
+              it "enables all controls under SIS syncing" do
                 expect(response).not_to have_tag("#{sis_syncing}[disabled]")
                 expect(response).not_to have_tag("#{sis_syncing_locked}[disabled]")
                 expect(response).not_to have_tag("#{default_grade_export}[disabled]")
@@ -333,28 +396,28 @@ describe "accounts/settings.html.erb" do
         assign(:current_user, admin)
       end
 
-      it "should show quota options" do
+      it "shows quota options" do
         render
         expect(@controller.js_env).to include :ACCOUNT
-        expect(@controller.js_env[:ACCOUNT]).to include 'default_storage_quota_mb'
-        expect(response).to have_tag '#tab-quotas-link'
-        expect(response).to have_tag '#tab-quotas'
+        expect(@controller.js_env[:ACCOUNT]).to include "default_storage_quota_mb"
+        expect(response).to have_tag "#tab-quotas-link"
+        expect(response).to have_tag "#tab-quotas"
       end
     end
 
     context "without :manage_storage_quotas" do
       before do
-        admin = account_admin_user_with_role_changes(:account => @account, :role_changes => {'manage_storage_quotas' => false})
+        admin = account_admin_user_with_role_changes(account: @account, role_changes: { "manage_storage_quotas" => false })
         view_context(@account, admin)
         assign(:current_user, admin)
       end
 
-      it "should not show quota options" do
+      it "does not show quota options" do
         render
         expect(@controller.js_env).to include :ACCOUNT
-        expect(@controller.js_env[:ACCOUNT]).not_to include 'default_storage_quota_mb'
-        expect(response).not_to have_tag '#tab-quotas-link'
-        expect(response).not_to have_tag '#tab-quotas'
+        expect(@controller.js_env[:ACCOUNT]).not_to include "default_storage_quota_mb"
+        expect(response).not_to have_tag "#tab-quotas-link"
+        expect(response).not_to have_tag "#tab-quotas"
       end
     end
   end
@@ -370,38 +433,39 @@ describe "accounts/settings.html.erb" do
     end
 
     context "with :read_reports" do
-      it "should show reports tab link" do
+      it "shows reports tab link" do
         admin = account_admin_user
         view_context(@account, admin)
         assign(:current_user, admin)
         render
-        expect(response).to have_tag '#tab-reports-link'
+        expect(response).to have_tag "#tab-reports-link"
       end
     end
 
     context "without :read_reports" do
-      it "should not show reports tab link" do
-        admin = account_admin_user_with_role_changes(:account => @account, :role_changes => {'read_reports' => false})
+      it "does not show reports tab link" do
+        admin = account_admin_user_with_role_changes(account: @account, role_changes: { "read_reports" => false })
         view_context(@account, admin)
         assign(:current_user, admin)
         render
-        expect(response).not_to have_tag '#tab-reports-link'
+        expect(response).not_to have_tag "#tab-reports-link"
       end
     end
   end
 
   context "admins" do
-    it "should not show add admin button if don't have permission to any roles" do
-      role = custom_account_role('CustomAdmin', :account => Account.site_admin)
+    it "does not show add admin button if don't have permission to any roles" do
+      role = custom_account_role("CustomAdmin", account: Account.site_admin)
       account_admin_user_with_role_changes(
-        :account => Account.site_admin,
-        :role => role,
-        :role_changes => {manage_account_memberships: true})
+        account: Account.site_admin,
+        role: role,
+        role_changes: { manage_account_memberships: true }
+      )
       view_context(Account.default, @user)
       assign(:account, Account.default)
       assign(:announcements, AccountNotification.none.paginate)
       render
-      expect(response).not_to have_tag '#enroll_users_form'
+      expect(response).not_to have_tag "#enroll_users_form"
     end
   end
 
@@ -415,7 +479,7 @@ describe "accounts/settings.html.erb" do
       assign(:announcements, AccountNotification.none.paginate)
     end
 
-    it "should show sub account theme editor option for non siteadmin admins" do
+    it "shows sub account theme editor option for non siteadmin admins" do
       admin = account_admin_user
       view_context(@account, admin)
       assign(:current_user, admin)
@@ -428,7 +492,7 @@ describe "accounts/settings.html.erb" do
     let(:account) { Account.default }
     let(:admin) { account_admin_user }
 
-    before(:each) do
+    before do
       assign(:context, account)
       assign(:account, account)
       assign(:root_account, account)
@@ -442,18 +506,18 @@ describe "accounts/settings.html.erb" do
 
     def expect_threshold_to_be(value)
       expect(response).to have_tag(
-        "select#account_settings_smart_alerts_threshold" +
+        "select#account_settings_smart_alerts_threshold" \
         "  option[value=\"#{value}\"][selected]"
       )
     end
 
-    it "should show a threshold control" do
+    it "shows a threshold control" do
       account.enable_feature!(:smart_alerts)
 
       render
 
-      expect(response).to include('Smart Assignment Alerts')
-      expect(response).to include('Hours (from due date) before students are alerted')
+      expect(response).to include("Smart Assignment Alerts")
+      expect(response).to include("Hours (from due date) before students are alerted")
     end
 
     it "does not show if the feature flag is turned off" do
@@ -461,7 +525,7 @@ describe "accounts/settings.html.erb" do
 
       render
 
-      expect(response).not_to include('Smart Assignment Alerts')
+      expect(response).not_to include("Smart Assignment Alerts")
     end
 
     it "defaults to a 36 hour threshold" do
@@ -483,16 +547,16 @@ describe "accounts/settings.html.erb" do
     end
   end
 
-  context 'privacy' do
+  context "privacy" do
     let(:account) { account_model }
     let(:account_admin) { account_admin_user(account: account) }
     let(:dom) { Nokogiri::HTML5(response) }
-    let(:enable_fullstory) { dom.at_css('#account_settings_enable_fullstory') }
-    let(:enable_google_analytics) { dom.at_css('#account_settings_enable_google_analytics') }
+    let(:enable_fullstory) { dom.at_css("#account_settings_enable_fullstory") }
+    let(:enable_google_analytics) { dom.at_css("#account_settings_enable_google_analytics") }
     let(:site_admin) { site_admin_user }
     let(:sub_account) { account_model(root_account: account) }
 
-    def render_for(target_account, target_user, &block)
+    def render_for(target_account, target_user)
       assign(:context, target_account)
       assign(:account, target_account)
       assign(:root_account, target_account)
@@ -506,31 +570,31 @@ describe "accounts/settings.html.erb" do
       yield if block_given?
     end
 
-    it 'is not available to account admins' do
+    it "is not available to account admins" do
       render_for(account, account_admin) do
-        expect(response).not_to have_tag('#tab-privacy')
+        expect(response).not_to have_tag("#tab-privacy")
       end
     end
 
-    it 'is not available for the site_admin account' do
+    it "is not available for the site_admin account" do
       render_for(Account.site_admin, site_admin) do
-        expect(response).not_to have_tag('#tab-privacy')
+        expect(response).not_to have_tag("#tab-privacy")
       end
     end
 
-    it 'is not available for sub accounts' do
+    it "is not available for sub accounts" do
       render_for(sub_account, site_admin) do
-        expect(response).not_to have_tag('#tab-privacy')
+        expect(response).not_to have_tag("#tab-privacy")
       end
     end
 
-    it 'opts in to Google Analytics by default' do
+    it "opts in to Google Analytics by default" do
       render_for(account, site_admin) do
         expect(enable_google_analytics).to be_checked
       end
     end
 
-    it 'allows opting out of Google Analytics' do
+    it "allows opting out of Google Analytics" do
       account.settings[:enable_google_analytics] = false
       account.save!
 
@@ -539,13 +603,13 @@ describe "accounts/settings.html.erb" do
       end
     end
 
-    it 'opts in to FullStory by default' do
+    it "opts in to FullStory by default" do
       render_for(account, site_admin) do
         expect(enable_fullstory).to be_checked
       end
     end
 
-    it 'allows opting out of FullStory' do
+    it "allows opting out of FullStory" do
       account.settings[:enable_fullstory] = false
       account.save!
 
@@ -555,7 +619,7 @@ describe "accounts/settings.html.erb" do
     end
   end
 
-  context 'course templates' do
+  context "course templates" do
     let_once(:account) { Account.default }
     let_once(:admin) { account_admin_user(account: account) }
 
@@ -574,8 +638,8 @@ describe "accounts/settings.html.erb" do
     it "shows no template only for root account" do
       render
       doc = Nokogiri::HTML5(response.body)
-      select = doc.at_css('#account_course_template_id')
-      expect(select.css('option').map { |o| o['value'] }).to eq [""]
+      select = doc.at_css("#account_course_template_id")
+      expect(select.css("option").map { |o| o["value"] }).to eq [""]
     end
 
     it "shows no template and inherit for sub accounts" do
@@ -586,8 +650,8 @@ describe "accounts/settings.html.erb" do
 
       render
       doc = Nokogiri::HTML5(response.body)
-      select = doc.at_css('#account_course_template_id')
-      expect(select.css('option').map { |o| o['value'] }).to eq ["", "0"]
+      select = doc.at_css("#account_course_template_id")
+      expect(select.css("option").map { |o| o["value"] }).to eq ["", "0"]
     end
 
     it "disables if you don't have permission" do
@@ -596,9 +660,9 @@ describe "accounts/settings.html.erb" do
 
       render
       doc = Nokogiri::HTML5(response.body)
-      select = doc.at_css('#account_course_template_id')
-      expect(select.css('option').map { |o| o['value'] }).to eq ["", c.id.to_s]
-      expect(select.css('option').map { |o| o['disabled'] }).to eq [nil, "disabled"]
+      select = doc.at_css("#account_course_template_id")
+      expect(select.css("option").map { |o| o["value"] }).to eq ["", c.id.to_s]
+      expect(select.css("option").map { |o| o["disabled"] }).to eq [nil, "disabled"]
     end
 
     it "disables if you don't have permission in a sub-account" do
@@ -613,9 +677,9 @@ describe "accounts/settings.html.erb" do
 
       render
       doc = Nokogiri::HTML5(response.body)
-      select = doc.at_css('#account_course_template_id')
-      expect(select.css('option').map { |o| o['value'] }).to eq ["", "0", c.id.to_s]
-      expect(select.css('option').map { |o| o['disabled'] }).to eq ["disabled", "disabled", "disabled"]
+      select = doc.at_css("#account_course_template_id")
+      expect(select.css("option").map { |o| o["value"] }).to eq ["", "0", c.id.to_s]
+      expect(select.css("option").map { |o| o["disabled"] }).to eq %w[disabled disabled disabled]
     end
   end
 end

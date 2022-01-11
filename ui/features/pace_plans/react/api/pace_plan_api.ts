@@ -16,9 +16,13 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import axios, {AxiosPromise} from '@canvas/axios'
+import {PacePlan, PlanContextTypes, Progress, WorkflowStates} from '../types'
+import doFetchApi from '@canvas/do-fetch-api-effect'
 
-import {PacePlan, PlanContextTypes, WorkflowStates, PublishOptions} from '../types'
+enum ApiMode {
+  PUBLISH,
+  COMPRESS
+}
 
 /* API helpers */
 
@@ -51,66 +55,90 @@ export const waitForActionCompletion = (actionInProgress: () => boolean, waitTim
 
 /* API methods */
 
-export const update = (pacePlan: PacePlan, extraSaveParams = {}): AxiosPromise => {
-  return axios.put(`/api/v1/courses/${pacePlan.course_id}/pace_plans/${pacePlan.id}`, {
-    ...extraSaveParams,
-    pace_plan: transformPacePlanForApi(pacePlan)
-  })
-}
+export const update = (pacePlan: PacePlan, extraSaveParams = {}) =>
+  doFetchApi<{pace_plan: PacePlan; progress: Progress}>({
+    path: `/api/v1/courses/${pacePlan.course_id}/pace_plans/${pacePlan.id}`,
+    method: 'PUT',
+    body: {
+      ...extraSaveParams,
+      pace_plan: transformPacePlanForApi(pacePlan)
+    }
+  }).then(({json}) => json)
 
-export const create = (pacePlan: PacePlan, extraSaveParams = {}): AxiosPromise => {
-  return axios.post(`/api/v1/courses/${pacePlan.course_id}/pace_plans`, {
-    ...extraSaveParams,
-    pace_plan: transformPacePlanForApi(pacePlan)
-  })
-}
+export const create = (pacePlan: PacePlan, extraSaveParams = {}) =>
+  doFetchApi<{pace_plan: PacePlan; progress: Progress}>({
+    path: `/api/v1/courses/${pacePlan.course_id}/pace_plans`,
+    method: 'POST',
+    body: {
+      ...extraSaveParams,
+      pace_plan: transformPacePlanForApi(pacePlan)
+    }
+  }).then(({json}) => json)
 
-export const publish = (
-  plan: PacePlan,
-  publishForOption: PublishOptions,
-  publishForSectionIds: Array<string>,
-  publishForEnrollmentIds: Array<string>
-): AxiosPromise => {
-  return axios.post(`/api/v1/courses/${plan.course_id}/pace_plans/publish`, {
-    context_type: plan.context_type,
-    context_id: plan.context_id,
-    publish_for_option: publishForOption,
-    publish_for_section_ids: publishForSectionIds,
-    publish_for_enrollment_ids: publishForEnrollmentIds
-  })
-}
+// This is now just a convenience function for creating/update depending on the
+// state of the plan
+export const publish = (plan: PacePlan) => (plan?.id ? update(plan) : create(plan))
 
-export const resetToLastPublished = (
-  contextType: PlanContextTypes,
+export const getPublishProgress = (progressId: string) =>
+  doFetchApi<Progress>({
+    path: `/api/v1/progress/${progressId}`
+  }).then(({json}) => json)
+
+export const resetToLastPublished = (contextType: PlanContextTypes, contextId: string) =>
+  doFetchApi<{pace_plan: PacePlan}>({
+    path: `/api/v1/pace_plans/reset_to_last_published`,
+    method: 'POST',
+    body: {
+      context_type: contextType,
+      context_id: contextId
+    }
+  }).then(({json}) => json?.pace_plan)
+
+export const load = (pacePlanId: string) =>
+  doFetchApi<PacePlan>({path: `/api/v1/pace_plans/${pacePlanId}`}).then(({json}) => json)
+
+export const getNewPacePlanFor = (
+  courseId: string,
+  context: PlanContextTypes,
   contextId: string
-): AxiosPromise => {
-  return axios.post(`/api/v1/pace_plans/reset_to_last_published`, {
-    context_type: contextType,
-    context_id: contextId
-  })
+) => {
+  let url = `/api/v1/courses/${courseId}/pace_plans/new`
+  if (context === 'Section') {
+    url = `/api/v1/courses/${courseId}/pace_plans/new?course_section_id=${contextId}`
+  } else if (context === 'Enrollment') {
+    url = `/api/v1/courses/${courseId}/pace_plans/new?enrollment_id=${contextId}`
+  }
+  return doFetchApi<{pace_plan: PacePlan}>({path: url}).then(({json}) => json?.pace_plan)
 }
 
-export const load = (pacePlanId: string) => {
-  return axios.get(`/api/v1/pace_plans/${pacePlanId}`)
-}
+export const republishAllPlansForCourse = (courseId: string) =>
+  doFetchApi({
+    path: `/api/v1/pace_plans/republish_all_plans`,
+    method: 'POST',
+    body: {course_id: courseId}
+  }).then(({json}) => json)
 
-export const getLatestDraftFor = (context: PlanContextTypes, contextId: string) => {
-  return axios.get(
-    `/api/v1/pace_plans/latest_draft_for?context_type=${context}&context_id=${contextId}`
-  )
-}
+export const republishAllPlans = () =>
+  doFetchApi({
+    path: `/api/v1/pace_plans/republish_all_plans`,
+    method: 'POST'
+  }).then(({json}) => json)
 
-export const republishAllPlansForCourse = (courseId: string) => {
-  return axios.post(`/api/v1/pace_plans/republish_all_plans`, {course_id: courseId})
-}
+export const relinkToParentPlan = (planId: string) =>
+  doFetchApi<{pace_plan: PacePlan}>({
+    path: `/api/v1/pace_plans/${planId}/relink_to_parent_plan`,
+    method: 'POST'
+  }).then(({json}) => json?.pace_plan)
 
-export const republishAllPlans = () => {
-  return axios.post(`/api/v1/pace_plans/republish_all_plans`)
-}
-
-export const relinkToParentPlan = (planId: string) => {
-  return axios.post(`/api/v1/pace_plans/${planId}/relink_to_parent_plan`)
-}
+export const compress = (pacePlan: PacePlan, extraSaveParams = {}) =>
+  doFetchApi<{pace_plan: PacePlan; progress: Progress}>({
+    path: `/api/v1/courses/${pacePlan.course_id}/pace_plans/compress_dates`,
+    method: 'POST',
+    body: {
+      ...extraSaveParams,
+      pace_plan: transformPacePlanForApi(pacePlan, ApiMode.COMPRESS)
+    }
+  }).then(({json}) => json)
 
 /* API transformers
  * functions and interfaces to transform the frontend formatted objects
@@ -127,18 +155,23 @@ interface ApiPacePlanModuleItemsAttributes {
   readonly module_item_id: string
 }
 
-interface ApiFormattedPacePlan {
+interface CompressApiFormattedPacePlan {
   readonly start_date?: string
   readonly end_date?: string
-  readonly workflow_state: WorkflowStates
   readonly exclude_weekends: boolean
+  readonly pace_plan_module_items_attributes: ApiPacePlanModuleItemsAttributes[]
+}
+interface PublishApiFormattedPacePlan extends CompressApiFormattedPacePlan {
+  readonly workflow_state: WorkflowStates
   readonly context_type: PlanContextTypes
   readonly context_id: string
   readonly hard_end_dates: boolean
-  readonly pace_plan_module_items_attributes: ApiPacePlanModuleItemsAttributes[]
 }
 
-const transformPacePlanForApi = (pacePlan: PacePlan): ApiFormattedPacePlan => {
+const transformPacePlanForApi = (
+  pacePlan: PacePlan,
+  mode: ApiMode = ApiMode.PUBLISH
+): PublishApiFormattedPacePlan | CompressApiFormattedPacePlan => {
   const pacePlanItems: ApiPacePlanModuleItemsAttributes[] = []
   pacePlan.modules.forEach(module => {
     module.items.forEach(item => {
@@ -150,16 +183,21 @@ const transformPacePlanForApi = (pacePlan: PacePlan): ApiFormattedPacePlan => {
     })
   })
 
-  const apiFormattedPacePlan: ApiFormattedPacePlan = {
-    start_date: pacePlan.start_date,
-    end_date: pacePlan.end_date,
-    workflow_state: pacePlan.workflow_state,
-    exclude_weekends: pacePlan.exclude_weekends,
-    context_type: pacePlan.context_type,
-    context_id: pacePlan.context_id,
-    hard_end_dates: !!pacePlan.hard_end_dates,
-    pace_plan_module_items_attributes: pacePlanItems
-  }
-
-  return apiFormattedPacePlan
+  return mode === ApiMode.COMPRESS
+    ? {
+        start_date: pacePlan.start_date,
+        end_date: pacePlan.end_date,
+        exclude_weekends: pacePlan.exclude_weekends,
+        pace_plan_module_items_attributes: pacePlanItems
+      }
+    : {
+        start_date: pacePlan.start_date,
+        end_date: pacePlan.end_date,
+        workflow_state: pacePlan.workflow_state,
+        exclude_weekends: pacePlan.exclude_weekends,
+        context_type: pacePlan.context_type,
+        context_id: pacePlan.context_id,
+        hard_end_dates: !!pacePlan.hard_end_dates,
+        pace_plan_module_items_attributes: pacePlanItems
+      }
 }

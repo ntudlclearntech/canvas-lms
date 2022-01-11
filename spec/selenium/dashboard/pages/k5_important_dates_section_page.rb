@@ -17,8 +17,8 @@
 # You should have received a copy of the GNU Affero General Public License along
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 
-require_relative '../../common'
-require_relative '../../helpers/color_common'
+require_relative "../../common"
+require_relative "../../helpers/color_common"
 
 module K5ImportantDatesSectionPageObject
   include ColorCommon
@@ -329,7 +329,6 @@ module K5ImportantDatesSectionPageObject
 
   #----------------------- Click Items -------------------------------
 
-
   def click_calendar_add
     calendar_add.click
   end
@@ -421,5 +420,4 @@ module K5ImportantDatesSectionPageObject
   def is_calendar_modal_gone?
     wait_for_no_such_element { calendar_modal }
   end
-
 end

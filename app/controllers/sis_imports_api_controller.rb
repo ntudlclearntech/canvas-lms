@@ -366,10 +366,9 @@ class SisImportsApiController < ApplicationController
   include Api::V1::SisImport
   include Api::V1::Progress
 
-
   def check_account
-    return render json: {errors: ["SIS imports can only be executed on root accounts"]}, status: :bad_request unless @account.root_account?
-    return render json: {errors: ["SIS imports are not enabled for this account"]}, status: :forbidden unless @account.allow_sis_import
+    return render json: { errors: ["SIS imports can only be executed on root accounts"] }, status: :bad_request unless @account.root_account?
+    return render json: { errors: ["SIS imports are not enabled for this account"] }, status: :forbidden unless @account.allow_sis_import
   end
 
   # @API Get SIS import list
@@ -391,7 +390,7 @@ class SisImportsApiController < ApplicationController
   # @returns [SisImport]
   def index
     if authorized_action(@account, @current_user, [:import_sis, :manage_sis])
-      scope = @account.sis_batches.order('created_at DESC')
+      scope = @account.sis_batches.order("created_at DESC")
       if (created_since = CanvasTime.try_parse(params[:created_since]))
         scope = scope.where("created_at > ?", created_since)
       end
@@ -399,13 +398,13 @@ class SisImportsApiController < ApplicationController
         scope = scope.where("created_at < ?", created_before)
       end
 
-      state = Array(params[:workflow_state])&['initializing', 'created', 'importing', 'cleanup_batch', 'imported', 'imported_with_messages',
-                                              'aborted', 'failed', 'failed_with_messages', 'restoring', 'partially_restored', 'restored']
+      state = Array(params[:workflow_state]) & %w[initializing created importing cleanup_batch imported imported_with_messages
+                                                  aborted failed failed_with_messages restoring partially_restored restored]
       scope = scope.where(workflow_state: state) if state.present?
 
       # we don't need to know how many there are
       @batches = Api.paginate(scope, self, api_v1_account_sis_imports_url, total_entries: nil)
-      render json: {sis_imports: sis_imports_json(@batches, @current_user, session)}
+      render json: { sis_imports: sis_imports_json(@batches, @current_user, session) }
     end
   end
 
@@ -422,7 +421,7 @@ class SisImportsApiController < ApplicationController
   def importing
     if authorized_action(@account, @current_user, [:import_sis, :manage_sis])
       batches = @account.sis_batches.importing
-      render json: {sis_imports: sis_imports_json(batches, @current_user, session)}
+      render json: { sis_imports: sis_imports_json(batches, @current_user, session) }
     end
   end
 
@@ -567,16 +566,16 @@ class SisImportsApiController < ApplicationController
   # @returns SisImport
   def create
     if authorized_action(@account, @current_user, :import_sis)
-      params[:import_type] ||= 'instructure_csv'
-      raise "invalid import type parameter" unless SisBatch.valid_import_types.has_key?(params[:import_type])
+      params[:import_type] ||= "instructure_csv"
+      raise "invalid import type parameter" unless SisBatch.valid_import_types.key?(params[:import_type])
 
       if !api_request? && @account.current_sis_batch.try(:importing?)
-        return render :json => {:error => true, :error_message => t(:sis_import_in_process_notice, "An SIS import is already in process."), :batch_in_progress => true},
-                      :as_text => true
+        return render json: { error: true, error_message: t(:sis_import_in_process_notice, "An SIS import is already in process."), batch_in_progress: true },
+                      as_text: true
       end
 
       file_obj = nil
-      if params.has_key?(:attachment)
+      if params.key?(:attachment)
         file_obj = params[:attachment]
       else
         file_obj = request.body
@@ -599,17 +598,18 @@ class SisImportsApiController < ApplicationController
                                        Attachment.mimetype("sis_import.#{params[:extension]}"))
         else
           env = request.env.dup
-          env['CONTENT_TYPE'] = env["ORIGINAL_CONTENT_TYPE"]
+          env["CONTENT_TYPE"] = env["ORIGINAL_CONTENT_TYPE"]
           # copy of request with original content type restored
           request2 = Rack::Request.new(env)
-          charset = request2.media_type_params['charset']
-          if charset.present? && charset.downcase != 'utf-8'
-            return render :json => {:error => t('errors.invalid_content_type', "Invalid content type, UTF-8 required")}, :status => 400
+          charset = request2.media_type_params["charset"]
+          if charset.present? && !charset.casecmp?("utf-8")
+            return render json: { error: t("errors.invalid_content_type", "Invalid content type, UTF-8 required") }, status: :bad_request
           end
-          params[:extension] ||= {"application/zip" => "zip",
-                                  "text/xml" => "xml",
-                                  "text/plain" => "csv",
-                                  "text/csv" => "csv"}[request2.media_type] || "zip"
+
+          params[:extension] ||= { "application/zip" => "zip",
+                                   "text/xml" => "xml",
+                                   "text/plain" => "csv",
+                                   "text/csv" => "csv" }[request2.media_type] || "zip"
           file_obj.set_file_attributes("sis_import.#{params[:extension]}",
                                        request2.media_type)
         end
@@ -622,11 +622,11 @@ class SisImportsApiController < ApplicationController
                                      params[:batch_mode_term_id])
         end
         unless batch_mode_term || params[:multi_term_batch_mode]
-          return render :json => {:message => "Batch mode specified, but the given batch_mode_term_id cannot be found."}, :status => :bad_request
+          return render json: { message: "Batch mode specified, but the given batch_mode_term_id cannot be found." }, status: :bad_request
         end
       end
 
-      batch = SisBatch.create_with_attachment(@account, params[:import_type], file_obj, @current_user) do |batch|
+      batch = SisBatch.create_with_attachment(@account, params[:import_type], file_obj, @current_user) do |batch| # rubocop:disable Lint/ShadowingOuterLocalVariable
         batch.change_threshold = params[:change_threshold]
 
         batch.options ||= {}
@@ -637,10 +637,10 @@ class SisImportsApiController < ApplicationController
           batch.batch_mode = true
           batch.batch_mode_term = batch_mode_term
         elsif params[:multi_term_batch_mode]
-          batch.batch_mode=true
+          batch.batch_mode = true
           batch.options[:multi_term_batch_mode] = value_to_boolean(params[:multi_term_batch_mode])
           unless batch.change_threshold
-            return render json: {message: "change_threshold is required to use multi term_batch mode."}, status: :bad_request
+            return render json: { message: "change_threshold is required to use multi term_batch mode." }, status: :bad_request
           end
         elsif params[:diffing_data_set_identifier].present?
           batch.enable_diffing(params[:diffing_data_set_identifier],
@@ -657,16 +657,16 @@ class SisImportsApiController < ApplicationController
           end
         end
         if params[:diffing_drop_status].present?
-          batch.options[:diffing_drop_status] = (Array(params[:diffing_drop_status])&SIS::CSV::DiffGenerator::VALID_ENROLLMENT_DROP_STATUS).first
-          return render json: {message: 'Invalid diffing_drop_status'}, status: :bad_request unless batch.options[:diffing_drop_status]
+          batch.options[:diffing_drop_status] = (Array(params[:diffing_drop_status]) & SIS::CSV::DiffGenerator::VALID_ENROLLMENT_DROP_STATUS).first
+          return render json: { message: "Invalid diffing_drop_status" }, status: :bad_request unless batch.options[:diffing_drop_status]
         end
         if params[:batch_mode_enrollment_drop_status].present?
-          batch.options[:batch_mode_enrollment_drop_status] = (Array(params[:batch_mode_enrollment_drop_status])&SIS::CSV::DiffGenerator::VALID_ENROLLMENT_DROP_STATUS).first
-          return render json: {message: 'Invalid batch_mode_enrollment_drop_status'}, status: :bad_request unless batch.options[:batch_mode_enrollment_drop_status]
+          batch.options[:batch_mode_enrollment_drop_status] = (Array(params[:batch_mode_enrollment_drop_status]) & SIS::CSV::DiffGenerator::VALID_ENROLLMENT_DROP_STATUS).first
+          return render json: { message: "Invalid batch_mode_enrollment_drop_status" }, status: :bad_request unless batch.options[:batch_mode_enrollment_drop_status]
         end
       end
 
-      unless Setting.get('skip_sis_jobs_account_ids', '').split(',').include?(@account.global_id.to_s)
+      unless Setting.get("skip_sis_jobs_account_ids", "").split(",").include?(@account.global_id.to_s)
         batch.process
       end
 
@@ -691,7 +691,7 @@ class SisImportsApiController < ApplicationController
   def show
     if authorized_action(@account, @current_user, [:import_sis, :manage_sis])
       @batch = @account.sis_batches.find(params[:id])
-      render json: sis_import_json(@batch, @current_user, session, includes: ['errors'])
+      render json: sis_import_json(@batch, @current_user, session, includes: ["errors"])
     end
   end
 
@@ -730,8 +730,9 @@ class SisImportsApiController < ApplicationController
       undelete_only = value_to_boolean(params[:undelete_only])
       unconclude_only = value_to_boolean(params[:unconclude_only])
       if undelete_only && unconclude_only
-        return render json: 'cannot set both undelete_only and unconclude_only', status: :bad_request
+        return render json: "cannot set both undelete_only and unconclude_only", status: :bad_request
       end
+
       progress = @batch.restore_states_later(batch_mode: batch_mode, undelete_only: undelete_only, unconclude_only: unconclude_only)
       render json: progress_json(progress, @current_user, session)
     end
@@ -756,7 +757,7 @@ class SisImportsApiController < ApplicationController
         @batch = @account.sis_batches.not_completed.lock.find(params[:id])
         @batch.abort_batch
       end
-      render json: sis_import_json(@batch.reload, @current_user, session, includes: ['errors'])
+      render json: sis_import_json(@batch.reload, @current_user, session, includes: ["errors"])
     end
   end
 
@@ -772,7 +773,7 @@ class SisImportsApiController < ApplicationController
   def abort_all_pending
     if authorized_action(@account, @current_user, [:import_sis, :manage_sis])
       SisBatch.abort_all_pending_for_account(@account)
-      render json: {aborted: true}
+      render json: { aborted: true }
     end
   end
 end

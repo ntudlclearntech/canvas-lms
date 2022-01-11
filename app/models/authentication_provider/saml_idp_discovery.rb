@@ -25,15 +25,15 @@ class AuthenticationProvider::SamlIdpDiscovery < AuthenticationProvider::Delegat
     end
 
     def recognized_params
-      [ :discovery_service_url ].freeze
+      [:discovery_service_url].freeze
     end
 
     def display_name
-      'SAML IdP Discovery Service'
+      "SAML IdP Discovery Service"
     end
 
     def sti_name
-      'saml_idp_discovery'
+      "saml_idp_discovery"
     end
   end
 

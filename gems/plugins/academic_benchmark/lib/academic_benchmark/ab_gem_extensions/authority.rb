@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU Affero General Public License along
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 
-require_relative 'common'
+require_relative "common"
 
 module AcademicBenchmarks
   module Standards
@@ -27,12 +27,12 @@ module AcademicBenchmarks
         @publication_cache ||= {}
       end
 
-      def build_outcomes(ratings={}, _parent=nil)
+      def build_outcomes(ratings = {}, _parent = nil)
         publication_cache.clear
         build_common_outcomes(ratings).merge!({
-          title: description,
-          description: "#{code} - #{description}",
-        })
+                                                title: description,
+                                                description: "#{code} - #{description}",
+                                              })
       end
     end
   end

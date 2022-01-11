@@ -26,9 +26,9 @@ class TermsController < ApplicationController
   def index
     @root_account = @context.root_account
     @context.default_enrollment_term
-    @terms = @context.enrollment_terms.active.
-      preload(:enrollment_dates_overrides).
-      order(Arel.sql("COALESCE(start_at, created_at) DESC")).to_a
+    @terms = @context.enrollment_terms.active
+                     .preload(:enrollment_dates_overrides)
+                     .order(Arel.sql("COALESCE(start_at, created_at) DESC")).to_a
     @course_counts_by_term = EnrollmentTerm.course_counts(@terms)
   end
 
@@ -106,41 +106,42 @@ class TermsController < ApplicationController
   #
   def destroy
     @term = api_find(@context.enrollment_terms, params[:id])
-    @term.workflow_state = 'deleted'
+    @term.workflow_state = "deleted"
 
     if @term.save
       if api_request?
-        render :json => enrollment_term_json(@term, @current_user, session)
+        render json: enrollment_term_json(@term, @current_user, session)
       else
-        render :json => @term
+        render json: @term
       end
     else
-      render :json => @term.errors, :status => :bad_request
+      render json: @term.errors, status: :bad_request
     end
   end
 
   private
+
   def save_and_render_response
     params.require(:enrollment_term)
     overrides = params[:enrollment_term][:overrides]&.to_unsafe_h
-    if overrides.present?
-      unless (overrides.keys.map(&:classify) - %w(StudentEnrollment TeacherEnrollment TaEnrollment DesignerEnrollment)).empty?
-        return render :json => {:message => 'Invalid enrollment type in overrides'}, :status => :bad_request
-      end
+    if overrides.present? && !(overrides.keys.map(&:classify) - %w[StudentEnrollment TeacherEnrollment TaEnrollment DesignerEnrollment]).empty?
+      return render json: { message: "Invalid enrollment type in overrides" }, status: :bad_request
     end
+
     sis_id = params[:enrollment_term][:sis_source_id] || params[:enrollment_term][:sis_term_id]
     if sis_id && !(sis_id.is_a?(String) || sis_id.is_a?(Numeric))
-      return render :json => {:message => "Invalid SIS ID"}, :status => :bad_request
+      return render json: { message: "Invalid SIS ID" }, status: :bad_request
     end
+
     handle_sis_id_param(sis_id)
 
     term_params = params.require(:enrollment_term).permit(:name, :start_at, :end_at)
     DueDateCacher.with_executing_user(@current_user) do
       if validate_dates(@term, term_params, overrides) && @term.update(term_params)
         @term.set_overrides(@context, overrides)
-        render :json => serialized_term
+        render json: serialized_term
       else
-        render :json => @term.errors, :status => :bad_request
+        render json: @term.errors, status: :bad_request
       end
     end
   end
@@ -159,22 +160,22 @@ class TermsController < ApplicationController
 
   def handle_sis_id_param(sis_id)
     if !sis_id.nil? &&
-        sis_id != @account.sis_source_id &&
-        @context.root_account.grants_right?(@current_user, session, :manage_sis)
+       sis_id != @account.sis_source_id &&
+       @context.root_account.grants_right?(@current_user, session, :manage_sis)
       @term.sis_source_id = sis_id.presence
       if @term.sis_source_id && @term.sis_source_id_changed?
         scope = @term.root_account.enrollment_terms.where(sis_source_id: @term.sis_source_id)
         scope = scope.where("id<>?", @term) unless @term.new_record?
-        @term.errors.add(:sis_source_id, t('errors.not_unique', "SIS ID \"%{sis_source_id}\" is already in use", sis_source_id: @term.sis_source_id)) if scope.exists?
+        @term.errors.add(:sis_source_id, t("errors.not_unique", "SIS ID \"%{sis_source_id}\" is already in use", sis_source_id: @term.sis_source_id)) if scope.exists?
       end
     end
   end
 
   def serialized_term
     if api_request?
-      enrollment_term_json(@term, @current_user, session, nil, ['overrides'])
+      enrollment_term_json(@term, @current_user, session, nil, ["overrides"])
     else
-      @term.as_json(:include => :enrollment_dates_overrides)
+      @term.as_json(include: :enrollment_dates_overrides)
     end
   end
 end

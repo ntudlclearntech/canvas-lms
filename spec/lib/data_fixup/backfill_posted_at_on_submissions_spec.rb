@@ -17,16 +17,14 @@
 # You should have received a copy of the GNU Affero General Public License along
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 
-require 'spec_helper'
-
 describe DataFixup::BackfillPostedAtOnSubmissions do
   let(:course) { Course.create! }
-  let(:assignment) { course.assignments.create!(title: 'fred') }
+  let(:assignment) { course.assignments.create!(title: "fred") }
   let(:student) { course.enroll_student(User.create!).user }
   let(:submission) { assignment.submission_for_student(student) }
 
   def do_backfill
-    DataFixup::BackfillPostedAtOnSubmissions.run(submission.id, submission.id+1)
+    DataFixup::BackfillPostedAtOnSubmissions.run(submission.id, submission.id + 1)
     submission.reload
   end
   private :do_backfill

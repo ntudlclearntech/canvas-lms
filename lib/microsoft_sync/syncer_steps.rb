@@ -37,9 +37,6 @@ module MicrosoftSync
     # GraphServiceHelpers::USERS_ULUVS_TO_AADS_BATCH_SIZE:
     ENROLLMENTS_ULUV_FETCHING_BATCH_SIZE = 750
 
-    MAX_ENROLLMENT_MEMBERS = MicrosoftSync::MembershipDiff::MAX_ENROLLMENT_MEMBERS
-    MAX_ENROLLMENT_OWNERS = MicrosoftSync::MembershipDiff::MAX_ENROLLMENT_OWNERS
-
     # Delays for intermittent errors and to allow Microsoft's
     # eventually-consistent API time to settle:
     STANDARD_RETRY_DELAY = [15, 60, 300].freeze
@@ -56,45 +53,48 @@ module MicrosoftSync
     # or about 3 extra requests per user added... not too bad.
     MAX_PARTIAL_SYNC_CHANGES = 500
 
-    STATSD_NAME = 'microsoft_sync.syncer_steps'
+    STATSD_NAME = "microsoft_sync.syncer_steps"
     STATSD_NAME_SKIPPED_BATCHES = "#{STATSD_NAME}.skipped_batches"
     STATSD_NAME_SKIPPED_TOTAL = "#{STATSD_NAME}.skipped_total"
+    STATSD_NAME_DELETED_MAPPINGS_FOR_MISSING_USERS = \
+      "#{STATSD_NAME}.deleted_mappings_for_missing_users"
 
     # Can happen when User disables sync on account-level when jobs are running:
     class TenantMissingOrSyncDisabled < Errors::GracefulCancelError
       def self.public_message
-        I18n.t 'Tenant missing or sync disabled. ' \
-          'Check the Microsoft sync integration settings for the course and account.'
+        I18n.t "Tenant missing or sync disabled. " \
+               "Check the Microsoft sync integration settings for the course and account."
       end
     end
 
     class MultipleEducationClasses < Errors::GracefulCancelError
       def self.public_message
-        I18n.t 'Multiple Microsoft education classes already exist for the course.'
+        I18n.t "Multiple Microsoft education classes already exist for the course."
       end
     end
 
     class MaxMemberEnrollmentsReached < Errors::GracefulCancelError
       def self.public_message
-        I18n.t 'Microsoft 365 allows a maximum of %{max} members in a team.'
+        I18n.t "Microsoft 365 allows a maximum of %{max} members in a team."
       end
 
       def public_interpolated_values
-        {max: MAX_ENROLLMENT_MEMBERS}
+        { max: MicrosoftSync::MembershipDiff::MAX_ENROLLMENT_MEMBERS }
       end
     end
 
     class MaxOwnerEnrollmentsReached < Errors::GracefulCancelError
       def self.public_message
-        I18n.t 'Microsoft 365 allows a maximum of %{max} owners in a team.'
+        I18n.t "Microsoft 365 allows a maximum of %{max} owners in a team."
       end
 
       def public_interpolated_values
-        {max: MAX_ENROLLMENT_OWNERS}
+        { max: MicrosoftSync::MembershipDiff::MAX_ENROLLMENT_OWNERS }
       end
     end
 
     attr_reader :group
+
     delegate :course, to: :group
 
     def initialize(group)
@@ -126,7 +126,7 @@ module MicrosoftSync
 
     def step_initial(job_type, _job_state_data)
       StateMachineJob::NextStep.new(
-        job_type.to_s == 'partial' ? :step_partial_sync : :step_full_sync_prerequisites
+        job_type.to_s == "partial" ? :step_partial_sync : :step_full_sync_prerequisites
       )
     end
 
@@ -137,8 +137,11 @@ module MicrosoftSync
     # don't want to delete PartialSyncChanges corresponding to enrollments not
     # yet replicated.)
     def step_full_sync_prerequisites(_mem_data, _job_state_data)
-      raise MaxMemberEnrollmentsReached if max_enrollment_members_reached?
-      raise MaxOwnerEnrollmentsReached if max_enrollment_owners_reached?
+      if CanvasModelsHelpers.max_enrollment_members_reached?(course)
+        raise_and_disable_group(MaxMemberEnrollmentsReached)
+      elsif CanvasModelsHelpers.max_enrollment_owners_reached?(course)
+        raise_and_disable_group(MaxOwnerEnrollmentsReached)
+      end
 
       PartialSyncChange.delete_all_replicated_to_secondary_for_course(course.id)
 
@@ -147,7 +150,7 @@ module MicrosoftSync
 
     # Second step of a full sync. Create group on the Microsoft side.
     def step_ensure_class_group_exists(_mem_data, _job_state_data)
-      remote_ids = graph_service_helpers.list_education_classes_for_course(course).map{|c| c['id']}
+      remote_ids = graph_service_helpers.list_education_classes_for_course(course).map { |c| c["id"] }
 
       # If we've created the group previously, we're good to go
       if group.ms_group_id && remote_ids == [group.ms_group_id]
@@ -161,9 +164,7 @@ module MicrosoftSync
       # data in case it was never done.
       new_group_id = remote_ids.first
 
-      unless new_group_id
-        new_group_id = graph_service_helpers.create_education_class(course)['id']
-      end
+      new_group_id ||= graph_service_helpers.create_education_class(course)["id"]
 
       StateMachineJob::DelayedNextStep.new(
         :step_update_group_with_course_data, DELAY_BEFORE_UPDATE_GROUP, new_group_id
@@ -208,7 +209,7 @@ module MicrosoftSync
       # looking up the same ULUV multiple times; but this should be very rare
       users_and_uluvs.each_slice(GraphServiceHelpers::USERS_ULUVS_TO_AADS_BATCH_SIZE) do |slice|
         uluv_to_aad = graph_service_helpers.users_uluvs_to_aads(remote_attr, slice.map(&:last))
-        user_id_to_aad = slice.map{|user_id, uluv| [user_id, uluv_to_aad[uluv]]}.to_h.compact
+        user_id_to_aad = slice.to_h.transform_values { |uluv| uluv_to_aad[uluv] }.compact
         # NOTE: root_account here must be the same (values loaded into memory at the same time)
         # as passed into UsersUluvsFinder AND as used in #tenant, for the "have settings changed?"
         # check to work. For example, using course.root_account here would NOT be correct.
@@ -233,16 +234,16 @@ module MicrosoftSync
       retry_object_for_error(e)
     end
 
-    def log_batch_skipped(type, users)
-      return unless users # GraphService batch functions return nil if all succesful
+    def log_batch_skipped(type, change_result)
+      return if change_result.blank?
 
-      n_total = users.values.map(&:length).sum
+      n_total = change_result.total_unsuccessful
       Rails.logger.warn("#{self.class.name} (#{group.global_id}): " \
-                        "Skipping redundant #{type} for #{n_total}: #{users.to_json}")
+                        "Skipping #{type} for #{n_total}: #{change_result.to_json}")
       InstStatsd::Statsd.increment("#{STATSD_NAME_SKIPPED_BATCHES}.#{type}",
-                                   tags: {sync_type: sync_type})
+                                   tags: { sync_type: sync_type })
       InstStatsd::Statsd.count("#{STATSD_NAME_SKIPPED_TOTAL}.#{type}", n_total,
-                               tags: {sync_type: sync_type})
+                               tags: { sync_type: sync_type })
     end
 
     # Run the API calls to add/remove users.
@@ -251,8 +252,8 @@ module MicrosoftSync
       # remove the group on the Microsoft side (INTEROP-6672)
       raise Errors::MissingOwners if diff.local_owners.empty?
 
-      raise MaxMemberEnrollmentsReached if diff.max_enrollment_members_reached?
-      raise MaxOwnerEnrollmentsReached if diff.max_enrollment_owners_reached?
+      raise_and_disable_group(MaxMemberEnrollmentsReached) if diff.max_enrollment_members_reached?
+      raise_and_disable_group(MaxOwnerEnrollmentsReached) if diff.max_enrollment_owners_reached?
 
       execute_diff(diff)
 
@@ -261,31 +262,71 @@ module MicrosoftSync
       retry_object_for_error(e, step: :step_generate_diff)
     end
 
+    def raise_and_disable_group(error_class)
+      err = error_class.new
+      # Need to manually update last_error; StateMachineJob won't do it since the group
+      # will be in a 'deleted' state
+      group.update last_error: MicrosoftSync::Errors.serialize(err)
+      group.destroy
+      raise err
+    end
+
     # Execute a MembershipDiff or PartialMembershipDiff -- add and remove
     # users in batches
     def execute_diff(diff)
-      batch_size = GraphService::GROUP_USERS_BATCH_SIZE
-      diff.additions_in_slices_of(batch_size) do |members_and_owners|
-        skipped = graph_service.add_users_to_group_ignore_duplicates(
-          group.ms_group_id, **members_and_owners
-        )
-        log_batch_skipped(:add, skipped)
-      end
+      execute_diff_remove_users(diff)
+      execute_diff_add_users(diff)
+    rescue Errors::MissingOwners
+      # If the group is close to the max number of users, we might need to
+      # remove users first to make room for new users.
+      # e.g.: group has 25000 users, course has 100 removed but 1 added. Need
+      # to remove at least 1 user before we can add 1.
+      #
+      # However, Microsoft will not let you remove the last owner in a group.
+      # So if a course has 1 owner and it is swapped out for a different owner,
+      # we should add the new one first. This is a rare scenario and because
+      # the Microsoft API is eventually consistent, we'd have to wait a bit to
+      # remove the old owner. So just add the new owners, raise the error and
+      # have them manually re-sync.
+      execute_diff_add_users(diff)
+      raise
+    end
 
-      # Microsoft will not let you remove the last owner in a group, so it's
-      # slightly safer to remove users last in case we need to completely
-      # change owners.
-      diff.removals_in_slices_of(batch_size) do |members_and_owners|
-        skipped = graph_service.remove_group_users_ignore_missing(
+    def delete_mappings_if_users_missing(change_result)
+      bad_aads = change_result&.nonexistent_user_ids
+      if bad_aads.present?
+        Rails.logger.warn "Deleting mappings for AADs: #{bad_aads}"
+        InstStatsd::Statsd.count(STATSD_NAME_DELETED_MAPPINGS_FOR_MISSING_USERS, bad_aads.count)
+        UserMapping.where(root_account_id: course.root_account_id, aad_id: bad_aads).delete_all
+      end
+    end
+
+    def execute_diff_add_users(diff)
+      diff.additions_in_slices_of(GraphService::GroupsEndpoints::USERS_BATCH_SIZE) do |members_and_owners|
+        change_result = graph_service.groups.add_users_ignore_duplicates(
           group.ms_group_id, **members_and_owners
         )
-        log_batch_skipped(:remove, skipped)
+        log_batch_skipped(:add, change_result)
+        delete_mappings_if_users_missing(change_result)
+      end
+    rescue Errors::MembersQuotaExceeded
+      raise_and_disable_group(MaxMemberEnrollmentsReached)
+    rescue Errors::OwnersQuotaExceeded
+      raise_and_disable_group(MaxOwnerEnrollmentsReached)
+    end
+
+    def execute_diff_remove_users(diff)
+      diff.removals_in_slices_of(GraphService::GroupsEndpoints::USERS_BATCH_SIZE) do |members_and_owners|
+        change_result = graph_service.groups.remove_users_ignore_missing(
+          group.ms_group_id, **members_and_owners
+        )
+        log_batch_skipped(:remove, change_result)
       end
     end
 
     def step_check_team_exists(_mem_data, _job_state_data)
       if course.enrollments.where(type: MembershipDiff::OWNER_ENROLLMENT_TYPES).any? \
-        && !graph_service.team_exists?(group.ms_group_id)
+          && !graph_service.teams.team_exists?(group.ms_group_id)
         StateMachineJob::DelayedNextStep.new(:step_create_team, DELAY_BEFORE_CREATE_TEAM)
       else
         StateMachineJob::COMPLETE
@@ -295,7 +336,7 @@ module MicrosoftSync
     end
 
     def step_create_team(_mem_data, _job_state_data)
-      graph_service.create_education_class_team(group.ms_group_id)
+      graph_service.teams.create_for_education_class(group.ms_group_id)
       StateMachineJob::COMPLETE
     rescue MicrosoftSync::Errors::TeamAlreadyExists
       StateMachineJob::COMPLETE
@@ -316,21 +357,22 @@ module MicrosoftSync
     # [[234, 'member', timestamp1], [456, 'member', timestamp2], [456, 'owner', timestamp3]]
     def load_partial_sync_changes
       PartialSyncChange.where(course: course).limit(MAX_PARTIAL_SYNC_CHANGES + 1)
-        .pluck(:user_id, :enrollment_type, :updated_at)
+                       .pluck(:user_id, :enrollment_type, :updated_at)
     end
 
     def step_partial_sync(_mem_state, _job_state)
       # Step 1. Kick off a full sync if we haven't created a group yet, or if
       # there are too many changes to effectively handle here.
       if group.ms_group_id.nil? ||
-          (changes = load_partial_sync_changes).length > MAX_PARTIAL_SYNC_CHANGES
+         (changes = load_partial_sync_changes).length > MAX_PARTIAL_SYNC_CHANGES
         InstStatsd::Statsd.increment("#{STATSD_NAME}.partial_into_full")
         return StateMachineJob::NextStep.new(:step_full_sync_prerequisites)
       end
 
       return StateMachineJob::COMPLETE if changes.empty?
+
       # Set sync_type before graph_service used (created) but after we may switch to full sync:
-      self.sync_type = 'partial'
+      self.sync_type = "partial"
 
       # Step 2. ensure users have aad object ids:
       # changes_by_user_id is a hash from user_id ->
@@ -347,17 +389,17 @@ module MicrosoftSync
       # because the user could be removed as an owner but not as a member, etc.
 
       # e.g., { 123 => ['member', 'owner'], 1230000000000099 => ['owner']}
-      users_to_msft_role_types = changes_by_user_id.transform_values{|chgs| chgs.map(&:second)}
+      users_to_msft_role_types = changes_by_user_id.transform_values { |chgs| chgs.map(&:second) }
       diff = PartialMembershipDiff.new(users_to_msft_role_types)
 
       mappings = UserMapping.where(root_account_id: course.root_account_id, user_id: user_ids)
-        .pluck(:user_id, :aad_id)
+                            .pluck(:user_id, :aad_id)
       mappings.each { |user_id, aad_id| diff.set_member_mapping(user_id, aad_id) }
 
       users_with_mappings = mappings.map(&:first)
       enrollments = Enrollment.microsoft_sync_relevant
-        .where(course: course, user_id: users_with_mappings)
-        .pluck(:user_id, :type)
+                              .where(course: course, user_id: users_with_mappings)
+                              .pluck(:user_id, :type)
       enrollments.each { |user_id, enrollment_type| diff.set_local_member(user_id, enrollment_type) }
 
       # Step 4. Execute diff and delete changes. Match additionally on
@@ -378,8 +420,8 @@ module MicrosoftSync
       # incurring more read quota from getting the list of users in a group
       # (generally, cheaper).
       full_sync_after = e.retry_after_seconds || STANDARD_RETRY_DELAY
-      Rails.logger.info 'MicrosoftSync::SyncerSteps: partial sync throttled, ' \
-        "full sync in #{full_sync_after}"
+      Rails.logger.info "MicrosoftSync::SyncerSteps: partial sync throttled, " \
+                        "full sync in #{full_sync_after}"
       InstStatsd::Statsd.increment("#{STATSD_NAME}.partial_into_full_throttled")
       StateMachineJob::DelayedNextStep.new(:step_full_sync_prerequisites, full_sync_after)
     rescue *Errors::INTERMITTENT_AND_NOTFOUND => e
@@ -390,14 +432,15 @@ module MicrosoftSync
     # a job. The rest of the instance variables should be reloaded when the job
     # starts again.
     def encode_with(coder)
-      coder['group'] = @group
+      coder["group"] = @group
     end
 
     private
 
     attr_writer :sync_type
+
     def sync_type
-      @sync_type || 'full'
+      @sync_type || "full"
     end
 
     def tenant
@@ -421,25 +464,6 @@ module MicrosoftSync
 
     def graph_service
       @graph_service ||= graph_service_helpers.graph_service
-    end
-
-    def max_enrollment_members_reached?
-      course
-        .enrollments
-        .select(:user_id)
-        .limit(MAX_ENROLLMENT_MEMBERS + 1)
-        .distinct
-        .count > MAX_ENROLLMENT_MEMBERS
-    end
-
-    def max_enrollment_owners_reached?
-      course
-        .enrollments
-        .where(type: MicrosoftSync::MembershipDiff::OWNER_ENROLLMENT_TYPES)
-        .select(:user_id)
-        .limit(MAX_ENROLLMENT_OWNERS + 1)
-        .distinct
-        .count > MAX_ENROLLMENT_OWNERS
     end
   end
 end

@@ -22,25 +22,24 @@ class CleanUpAssignmentOverrides < ActiveRecord::Migration[5.1]
   disable_ddl_transaction!
 
   def self.up
-    DataFixup::RemoveOrphanedAssignmentOverrideStudents.
-      delay_if_production(priority: Delayed::LOW_PRIORITY, n_strand: 'long_datafixups').
-      run
+    DataFixup::RemoveOrphanedAssignmentOverrideStudents
+      .delay_if_production(priority: Delayed::LOW_PRIORITY, n_strand: "long_datafixups")
+      .run
 
     # this fix is fast enough to run synchronously, without requiring a multi-deploy rollout of the check constraint
     DataFixup::RemoveInvalidAssignmentOverrides.run
     # we will break the constraint creation and validation into separate queries to reduce time spent in ex-lock
-    execute(<<-SQL)
+    execute(<<~SQL.squish)
       ALTER TABLE #{AssignmentOverride.quoted_table_name}
       ADD CONSTRAINT require_quiz_or_assignment
       CHECK (workflow_state='deleted' OR quiz_id IS NOT NULL OR assignment_id IS NOT NULL)
       NOT VALID
     SQL
     execute("ALTER TABLE #{AssignmentOverride.quoted_table_name} VALIDATE CONSTRAINT require_quiz_or_assignment")
-
   end
 
   def self.down
-    execute(<<-SQL)
+    execute(<<~SQL.squish)
       ALTER TABLE #{AssignmentOverride.quoted_table_name}
       DROP CONSTRAINT IF EXISTS require_quiz_or_assignment
     SQL

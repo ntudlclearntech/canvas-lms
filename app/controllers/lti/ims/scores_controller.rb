@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU Affero General Public License along
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 
-module Lti::Ims
+module Lti::IMS
   # @API Score
   #
   # Score API for IMS Assignment and Grade Services
@@ -64,7 +64,7 @@ module Lti::Ims
   #       }
   #     }
   class ScoresController < ApplicationController
-    include Lti::Ims::Concerns::GradebookServices
+    include Lti::IMS::Concerns::GradebookServices
     include Api::V1::Attachment
 
     before_action(
@@ -75,10 +75,10 @@ module Lti::Ims
       :verify_valid_score_maximum,
       :verify_valid_submitted_at,
       :verify_valid_content_item_submission_type,
-      :verify_attempts_for_online_upload,
+      :verify_attempts_for_online_upload
     )
 
-    MIME_TYPE = 'application/vnd.ims.lis.v1.score+json'.freeze
+    MIME_TYPE = "application/vnd.ims.lis.v1.score+json"
 
     # @API Create a Score
     #
@@ -119,7 +119,7 @@ module Lti::Ims
     #   Possible values are NotReady, Failed, Pending, PendingManual, FullyGraded.
     #
     # @argument timestamp [Required, String]
-    #   Date and time when the score was modified in the tool. Should use subsecond precision.
+    #   Date and time when the score was modified in the tool. Should use ISO8601-formatted date with subsecond precision.
     #   Returns a 400 if the timestamp is earlier than the updated_at time of the Result.
     #
     # @argument scoreGiven [Number]
@@ -138,7 +138,7 @@ module Lti::Ims
     #   new_submission [Boolean] flag to indicate that this is a new submission. Defaults to true unless submission_type is none.
     #   submission_type [String] permissible values are: none, basic_lti_launch, online_text_entry, external_tool, online_upload, or online_url. Defaults to external_tool. Ignored if content_items are provided.
     #   submission_data [String] submission data (URL or body text)
-    #   submitted_at [String] Date and time that the submission was originally created. Should use subsecond precision. This should match the data and time that the original submission happened in Canvas.
+    #   submitted_at [String] Date and time that the submission was originally created. Should use ISO8601-formatted date with subsecond precision. This should match the data and time that the original submission happened in Canvas.
     #   content_items [Array] Files that should be included with the submission. Each item should contain `type: file`, a url pointing to the file, a title, and a progress url that Canvas can report to. If present, submission_type will be online_upload.
     #
     # @returns resultUrl [String]
@@ -194,10 +194,10 @@ module Lti::Ims
           content_items = upload_submission_files
           json[Lti::Result::AGS_EXT_SUBMISSION] = { content_items: content_items }
         rescue Net::ReadTimeout, CanvasHttp::CircuitBreakerError
-          return render_error('failed to communicate with file service', :gateway_timeout)
-        rescue CanvasHttp::InvalidResponseCodeError => err
-          err_message = "uploading to file service failed with #{err.code}: #{err.body}"
-          return render_error(err_message, :bad_request) if err.code == 400
+          return render_error("failed to communicate with file service", :gateway_timeout)
+        rescue CanvasHttp::InvalidResponseCodeError => e
+          err_message = "uploading to file service failed with #{e.code}: #{e.body}"
+          return render_error(err_message, :bad_request) if e.code == 400
 
           # 5xx and other unexpected errors
           return render_error(err_message, :internal_server_error)
@@ -219,7 +219,7 @@ module Lti::Ims
       content_items: %i[type url title]
     ].freeze
     SCORE_SUBMISSION_TYPES = %w[none basic_lti_launch online_text_entry online_url external_tool online_upload].freeze
-    DEFAULT_SUBMISSION_TYPE = 'external_tool'.freeze
+    DEFAULT_SUBMISSION_TYPE = "external_tool"
 
     def scopes_matcher
       self.class.all_of(TokenScopes::LTI_AGS_SCORE_SCOPE)
@@ -228,8 +228,8 @@ module Lti::Ims
     def scores_params
       @_scores_params ||= begin
         update_params = params.permit(REQUIRED_PARAMS + OPTIONAL_PARAMS,
-          Lti::Result::AGS_EXT_SUBMISSION => EXTENSION_PARAMS).transform_keys do |k|
-            k.to_s.underscore
+                                      Lti::Result::AGS_EXT_SUBMISSION => EXTENSION_PARAMS).transform_keys do |k|
+          k.to_s.underscore
         end.except(:timestamp, :user_id, :score_given, :score_maximum).to_unsafe_h
         update_params[:extensions] = extract_extensions(update_params)
         update_params.merge(result_score: params[:scoreGiven], result_maximum: params[:scoreMaximum])
@@ -260,8 +260,8 @@ module Lti::Ims
 
     def verify_valid_submitted_at
       submitted_at = params.dig(Lti::Result::AGS_EXT_SUBMISSION, :submitted_at)
-      submitted_at_date = submitted_at.present? ? (Time.zone.parse(submitted_at) rescue nil) : nil
-      future_buffer = Setting.get('ags_submitted_at_future_buffer', 1.minute.to_s).to_i.seconds
+      submitted_at_date = parse_timestamp(submitted_at)
+      future_buffer = Setting.get("ags_submitted_at_future_buffer", 1.minute.to_s).to_i.seconds
 
       if submitted_at.present? && submitted_at_date.nil?
         render_error "Provided submitted_at timestamp of #{submitted_at} not a valid timestamp", :bad_request
@@ -272,17 +272,18 @@ module Lti::Ims
 
     def verify_valid_score_maximum
       return if ignore_score?
+
       if params.key?(:scoreMaximum)
         return if params[:scoreMaximum].to_f >= 0
 
-        render_error('ScoreMaximum must be greater than or equal to 0', :unprocessable_entity)
+        render_error("ScoreMaximum must be greater than or equal to 0", :unprocessable_entity)
       else
-        render_error('ScoreMaximum not supplied when ScoreGiven present.', :unprocessable_entity)
+        render_error("ScoreMaximum not supplied when ScoreGiven present.", :unprocessable_entity)
       end
     end
 
     def verify_valid_content_item_submission_type
-      if !has_content_items? && submission_type == 'online_upload'
+      if !has_content_items? && submission_type == "online_upload"
         render_error("Content items must be provided with submission type 'online_upload'", :unprocessable_entity)
       end
     end
@@ -299,7 +300,7 @@ module Lti::Ims
       # attempts_left will be nil for non-limited assignments
       return if submission.attempts_left.nil? || submission.attempts_left > 0
 
-      render_error('The maximum number of allowed attempts has been reached for this submission', :unprocessable_entity)
+      render_error("The maximum number of allowed attempts has been reached for this submission", :unprocessable_entity)
     end
 
     def score_submission
@@ -311,7 +312,7 @@ module Lti::Ims
       else
         submission = line_item.assignment.grade_student(
           user,
-          {score: submission_score, grader_id: -tool.id}
+          { score: submission_score, grader_id: -tool.id }
         ).first
       end
       submission.add_comment(comment: scores_params[:comment], skip_author: true) if scores_params[:comment].present?
@@ -321,13 +322,13 @@ module Lti::Ims
     def submit_homework
       return unless line_item.assignment_line_item?
 
-      submission_opts = {submitted_at: submitted_at}
+      submission_opts = { submitted_at: submitted_at }
       if !submission_type.nil? && SCORE_SUBMISSION_TYPES.include?(submission_type)
         submission_opts[:submission_type] = submission_type
         case submission_type
-        when 'basic_lti_launch', 'online_url'
+        when "basic_lti_launch", "online_url"
           submission_opts[:url] = submission_data
-        when 'online_text_entry'
+        when "online_text_entry"
           submission_opts[:body] = submission_data
         end
       end
@@ -373,7 +374,8 @@ module Lti::Ims
         if preflight_json[:upload_url]
           # Pt 2 of the file upload process, with InstFS enabled.
           response = CanvasHttp.post(
-            preflight_json[:upload_url], form_data: preflight_json[:upload_params], multipart: true)
+            preflight_json[:upload_url], form_data: preflight_json[:upload_params], multipart: true
+          )
 
           if response.code.to_i != 201
             raise CanvasHttp::InvalidResponseCodeError.new(response.code.to_i, response.body)
@@ -396,7 +398,8 @@ module Lti::Ims
     def line_item_score_maximum_scale
       res_max = scores_params[:result_maximum].to_f
       # if this doesn't make sense, just don't scale
-      return 1.0 if res_max.nan? || res_max == 0.0
+      return 1.0 if res_max.nan? || res_max.abs < Float::EPSILON
+
       line_item.score_maximum / scores_params[:result_maximum].to_f
     end
 
@@ -409,7 +412,7 @@ module Lti::Ims
     end
 
     def timestamp
-      @_timestamp = Time.zone.parse(params[:timestamp]) rescue nil
+      @_timestamp = parse_timestamp(params[:timestamp])
     end
 
     def result_url
@@ -418,7 +421,7 @@ module Lti::Ims
 
     def submission_type
       # content_items override the provided submission type in favor of uploading a file
-      return 'online_upload' if has_content_items?
+      return "online_upload" if has_content_items?
 
       scores_params.dig(:extensions, Lti::Result::AGS_EXT_SUBMISSION, :submission_type) || DEFAULT_SUBMISSION_TYPE
     end
@@ -431,20 +434,28 @@ module Lti::Ims
     # if new_submission flag is present and `false`, or submission_type flag is `none`
     def new_submission?
       new_flag = ActiveRecord::Type::Boolean.new.cast(scores_params.dig(:extensions, Lti::Result::AGS_EXT_SUBMISSION, :new_submission))
-      (new_flag || new_flag.nil?) && submission_type != 'none'
+      (new_flag || new_flag.nil?) && submission_type != "none"
     end
 
     def submitted_at
       submitted_at = scores_params.dig(:extensions, Lti::Result::AGS_EXT_SUBMISSION, :submitted_at)
-      submitted_at.present? ? (Time.zone.parse(submitted_at) rescue nil): nil
+      parse_timestamp(submitted_at)
     end
 
     def file_content_items
-      scores_params.dig(:extensions, Lti::Result::AGS_EXT_SUBMISSION, :content_items)&.select { |item| item[:type] == "file"} || []
+      scores_params.dig(:extensions, Lti::Result::AGS_EXT_SUBMISSION, :content_items)&.select { |item| item[:type] == "file" } || []
     end
 
     def has_content_items?
       file_content_items.any?
+    end
+
+    def parse_timestamp(t)
+      return nil unless t.present?
+
+      parsed = Time.zone.iso8601(t) rescue nil
+      parsed ||= (Time.zone.parse(t) rescue nil) if Setting.get("enforce_iso8601_for_lti_scores", "false") == "false"
+      parsed
     end
   end
 end

@@ -28,12 +28,13 @@ module Audits
         stream.raise_on_error ||= Rails.env.test?
 
         stream.on_insert do |record|
-          EventStream::Logger.info('AUDITOR', identifier, 'insert', record.to_json)
+          EventStream::Logger.info("AUDITOR", identifier, "insert", record.to_json)
         end
 
         stream.on_error do |operation, record, exception|
           next unless Audits.configured?
-          EventStream::Logger.error('AUDITOR', identifier, operation, record.to_json, exception.message.to_s)
+
+          EventStream::Logger.error("AUDITOR", identifier, operation, record.to_json, exception.message.to_s)
         end
       end
     end
@@ -45,6 +46,7 @@ module Audits
     def read_stream_options(options)
       return { backend_strategy: :cassandra }.merge(options) if Audits.read_from_cassandra?
       return { backend_strategy: :active_record }.merge(options) if Audits.read_from_postgres?
+
       # Assume cassandra by default until transition complete
       { backend_strategy: :cassandra }.merge(options)
     end
@@ -57,50 +59,52 @@ module Audits
 
     def configured?
       strategy = backend_strategy
-      if strategy == :cassandra
-        return CanvasCassandra::DatabaseBuilder.configured?('auditors')
-      elsif strategy == :active_record
+      case strategy
+      when :cassandra
+        return CanvasCassandra::DatabaseBuilder.configured?("auditors")
+      when :active_record
         return Rails.configuration.database_configuration[Rails.env].present?
       end
+
       raise ArgumentError, "Unknown Audits Backend Strategy: #{strategy}"
     end
 
     def write_to_cassandra?
-      write_paths.include?('cassandra')
+      write_paths.include?("cassandra")
     end
 
     def write_to_postgres?
-      write_paths.include?('active_record')
+      write_paths.include?("active_record")
     end
 
     def read_from_cassandra?
-      read_path == 'cassandra'
+      read_path == "cassandra"
     end
 
     def read_from_postgres?
-      read_path == 'active_record'
+      read_path == "active_record"
     end
 
     def read_path
-      config&.[]('read_path') || 'cassandra'
+      config&.[]("read_path") || "cassandra"
     end
 
     def write_paths
-      paths = [config&.[]('write_paths')].flatten.compact
+      paths = [config&.[]("write_paths")].flatten.compact
       # default to both for now.
       # after a year we will have hit our retention period
       # and can safely de-comission all auditors cassandra code.
-      return_paths = paths.empty? ? ['cassandra', 'active_record'] : paths
-      unless return_paths.include?('active_record')
+      return_paths = paths.empty? ? ["cassandra", "active_record"] : paths
+      unless return_paths.include?("active_record")
         logger.warn("[Auditors | DEPRECATION] Your auditors config attempts to not write to the relational db: #{paths}.  This is deprecated, the intended future target for these audit records is postgres.  Configuring to write to the db anyway.")
-        return_paths.unshift('active_record')
+        return_paths.unshift("active_record")
       end
       return_paths
     end
 
-    def config(shard=::Switchman::Shard.current)
+    def config(shard = ::Switchman::Shard.current)
       settings = DynamicSettings.find(tree: :private, cluster: shard.database_server.id)
-      YAML.safe_load(settings['auditors.yml'] || '{}')
+      YAML.safe_load(settings["auditors.yml"] || "{}")
     end
   end
 end

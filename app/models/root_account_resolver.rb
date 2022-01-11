@@ -32,30 +32,30 @@ module RootAccountResolver
   #
   def resolves_root_account(through:)
     resolver = case through
-    when Symbol
-      ->(instance) do
-        source = instance.send(through)
+               when Symbol
+                 lambda do |instance|
+                   source = instance.send(through)
 
-        case source
-        when Account
-          source.resolved_root_account_id
-        else
-          source&.root_account_id
-        end
-      end
-    when Proc
-      through
-    else
-      raise ArgumentError.new("Expected resolver to be a Symbol or a Proc, got #{through}")
-    end
+                   case source
+                   when Account
+                     source.resolved_root_account_id
+                   else
+                     source&.root_account_id
+                   end
+                 end
+               when Proc
+                 through
+               else
+                 raise ArgumentError, "Expected resolver to be a Symbol or a Proc, got #{through}"
+               end
 
-    belongs_to :root_account, class_name: 'Account'
+    belongs_to :root_account, class_name: "Account"
 
     before_save do
       # some models might be manipulated in migrations before the column is added;
       # check that the attribute actually exists on this instance before trying to
       # populate it
-      next unless has_attribute?('root_account_id')
+      next unless has_attribute?("root_account_id")
 
       self.root_account_id ||= resolver[self]
     end

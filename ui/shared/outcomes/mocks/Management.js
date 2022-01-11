@@ -379,7 +379,10 @@ export const groupDetailMocks = ({
   searchQuery = '',
   withMorePage = true,
   groupDescription = 'Group Description',
-  numOfOutcomes = 2
+  numOfOutcomes = 2,
+  targetGroupId,
+  notImportedOutcomesCount = null,
+  removeOnRefetch = false
 } = {}) => [
   {
     request: {
@@ -388,7 +391,8 @@ export const groupDetailMocks = ({
         id: groupId,
         outcomesContextId: contextId,
         outcomesContextType: contextType,
-        outcomeIsImported
+        outcomeIsImported,
+        targetGroupId
       }
     },
     result: {
@@ -400,6 +404,7 @@ export const groupDetailMocks = ({
           contextType: outcomesGroupContextType,
           contextId: outcomesGroupContextId,
           outcomesCount: numOfOutcomes,
+          notImportedOutcomesCount,
           __typename: 'LearningOutcomeGroup',
           outcomes: {
             pageInfo: {
@@ -415,7 +420,12 @@ export const groupDetailMocks = ({
                   description: '',
                   title: `Outcome 1 - ${title}`,
                   isImported: outcomeIsImported,
-                  __typename: 'LearningOutcome'
+                  __typename: 'LearningOutcome',
+                  friendlyDescription: {
+                    _id: '101',
+                    description: 'Outcome 1 - friendly description',
+                    __typename: 'FriendlyDescription'
+                  }
                 },
                 __typename: 'ContentTag'
               },
@@ -426,7 +436,12 @@ export const groupDetailMocks = ({
                   description: '',
                   title: `Outcome 2 - ${title}`,
                   isImported: outcomeIsImported,
-                  __typename: 'LearningOutcome'
+                  __typename: 'LearningOutcome',
+                  friendlyDescription: {
+                    _id: '102',
+                    description: 'Outcome 2 - friendly description',
+                    __typename: 'FriendlyDescription'
+                  }
                 },
                 __typename: 'ContentTag'
               }
@@ -445,7 +460,8 @@ export const groupDetailMocks = ({
         outcomesContextId: contextId,
         outcomesContextType: contextType,
         outcomeIsImported,
-        searchQuery
+        searchQuery,
+        targetGroupId
       }
     },
     result: {
@@ -457,6 +473,7 @@ export const groupDetailMocks = ({
           contextType: outcomesGroupContextType,
           contextId: outcomesGroupContextId,
           outcomesCount: 0,
+          notImportedOutcomesCount,
           outcomes: {
             pageInfo: {
               hasNextPage: withMorePage,
@@ -471,7 +488,12 @@ export const groupDetailMocks = ({
                   description: '',
                   title: `Outcome 1 - ${title}`,
                   isImported: outcomeIsImported,
-                  __typename: 'LearningOutcome'
+                  __typename: 'LearningOutcome',
+                  friendlyDescription: {
+                    description: 'Outcome 1 - friendly description',
+                    __typename: 'FriendlyDescription',
+                    _id: '101'
+                  }
                 },
                 __typename: 'ContentTag'
               },
@@ -482,7 +504,12 @@ export const groupDetailMocks = ({
                   description: '',
                   title: `Outcome 3 - ${title}`,
                   isImported: outcomeIsImported,
-                  __typename: 'LearningOutcome'
+                  __typename: 'LearningOutcome',
+                  friendlyDescription: {
+                    description: 'Outcome 3 - friendly description',
+                    __typename: 'FriendlyDescription',
+                    _id: '103'
+                  }
                 },
                 __typename: 'ContentTag'
               }
@@ -503,7 +530,8 @@ export const groupDetailMocks = ({
         outcomeIsImported,
         outcomesContextId: contextId,
         outcomesContextType: contextType,
-        searchQuery
+        searchQuery,
+        targetGroupId
       }
     },
     result: {
@@ -515,6 +543,7 @@ export const groupDetailMocks = ({
           contextType: outcomesGroupContextType,
           contextId: outcomesGroupContextId,
           outcomesCount: 0,
+          notImportedOutcomesCount,
           outcomes: {
             pageInfo: {
               hasNextPage: false,
@@ -528,9 +557,13 @@ export const groupDetailMocks = ({
                   _id: '5',
                   description: '',
                   isImported: false,
-                  friendlyDescription: null,
                   title: `Outcome 5 - ${title}`,
-                  __typename: 'LearningOutcome'
+                  __typename: 'LearningOutcome',
+                  friendlyDescription: {
+                    description: 'Outcome 5 - friendly description',
+                    __typename: 'FriendlyDescription',
+                    _id: '105'
+                  }
                 },
                 __typename: 'ContentTag'
               },
@@ -541,7 +574,12 @@ export const groupDetailMocks = ({
                   description: '',
                   isImported: outcomeIsImported,
                   title: `Outcome 6 - ${title}`,
-                  __typename: 'LearningOutcome'
+                  __typename: 'LearningOutcome',
+                  friendlyDescription: {
+                    description: 'Outcome 6 - friendly description',
+                    __typename: 'FriendlyDescription',
+                    _id: '106'
+                  }
                 },
                 __typename: 'ContentTag'
               }
@@ -560,7 +598,8 @@ export const groupDetailMocks = ({
         id: groupId,
         outcomeIsImported,
         outcomesContextId: contextId,
-        outcomesContextType: contextType
+        outcomesContextType: contextType,
+        targetGroupId
       }
     },
     result: {
@@ -570,6 +609,7 @@ export const groupDetailMocks = ({
           description: `${groupDescription} 4`,
           title,
           outcomesCount: numOfOutcomes,
+          notImportedOutcomesCount,
           outcomes: {
             pageInfo: {
               hasNextPage: withMorePage,
@@ -591,90 +631,98 @@ export const groupDetailMocks = ({
       }
     },
     // for testing graphqls refetch in index.js
-    newData: jest.fn(() => ({
-      data: {
+    newData: jest.fn(() => {
+      const outcome1 = {
+        canUnlink,
+        _id: '1',
+        node: {
+          _id: '1',
+          description: '',
+          title: `Refetched Outcome 1 - ${title}`,
+          displayName: '',
+          canEdit,
+          contextId,
+          contextType,
+          friendlyDescription: {
+            _id: '26',
+            description: 'friendly',
+            __typename: 'OutcomeFriendlyDescriptionType'
+          },
+          __typename: 'LearningOutcome'
+        },
         group: {
           _id: groupId,
-          description: `${groupDescription} 4`,
           title: `Refetched ${title}`,
-          outcomesCount: 3,
-          outcomes: {
-            pageInfo: {
-              hasNextPage: withMorePage,
-              endCursor: 'Mx',
-              __typename: 'PageInfo'
-            },
-            edges: [
-              {
-                canUnlink,
-                _id: '1',
-                node: {
-                  _id: '1',
-                  description: '',
-                  title: `Refetched Outcome 1 - ${title}`,
-                  displayName: '',
-                  canEdit,
-                  contextId,
-                  contextType,
-                  friendlyDescription: null,
-                  __typename: 'LearningOutcome'
-                },
-                group: {
-                  _id: groupId,
-                  title: `Refetched ${title}`,
-                  __typename: 'LearningOutcomeGroup'
-                },
-                __typename: 'ContentTag'
-              },
-              {
-                canUnlink,
-                _id: '2',
-                node: {
-                  _id: '2',
-                  description: '',
-                  title: `Refetched Outcome 2 - ${title}`,
-                  displayName: '',
-                  canEdit,
-                  contextId,
-                  contextType,
-                  friendlyDescription: null,
-                  __typename: 'LearningOutcome'
-                },
-                group: {
-                  _id: groupId,
-                  title: `Refetched ${title}`,
-                  __typename: 'LearningOutcomeGroup'
-                },
-                __typename: 'ContentTag'
-              },
-              {
-                canUnlink,
-                _id: '11',
-                node: {
-                  _id: '11',
-                  description: '',
-                  title: `Newly Created Outcome - ${title}`,
-                  displayName: '',
-                  canEdit,
-                  contextId,
-                  contextType,
-                  friendlyDescription: null,
-                  __typename: 'LearningOutcome'
-                },
-                group: {
-                  _id: groupId,
-                  title: `Refetched ${title}`,
-                  __typename: 'LearningOutcomeGroup'
-                },
-                __typename: 'ContentTag'
-              }
-            ],
-            __typename: 'ContentTagConnection'
-          },
           __typename: 'LearningOutcomeGroup'
+        },
+        __typename: 'ContentTag'
+      }
+      const outcome2 = {
+        canUnlink,
+        _id: '2',
+        node: {
+          _id: '2',
+          description: '',
+          title: `Refetched Outcome 2 - ${title}`,
+          displayName: '',
+          canEdit,
+          contextId,
+          contextType,
+          friendlyDescription: null,
+          __typename: 'LearningOutcome'
+        },
+        group: {
+          _id: groupId,
+          title: `Refetched ${title}`,
+          __typename: 'LearningOutcomeGroup'
+        },
+        __typename: 'ContentTag'
+      }
+      const outcome3 = {
+        canUnlink,
+        _id: '11',
+        node: {
+          _id: '11',
+          description: '',
+          title: `Newly Created Outcome - ${title}`,
+          displayName: '',
+          canEdit,
+          contextId,
+          contextType,
+          friendlyDescription: null,
+          __typename: 'LearningOutcome'
+        },
+        group: {
+          _id: groupId,
+          title: `Refetched ${title}`,
+          __typename: 'LearningOutcomeGroup'
+        },
+        __typename: 'ContentTag'
+      }
+      const edges = [outcome1, outcome2, outcome3]
+      const afterRemoveEdges = [outcome3]
+      return {
+        data: {
+          group: {
+            _id: groupId,
+            description: `${groupDescription} 4`,
+            title: `Refetched ${title}`,
+            outcomesCount: removeOnRefetch ? afterRemoveEdges.length : edges.length,
+            notImportedOutcomesCount,
+            outcomes: {
+              pageInfo: {
+                hasNextPage: withMorePage,
+                endCursor: 'Mx',
+                __typename: 'PageInfo'
+              },
+              edges: removeOnRefetch ? afterRemoveEdges : edges,
+              __typename: 'ContentTagConnection'
+            },
+            __typename: 'LearningOutcomeGroup'
+          }
         }
       }
-    }))
+    })
   },
   {
     request: {
@@ -684,7 +732,8 @@ export const groupDetailMocks = ({
         outcomesCursor: 'Mx',
         outcomeIsImported,
         outcomesContextId: contextId,
-        outcomesContextType: contextType
+        outcomesContextType: contextType,
+        targetGroupId
       }
     },
     result: {
@@ -694,6 +743,7 @@ export const groupDetailMocks = ({
           description: `${groupDescription} 5`,
           title,
           outcomesCount: 2,
+          notImportedOutcomesCount,
           outcomes: {
             pageInfo: {
               hasNextPage: false,
@@ -759,7 +809,8 @@ export const groupDetailMocks = ({
         outcomeIsImported,
         outcomesContextId: contextId,
         outcomesContextType: contextType,
-        searchQuery
+        searchQuery,
+        targetGroupId
       }
     },
     result: {
@@ -769,6 +820,7 @@ export const groupDetailMocks = ({
           description: `${groupDescription} 6`,
           title,
           outcomesCount: 1,
+          notImportedOutcomesCount,
           outcomes: {
             pageInfo: {
               hasNextPage: false,
@@ -816,7 +868,9 @@ export const groupDetailMocksFetchMore = ({
   contextId = '1',
   withMorePage = true,
   outcomeIsImported = false,
-  groupDescription = 'Group Description'
+  groupDescription = 'Group Description',
+  targetGroupId,
+  notImportedOutcomesCount = null
 } = {}) => [
   {
     request: {
@@ -825,7 +879,8 @@ export const groupDetailMocksFetchMore = ({
         id: groupId,
         outcomeIsImported,
         outcomesContextId: contextId,
-        outcomesContextType: contextType
+        outcomesContextType: contextType,
+        targetGroupId
       }
     },
     result: {
@@ -835,6 +890,7 @@ export const groupDetailMocksFetchMore = ({
           description: `${groupDescription} 4`,
           title,
           outcomesCount: 2,
+          notImportedOutcomesCount,
           outcomes: {
             pageInfo: {
               hasNextPage: withMorePage,
@@ -900,7 +956,8 @@ export const groupDetailMocksFetchMore = ({
         outcomesCursor: 'Mx',
         outcomeIsImported,
         outcomesContextId: contextId,
-        outcomesContextType: contextType
+        outcomesContextType: contextType,
+        targetGroupId
       }
     },
     result: {
@@ -910,6 +967,7 @@ export const groupDetailMocksFetchMore = ({
           description: `${groupDescription} 5`,
           title,
           outcomesCount: 2,
+          notImportedOutcomesCount,
           outcomes: {
             pageInfo: {
               hasNextPage: false,
@@ -975,10 +1033,12 @@ export const findOutcomesMocks = ({
   outcomeIsImported = true,
   contextType = 'Account',
   contextId = '1',
-  outcomesGroupContextId = 1,
+  outcomesGroupContextId = '1',
   outcomesGroupContextType = 'Account',
   searchQuery = 'mathematics',
-  outcomesCount = 25
+  outcomesCount = 25,
+  targetGroupId = '0',
+  notImportedOutcomesCount = 1
 } = {}) => [
   {
     request: {
@@ -987,7 +1047,8 @@ export const findOutcomesMocks = ({
         id: groupId,
         outcomeIsImported,
         outcomesContextId: contextId,
-        outcomesContextType: contextType
+        outcomesContextType: contextType,
+        targetGroupId
       }
     },
     result: {
@@ -998,6 +1059,7 @@ export const findOutcomesMocks = ({
           contextType: outcomesGroupContextType,
           contextId: outcomesGroupContextId,
           outcomesCount,
+          notImportedOutcomesCount,
           outcomes: {
             pageInfo: {
               hasNextPage: false,
@@ -1012,7 +1074,12 @@ export const findOutcomesMocks = ({
                   description: '',
                   isImported,
                   title: `Outcome 5 - Group ${groupId}`,
-                  __typename: 'LearningOutcome'
+                  __typename: 'LearningOutcome',
+                  friendlyDescription: {
+                    _id: '5',
+                    description: 'Outcome 5 - friendly description',
+                    __typename: 'FriendlyDescription'
+                  }
                 },
                 __typename: 'ContentTag'
               },
@@ -1023,7 +1090,12 @@ export const findOutcomesMocks = ({
                   description: '',
                   isImported,
                   title: `Outcome 6 - Group ${groupId}`,
-                  __typename: 'LearningOutcome'
+                  __typename: 'LearningOutcome',
+                  friendlyDescription: {
+                    _id: '6',
+                    description: 'Outcome 6 - friendly description',
+                    __typename: 'FriendlyDescription'
+                  }
                 },
                 __typename: 'ContentTag'
               }
@@ -1043,7 +1115,8 @@ export const findOutcomesMocks = ({
         outcomeIsImported,
         outcomesContextId: contextId,
         outcomesContextType: contextType,
-        searchQuery
+        searchQuery,
+        targetGroupId
       }
     },
     result: {
@@ -1054,6 +1127,7 @@ export const findOutcomesMocks = ({
           contextType: outcomesGroupContextType,
           contextId: outcomesGroupContextId,
           outcomesCount: 15,
+          notImportedOutcomesCount,
           outcomes: {
             pageInfo: {
               hasNextPage: false,
@@ -1068,7 +1142,12 @@ export const findOutcomesMocks = ({
                   description: '',
                   isImported,
                   title: `Outcome 5 - Group ${groupId}`,
-                  __typename: 'LearningOutcome'
+                  __typename: 'LearningOutcome',
+                  friendlyDescription: {
+                    _id: '5',
+                    description: 'Outcome 5 - friendly description',
+                    __typename: 'FriendlyDescription'
+                  }
                 },
                 __typename: 'ContentTag'
               },
@@ -1079,7 +1158,12 @@ export const findOutcomesMocks = ({
                   description: '',
                   isImported,
                   title: `Outcome 6 - Group ${groupId}`,
-                  __typename: 'LearningOutcome'
+                  __typename: 'LearningOutcome',
+                  friendlyDescription: {
+                    _id: '6',
+                    description: 'Outcome 6 - friendly description',
+                    __typename: 'FriendlyDescription'
+                  }
                 },
                 __typename: 'ContentTag'
               }
@@ -1237,7 +1321,37 @@ export const updateOutcomeMocks = ({
     result: {
       data: {
         updateLearningOutcome: {
+          __typename: 'UpdateLearningOutcomePayload',
           learningOutcome: {
+            __typename: 'LearningOutcome',
+            _id: '1',
+            title,
+            displayName,
+            description
+          },
+          errors: null
+        }
+      }
+    }
+  },
+  {
+    request: {
+      query: UPDATE_LEARNING_OUTCOME,
+      variables: {
+        input: {
+          id: '3',
+          title,
+          displayName,
+          description
+        }
+      }
+    },
+    result: {
+      data: {
+        updateLearningOutcome: {
+          __typename: 'UpdateLearningOutcomePayload',
+          learningOutcome: {
+            __typename: 'LearningOutcome',
             _id: '1',
             title,
             displayName,
@@ -1280,7 +1394,8 @@ export const importOutcomeMocks = ({
   targetContextId = '1',
   targetContextType = 'Account',
   failResponse = false,
-  failMutationNoErrMsg = false
+  failMutationNoErrMsg = false,
+  targetGroupId
 } = {}) => {
   const successfulResponse = {
     data: {
@@ -1334,9 +1449,14 @@ export const importOutcomeMocks = ({
   }
 
   let input = {
-    targetContextId,
-    targetContextType,
     outcomeId
+  }
+
+  if (targetGroupId) {
+    input.targetGroupId = targetGroupId
+  } else {
+    input.targetContextId = targetContextId
+    input.targetContextType = targetContextType
   }
 
   if (sourceContextId && sourceContextType) {
@@ -1603,6 +1723,7 @@ export const moveOutcomeMock = ({
 export const updateOutcomeGroupMock = ({
   id = '100',
   title = 'Updated title',
+  returnTitle = 'Updated title',
   description = 'Updated description',
   vendorGuid = 'A001',
   parentOutcomeGroupId = '101',
@@ -1616,7 +1737,7 @@ export const updateOutcomeGroupMock = ({
       updateLearningOutcomeGroup: {
         learningOutcomeGroup: {
           _id: id,
-          title,
+          title: returnTitle,
           description,
           vendorGuid,
           parentOutcomeGroup: {
@@ -1707,6 +1828,7 @@ export const importGroupMocks = ({
   progressId = '111',
   targetContextId = '1',
   targetContextType = 'Account',
+  targetGroupId,
   failResponse = false,
   failMutationNoErrMsg = false
 } = {}) => {
@@ -1761,16 +1883,23 @@ export const importGroupMocks = ({
     result = failedMutationNoErrMsg
   }
 
+  const input = {
+    groupId
+  }
+
+  if (targetGroupId) {
+    input.targetGroupId = targetGroupId
+  } else {
+    input.targetContextType = targetContextType
+    input.targetContextId = targetContextId
+  }
+
   return [
     {
       request: {
         query: IMPORT_OUTCOMES,
         variables: {
-          input: {
-            groupId,
-            targetContextId,
-            targetContextType
-          }
+          input
         }
       },
       result

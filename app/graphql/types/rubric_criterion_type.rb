@@ -20,7 +20,7 @@
 
 module Types
   class RubricCriterionType < ApplicationObjectType
-    description 'Individual criteria for a rubric'
+    description "Individual criteria for a rubric"
 
     implements Interfaces::LegacyIDInterface
 
@@ -39,14 +39,15 @@ module Types
     field :outcome, LearningOutcomeType, null: true
     def outcome
       return nil unless object[:learning_outcome_id]
+
       Loaders::IDLoader.for(LearningOutcome).load(object[:learning_outcome_id])
     end
 
     field :long_description, String, null: true
     field :mastery_points, Float, null: true
     field :points, Float, null: true
-    field :ratings, [RubricRatingType], <<~DESC, null: true
+    field :ratings, [RubricRatingType], <<~MD, null: true
       The possible ratings available for this criterion
-    DESC
+    MD
   end
 end

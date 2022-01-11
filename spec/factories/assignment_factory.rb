@@ -20,7 +20,7 @@
 
 module Factories
   def assignment_model(opts = {})
-    course = opts.delete(:course) || opts[:context] || course_model(reusable:  true)
+    course = opts.delete(:course) || opts[:context] || course_model(reusable: true)
     # turn the group_category title into a group category "object"
     group_category = opts.delete(:group_category)
     @group_category = course.group_categories.create!(name: group_category) if group_category
@@ -40,7 +40,7 @@ module Factories
     }
   end
 
-  def assignment_with_override(opts={})
+  def assignment_with_override(opts = {})
     assignment_model(opts)
     @override = @a.assignment_overrides.build
     @override.set = @c.default_section
@@ -48,7 +48,7 @@ module Factories
     @override
   end
 
-  def differentiated_assignment(opts={})
+  def differentiated_assignment(opts = {})
     course_section = opts.delete(:course_section)
     @assignment = opts[:assignment] || assignment_model(opts)
     @assignment.only_visible_to_overrides = true
@@ -66,9 +66,9 @@ module Factories
     now = Time.now.utc
     records = course_ids.each_with_index.map do |id, i|
       {
-        context_id: id, context_type: 'Course',
+        context_id: id, context_type: "Course",
         title: "#{id}:#{i}", grading_type: "points", submission_types: "none",
-        workflow_state: 'published',
+        workflow_state: "published",
         root_account_id: account.id,
         created_at: now, updated_at: now
       }.merge(fields)
@@ -77,15 +77,15 @@ module Factories
   end
 
   def new_quizzes_assignment(opts = {})
-    assignment_model({:submission_types => "external_tool"}.merge(opts))
+    assignment_model({ submission_types: "external_tool" }.merge(opts))
     tool = @c.context_external_tools.create!(
-      :name => 'Quizzes.Next',
-      :consumer_key => 'test_key',
-      :shared_secret => 'test_secret',
-      :tool_id => 'Quizzes 2',
-      :url => 'http://example.com/launch'
+      name: "Quizzes.Next",
+      consumer_key: "test_key",
+      shared_secret: "test_secret",
+      tool_id: "Quizzes 2",
+      url: "http://example.com/launch"
     )
-    @a.external_tool_tag_attributes = { :content => tool }
+    @a.external_tool_tag_attributes = { content: tool }
     @a.save!
     @a
   end

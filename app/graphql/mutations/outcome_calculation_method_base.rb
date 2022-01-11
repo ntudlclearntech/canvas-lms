@@ -44,13 +44,13 @@ class Mutations::OutcomeCalculationMethodBase < Mutations::BaseMutation
   def upsert(input, existing_record: nil, context: nil)
     record = existing_record || OutcomeCalculationMethod.find_by(context: context)
     if record
-      record.assign_attributes(workflow_state: 'active', **attrs(input.to_h))
+      record.assign_attributes(workflow_state: "active", **attrs(input.to_h))
       record.assign_attributes(context: context) unless context.nil?
     else
       record = OutcomeCalculationMethod.new(context: context, **attrs(input.to_h))
     end
     if record.save
-      {outcome_calculation_method: record}
+      { outcome_calculation_method: record }
     elsif existing_record.nil? && context_taken?(record)
       upsert(input, context: context)
     else

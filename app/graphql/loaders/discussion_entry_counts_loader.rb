@@ -22,11 +22,12 @@
 # or root_discussion_entries,
 class Loaders::DiscussionEntryCountsLoader < GraphQL::Batch::Loader
   def initialize(current_user:)
+    super()
     @current_user = current_user
   end
 
   def counts_sql(id_string)
-    <<~SQL
+    <<~SQL.squish
       #{id_string},
       SUM(CASE WHEN discussion_entries.workflow_state <> 'deleted' THEN 1 END) AS replies,
       SUM(CASE WHEN discussion_entries.workflow_state = 'deleted' THEN 1 END) deleted_count,
@@ -38,9 +39,9 @@ class Loaders::DiscussionEntryCountsLoader < GraphQL::Batch::Loader
   def perform(objects)
     object_id = object_id_string(objects.first)
     counts = DiscussionEntry.joins(DiscussionEntry.participant_join_sql(@current_user))
-      .where(discussion_entries: object_specific_hash(objects))
-      .group("discussion_entries.#{object_id}")
-      .select(counts_sql(object_id)).index_by(&object_id.to_sym)
+                            .where(discussion_entries: object_specific_hash(objects))
+                            .group("discussion_entries.#{object_id}")
+                            .select(counts_sql(object_id)).index_by(&object_id.to_sym)
 
     objects.each do |object|
       # if we are not a root_entry, we are not returning counts
@@ -57,18 +58,20 @@ class Loaders::DiscussionEntryCountsLoader < GraphQL::Batch::Loader
   end
 
   def object_specific_hash(objects)
-    if objects.first.is_a?(DiscussionTopic)
+    case objects.first
+    when DiscussionTopic
       { discussion_topic_id: objects }
-    elsif objects.first.is_a?(DiscussionEntry)
+    when DiscussionEntry
       { root_entry_id: objects }
     end
   end
 
   def object_id_string(object)
-    if object.is_a?(DiscussionTopic)
-      'discussion_topic_id'
-    elsif object.is_a?(DiscussionEntry)
-      'root_entry_id'
+    case object
+    when DiscussionTopic
+      "discussion_topic_id"
+    when DiscussionEntry
+      "root_entry_id"
     end
   end
 end

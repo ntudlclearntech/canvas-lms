@@ -19,13 +19,12 @@
 
 PactConfig::Consumers::ALL.each do |consumer|
   Pact.provider_states_for consumer do
-
     # Student ID: 5 || Student Name: Student1
     # Course ID: 1
     # Announcement ID: 1
-    provider_state 'a student in a course with an announcement' do
+    provider_state "a student in a course with an announcement" do
       set_up do
-        course = Pact::Canvas::base_state.course
+        course = Pact::Canvas.base_state.course
         Announcement.create!(context: course, title: "Announcement1", message: "Announcement 1 detail")
       end
     end

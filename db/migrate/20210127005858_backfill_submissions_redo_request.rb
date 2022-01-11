@@ -22,11 +22,11 @@ class BackfillSubmissionsRedoRequest < ActiveRecord::Migration[5.2]
   disable_ddl_transaction!
 
   def self.runnable?
-    connection.postgresql_version < 110000
+    connection.postgresql_version < 11_00_00 # rubocop:disable Style/NumericLiterals
   end
 
   def up
-    if Submission.columns.detect{|c| c.name == "redo_request"}&.null
+    if Submission.columns.detect { |c| c.name == "redo_request" }&.null
       DataFixup::BackfillNulls.run(Submission, :redo_request, default_value: false)
       change_column_null(:submissions, :redo_request, false)
     end

@@ -18,6 +18,7 @@
 
 import {createStore, applyMiddleware, combineReducers} from 'redux'
 import ReduxThunk from 'redux-thunk'
+import _ from 'lodash'
 import listDeveloperKeysReducer from '../reducers/listDeveloperKeysReducer'
 import deactivateDeveloperKeyReducer from '../reducers/deactivateReducer'
 import activateDeveloperKeyReducer from '../reducers/activateReducer'
@@ -31,7 +32,10 @@ const middleware = [
   ReduxThunk,
 
   // this is so redux-logger is not included in the production webpack bundle
-  process.env.NODE_ENV !== 'production' && require('redux-logger').logger
+  process.env.NODE_ENV !== 'production' &&
+    // this is so redux-logger is not included in the test output
+    process.env.NODE_ENV !== 'test' &&
+    require('redux-logger').logger
 ].filter(Boolean)
 
 const createStoreWithMiddleware = applyMiddleware(...middleware)(createStore)
@@ -47,4 +51,9 @@ const developerKeysReducer = combineReducers({
   listDeveloperKeyScopes: listDeveloperKeyScopesReducer
 })
 
-export default createStoreWithMiddleware(developerKeysReducer)
+export default (initialStateOverrides = {}) => {
+  let defaultState = developerKeysReducer({}, {})
+  defaultState = _.merge(defaultState, initialStateOverrides)
+
+  return createStoreWithMiddleware(developerKeysReducer, defaultState)
+}

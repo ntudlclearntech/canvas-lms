@@ -17,10 +17,9 @@
 # You should have received a copy of the GNU Affero General Public License along
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 
-require 'lti_advantage'
+require "lti_advantage"
 
 module Lti
-
   # Responsible for generating parameters for both Login requests
   # and Authentication Responses (ID token).
   #
@@ -145,12 +144,18 @@ module Lti
 
     def target_link_uri
       return @target_link_uri if @target_link_uri.present?
+
       resource_type ? @tool.extension_setting(resource_type, :target_link_uri) : @tool.url
     end
 
     def generate_lti_params
       if resource_type&.to_sym == :course_assignments_menu &&
-        !Account.site_admin.feature_enabled?(:lti_multiple_assignment_deep_linking)
+         !@context.root_account.feature_enabled?(:lti_multiple_assignment_deep_linking)
+        return resource_link_request.generate_post_payload
+      end
+
+      if resource_type&.to_sym == :module_index_menu_modal &&
+         !@context.root_account.feature_enabled?(:lti_deep_linking_module_index_menu_modal)
         return resource_link_request.generate_post_payload
       end
 
@@ -167,12 +172,12 @@ module Lti
       login_hint = Lti::Asset.opaque_identifier_for(@user, context: @context) || User.public_lti_id
 
       LtiAdvantage::Messages::LoginRequest.new(
-        iss: Canvas::Security.config['lti_iss'],
+        iss: Canvas::Security.config["lti_iss"],
         login_hint: login_hint,
         client_id: @tool.global_developer_key_id,
         target_link_uri: target_link_uri,
         lti_message_hint: message_hint,
-        canvas_region: @context.shard.database_server.config[:region] || 'not_configured'
+        canvas_region: @context.shard.database_server.config[:region] || "not_configured"
       ).as_json
     end
 
@@ -202,16 +207,14 @@ module Lti
     end
 
     def resource_link_request
-      @_resource_link_request ||= begin
-        Lti::Messages::ResourceLinkRequest.new(
-          tool: @tool,
-          context: @context,
-          user: @user,
-          expander: @expander,
-          return_url: @return_url,
-          opts: @opts.merge(option_overrides)
-        )
-      end
+      @_resource_link_request ||= Lti::Messages::ResourceLinkRequest.new(
+        tool: @tool,
+        context: @context,
+        user: @user,
+        expander: @expander,
+        return_url: @return_url,
+        opts: @opts.merge(option_overrides)
+      )
     end
 
     def option_overrides

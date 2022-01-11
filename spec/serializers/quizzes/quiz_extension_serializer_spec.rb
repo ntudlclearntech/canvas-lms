@@ -17,10 +17,7 @@
 # You should have received a copy of the GNU Affero General Public License along
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 
-require 'spec_helper'
-
 describe Quizzes::QuizExtensionSerializer do
-
   let :context do
     Course.new.tap do |course|
       course.id = 1
@@ -30,7 +27,7 @@ describe Quizzes::QuizExtensionSerializer do
 
   let(:user) { User.new }
   let(:session) { double }
-  let(:host_name) { 'example.com' }
+  let(:host_name) { "example.com" }
 
   let :controller do
     options = {
@@ -57,10 +54,9 @@ describe Quizzes::QuizExtensionSerializer do
 
   let :serializer do
     Quizzes::QuizExtensionSerializer.new(quiz_extension,
-      controller: controller,
-      scope: user,
-      session: session
-    )
+                                         controller: controller,
+                                         scope: user,
+                                         session: session)
   end
 
   before do

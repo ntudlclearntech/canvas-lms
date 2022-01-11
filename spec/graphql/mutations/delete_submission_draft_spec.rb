@@ -18,8 +18,8 @@
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-require_relative '../../spec_helper'
-require_relative '../graphql_spec_helper'
+require_relative "../../spec_helper"
+require_relative "../graphql_spec_helper"
 
 RSpec.describe Mutations::DeleteSubmissionDraft do
   let_once(:submission) { submission_model }
@@ -44,7 +44,7 @@ RSpec.describe Mutations::DeleteSubmissionDraft do
   def run_mutation(submission_id: submission.id, current_user: student)
     result = CanvasSchema.execute(
       mutation_str(submission_id: submission_id),
-      context: {current_user: current_user, request: ActionDispatch::TestRequest.create}
+      context: { current_user: current_user, request: ActionDispatch::TestRequest.create }
     )
     result.to_h.with_indifferent_access
   end
@@ -52,9 +52,9 @@ RSpec.describe Mutations::DeleteSubmissionDraft do
   it "deletes an existing draft on the specified submission" do
     submission.submission_drafts.create!(submission_attempt: 1)
 
-    expect {
+    expect do
       run_mutation
-    }.to change {
+    end.to change {
       submission.reload.submission_drafts.count
     }.from(1).to(0)
   end
@@ -63,9 +63,9 @@ RSpec.describe Mutations::DeleteSubmissionDraft do
     submission.submission_drafts.create!(submission_attempt: 1)
     submission.submission_drafts.create!(submission_attempt: 2)
 
-    expect {
+    expect do
       run_mutation
-    }.to change {
+    end.to change {
       submission.reload.submission_drafts.count
     }.from(2).to(0)
   end

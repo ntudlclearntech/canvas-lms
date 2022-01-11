@@ -74,10 +74,10 @@ module Rake
 
     def task(name_and_deps, &transformer)
       name, deps = if name_and_deps.is_a?(Hash)
-        name_and_deps.first
-      else
-        [name_and_deps, []]
-      end
+                     name_and_deps.first
+                   else
+                     [name_and_deps, []]
+                   end
 
       @nodes[name] = deps
       @transformers[name] = transformer || IDENTITY
@@ -108,23 +108,23 @@ module Rake
 
     def ensure_all_nodes_are_defined!
       undefined = nodes.reduce([]) do |errors, (_node, deps)|
-        errors + deps.select { |dep| !nodes.key?(dep) }
+        errors + deps.reject { |dep| nodes.key?(dep) }
       end
 
       if undefined.any?
-        fail <<~ERR
+        raise <<~TEXT
 
           The following nodes are listed as dependents but were not defined:
 
             - #{undefined.uniq.join("\n  - ")}
 
-        ERR
+        TEXT
       end
     end
 
     def take_or_resolve(node, batch, to_take, visited = [])
       if visited.include?(node)
-        fail "node \"#{node}\" has a self or circular dependency"
+        raise "node \"#{node}\" has a self or circular dependency"
       end
 
       # don't dupe if we already took it this pass (e.g. as a dep):

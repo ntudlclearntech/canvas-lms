@@ -20,12 +20,14 @@
 # This makes it so all parameters get converted to UTF-8 before they hit your
 # app.  If someone sends invalid UTF-8 to your server, raise an exception.
 class ActionController::InvalidByteSequenceErrorFromParams < Encoding::InvalidByteSequenceError; end
+
 class ActionController::Base
   def force_utf8_params
     traverse = lambda do |object, block|
-      if object.kind_of?(Hash)
+      case object
+      when Hash
         object.each_value { |o| traverse.call(o, block) }
-      elsif object.kind_of?(Array)
+      when Array
         object.each { |o| traverse.call(o, block) }
       else
         block.call(object)

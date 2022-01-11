@@ -27,11 +27,10 @@ describe Messages::SubmissionCommentForTeacher::AnnotationPresenter do
   let(:assignment) { course.assignments.create!(name: "Introductions", due_at: 1.day.ago) }
   let(:submission) { assignment.submit_homework(submitter) }
   let(:message) { Message.new(context: submission, user: teacher) }
-  let(:data) { { author_name: 'bill smith' } }
+  let(:data) { { author_name: "bill smith" } }
   let(:presenter) { Messages::SubmissionCommentForTeacher::AnnotationPresenter.new(message, data: data) }
 
   it "uses author from provided data" do
     expect(presenter.body).to eq("bill smith just made a new annotation on the submission for Adam Jones for Introductions")
   end
-
 end

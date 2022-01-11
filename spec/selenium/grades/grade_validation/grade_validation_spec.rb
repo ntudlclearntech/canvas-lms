@@ -17,11 +17,11 @@
 # You should have received a copy of the GNU Affero General Public License along
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 
-require_relative '../../common'
-require_relative '../pages/gradebook_page'
+require_relative "../../common"
+require_relative "../pages/gradebook_page"
 
-describe 'Gradebook frontend/backend calculators' do
-  include_context 'in-process server selenium tests'
+describe "Gradebook frontend/backend calculators" do
+  include_context "in-process server selenium tests"
 
   before :once do
     skip("Unskip in GRADE-1871")
@@ -34,7 +34,7 @@ describe 'Gradebook frontend/backend calculators' do
     @unlucky7 = [97.09, 68.1, 78.51, 98.56, 82.56, 86.73, 94.86, 86.21, 81.35, 71.99, 70.18, 79.17, 71.32, 94.49, 69.88, 91.9, 96.17, 86.17, 90.3, 85.35]
     @unlucky8 = [65.11, 89.27, 63.59, 93.51, 83.11, 67.33, 85.49, 68.77, 67.56, 67.63, 64.64, 68.65, 86.55, 94.96, 92.11, 79.57, 65.52, 84.63, 71.57, 80.04]
 
-    @unlucky_group = [@unlucky1,@unlucky2,@unlucky3,@unlucky4,@unlucky5,@unlucky6,@unlucky7,@unlucky8]
+    @unlucky_group = [@unlucky1, @unlucky2, @unlucky3, @unlucky4, @unlucky5, @unlucky6, @unlucky7, @unlucky8]
     grades_sample = (60.0..100.0).step(0.01).map { |x| x.round(2) }
 
     @teacher = user_factory(active_all: true)
@@ -44,7 +44,7 @@ describe 'Gradebook frontend/backend calculators' do
       grades = @unlucky_group[course_index]
 
       create_enrollments(course, student_data)
-      group = course.assignment_groups.create! name: 'assignments'
+      group = course.assignment_groups.create! name: "assignments"
       assignments = create_assignments(
         [course.id],
         20,
@@ -61,7 +61,7 @@ describe 'Gradebook frontend/backend calculators' do
             user_id: student_data.first.id,
             body: "hello",
             workflow_state: "graded",
-            submission_type: 'online_text_entry',
+            submission_type: "online_text_entry",
             grader_id: @teacher.id,
             grade: grades[index].to_s,
             score: grades[index],
@@ -80,7 +80,7 @@ describe 'Gradebook frontend/backend calculators' do
             user_id: student_data.second.id,
             body: "hello",
             workflow_state: "graded",
-            submission_type: 'online_text_entry',
+            submission_type: "online_text_entry",
             grader_id: @teacher.id,
             grade: random.to_s,
             score: random,
@@ -97,7 +97,7 @@ describe 'Gradebook frontend/backend calculators' do
   8.times do |i|
     it "final grades match with unlucky#{i} and course#{i}" do
       # need to expand and bring all rows into view in order to scrape
-      driver.manage.window.resize_to(2000,900)
+      driver.manage.window.resize_to(2000, 900)
       user_session(@teacher)
       Gradebook.visit(@courses[i])
       @frontend_grades = Gradebook.scores_scraped
@@ -105,9 +105,9 @@ describe 'Gradebook frontend/backend calculators' do
       @diff = @frontend_grades - @backend_grades
 
       @diff.each do |entry|
-        puts "USER: #{entry[:user_id]} scores: #{@unlucky_group[i].map{|v| {score: v }}}"
-        puts "frontend grade: #{@frontend_grades.select{ |user| user[:user_id] == entry[:user_id]}}"
-        puts "backend grade: #{@backend_grades.select{ |user| user[:user_id] == entry[:user_id]}}"
+        puts "USER: #{entry[:user_id]} scores: #{@unlucky_group[i].map { |v| { score: v } }}"
+        puts "frontend grade: #{@frontend_grades.select { |user| user[:user_id] == entry[:user_id] }}"
+        puts "backend grade: #{@backend_grades.select { |user| user[:user_id] == entry[:user_id] }}"
       end
       expect(@diff).to be_empty
     end

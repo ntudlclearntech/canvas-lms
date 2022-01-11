@@ -196,7 +196,8 @@ it('renders the grade for the currently selected attempt', async () => {
       ...SubmissionMocks.graded,
       attempt: 7,
       grade: '131',
-      enteredGrade: '131'
+      enteredGrade: '131',
+      gradingStatus: 'graded'
     }
   })
 
@@ -222,7 +223,10 @@ it('renders "N/A" for the currently selected attempt if it has no grade', async 
     Assignment: {pointsPossible: 150},
     Submission: {
       ...SubmissionMocks.submitted,
-      attempt: 7
+      attempt: 7,
+      grade: '131',
+      enteredGrade: '131',
+      gradingStatus: 'needs_grading'
     }
   })
 
@@ -302,7 +306,7 @@ it('renders the attempt select', async () => {
 
 it('does not render the attempt select if there is no submission', async () => {
   const props = await mockAssignmentAndSubmission({Submission: null})
-  props.allSubmissions = [{id: 1}]
+  props.allSubmissions = [{id: '1', _id: '1'}]
   const {queryByTestId} = render(<Header {...props} />)
   expect(queryByTestId('attemptSelect')).not.toBeInTheDocument()
 })
@@ -333,7 +337,7 @@ describe('submission workflow tracker', () => {
 
   it('is not rendered when no submission object is present', async () => {
     const props = await mockAssignmentAndSubmission({Submission: null})
-    props.allSubmissions = [{id: 1}]
+    props.allSubmissions = [{id: '1', _id: '1'}]
     const {queryByTestId} = render(<Header {...props} />)
     expect(queryByTestId('submission-workflow-tracker')).not.toBeInTheDocument()
   })
@@ -365,6 +369,16 @@ describe('Add Comment/View Feedback button', () => {
     const props = await mockAssignmentAndSubmission()
     const {getByText} = render(<Header {...props} />)
     expect(getByText('Add Comment')).toBeInTheDocument()
+  })
+
+  it('renders as "View Feedback" for observers', async () => {
+    const props = await mockAssignmentAndSubmission()
+    const {getByText} = render(
+      <StudentViewContext.Provider value={{allowChangesToSubmission: false, isObserver: true}}>
+        <Header {...props} />
+      </StudentViewContext.Provider>
+    )
+    expect(getByText('View Feedback')).toBeInTheDocument()
   })
 
   it('renders as "View Feedback" if feedback exists', async () => {
@@ -433,7 +447,7 @@ describe('Add Comment/View Feedback button', () => {
 
   it('does not render when no submission is present', async () => {
     const props = await mockAssignmentAndSubmission({Submission: null})
-    props.allSubmissions = [{id: 1}]
+    props.allSubmissions = [{id: '1', _id: '1'}]
     const {queryByText} = render(<Header {...props} />)
     expect(queryByText('View Feedback')).not.toBeInTheDocument()
     expect(queryByText('Add Comment')).not.toBeInTheDocument()

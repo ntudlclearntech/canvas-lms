@@ -273,8 +273,6 @@ class RCEWrapper extends React.Component {
     instRecordDisabled: PropTypes.bool,
     highContrastCSS: PropTypes.arrayOf(PropTypes.string),
     maxInitRenderedRCEs: PropTypes.number,
-    // feature flag related props
-    use_rce_pretty_html_editor: PropTypes.bool,
     use_rce_buttons_and_icons: PropTypes.bool,
     use_rce_a11y_checker_notifications: PropTypes.bool
   }
@@ -325,7 +323,8 @@ class RCEWrapper extends React.Component {
       path: [],
       wordCount: 0,
       editorView: props.editorView || WYSIWYG_VIEW,
-      shouldShowOnFocusButton: (props.renderKBShortcutModal === undefined ? true : props.renderKBShortcutModal),
+      shouldShowOnFocusButton:
+        props.renderKBShortcutModal === undefined ? true : props.renderKBShortcutModal,
       KBShortcutModalOpen: false,
       messages: [],
       announcement: null,
@@ -595,6 +594,30 @@ class RCEWrapper extends React.Component {
     this.contentInserted(element)
   }
 
+  insertMathEquation(tex) {
+    const ed = this.mceInstance()
+    const docSz =
+      parseFloat(
+        ed.dom.doc.defaultView.getComputedStyle(ed.dom.doc.body).getPropertyValue('font-size')
+      ) || 1
+    const sel = ed.selection.getNode()
+    const imgSz = sel
+      ? parseFloat(ed.dom.doc.defaultView.getComputedStyle(sel).getPropertyValue('font-size')) || 1
+      : docSz
+    let scale = imgSz / docSz
+
+    const url = `/equation_images/${encodeURIComponent(encodeURIComponent(tex))}?scale=${scale}`
+
+    // if I simply create the html string, xsslint fails jenkins
+    const img = document.createElement('img')
+    img.setAttribute('alt', `LaTeX: ${tex}`)
+    img.setAttribute('title', tex)
+    img.setAttribute('class', 'equation_image')
+    img.setAttribute('data-equation-content', tex)
+    img.setAttribute('src', url)
+    this.insertCode(img.outerHTML)
+  }
+
   removePlaceholders(name) {
     const placeholder = this.mceInstance().dom.doc.querySelector(
       `[data-placeholder-for="${encodeURIComponent(name)}"]`
@@ -681,11 +704,7 @@ class RCEWrapper extends React.Component {
     let newState
     switch (this.state.editorView) {
       case WYSIWYG_VIEW:
-        if (this.props.use_rce_pretty_html_editor) {
-          newState = {editorView: newView || PRETTY_HTML_EDITOR_VIEW}
-        } else {
-          newState = {editorView: RAW_HTML_EDITOR_VIEW}
-        }
+        newState = {editorView: newView || PRETTY_HTML_EDITOR_VIEW}
         break
       case PRETTY_HTML_EDITOR_VIEW:
         newState = {editorView: newView || WYSIWYG_VIEW}
@@ -1351,7 +1370,7 @@ class RCEWrapper extends React.Component {
     this.setState({KBShortcutModalOpen: false})
   }
 
-  KBShortcutModalClosed = () => {
+  KBShortcutModalExited = () => {
     if (this.state.KBShortcutFocusReturn === this.iframe) {
       // if the iframe has focus, we need to forward it on to tinymce
       this.editor.focus(false)
@@ -1359,6 +1378,8 @@ class RCEWrapper extends React.Component {
       // when the modal is opened from the showOnFocus button, focus doesn't
       // get automatically returned to the button like it should.
       this._showOnFocusButton.focus()
+    } else {
+      this._showOnFocusButton?.focus()
     }
   }
 
@@ -1706,8 +1727,6 @@ class RCEWrapper extends React.Component {
   }
 
   renderHtmlEditor() {
-    if (!this.props.use_rce_pretty_html_editor) return null
-
     // the div keeps the editor from collapsing while the code editor is downloaded
     return (
       <Suspense
@@ -1809,7 +1828,6 @@ class RCEWrapper extends React.Component {
           onKBShortcutModalOpen={this.openKBShortcutModal}
           onA11yChecker={this.onA11yChecker}
           onFullscreen={this.handleClickFullscreen}
-          use_rce_pretty_html_editor={this.props.use_rce_pretty_html_editor}
           use_rce_a11y_checker_notifications={this.props.use_rce_a11y_checker_notifications}
           a11yBadgeColor={this.theme.canvasBadgeBackgroundColor}
           a11yErrorsCount={this.state.a11yErrorsCount}
@@ -1825,7 +1843,7 @@ class RCEWrapper extends React.Component {
           />
         )}
         <KeyboardShortcutModal
-          onClose={this.KBShortcutModalClosed}
+          onExited={this.KBShortcutModalExited}
           onDismiss={this.closeKBShortcutModal}
           open={this.state.KBShortcutModalOpen}
         />

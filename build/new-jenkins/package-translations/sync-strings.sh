@@ -9,7 +9,7 @@ set -x -o errexit -o errtrace -o nounset -o pipefail
 ##
 
 export AWS_ROLE_ARN="arn:aws:iam::307761260553:role/translations-jenkins"
-export GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=no -i /usr/src/sshkeyfile -l '$SSH_USERNAME'"
+export GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=no -i /usr/src/sshkeyfile -l $SSH_USERNAME"
 
 "$(yarn bin)/sync-translations" --ignore-jira --config ./package-translations/sync-config.json
 
@@ -35,6 +35,8 @@ yarn split
 yarn lint
 popd
 
+yarn wsrun --exclude-missing installTranslations
+
 git config --global user.name "Jenkins"
 git config --global user.email "svc.cloudjenkins@instructure.com"
 
@@ -46,3 +48,5 @@ git checkout -B sync-translations-tmp && \
   git commit -m "[i18n] Update package translations" && \
   git push origin sync-translations-tmp:refs/for/master%submit,l=Verified+1 && \
   git checkout "$CURRENT_BRANCH"
+
+yarn wsrun --exclude-missing commitTranslations

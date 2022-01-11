@@ -17,10 +17,8 @@
 # You should have received a copy of the GNU Affero General Public License along
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 
-require 'spec_helper'
-
 describe LocalCache do
-  after(:each) do
+  after do
     LocalCache.clear(force: true)
     LocalCache.reset
   end
@@ -41,14 +39,14 @@ describe LocalCache do
       }
     end
 
-    before(:each) do
+    before do
       skip("Must have a local redis available to run this spec") unless Canvas.redis_enabled?
       allow(ConfigFile).to receive(:load).with("local_cache").and_return(redis_conf_hash)
       LocalCache.reset
       LocalCache.clear
     end
 
-    after(:each) do
+    after do
       LocalCache.clear
     end
 
@@ -58,7 +56,7 @@ describe LocalCache do
 
     it "will allow you to clear because it's local" do
       LocalCache.write("test_key", "test_value")
-      expect{ LocalCache.clear(force: true) }.to_not raise_error
+      expect { LocalCache.clear(force: true) }.to_not raise_error
       expect(LocalCache.read("test_key")).to be_nil
     end
 
@@ -94,7 +92,7 @@ describe LocalCache do
   end
 
   describe "in memory" do
-    before(:each) do
+    before do
       allow(ConfigFile).to receive(:load).with("local_cache").and_return({ store: "memory" })
       LocalCache.reset
     end

@@ -47,7 +47,7 @@ class Mutations::HideAssignmentGrades < Mutations::BaseMutation
     raise GraphQL::ExecutionError, "Anonymous assignments cannot be posted by section" if sections && assignment.anonymous_grading?
 
     if input[:only_student_ids] && input[:skip_student_ids]
-      raise GraphQL::ExecutionError, I18n.t("{a} and {b} cannot be used together", a: 'only_student_ids', b: 'skip_student_ids')
+      raise GraphQL::ExecutionError, I18n.t("{a} and {b} cannot be used together", a: "only_student_ids", b: "skip_student_ids")
     end
 
     visible_enrollments = course.apply_enrollment_visibility(course.student_enrollments, current_user, sections)
@@ -62,11 +62,11 @@ class Mutations::HideAssignmentGrades < Mutations::BaseMutation
       progress.process_job(
         assignment,
         :hide_submissions,
-        {preserve_method_args: true},
+        { preserve_method_args: true },
         progress: progress,
         submission_ids: submissions_scope.pluck(:id)
       )
-      return {assignment: assignment, progress: progress, sections: sections}
+      { assignment: assignment, progress: progress, sections: sections }
     else
       raise GraphQL::ExecutionError, "Error hiding assignment grades"
     end

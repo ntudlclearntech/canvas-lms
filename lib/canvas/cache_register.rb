@@ -19,7 +19,7 @@
 
 # modules included into ActiveRecord can't be reloaded, so use a vanilla require,
 # and not a child of a reloadable constant
-require 'active_record/cache_register'
+require "active_record/cache_register"
 
 module Canvas
   module CacheRegister
@@ -33,16 +33,16 @@ module Canvas
     # (which is far less often than the many times per day users are currently being touched)
 
     ALLOWED_TYPES = {
-      'Account' => %w{account_chain role_overrides global_navigation feature_flags brand_config default_locale
-                      resolved_outcome_proficiency resolved_outcome_calculation_method},
-      'Course' => %w{account_associations conditional_release},
-      'User' => %w{enrollments groups account_users todo_list submissions user_services k5_user},
-      'Assignment' => %w{availability conditional_release needs_grading},
-      'Quizzes::Quiz' => %w{availability}
+      "Account" => %w[account_chain role_overrides global_navigation feature_flags brand_config default_locale
+                      resolved_outcome_proficiency resolved_outcome_calculation_method],
+      "Course" => %w[account_associations conditional_release],
+      "User" => %w[enrollments groups account_users todo_list submissions user_services k5_user],
+      "Assignment" => %w[availability conditional_release needs_grading],
+      "Quizzes::Quiz" => %w[availability]
     }.freeze
 
     PREFER_MULTI_CACHE_TYPES = {
-      'Account' => %w{feature_flags}
+      "Account" => %w[feature_flags]
     }.freeze
 
     MIGRATED_TYPES = {}.freeze # for someday when we're reasonably sure we've moved all the cache keys for a type over
@@ -59,13 +59,14 @@ module Canvas
       if prefer_multi_cache && can_use_multi_cache_redis?
         return MultiCache.cache.redis
       end
+
       shard.activate do
         Canvas.redis.respond_to?(:node_for) ? Canvas.redis.node_for(base_key) : Canvas.redis
       end
     end
 
     def self.enabled?
-       !::Rails.cache.is_a?(::ActiveSupport::Cache::NullStore) && Canvas.redis_enabled?
+      !::Rails.cache.is_a?(::ActiveSupport::Cache::NullStore) && Canvas.redis_enabled?
     end
   end
 end

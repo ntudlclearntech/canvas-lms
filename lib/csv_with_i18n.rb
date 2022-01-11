@@ -16,14 +16,13 @@
 #
 # You should have received a copy of the GNU Affero General Public License along
 # with this program. If not, see <http://www.gnu.org/licenses/>.
-class CsvWithI18n < CSV
-
-  BYTE_ORDER_MARK = "\xEF\xBB\xBF".freeze
+class CSVWithI18n < CSV
+  BYTE_ORDER_MARK = "\xEF\xBB\xBF"
 
   def initialize(data, **options)
     @include_bom = options.delete(:include_bom)
     super(data, **options)
-    raise 'include_bom and write_headers cannot both be true' if self.write_headers? && @include_bom
+    raise "include_bom and write_headers cannot both be true" if write_headers? && @include_bom
   end
 
   def <<(row)
@@ -36,7 +35,7 @@ class CsvWithI18n < CSV
 
   def self.csv_i18n_settings(user, options = {})
     options[:col_sep] ||= determine_column_separator(user)
-    options[:encoding] ||= I18n.t('csv.encoding', 'UTF-8')
+    options[:encoding] ||= I18n.t("csv.encoding", "UTF-8")
 
     # Wikipedia: Microsoft compilers and interpreters, and many pieces of software on Microsoft Windows such as
     # Notepad treat the BOM as a required magic number rather than use heuristics. These tools add a BOM when saving
@@ -48,14 +47,15 @@ class CsvWithI18n < CSV
   end
 
   def self.include_bom?(user, encoding)
-    encoding == 'UTF-8'
+    encoding == "UTF-8"
   end
   private_class_method :include_bom?
 
   def self.determine_column_separator(user)
-    return ';' if user.feature_enabled?(:use_semi_colon_field_separators_in_gradebook_exports)
-    return ',' unless user.feature_enabled?(:autodetect_field_separators_for_gradebook_exports)
-    I18n.t('number.format.separator', '.') == ',' ? ';' : ','
+    return ";" if user.feature_enabled?(:use_semi_colon_field_separators_in_gradebook_exports)
+    return "," unless user.feature_enabled?(:autodetect_field_separators_for_gradebook_exports)
+
+    I18n.t("number.format.separator", ".") == "," ? ";" : ","
   end
   private_class_method :determine_column_separator
 end

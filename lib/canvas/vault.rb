@@ -17,10 +17,10 @@
 # You should have received a copy of the GNU Affero General Public License along
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 
-require 'vault'
+require "vault"
 
 module Canvas::Vault
-  CACHE_KEY_PREFIX = 'vault/'.freeze
+  CACHE_KEY_PREFIX = "vault/"
   class MissingVaultSecret < StandardError; end
 
   class << self
@@ -29,6 +29,7 @@ module Canvas::Vault
       unless cache
         vault_resp = api_client.logical.read(path)
         raise(MissingVaultSecret, "nil credentials found for #{path}") if required && vault_resp.nil?
+
         return vault_resp&.data
       end
 
@@ -40,6 +41,7 @@ module Canvas::Vault
       cached_data = LocalCache.fetch(cache_key, expires_in: default_expiry, race_condition_ttl: default_race_condition_ttl) do
         vault_resp = api_client.logical.read(path)
         raise(MissingVaultSecret, "nil credentials found for #{path}") if required && vault_resp.nil?
+
         fetched_lease_value = vault_resp&.lease_duration
         fetched_lease_value = vault_resp&.data&.[](:ttl) unless fetched_lease_value&.positive?
         fetched_lease_value = 10.minutes unless fetched_lease_value&.positive?
@@ -51,11 +53,12 @@ module Canvas::Vault
         cache_ttl = fetched_lease_value / 2
         LocalCache.write(cache_key, cached_data, expires_in: cache_ttl)
       end
-      return cached_data
-    rescue => exception
-      Canvas::Errors.capture_exception(:vault, exception)
+      cached_data
+    rescue => e
+      Canvas::Errors.capture_exception(:vault, e)
       stale_value = LocalCache.fetch_without_expiration(CACHE_KEY_PREFIX + path)
       return stale_value if stale_value.present?
+
       # if we can't serve any stale value, we're better erroring than handing back nil
       raise
     end
@@ -68,7 +71,11 @@ module Canvas::Vault
     end
 
     def kv_mount
-      config[:kv_mount] || 'app-canvas'
+      config[:kv_mount] || "app-canvas"
+    end
+
+    def config
+      ConfigFile.load("vault").try(:symbolize_keys) || {}
     end
 
     private
@@ -88,10 +95,6 @@ module Canvas::Vault
       elsif config[:token]
         config[:token]
       end
-    end
-
-    def config
-      ConfigFile.load('vault').try(:symbolize_keys) || {}
     end
   end
 end

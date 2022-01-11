@@ -18,7 +18,6 @@
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-
 ##
 # = Convenience class for testing graphql types.
 #
@@ -52,8 +51,8 @@ class GraphQLTypeTester
   end
 
   attr_accessor :extract_result
-  # _extract_result_ is an boolean to call extract_result function or return raw result.
 
+  # _extract_result_ is an boolean to call extract_result function or return raw result.
 
   # returns the value (or list of values) for the resolved field.  This can be
   # any fragment of graphql, but ultimately should only select a single scalar
@@ -74,7 +73,6 @@ class GraphQLTypeTester
     field_context = @context.merge(context)
     type = CanvasSchema.resolve_type(nil, @obj, field_context) or
       raise "couldn't resolve type for #{@obj.inspect}"
-    field = extract_field(field_and_subfields, type)
     variables = {
       id: CanvasSchema.id_from_object(@obj, type, field_context)
     }
@@ -109,17 +107,20 @@ class GraphQLTypeTester
     if !field || !type.fields[field]
       raise "couldn't find field #{field} for #{type}"
     end
+
     field
   end
 
   def extract_results(result)
-    return result unless result.respond_to?(:reduce)
-    result.reduce(nil) do |result, (k, v)|
-      case v
-      when Hash then extract_results(v)
-      when Array then v.map { |x| extract_results(x) }
-      else v
-      end
+    result = result.to_hash if result.respond_to?(:to_hash)
+    return result unless result.is_a?(Hash)
+
+    # return the last value of the last pair of a hash, recursively
+    v = result.to_a.last.last
+    case v
+    when Hash then extract_results(v)
+    when Array then v.map { |x| extract_results(x) }
+    else v
     end
   end
 end

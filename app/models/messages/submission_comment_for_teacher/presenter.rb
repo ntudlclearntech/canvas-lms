@@ -29,10 +29,10 @@ module Messages::SubmissionCommentForTeacher
       return @link if defined?(@link)
 
       @link = if anonymous?
-        message.speed_grader_course_gradebook_url(course.id, assignment_id: assignment.id, anonymous_id: submission.anonymous_id)
-      else
-        message.course_assignment_submission_url(course.id, assignment, submission.user_id)
-      end
+                message.speed_grader_course_gradebook_url(course.id, assignment_id: assignment.id, anonymous_id: submission.anonymous_id)
+              else
+                message.course_assignment_submission_url(course.id, assignment, submission.user_id)
+              end
     end
 
     def comment_text
@@ -66,13 +66,13 @@ module Messages::SubmissionCommentForTeacher
     end
 
     def anonymous_author_id
-      if submission_comment.author != submission.user
+      if submission_comment.author == submission.user
+        submission.anonymous_id
+      else
         return @author_submission&.anonymous_id if defined?(@author_submission)
 
         @author_submission = Submission.find_by(assignment: assignment, user: submission_comment.author)
         @author_submission&.anonymous_id
-      else
-        submission.anonymous_id
       end
     end
   end

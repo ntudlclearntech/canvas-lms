@@ -98,7 +98,6 @@
 #     }
 #
 class ProgressController < ApplicationController
-
   include Api::V1::Progress
 
   # @API Query progress
@@ -108,7 +107,7 @@ class ProgressController < ApplicationController
   def show
     progress = Progress.find(params[:id])
     if authorized_action(progress.context, @current_user, :read)
-      render :json => progress_json(progress, @current_user, session)
+      render json: progress_json(progress, @current_user, session)
     end
   end
 end

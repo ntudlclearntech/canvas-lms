@@ -18,10 +18,11 @@
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-require 'csv'
+require "csv"
 
 module Api::V1::OutcomeResults
   include Api::V1::Outcome
+  include Outcomes::OutcomeFriendlyDescriptionResolver
 
   # Public: Serializes OutcomeResults
   #
@@ -30,15 +31,15 @@ module Api::V1::OutcomeResults
   # Returns a hash that can be converted into json
   def outcome_results_json(results)
     {
-      outcome_results: results.map{|r| outcome_result_json(r)}
+      outcome_results: results.map { |r| outcome_result_json(r) }
     }
   end
 
   def outcome_result_json(result)
     hash = api_json(result, @current_user, session, {
-      methods: :submitted_or_assessed_at,
-      only: %w(id score mastery possible percent hide_points hidden)
-    })
+                      methods: :submitted_or_assessed_at,
+                      only: %w[id score mastery possible percent hide_points hidden]
+                    })
     hash[:links] = {
       user: result.user.id.to_s,
       learning_outcome: result.learning_outcome_id.to_s,
@@ -66,8 +67,8 @@ module Api::V1::OutcomeResults
     alignment_asset_string_map = {}
     outcomes.each_slice(50).each do |outcomes_slice|
       ActiveRecord::Associations::Preloader.new.preload(outcomes_slice, [:context])
-      ContentTag.learning_outcome_alignments.not_deleted.where(:learning_outcome_id => outcomes_slice).
-          pluck(:learning_outcome_id, :content_type, :content_id).each do |lo_id, content_type, content_id|
+      ContentTag.learning_outcome_alignments.not_deleted.where(learning_outcome_id: outcomes_slice)
+                .pluck(:learning_outcome_id, :content_type, :content_id).each do |lo_id, content_type, content_id|
         (alignment_asset_string_map[lo_id] ||= []) << "#{content_type.underscore}_#{content_id}"
       end
     end
@@ -75,15 +76,28 @@ module Api::V1::OutcomeResults
     outcomes.map(&:id).each_slice(100) do |outcome_ids|
       assessed_outcomes += LearningOutcomeResult.active.distinct.where(learning_outcome_id: outcome_ids).pluck(:learning_outcome_id)
     end
+    friendly_descriptions = {}
+    if context.root_account.feature_enabled?(:improved_outcomes_management) && Account.site_admin.feature_enabled?(:outcomes_friendly_description)
+      account = @context.is_a?(Account) ? @context : @context.account
+      course = @context.is_a?(Course) ? @context : nil
+
+      friendly_descriptions_array = outcomes.map(&:id).each_slice(100).flat_map do |outcome_ids|
+        resolve_friendly_descriptions(account, course, outcome_ids).map { |description| [description.learning_outcome_id, description.description] }
+      end
+
+      friendly_descriptions = friendly_descriptions_array.to_h
+    end
+
     outcomes.map do |o|
       hash = outcome_json(
         o,
         @current_user, session,
         assessed_outcomes: assessed_outcomes,
         rating_percents: percents[o.id],
-        context: context
+        context: context,
+        friendly_descriptions: friendly_descriptions
       )
-      hash.merge!(alignments: alignment_asset_string_map[o.id])
+      hash[:alignments] = alignment_asset_string_map[o.id]
       hash
     end
   end
@@ -99,12 +113,12 @@ module Api::V1::OutcomeResults
   #
   # Returns a Hash containing serialized outcome links.
   def outcome_results_include_outcome_links_json(outcome_links, context)
-    outcome_links_json(outcome_links, @current_user, session, {context: context})
+    outcome_links_json(outcome_links, @current_user, session, { context: context })
   end
 
   # Public: Returns an Array of serialized Course objects for linked hash.
   def outcome_results_linked_courses_json(courses)
-    courses.map { |course| {id: course.id.to_s, name: course.name} }
+    courses.map { |course| { id: course.id.to_s, name: course.name } }
   end
 
   # Public: Returns an Array of serialized User objects for the linked hash.
@@ -124,7 +138,7 @@ module Api::V1::OutcomeResults
   # Public: Returns an Array of serialized Alignment objects for the linked hash.
   def outcome_results_include_alignments_json(alignments)
     alignments.map do |alignment|
-      hash = {id: alignment.asset_string, name: alignment.title}
+      hash = { id: alignment.asset_string, name: alignment.title }
       html_url = polymorphic_url([alignment.context, alignment]) rescue nil
       hash[:html_url] = html_url if html_url
       hash
@@ -160,7 +174,7 @@ module Api::V1::OutcomeResults
     # both Course and User have a name method, so this works for both.
     {
       scores: serialize_rollup_scores(rollup.scores),
-      links: {context_key => rollup.context.id.to_s}
+      links: { context_key => rollup.context.id.to_s }
     }
   end
 
@@ -187,15 +201,15 @@ module Api::V1::OutcomeResults
     # is in multiple sections, they will have multiple rollup results. pagination is
     # still by user, so the counts won't match up. again, this is a very rare thing
     section_ids_func = if @section
-                         ->(user) { [@section.id] }
+                         ->(_user) { [@section.id] }
                        else
-                        enrollments = @context.all_accepted_student_enrollments.where(:user_id => serialized_rollup_pairs.map{|pair| pair[0].context.id}).to_a
-                         ->(user) { enrollments.select{|e| e.user_id == user.id}.map(&:course_section_id) }
+                         enrollments = @context.all_accepted_student_enrollments.where(user_id: serialized_rollup_pairs.map { |pair| pair[0].context.id }).to_a
+                         ->(user) { enrollments.select { |e| e.user_id == user.id }.map(&:course_section_id) }
                        end
 
     serialized_rollup_pairs.flat_map do |rollup, serialized_rollup|
       section_ids_func.call(rollup.context).map do |section_id|
-        serialized_rollup.deep_merge(links: {section: section_id.to_s})
+        serialized_rollup.deep_merge(links: { section: section_id.to_s })
       end
     end
   end
@@ -213,28 +227,28 @@ module Api::V1::OutcomeResults
       submitted_at: score.submitted_at,
       count: score.count,
       hide_points: score.hide_points,
-      links: {outcome: score.outcome.id.to_s},
+      links: { outcome: score.outcome.id.to_s },
     }
   end
 
-  def outcome_results_rollups_csv(current_user, context, rollups, outcomes, outcome_paths)
-    options = CsvWithI18n.csv_i18n_settings(current_user)
-    CsvWithI18n.generate(**options) do |csv|
+  def outcome_results_rollups_csv(current_user, _context, rollups, outcomes, outcome_paths)
+    options = CSVWithI18n.csv_i18n_settings(current_user)
+    CSVWithI18n.generate(**options) do |csv|
       row = []
-      row << I18n.t(:student_name, 'Student name')
-      row << I18n.t(:student_id, 'Student ID')
+      row << I18n.t(:student_name, "Student name")
+      row << I18n.t(:student_id, "Student ID")
       outcomes.each do |outcome|
-        pathParts = outcome_paths.find{|x| x[:id] == outcome.id}[:parts]
-        path = pathParts.map{|x| x[:name]}.join(' > ')
-        row << I18n.t(:outcome_path_result, "%{path} result", :path => path)
-        row << I18n.t(:outcome_path_mastery_points, "%{path} mastery points", :path => path)
+        pathParts = outcome_paths.find { |x| x[:id] == outcome.id }[:parts]
+        path = pathParts.pluck(:name).join(" > ")
+        row << I18n.t(:outcome_path_result, "%{path} result", path: path)
+        row << I18n.t(:outcome_path_mastery_points, "%{path} mastery points", path: path)
       end
       csv << row
       mastery_points = @context.root_account.feature_enabled?(:account_level_mastery_scales) && @context.resolved_outcome_proficiency&.mastery_points
       rollups.each do |rollup|
         row = [rollup.context.name, rollup.context.id]
         outcomes.each do |outcome|
-          score = rollup.scores.find{|x| x.outcome == outcome}
+          score = rollup.scores.find { |x| x.outcome == outcome }
           row << (score ? score.score : nil)
           row << (mastery_points || outcome&.data&.dig(:rubric_criterion, :mastery_points))
         end

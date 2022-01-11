@@ -21,7 +21,7 @@ class GradingPeriodSetsController < ApplicationController
   before_action :require_user
   before_action :get_context
   before_action :check_manage_rights, except: [:index]
-  before_action :check_read_rights, except: [:update, :create, :destroy]
+  before_action :check_read_rights, except: %i[update create destroy]
 
   def index
     paginated_sets = Api.paginate(
@@ -86,13 +86,14 @@ class GradingPeriodSetsController < ApplicationController
 
   def enrollment_terms
     return [] unless params[:enrollment_term_ids]
+
     @context.enrollment_terms.active.find(params[:enrollment_term_ids])
   end
 
   def grading_period_set
     @grading_period_set ||= GradingPeriodGroup
-      .for(@context)
-      .find(params[:id])
+                            .for(@context)
+                            .find(params[:id])
   end
 
   def set_params
@@ -110,12 +111,12 @@ class GradingPeriodSetsController < ApplicationController
 
   def serialize_json_api(grading_period_sets, meta = {})
     Canvas::APIArraySerializer.new(grading_period_sets, {
-      each_serializer: GradingPeriodSetSerializer,
-      controller: self,
-      root: :grading_period_sets,
-      meta: meta,
-      scope: @current_user,
-      include_root: false
-    })
+                                     each_serializer: GradingPeriodSetSerializer,
+                                     controller: self,
+                                     root: :grading_period_sets,
+                                     meta: meta,
+                                     scope: @current_user,
+                                     include_root: false
+                                   })
   end
 end

@@ -16,7 +16,7 @@
 #
 # You should have received a copy of the GNU Affero General Public License along
 # with this program. If not, see <http://www.gnu.org/licenses/>.
-require_relative '../../common'
+require_relative "../../common"
 
 module AdminSettingsPage
   # ---------------------- Elements ----------------------
@@ -25,17 +25,17 @@ module AdminSettingsPage
   end
 
   def analytics_menu_item
-    f('a.analytics_plugin')
+    f("a.analytics_plugin")
   end
 
   def global_nav_profile_link
-    f('#global_nav_profile_link')
+    f("#global_nav_profile_link")
   end
 
   def profile_tray
     f("div[role='dialog'][aria-label='Profile tray']")
   end
-  
+
   def profile_tray_menu_items
     f("div[role='dialog'][aria-label='Profile tray'] ul")
   end
@@ -43,19 +43,19 @@ module AdminSettingsPage
   def profile_tray_content_share_link
     fj("a:contains('Shared Content')")
   end
-  
+
   def profile_tray_spinner
     fj("li title:contains('Loading')")
   end
 
   # ---------------------- Actions -----------------------
-  
+
   def visit_admin_settings_tab(account_id)
     get "/accounts/#{account_id}/settings"
   end
 
   # ---------------------- Methods -----------------------
-  
+
   def wait_for_profile_tray_spinner
     begin
       spinner = profile_tray_spinner
@@ -65,5 +65,4 @@ module AdminSettingsPage
     end
     wait_for_ajaximations
   end
-  
 end

@@ -25,17 +25,17 @@ class CreateNewGradeHistoryBatchTable < ActiveRecord::Migration[4.2]
   LAST_BATCH_TABLE = DataFixup::InitNewGradeHistoryAuditLogIndexes::LAST_BATCH_TABLE
 
   def self.cassandra_cluster
-    'auditors'
+    "auditors"
   end
 
   def self.up
     Rails.logger.debug("InitNewGradeHistoryAuditLogIndexes: #{LAST_BATCH_TABLE} exists? => #{table_exists?(cassandra, LAST_BATCH_TABLE)}")
     unless table_exists?(cassandra, LAST_BATCH_TABLE)
       compression_params = if cassandra.db.use_cql3?
-        "WITH compression = { 'sstable_compression' : 'DeflateCompressor' }"
-      else
-        "WITH compression_parameters:sstable_compression='DeflateCompressor'"
-      end
+                             "WITH compression = { 'sstable_compression' : 'DeflateCompressor' }"
+                           else
+                             "WITH compression_parameters:sstable_compression='DeflateCompressor'"
+                           end
 
       create_table_command = %{
         CREATE TABLE #{LAST_BATCH_TABLE} (
@@ -55,11 +55,11 @@ class CreateNewGradeHistoryBatchTable < ActiveRecord::Migration[4.2]
   end
 
   def self.table_exists?(cassandra, table)
-    cql = %{
+    cql = <<~SQL.squish
       SELECT *
       FROM #{table}
       LIMIT 1
-    }
+    SQL
     cassandra.execute(cql)
     true
   rescue CassandraCQL::Error::InvalidRequestException

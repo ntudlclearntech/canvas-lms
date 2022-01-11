@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU Affero General Public License along
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 
-module Lti::Ims
+module Lti::IMS
   # @API Progress
   #
   # API for querying the progress of asynchronous API operations.
@@ -110,7 +110,7 @@ module Lti::Ims
     def show
       # @current_user and session aren't present in LTI requests
       render json:
-               progress_json(progress, nil, nil).tap { |hash| hash['url'] = lti_progress_show_url }
+               progress_json(progress, nil, nil).tap { |hash| hash["url"] = lti_progress_show_url }
     end
 
     private
@@ -129,15 +129,15 @@ module Lti::Ims
 
     def verify_assignment_tool_association
       unless progress.context.is_a? Assignment
-        render_error 'Tool does not have permission to view a Progress not associated with an Assignment',
+        render_error "Tool does not have permission to view a Progress not associated with an Assignment",
                      :forbidden
       end
 
       if tool !=
-           ContextExternalTool.from_content_tag(
-             progress.context.external_tool_tag,
-             progress.context
-           )
+         ContextExternalTool.from_content_tag(
+           progress.context.external_tool_tag,
+           progress.context
+         )
         render_error "Progress associated with Assignment that isn't linked to this Tool",
                      :unprocessable_entity
       end

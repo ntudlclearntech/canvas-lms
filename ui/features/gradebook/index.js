@@ -18,25 +18,36 @@
 
 import React from 'react'
 import ReactDOM from 'react-dom'
-import Gradebook from './react/default_gradebook/Gradebook'
+import GradebookData from './react/default_gradebook/GradebookData'
+import ready from '@instructure/ready'
 
 import('@canvas/context-cards/react/StudentContextCardTrigger')
 
-const mountPoint = document.querySelector('#gradebook_app')
-const gradebookMenuNode = document.querySelector('[data-component="GradebookMenu"]')
-const settingsModalButtonContainer = document.getElementById(
-  'gradebook-settings-modal-button-container'
-)
-const gridColorNode = document.querySelector('[data-component="GridColor"]')
+ready(() => {
+  const mountPoint = document.querySelector('#gradebook_app')
+  const filterNavNode = document.querySelector('#gradebook-filter-nav')
+  const gradebookMenuNode = document.querySelector('[data-component="GradebookMenu"]')
+  const settingsModalButtonContainer = document.getElementById(
+    'gradebook-settings-modal-button-container'
+  )
+  const gridColorNode = document.querySelector('[data-component="GridColor"]')
+  const viewOptionsMenuNode = document.querySelector("[data-component='ViewOptionsMenu']")
+  const applyScoreToUngradedModalNode = document.querySelector(
+    '[data-component="ApplyScoreToUngradedModal"]'
+  )
 
-const props = {
-  ...ENV.GRADEBOOK_OPTIONS,
-  currentUserId: ENV.current_user_id,
-  locale: ENV.LOCALE,
-  gradebookMenuNode,
-  gridColorNode,
-  settingsModalButtonContainer
-}
+  const props = {
+    applyScoreToUngradedModalNode,
+    currentUserId: ENV.current_user_id,
+    locale: ENV.LOCALE,
+    gradebookMenuNode,
+    gridColorNode,
+    filterNavNode,
+    viewOptionsMenuNode,
+    settingsModalButtonContainer,
+    gradebookEnv: ENV.GRADEBOOK_OPTIONS
+  }
 
-const component = React.createElement(Gradebook, props)
-ReactDOM.render(component, mountPoint)
+  const component = React.createElement(GradebookData, props)
+  ReactDOM.render(component, mountPoint)
+})

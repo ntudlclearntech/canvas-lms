@@ -18,10 +18,9 @@
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-require File.expand_path(File.dirname(__FILE__) + '/../spec_helper')
-require File.expand_path(File.dirname(__FILE__) + '/messages_helper')
+require_relative "messages_helper"
 
-describe 'conversation_message' do
+describe "conversation_message" do
   before :once do
     @teacher_enrollment = course_with_teacher
     user_enrollment = student_in_course
@@ -45,21 +44,21 @@ message")
 
     it "doesnt have trailing erb closures" do
       allow(@message).to receive(:attachments).and_return([
-        double("attachment",
-             display_name: "FileName", readable_size: "1MB", id: 42,
-             context: @teacher_enrollment.course, uuid: "abcdef123456")
-      ])
+                                                            double("attachment",
+                                                                   display_name: "FileName", readable_size: "1MB", id: 42,
+                                                                   context: @teacher_enrollment.course, uuid: "abcdef123456")
+                                                          ])
       msg = generate_message(notification_name, path_type, asset)
       expect(msg.html_body).not_to match(/%>/)
     end
 
-    it "should render correct footer if replys are enabled" do
+    it "renders correct footer if replys are enabled" do
       IncomingMailProcessor::MailboxAccount.reply_to_enabled = true
       msg = generate_message(:conversation_created, :email, @message)
       expect(msg.body.include?("replying directly to this email")).to eq true
     end
 
-    it "should render correct footer if replys are disabled" do
+    it "renders correct footer if replys are disabled" do
       IncomingMailProcessor::MailboxAccount.reply_to_enabled = false
       msg = generate_message(:conversation_created, :email, @message)
       expect(msg.body.include?("replying directly to this email")).to eq false

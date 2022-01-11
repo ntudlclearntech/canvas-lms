@@ -23,8 +23,34 @@ import datePickerFormat from '../datePickerFormat'
 import {isRTL} from '@canvas/i18n/rtlHelper'
 
 import moment from 'moment'
-import './index'
 import '@canvas/rails-flash-notifications'
+
+const TIME_FORMAT_OPTIONS = {
+  hour: 'numeric',
+  minute: 'numeric'
+}
+
+const DATE_FORMAT_OPTIONS = {
+  weekday: 'short',
+  month: 'short',
+  day: 'numeric',
+  year: 'numeric'
+}
+
+const DATETIME_FORMAT_OPTIONS = {...DATE_FORMAT_OPTIONS, ...TIME_FORMAT_OPTIONS}
+
+Object.freeze(TIME_FORMAT_OPTIONS)
+Object.freeze(DATE_FORMAT_OPTIONS)
+Object.freeze(DATETIME_FORMAT_OPTIONS)
+
+// for tests only
+export {TIME_FORMAT_OPTIONS, DATE_FORMAT_OPTIONS, DATETIME_FORMAT_OPTIONS}
+
+function formatter(zone, formatOptions = DATETIME_FORMAT_OPTIONS) {
+  const options = {...formatOptions}
+  if (zone) options.timeZone = zone
+  return new Intl.DateTimeFormat(ENV.LOCALE || navigator.language, options)
+}
 
 const datepickerDefaults = {
   constrainInput: false,
@@ -71,6 +97,9 @@ export default class DatetimeField {
     this.addSuggests($wrapper || this.$field, options)
     if (options.addHiddenInput) this.addHiddenInput()
 
+    this.localLabel = options.localLabel || I18n.t('#helpers.local_time', 'Local')
+    this.contextLabel = options.contextLabel || I18n.t('#helpers.course_time', 'Course')
+
     // when the input changes, update this object from the new value
     this.$field.bind('change focus blur keyup', this.setFromValue)
     this.$field.bind('change focus keyup', this.alertScreenreader)
@@ -82,7 +111,12 @@ export default class DatetimeField {
     this.debouncedSRFME = debounce($.screenReaderFlashMessageExclusive, 1000)
 
     // process initial value
-    this.setFromValue()
+    if (options.time) {
+      this.parseValue(options.time)
+      this.update()
+    } else {
+      this.setFromValue()
+    }
   }
 
   processTimeOptions(options) {
@@ -94,11 +128,13 @@ export default class DatetimeField {
     // showDate || showTime will always be true; i.e. not showDate implies
     // showTime, and vice versa. that's a nice property, so let's enforce it
     // (treating the provision as both as the provision of neither)
+    /* eslint-disable no-console */
     if (timeOnly && dateOnly) {
       console.warn('DatetimeField instantiated with both timeOnly and dateOnly true.')
       console.warn('Treating both as false instead.')
       timeOnly = dateOnly = false
     }
+    /* eslint-enable no-console */
 
     this.showDate = !timeOnly
     this.allowTime = !dateOnly
@@ -108,6 +144,12 @@ export default class DatetimeField {
   addDatePicker(options) {
     this.$field.wrap('<div class="input-append" />')
     const $wrapper = this.$field.parent('.input-append')
+    // See if we were given an ISO initial value so we don't have to try to parse
+    const initialValue = this.$field.attr('data-initial-value')
+    if (initialValue) {
+      this.$field.removeAttr('data-initial-value')
+      this.$field.data('inputdate', new Date(initialValue))
+    }
     if (!this.isReadonly()) {
       const datepickerOptions = $.extend(
         {},
@@ -133,10 +175,10 @@ export default class DatetimeField {
 
   addSuggests($sibling, options = {}) {
     if (this.isReadonly()) return
-    this.courseTimezone = options.courseTimezone || ENV.CONTEXT_TIMEZONE
+    this.contextTimezone = options.contextTimezone || ENV.CONTEXT_TIMEZONE
     this.$suggest = $('<div class="datetime_suggest" />').insertAfter($sibling)
-    if (this.courseTimezone != null && this.courseTimezone !== ENV.TIMEZONE) {
-      this.$courseSuggest = $('<div class="datetime_suggest" />').insertAfter(this.$suggest)
+    if (this.contextTimezone != null && this.contextTimezone !== ENV.TIMEZONE) {
+      this.$contextSuggest = $('<div class="datetime_suggest" />').insertAfter(this.$suggest)
     }
   }
 
@@ -152,24 +194,34 @@ export default class DatetimeField {
   setDate(date) {
     if (!this.showDate) {
       this.implicitDate = date
+      // replace the date portion of what we have with the date we just received
+      // Current computed value is in the 'iso8601' data as an ISO string, so
+      // let's mash the time from that with the new date we're being given,
+      const newDate = date.toISOString().substr(0, 10)
+      const oldTime = (this.$field.data('iso8601') || date.toISOString()).substr(10)
+      const timeWithNewDate = `${newDate}${oldTime}`
+      this.$field.data('inputdate', timeWithNewDate)
       return this.setFromValue()
     } else {
-      return this.setFormattedDatetime(date, 'date.formats.medium')
+      return this.setFormattedDatetime(date, DATE_FORMAT_OPTIONS)
     }
   }
 
   setTime(date) {
-    return this.setFormattedDatetime(date, 'time.formats.tiny')
+    return this.setFormattedDatetime(date, TIME_FORMAT_OPTIONS)
   }
 
   setDatetime(date) {
-    return this.setFormattedDatetime(date, 'date.formats.full')
+    return this.setFormattedDatetime(date, DATETIME_FORMAT_OPTIONS)
   }
 
   // private API
-  setFromValue() {
+  setFromValue(e) {
+    const inputdate = this.$field.data('inputdate')
+    if (typeof e !== 'undefined' && ['focus', 'blur'].includes(e.type) && !inputdate) return
     this.parseValue()
     this.update()
+    this.updateSuggest(e?.type === 'keyup') // only show suggestions when typing
   }
 
   normalizeValue(value) {
@@ -202,24 +254,37 @@ export default class DatetimeField {
     }
   }
 
-  parseValue() {
-    const value = this.normalizeValue(this.$field.val())
-    this.datetime = tz.parse(value)
+  parseValue(val) {
+    if (typeof val === 'undefined' && this.$field.data('inputdate')) {
+      const inputdate = this.$field.data('inputdate')
+      this.datetime = inputdate instanceof Date ? inputdate : new Date(inputdate)
+      this.blank = false
+      this.invalid = this.datetime === null
+      this.$field.data('inputdate', null)
+    } else {
+      if (val) {
+        this.setFormattedDatetime(val, TIME_FORMAT_OPTIONS)
+      }
+      const value = this.normalizeValue(this.$field.val())
+      this.datetime = tz.parse(value)
+      this.blank = !value
+      this.invalid = !this.blank && this.datetime === null
+    }
     if (this.datetime && !this.showDate && this.implicitDate) {
       this.datetime = tz.mergeTimeAndDate(this.datetime, this.implicitDate)
     }
     this.fudged = $.fudgeDateForProfileTimezone(this.datetime)
     this.showTime = this.alwaysShowTime || (this.allowTime && !tz.isMidnight(this.datetime))
-    this.blank = !value
-    this.invalid = !this.blank && this.datetime === null
   }
 
   setFormattedDatetime(datetime, format) {
     if (datetime) {
       this.blank = false
+      this.$field.data('inputdate', datetime.toISOString())
       this.datetime = datetime
       this.fudged = $.fudgeDateForProfileTimezone(this.datetime)
-      this.$field.val(tz.format(this.datetime, format))
+      const fmtr = formatter(ENV.TIMEZONE, format)
+      this.$field.val(fmtr.format(this.datetime))
     } else {
       this.blank = true
       this.datetime = null
@@ -229,11 +294,11 @@ export default class DatetimeField {
     this.invalid = false
     this.showTime = this.alwaysShowTime || (this.allowTime && !tz.isMidnight(this.datetime))
     this.update()
+    this.updateSuggest(false)
   }
 
-  update(updates) {
+  update() {
     this.updateData()
-    this.updateSuggest()
     this.updateAria()
   }
 
@@ -248,7 +313,7 @@ export default class DatetimeField {
     })
 
     if (this.$hiddenInput) {
-      this.$hiddenInput.val(this.fudged)
+      this.$hiddenInput.val(this.fudged?.toISOString())
     }
 
     // date_fields and time_fields don't have timepicker data fields
@@ -260,36 +325,38 @@ export default class DatetimeField {
         'time-minute': null,
         'time-ampm': null
       })
-    } else if (tz.useMeridian()) {
-      this.$field.data({
-        'time-hour': tz.format(this.datetime, '%-l'),
-        'time-minute': tz.format(this.datetime, '%M'),
-        'time-ampm': tz.format(this.datetime, '%P')
-      })
     } else {
+      const parts = formatter(ENV.TIMEZONE).formatToParts(this.datetime)
       this.$field.data({
-        'time-hour': tz.format(this.datetime, '%-k'),
-        'time-minute': tz.format(this.datetime, '%M'),
-        'time-ampm': null
+        'time-hour': parts.find(e => e.type === 'hour').value,
+        'time-minute': parts.find(e => e.type === 'minute').value,
+        'time-ampm': parts.find(e => e.type === 'dayPeriod')?.value || null
       })
     }
   }
 
-  updateSuggest() {
+  updateSuggest(show) {
     if (this.isReadonly()) return
 
     let localText = this.formatSuggest()
     this.screenreaderAlert = localText
-    if (this.$courseSuggest) {
-      let courseText = this.formatSuggestCourse()
-      if (courseText) {
-        localText = this.localLabel + localText
-        courseText = this.courseLabel + courseText
-        this.screenreaderAlert = `${localText}\n${courseText}`
+    if (this.$contextSuggest) {
+      let contextText = this.formatSuggestContext()
+      if (contextText) {
+        localText = `${this.localLabel}: ${localText}`
+        contextText = `${this.contextLabel}: ${contextText}`
+        this.screenreaderAlert = `${localText}\n${contextText}`
       }
-      this.$courseSuggest.text(courseText)
+      this.$contextSuggest.text(contextText).show()
     }
     this.$suggest.toggleClass('invalid_datetime', this.invalid).text(localText)
+    if (show || this.$contextSuggest || this.invalid) {
+      this.$suggest.show()
+      return
+    }
+    this.$suggest.hide()
+    if (this.$contextSuggest) this.$contextSuggest.hide()
+    this.screenreaderAlert = ''
   }
 
   alertScreenreader() {
@@ -308,36 +375,21 @@ export default class DatetimeField {
     this.$field.attr('aria-invalid', !!this.invalid)
   }
 
+  intlFormatType() {
+    if (this.showDate && this.showTime) return DATETIME_FORMAT_OPTIONS
+    if (this.showDate) return DATE_FORMAT_OPTIONS
+    return TIME_FORMAT_OPTIONS
+  }
+
   formatSuggest() {
-    if (this.blank) {
-      return ''
-    } else if (this.invalid) {
-      return this.parseError
-    } else {
-      return tz.format(this.datetime, this.formatString())
-    }
+    if (this.invalid) return this.parseError
+    if (this.blank) return ''
+    return formatter(ENV.TIMEZONE, this.intlFormatType()).format(this.datetime)
   }
 
-  formatSuggestCourse() {
-    if (this.blank) {
-      return ''
-    } else if (this.invalid) {
-      return ''
-    } else if (this.showTime) {
-      return tz.format(this.datetime, this.formatString(), this.courseTimezone)
-    } else {
-      return ''
-    }
-  }
-
-  formatString() {
-    if (this.showDate && this.showTime) {
-      return I18n.t('#date.formats.full_with_weekday')
-    } else if (this.showDate) {
-      return I18n.t('#date.formats.medium_with_weekday')
-    } else {
-      return I18n.t('#time.formats.tiny')
-    }
+  formatSuggestContext() {
+    if (this.invalid || !this.showTime || this.blank) return ''
+    return formatter(this.contextTimezone, this.intlFormatType()).format(this.datetime)
   }
 
   isReadonly() {
@@ -350,13 +402,5 @@ export default class DatetimeField {
 
   get parseError() {
     return I18n.t('errors.not_a_date', "That's not a date!")
-  }
-
-  get courseLabel() {
-    return `${I18n.t('#helpers.course', 'Course')}: `
-  }
-
-  get localLabel() {
-    return `${I18n.t('#helpers.local', 'Local')}: `
   }
 }

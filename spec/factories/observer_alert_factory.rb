@@ -20,7 +20,6 @@
 
 module Factories
   def observer_alert_model(opts = {})
-
     opts[:observer] ||= user_model
     @observer = opts[:observer]
     opts[:student] ||= course_with_student(opts).user
@@ -28,11 +27,11 @@ module Factories
 
     @observation_link = opts[:link] || add_linked_observer(@student, @observer, root_account: (@course || opts[:account])&.root_account)
 
-    valid_attrs = [:title, :alert_type, :workflow_state, :action_date, :student, :observer]
+    valid_attrs = %i[title alert_type workflow_state action_date student observer]
     default_attrs = {
-      title: 'value for type',
-      alert_type: 'course_announcement',
-      workflow_state: 'unread',
+      title: "value for type",
+      alert_type: "course_announcement",
+      workflow_state: "unread",
       action_date: Time.zone.now
     }
 

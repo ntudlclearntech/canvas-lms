@@ -23,6 +23,7 @@ module CalendarConferencesHelper
 
   def find_or_initialize_conference(context, conference_params, override_params = {})
     return nil if conference_params.blank?
+
     valid_params = conference_params.merge(override_params).slice(:title, :description, :conference_type, :lti_settings, :user_settings)
 
     if conference_params[:id]
@@ -33,15 +34,16 @@ module CalendarConferencesHelper
         end
       end
     elsif conference_params[:title].present?
-      conference = context.web_conferences.build(valid_params).tap do |conf|
+      context.web_conferences.build(valid_params).tap do |conf|
         conf.user = @current_user
-        conf.settings[:default_return_url] = named_context_url(context, :context_url, :include_host => true)
+        conf.settings[:default_return_url] = named_context_url(context, :context_url, include_host: true)
       end
     end
   end
 
   def authorize_user_for_conference(user, conference)
     return true if conference.nil?
+
     if conference.new_record?
       authorized_action(conference, user, :create)
     elsif conference.changed?
@@ -52,7 +54,7 @@ module CalendarConferencesHelper
   end
 
   def add_conference_types_to_js_env(contexts)
-    allowed_contexts = contexts.select {|c| c.grants_right?(@current_user, session, :create_conferences)}
+    allowed_contexts = contexts.select { |c| c.grants_right?(@current_user, session, :create_conferences) }
 
     type_to_contexts_map = {}
     conference_types = allowed_contexts.flat_map do |context|
@@ -63,7 +65,7 @@ module CalendarConferencesHelper
       end
     end.uniq
     # add contexts at end to preserve object comparison above
-    conference_types.each {|t| t['contexts'] = type_to_contexts_map[t]}
+    conference_types.each { |t| t["contexts"] = type_to_contexts_map[t] }
 
     js_env(
       conferences: {

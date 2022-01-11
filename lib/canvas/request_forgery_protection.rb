@@ -33,10 +33,11 @@ module Canvas
       !protect_against_forgery? || request.get? || request.head? ||
         (api_request? && !in_app?) ||
         CanvasBreachMitigation::MaskingSecrets.valid_authenticity_token?(cookies, form_authenticity_param) ||
-        CanvasBreachMitigation::MaskingSecrets.valid_authenticity_token?(cookies, request.headers['X-CSRF-Token'])
+        CanvasBreachMitigation::MaskingSecrets.valid_authenticity_token?(cookies, request.headers["X-CSRF-Token"])
     end
 
     private
+
     def authenticity_token_options
       session_options = CanvasRails::Application.config.session_options
       options = session_options.slice(:domain, :secure)

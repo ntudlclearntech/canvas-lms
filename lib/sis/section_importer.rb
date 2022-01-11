@@ -20,7 +20,6 @@
 
 module SIS
   class SectionImporter < BaseImporter
-
     def process
       importer = Work.new(@batch, @root_account, @logger)
       CourseSection.suspend_callbacks(:delete_enrollments_later_if_deleted) do
@@ -32,7 +31,7 @@ module SIS
       end
       Course.update_account_associations(importer.course_ids_to_update_associations.to_a) unless importer.course_ids_to_update_associations.empty?
       importer.sections_to_update_sis_batch_ids.in_groups_of(1000, false) do |batch|
-        CourseSection.where(:id => batch).update_all(:sis_batch_id => @batch.id)
+        CourseSection.where(id: batch).update_all(sis_batch_id: @batch.id)
       end
       # there could be a ton of deleted sections, and it would be really slow to do a normal find_each
       # that would order by id. So do it on the secondary, to force a cursor that avoids the sort so that
@@ -72,11 +71,11 @@ module SIS
         @deleted_section_ids = Set.new
       end
 
-      def add_section(section_id, course_id, name, status, start_date=nil, end_date=nil, integration_id=nil)
+      def add_section(section_id, course_id, name, status, start_date = nil, end_date = nil, integration_id = nil)
         raise ImportError, "No section_id given for a section in course #{course_id}" if section_id.blank?
         raise ImportError, "No course_id given for a section #{section_id}" if course_id.blank?
         raise ImportError, "No name given for section #{section_id} in course #{course_id}" if name.blank? && status =~ /\Aactive/i
-        raise ImportError, "Improper status \"#{status}\" for section #{section_id} in course #{course_id}" unless status =~ /\Aactive|\Adeleted/i
+        raise ImportError, "Improper status \"#{status}\" for section #{section_id} in course #{course_id}" unless /\Aactive|\Adeleted/i.match?(status)
         return if @batch.skip_deletes? && status =~ /deleted/i
 
         course = @root_account.all_courses.where(sis_source_id: course_id).take
@@ -90,13 +89,14 @@ module SIS
 
         # only update the name on new records, and ones that haven't been changed since the last sis import
         raise ImportError, "No name given for section #{section_id} in course #{course_id}" if name.blank? && section.new_record?
-        section.name = name if section.new_record? || !section.stuck_sis_fields.include?(:name) && name.present?
+
+        section.name = name if section.new_record? || (!section.stuck_sis_fields.include?(:name) && name.present?)
 
         # update the course id if necessary
         if section.course_id != course.id
           if section.nonxlist_course_id
             # this section is crosslisted
-            if (section.nonxlist_course_id != course.id && !section.stuck_sis_fields.include?(:course_id)) || (section.course.workflow_state == 'deleted' && !!(status =~ /\Aactive/))
+            if (section.nonxlist_course_id != course.id && !section.stuck_sis_fields.include?(:course_id)) || (section.course.workflow_state == "deleted" && status.start_with?("active"))
               # but the course id we were given didn't match the crosslist info
               # we have, so, uncrosslist and move
               @course_ids_to_update_associations.merge [course.id, section.course_id, section.nonxlist_course_id]
@@ -114,10 +114,11 @@ module SIS
         end
 
         section.integration_id = integration_id
-        if status =~ /active/i
-          section.workflow_state = 'active'
-        elsif status =~ /deleted/i
-          section.workflow_state = 'deleted'
+        case status
+        when /active/i
+          section.workflow_state = "active"
+        when /deleted/i
+          section.workflow_state = "deleted"
           deleted_section_ids << section.id
         end
 
@@ -130,11 +131,12 @@ module SIS
         end
 
         if section.changed?
-          if section.workflow_state_changed? && section.workflow_state_was == "deleted"
-            if section.default_section? && CourseSection.active.where(:course_id => section.course_id, :default_section => true).exists?
-              # trying to restore a previously default section but there's one already so undefault the restored one
-              section.default_section = false
-            end
+          if section.workflow_state_changed? &&
+             section.workflow_state_was == "deleted" &&
+             section.default_section? &&
+             CourseSection.active.where(course_id: section.course_id, default_section: true).exists?
+            # trying to restore a previously default section but there's one already so undefault the restored one
+            section.default_section = false
           end
           section.sis_batch_id = @batch.id
           if section.valid?

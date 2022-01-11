@@ -18,10 +18,10 @@
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 
 # Based off of I18n::Backend::Simple, this backend makes a presumption about
-# your locale files -- with the exception of `locales.yml`, every locale file
-# should contain exactly one top-level key, and the file's name (minus the
-# `.yml` extension) should be the same as that key. If you follow this
-# convention, then this backend will lazy-load your languages. This can cut
+# your locale files -- with the exception of any file ending in `locales.yml`,
+# every locale file should contain exactly one top-level key, and the file's
+# name (minus the`.yml` extension) should be the same as that key. If you follow
+# this convention, then this backend will lazy-load your languages. This can cut
 # down dramatically on app initialization time (~35%) at the expense of a
 # little delay (less than 1 second in local tests) the first time each new
 # language is queried (which, in places like dev environments, targeted test
@@ -66,11 +66,12 @@ class LazyPresumptuousI18nBackend
 
   def store_translations(locale, data, _options = nil)
     if I18n.enforce_available_locales &&
-      I18n.available_locales_initialized? &&
-      !I18n.available_locales.include?(locale.to_sym) &&
-      !I18n.available_locales.include?(locale.to_s)
+       I18n.available_locales_initialized? &&
+       !I18n.available_locales.include?(locale.to_sym) &&
+       !I18n.available_locales.include?(locale.to_s)
       return data
     end
+
     locale = locale.to_sym
     lazy_translations[locale] ||= {}
     data = data.deep_symbolize_keys
@@ -116,8 +117,8 @@ class LazyPresumptuousI18nBackend
   end
 
   def register_file(filename)
-    locale = File.basename(filename, '.*')
-    if locale == 'locales'
+    case (locale_from_filename = File.basename(filename, ".*"))
+    when /locales$/
       data = YAML.load_file(filename)
       data.each do |locale, locale_data|
         # `store_translations` uses `deep_symbolize_keys`, so we do too to make
@@ -126,20 +127,20 @@ class LazyPresumptuousI18nBackend
         locale_metadata[locale] = locale_data.slice(*meta_keys).deep_symbolize_keys
         register_translations(locale, locale_data)
       end
-      log "parsing and registering #{filename} [#{data.keys.join(', ')}]"
-    elsif locale == 'community'
+      log "parsing and registering #{filename} [#{data.keys.join(", ")}]"
+    when "community"
       data = CSV.read(filename, headers: true)
       csv_locales = data.headers - ["key"]
       csv_locales.each do |csv_locale|
         locale_data = {
-          community: data.map { |row| [row['key'].to_sym, row[csv_locale]] }.to_h
+          community: data.map { |row| [row["key"].to_sym, row[csv_locale]] }.to_h
         }
         register_translations(csv_locale, locale_data)
       end
-      log "parsing and registering #{filename} [#{csv_locales.join(', ')}]"
+      log "parsing and registering #{filename} [#{csv_locales.join(", ")}]"
     else
-      log "registering locale [#{locale}] << #{filename}"
-      register_translations(locale, filename)
+      log "registering locale [#{locale_from_filename}] << #{filename}"
+      register_translations(locale_from_filename, filename)
     end
   end
 

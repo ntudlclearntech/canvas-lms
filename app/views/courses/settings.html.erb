@@ -29,6 +29,7 @@
   can_change_course_availability = can_manage_courses || (can_manage && !@context.root_account.settings[:prevent_course_availability_editing_by_teachers])
   can_manage_master_courses = can_manage_courses && can_do(@context.account, @current_user, :manage_master_courses)
   has_multiple_sections = @context.course_sections.active.count > 1
+  show_publish_controls = can_do(@context, @current_user, :change_course_state, :manage_courses_publish) && (@context.unpublished? || @context.unpublishable?)
 
   is_master_course = MasterCourses::MasterTemplate.is_master_course?(@context)
   blueprint_subscription = @context.master_course_subscriptions.active.first
@@ -44,7 +45,7 @@
 %>
 
 <% provide :right_side do %>
-  <%= render :partial => 'settings_sidebar', :locals => { :blueprint_subscription => blueprint_subscription } %>
+  <%= render :partial => 'settings_sidebar', :locals => { blueprint_subscription: blueprint_subscription, show_publish_controls: show_publish_controls } %>
 <% end %>
 
 <h1 class="screenreader-only"><%= t 'course_settings_title', "Course Settings" %></h1>
@@ -66,7 +67,7 @@
         <li id="alerts_tab"><a href="#tab-alerts" id="tab-alerts-link"><%= t('tabs.alerts', %{Alerts}) %></a></li>
       <% end %>
       <% if can_do(@context, @current_user, :view_feature_flags) %>
-        <li id="feature_flags_tab"><a href="#tab-features" id="tab-features-link"><%= t('tabs.feature_previews', %{Feature Previews}) %></a></li>
+        <li id="feature_flags_tab"><a href="#tab-features" id="tab-features-link"><%= t('Feature Options') %></a></li>
       <% end %>
       <% if @context.grants_right?(@current_user, session, :update) && @context.root_account.feature_enabled?(:microsoft_group_enrollments_syncing) %>
         <li id="integrations_tab"><a href="#tab-integrations" id="tab-integrations-link"><%= t('Integrations') %></a></li>
@@ -76,7 +77,7 @@
   <div id="tab-details">
     <h2>
       <%= t('headings.details', %{Course Details}) %>
-      <% unless @context.elementary_subject_course? %>
+      <% unless show_publish_controls %>
         <% if @context.created? || @context.claimed? %>
           <span id='course-status' class='published-status unpublished pull-right'>
             <%= t('labels.course_status_unpublished', %{Course is Unpublished}) %>
@@ -274,7 +275,7 @@
           <div class="tall-row">
             <div class="nobr">
               <%= f.check_box :sync_enrollments_from_homeroom, class: 'sync_enrollments_from_homeroom_checkbox', :disabled => !can_manage || @context.homeroom_course %>
-              <%= f.label :sync_enrollments_from_homeroom, :en => "Sync enrollments from homeroom" %><br/>
+              <%= f.label :sync_enrollments_from_homeroom, :en => "Sync enrollments and subject start/end dates from homeroom" %><br/>
             </div>
             <div class="sync_enrollments_from_homeroom_select">
               <% format_options = options_from_collection_for_select(@homeroom_courses, 'id', 'name', @context.homeroom_course_id) %>
@@ -526,7 +527,7 @@
         <div colspan="3">
           <span class="self_enrollment_message" style="<%= hidden unless @context.self_enrollment_enabled? && !is_master_course %>">
             <% if @context.root_account.self_registration? %>
-              <%= t 'course_open_enrollment', <<-TEXT, :url => enroll_url(@context.self_enrollment_code || '{{ self_enrollment_code }}'), :url2 => register_url, :code => @context.self_enrollment_code || '{{ self_enrollment_code }}', :wrapper => '<b>\1</b>'
+              <%= t 'course_open_enrollment', <<~TEXT, :url => enroll_url(@context.self_enrollment_code || '{{ self_enrollment_code }}'), :url2 => register_url, :code => @context.self_enrollment_code || '{{ self_enrollment_code }}', :wrapper => '<b>\1</b>'
                     This course has enabled open enrollment. Students can
                     self-enroll in the course once you share with them this URL:
                     *%{url}*. Alternatively, they can sign up at *%{url2}* and
@@ -534,7 +535,7 @@
                   TEXT
               %>
             <% else %>
-              <%= t 'course_open_enrollment_without_code', <<-TEXT, :url => enroll_url(@context.self_enrollment_code || '{{ self_enrollment_code }}'), :wrapper => '<b>\1</b>'
+              <%= t 'course_open_enrollment_without_code', <<~TEXT, :url => enroll_url(@context.self_enrollment_code || '{{ self_enrollment_code }}'), :wrapper => '<b>\1</b>'
                     This course has enabled open enrollment. Students can
                     self-enroll in the course once you share with them this URL:
                     *%{url}*

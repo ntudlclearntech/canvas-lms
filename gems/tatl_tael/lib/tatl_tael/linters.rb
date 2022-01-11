@@ -1,19 +1,21 @@
 # frozen_string_literal: true
 
-require 'yaml'
+require "yaml"
 
 module TatlTael
   module Linters
     class BaseLinter
       class << self
         def inherited(subclass)
-          Linters.linters << subclass unless subclass.name =~ /SimpleLinter/
+          super
+          Linters.linters << subclass unless subclass.name&.include?("SimpleLinter")
         end
       end
 
       attr_reader :changes
       attr_reader :config
       attr_reader :auto_correct
+
       def initialize(config:, changes:, auto_correct: false)
         @changes = changes
         @config = config
@@ -51,9 +53,9 @@ module TatlTael
         # example linter_class.to_s: "TatlTael::Linters::Simple::CoffeeSpecsLinter"
         # example resulting base_config_key: "Simple/CoffeeSpecsLinter"
         base_config_key = linter_class.to_s
-          .sub(self.to_s, "") # rm "TatlTael::Linters"
-          .sub("::", "")
-          .gsub("::", "/")
+                                      .sub(to_s, "") # rm "TatlTael::Linters"
+                                      .sub("::", "")
+                                      .gsub("::", "/")
         underscore_and_symbolize_keys(config[base_config_key])
       end
 
@@ -86,12 +88,12 @@ module TatlTael
       def underscore(string)
         # borrowed from AS underscore, since we may not have it
         string.gsub(/([A-Z\d]+)([A-Z][a-z])/, "\\1_\\2")
-          .gsub(/([a-z\d])([A-Z])/, "\\1_\\2")
-          .tr("-", "_")
-          .downcase
+              .gsub(/([a-z\d])([A-Z])/, "\\1_\\2")
+              .tr("-", "_")
+              .downcase
       end
     end
   end
 end
 
-Dir[File.dirname(__FILE__) + "/linters/**/*_linter.rb"].each { |file| require file }
+Dir[File.dirname(__FILE__) + "/linters/**/*_linter.rb"].sort.each { |file| require file }
