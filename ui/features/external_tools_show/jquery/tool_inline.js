@@ -40,14 +40,12 @@ ready(() => {
       // expire after a few minutes.
       $button.attr('disabled', true).text($button.data('expired_message'))
     }, 60 * 2.5 * 1000)
-
     $toolForm.submit(function() {
       $(this)
         .find('.load_tab,.tab_loaded')
         .toggle()
     })
   }
-
   const launchToolInNewTab = function() {
     $toolForm.attr('target', '_blank')
     launchToolManually()
