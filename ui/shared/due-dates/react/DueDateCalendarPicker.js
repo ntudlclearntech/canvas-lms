@@ -171,7 +171,6 @@ DueDateCalendarPicker.propTypes = {
   labelText: string,
   labelClasses: string,
   name: string,
-  name: string,
   readonly: bool,
   tooltipContent: string
 }
