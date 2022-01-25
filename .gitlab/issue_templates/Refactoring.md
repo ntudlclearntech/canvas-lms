@@ -1,6 +1,6 @@
-## Summary
+## Proposal
 <!--
-Please briefly describe what part of the code base needs to be refactored.
+Please describe what part of the code base needs to be refactored and what we are planning to do.
 -->
 
 ## Improvements
@@ -8,34 +8,18 @@ Please briefly describe what part of the code base needs to be refactored.
 Explain the benefits of refactoring this code.
 -->
 
-## Risks
+## Risks and Tests need to be done
 <!--
-Please list features that can break because of this refactoring and how you intend to solve that.
--->
-
-## Involved components
-<!--
-List files or directories that will be changed by the refactoring.
--->
-
-## Optional: Intended side effects
-<!--
-If the refactoring involves changes apart from the main improvements (such as a better UI), list them here.
-It may be a good idea to create separate issues and link them here.
--->
-
-## Optional: Missing test coverage
-<!--
-If you are aware of tests that need to be written or adjusted apart from unit tests for the changed components,
-please list them here.
+Please list features that can break because of this refactoring and what tests should be done
 -->
 
 ## Related Issues
 <!-- refer to all related issues using `#issue-id` -->
 
 ## Tasks
-<!-- Please list all tasks need to be done for completing this issue -->
+<!-- Please list all tasks need to be done for completing this issue 
 - [ ] Task 1
 - [ ] Task 2
+-->
 
-/label ~backstage
+/label ~refactoring

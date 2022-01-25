@@ -1,31 +1,46 @@
-## Problem to solve
-<!-- What problem do we solve? -->
+## User story
+<!--
+* Who: A job role, customer or type of user, also known as the user persona.
+* What: The goal that the user wants the product to accomplish or implement.
+* Why: The reason why the user needs the feature or functionality.
 
-## Intended users
-<!-- Who will use this feature? If known, include any of the following: types of users (e.g. Developer), personas, or specific company roles (e.g. Release Manager). It's okay to write "Unknown" and fill this field in later.
+(Example: As an administrator, I want to manage the type of assignment from the mobile application. Because I often move while I am at work and I may be asked to add a issue type at that time.)
 -->
+* Who: 
+* What: 
+* Why:
 
-## Further details
-<!-- Include use cases, benefits, and/or goals -->
+## Specifications · Screen design
+<!-- (If specifications and screen designs already exist, describe their URL etc.) -->
 
-## Proposal
-<!-- How are we going to solve the problem? Try to include the user journey -->
+## Acceptance test
+<!-- 
+### Role 1 (administrator, project manager)
+* Administrators can delete all task types from project settings.
+* When deleting the type of the task already set as an assignment, a screen allowing a new type to be replaced is displayed. (The type of assignment is a required field)
 
-## Permissions and Security
-<!-- What permissions are required to perform the described actions? Are they consistent with the existing permissions as documented for users, groups, and projects as appropriate? Is the proposed behavior consistent between the UI, API, and other access methods (e.g. email replies)?-->
-
-## Testing
-<!-- What risks does this change pose? How might it affect the quality of the product? What additional test coverage or changes to tests will be needed? Will it require cross-browser testing?  -->
-
-## What does success look like, and how can we measure that?
-<!-- Define both the success metrics and acceptance criteria. Note that success metrics indicate the desired business outcomes, while acceptance criteria indicate when the solution is working correctly. -->
+### Role 2 (general user, guest)
+* General users can see the type of all assignments from project settings.
+* General users can not add / edit / delete task type.
+-->
 
 ## Links / references
 <!-- refer to all related issues using `#issue-id`. Also includes additional reference links here. -->
 
+## Change log
+<!-- 
+* Date: Change summary + comment url
+-->
+
+## Related issues
+<!-- 
+#issue_id
+-->
+
 ## Tasks
-<!-- Please list all tasks need to be done for completing this issue -->
-- [ ] Task 1
-- [ ] Task 2
+<!-- 
+* [ ] Task 1
+* [ ] Task 2
+-->
 
 /label ~feature

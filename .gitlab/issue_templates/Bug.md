@@ -2,10 +2,7 @@
 <!-- Summarize the bug encountered concisely -->
 
 ## Steps to reproduce
-<!-- How one can reproduce the issue - this is very important -->
-
-## What is the current *bug* behavior?
-<!-- What actually happens -->
+<!-- How one can reproduce the issue and what actually happens (the current *bug* behavior) - this is very important -->
 
 ## What is the expected *correct* behavior?
 <!-- What you should see instead -->
@@ -21,9 +18,9 @@ logs, and code as it's tough to read otherwise. -->
 <!-- refer to all related issues using `#issue-id` -->
 
 ## Tasks
-<!-- Please list all tasks need to be done for completing this issue -->
+<!-- Please list all tasks need to be done for completing this issue 
 - [ ] Task 1
 - [ ] Task 2
-
+-->
 
 /label ~bug
