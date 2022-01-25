@@ -15070,7 +15070,7 @@ zh-Hant:
           password: 密碼
           remember_me: 保持登入
         log_in: 登入
-        login_handle: "輸入您的%{login_handle_name}，我們會向您傳送一個連接以更改您的密碼。"
+        login_handle: "輸入您的 %{login_handle_name}，我們會向您傳送一個連結以更改您的密碼。"
       mobile_login: 
         back_to_login: 返回登入
         buttons: 
@@ -15078,7 +15078,7 @@ zh-Hant:
         dont_know_password: 忘記密碼？
         error: 發生錯誤，請稍後再試一次。
         log_in: 登入
-        login_handle: "輸入您的 %{login_handle_name}，我們會向您發送一個連接以更改您的密碼。"
+        login_handle: "輸入您的 %{login_handle_name}，我們會向您發送一個連結以更改您的密碼。"
         password: 密碼
         sending: 正在發送...
         sent: 已傳送！
@@ -15093,7 +15093,7 @@ zh-Hant:
           password: 密碼
           remember_me: 保持登入
         log_in: 登入
-        login_handle: "輸入您的%{login_handle_name}，我們會向您傳送一個連結以更改您的密碼。"
+        login_handle: "輸入您的 %{login_handle_name}，我們會向您傳送一個連結以更改您的密碼。"
         page_title: "登入 Canvas"
         register_for_canvas: "*需要一個 Canvas 帳戶？* **按一下此處，它是免費的！**"
       new_login_content: 
@@ -15109,7 +15109,7 @@ zh-Hant:
           password: 密碼
           remember_me: 保持登入
         log_in: 登入
-        login_handle: "輸入您的 %{login_handle_name}，我們會向您發送一個連接以更改您的密碼。"
+        login_handle: "輸入您的 %{login_handle_name}，我們會向您發送一個連結以更改您的密碼。"
         open_source_learning_management_system: "開源 LMS"
     logout_confirm: 
       cancel: 取消
@@ -16856,7 +16856,7 @@ zh-Hant:
         body: "%{user} 回覆 %{discussion_topic}，%{course}："
         discussion_entry_reply_message: 使用以下連結加入交談，或回覆此郵件發佈註解。
         html: 
-          body: "%{user} 發佈了關於 %{course} 的思路 %{discussion_topic} 的新評論："
+          body: "%{user} 發佈了關於 %{course} %{discussion_topic} 的新評論："
           discussion_entry_reply_message: "使用以下連結加入交談，或透過回覆此郵件進行評論。允許的時候，如果您需要附上附件，請登入至 NTU COOL 並回覆討論。"
           link: 按一下此處加入交談
           subject: "%{user} 回覆 %{discussion_topic}，%{course}"
@@ -18264,7 +18264,7 @@ zh-Hant:
   not_all_of_these_services_may_be_supported_by_your_155d9f70: |-
       您的所屬機構可能無法支援部分上述服務。請聯絡您的
                 本地管理員以了解更多資訊。
-  not_all_sections_will_be_assigned_this_item_4e2b8eaa: 並非所有章節都會分派此項目。
+  not_all_sections_will_be_assigned_this_item_4e2b8eaa: 並非所有班別都會分派此項目。
   not_all_settings_options_are_available_at_the_suba_20efaa98: 並非所有設定選項均可於子帳戶級別中使用，包括通知標籤。
   not_anonymously_graded_87574f91: 不是匿名評分
   not_applicable_d5dfd285: 不適用
