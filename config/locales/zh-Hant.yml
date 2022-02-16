@@ -8150,10 +8150,10 @@ zh-Hant:
         drop_course: 放棄本課程
         import: 匯入現有內容
         join_course: 加入本課程
-        new_announcement: 新通告
+        new_announcement: 發布公告
         view_course_calendar: 檢視課程行事曆
         view_course_notification_settings: 檢視課程通知
-        view_course_stream: 檢視課程流
+        view_course_stream: 檢視課程最近活動
     description: 
       links: 
         join_course: 加入本課程
