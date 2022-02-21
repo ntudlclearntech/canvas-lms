@@ -281,7 +281,7 @@ module Api::V1::Attachment
     if opts[:check_quota]
       get_quota
       if params[:size] && @quota < @quota_used + params[:size].to_i
-        over_quota = I18n.t("lib.api.over_quota", "file size exceeds quota")
+        over_quota = I18n.t("lib.api.over_quota", "This file size exceeds the remaining course storage quota.")
         if opts[:return_json]
           return { error: true, message: over_quota }
         else

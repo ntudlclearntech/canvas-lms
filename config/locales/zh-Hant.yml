@@ -14744,7 +14744,7 @@ zh-Hant:
     api: 
       attachments: 
         only_one_folder: "無法設定文件夾路徑和資料夾 ID"
-      over_quota: 文件大小超過配額
+      over_quota: 檔案大小超過課程剩餘總量
     auth: 
       api: 
         bad_request_message: bad_request
