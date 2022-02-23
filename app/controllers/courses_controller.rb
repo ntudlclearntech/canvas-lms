@@ -818,6 +818,7 @@ class CoursesController < ApplicationController
       params[:course] ||= {}
       params_for_create = course_params
       params_for_create[:grading_standard_id] = 0
+      params_for_create[:allow_final_grade_override] = true
       if params_for_create.key?(:syllabus_body)
         params_for_create[:syllabus_body] = process_incoming_html_content(params_for_create[:syllabus_body])
       end
