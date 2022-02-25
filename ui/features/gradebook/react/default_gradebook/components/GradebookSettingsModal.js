@@ -363,6 +363,7 @@ export default class GradebookSettingsModal extends React.Component {
                   <AdvancedTabPanel
                     courseSettings={this.state.courseSettings}
                     onCourseSettingsChange={this.handleCourseSettingsChange}
+                    gradebookIsEditable={this.props.gradebookIsEditable}
                   />
                 </Tabs.Panel>
               )}
