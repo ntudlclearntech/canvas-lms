@@ -18702,6 +18702,9 @@ zh-Hant:
         allow_application: "您將允許 %{app_name} 存取您的個人資料，以提供您正常使用功能。"
         email: "您的電郵地址為 %{email}。"
         login_name: "此功能模組為臺大數位學習中心開發或認可之應用服務，因此需要您另外授權。若您同意授權，之後使用相同功能時不需再次授權。"
+        u_meeting: 
+          sub_label: "您將允許 UMeeting LTI 存取您的個人資訊包括您的姓名、NTU COOL 帳號、以及您在課程中的角色，以提供您正常使用功能。"
+          content: "此功能模組為訊連科技公司開發、且為臺大數位學習中心認可之應用服務，因此需要您另外授權。若您同意授權，往後每次您於 NTU COOL 使用 UMeeting LTI 時，此服務將會讀取並使用您的姓名、NTU COOL 帳號、以及課程角色資訊。"
       labels: 
         remember_access: 記住我對此項服務的授權
     confirm_mobile: 
