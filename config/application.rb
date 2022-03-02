@@ -302,10 +302,12 @@ module CanvasRails
       # don't care about secret_key_base
     end
 
-	  # load predoc url
+    # load predoc url
     config.predoc = config_for(:predoc)
 
     config.delayed_job_delay = config_for(:delayed_job_delay)
+
+    config.external_tools = config_for(:external_tools)
 
     class DummyKeyGenerator
       def self.generate_key(*); end

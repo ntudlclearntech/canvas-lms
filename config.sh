@@ -18,6 +18,7 @@ PASSENGERFILE_FILE="${DIR}/Passengerfile.json"
 PASSENGER_NGINX_CONFIGURATION_TEMPLATE_FILE="${DIR}/passenger_nginx_config.erb"
 LOGGING_FILE="${DIR}/config/logging.yml"
 DELAYED_JOB_DELAY_FILE="${DIR}/config/delayed_job_delay.yml"
+EXTERNAL_TOOLS_FILE="${DIR}/config/external_tools.yml"
 
 create_cache_store_config_file() {
   cat << EOF > "${CACHE_STORE_FILE}"
@@ -428,6 +429,14 @@ development:
 EOF
 }
 
+create_external_tools() {
+  cat << EOF > "${EXTERNAL_TOOLS_FILE}"
+# For customize Oauth2 confirm form
+production:
+  u_meeting_id: "<%= ENV.fetch('EXTERNAL_TOOLS_U_MEETING_ID', 0) %>"
+EOF
+}
+
 create_cache_store_config_file
 create_cassandra_config_file
 create_database_config_file
@@ -445,3 +454,4 @@ create_passengerfile_file
 create_passenger_nginx_configuration_template_file
 create_logging_config_file
 create_delayed_job_delay
+create_external_tools
