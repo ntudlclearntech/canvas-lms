@@ -307,7 +307,7 @@ module CanvasRails
 
     config.delayed_job_delay = config_for(:delayed_job_delay)
 
-    config.external_tools = config_for(:external_tools)
+    config.developer_keys = config_for(:developer_keys)
 
     class DummyKeyGenerator
       def self.generate_key(*); end

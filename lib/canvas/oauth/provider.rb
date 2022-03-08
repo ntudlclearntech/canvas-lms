@@ -108,7 +108,7 @@ module Canvas::OAuth
     end
 
     def is_u_meeting?
-      u_meeting_id = Rails.configuration.external_tools["u_meeting_id"].to_i
+      u_meeting_id = Rails.configuration.developer_keys["u_meeting_id"].to_i
       u_meeting_id == key.id
     end
 
