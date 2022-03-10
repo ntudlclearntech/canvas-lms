@@ -34,7 +34,11 @@ RUN apt-get update && apt-get install -y git apt-utils tzdata \
   && echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list \
   && apt-get update && apt-get install -y yarn=1.19.1-1 \
   # Install Python
-  && apt-get install -y python python-lxml python-pygments \
+  && apt-get install -y \
+       python \
+       python-lxml \
+       python3-lxml \
+       python-pygments \
   && apt-get install -y automake
 
 # 2. Passenger Configuration
