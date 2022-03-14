@@ -316,6 +316,8 @@ module CanvasRails
 
     config.developer_keys = config_for(:developer_keys)
 
+    config.external_tools = config_for(:external_tools)
+
     class DummyKeyGenerator
       def self.generate_key(*); end
     end

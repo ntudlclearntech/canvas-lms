@@ -480,7 +480,8 @@ class GradebooksController < ApplicationController
     }
 
     js_env({
-             GRADEBOOK_OPTIONS: gradebook_options
+             GRADEBOOK_OPTIONS: gradebook_options,
+             cool_gradebook_id: Rails.configuration.external_tools["cool_gradebook_id"]
            })
   end
 
