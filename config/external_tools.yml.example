@@ -1,0 +1,8 @@
+production:
+  cool_gradebook_id: 0
+
+development:
+  cool_gradebook_id: 0
+
+test:
+  cool_gradebook_id: 0
