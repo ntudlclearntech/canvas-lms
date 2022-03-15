@@ -84,22 +84,27 @@ describe "speed grader - grade display" do
       expect(Speedgrader.final_late_policy_grade_text).to eq final_grade_value
     end
 
-    it "shows missing pill" do
+    it "removes missing pill after being graded" do
       Speedgrader.visit(@course.id, @a2.id)
 
-      expect(Speedgrader.submission_status_pill("missing")).to be_displayed
+      expect(find_all_with_jquery(".submission-missing-pill:contains('missing')").length).to eq 0
+    end
+  end
+
+  context "missing policy pills when graded" do
+    before do
+      init_course_with_students(3)
+      create_assignments
+      user_session(@teacher)
     end
 
-    context "remove_missing_status_when_graded enabled" do
-      before do
-        Account.site_admin.enable_feature!(:remove_missing_status_when_graded)
-      end
+    it "removes missing pill when teacher navigates away from student" do
+      Speedgrader.visit(@course.id, @a2.id)
+      Speedgrader.grade_input.send_keys(70)
+      Speedgrader.click_next_student_btn
+      Speedgrader.click_next_or_prev_student("prev")
 
-      it "removes missing pill" do
-        Speedgrader.visit(@course.id, @a2.id)
-
-        expect(find_all_with_jquery(".submission-missing-pill:contains('missing')").length).to eq 0
-      end
+      expect(find_all_with_jquery(".submission-missing-pill:contains('missing')").length).to eq 0
     end
   end
 

@@ -25,6 +25,8 @@ require "csv"
 require "socket"
 
 describe Course do
+  include K5Common
+
   context "with basic course" do
     before :once do
       Account.default
@@ -70,6 +72,46 @@ describe Course do
       @course.save!
     end
 
+    it "recalculates grades if enrollment term changes" do
+      @course.save!
+      teacher = User.create!
+      @course.enroll_teacher(teacher, enrollment_state: "active")
+      student = User.create!
+      student_enrollment = @course.enroll_student(student, enrollment_state: "active")
+      now = Time.zone.now
+      first_period_assignment = @course.assignments.create!(
+        due_at: 1.day.from_now(now),
+        points_possible: 10,
+        submission_types: "online_text_entry"
+      )
+      first_period_assignment.grade_student(student, grade: 10, grader: teacher)
+      second_period_assignment = @course.assignments.create!(
+        due_at: 25.days.from_now(now),
+        points_possible: 10,
+        submission_types: "online_text_entry"
+      )
+      second_period_assignment.grade_student(student, grade: 8, grader: teacher)
+      new_term = EnrollmentTerm.create!(root_account: @course.root_account, workflow_state: "active")
+      grading_period_set = @course.root_account.grading_period_groups.create!(weighted: true)
+      grading_period_set.enrollment_terms << new_term
+      grading_period_set.grading_periods.create!(
+        title: "A Grading Period",
+        start_date: 10.days.ago(now),
+        end_date: 10.days.from_now(now),
+        weight: 60
+      )
+      grading_period_set.grading_periods.create!(
+        title: "Another Grading Period",
+        start_date: 20.days.from_now(now),
+        end_date: 30.days.from_now(now),
+        weight: 40
+      )
+      score = student_enrollment.scores.find_by(course_score: true)
+      expect { @course.update!(enrollment_term: new_term) }.to change {
+        score.reload.current_score
+      }.from(90).to(92)
+    end
+
     it "does not re-run DueDateCacher if enrollment term does not change" do
       @course.save!
       expect(DueDateCacher).not_to receive(:recompute_course)
@@ -90,6 +132,39 @@ describe Course do
     it "identifies concluded course as not active" do
       @course.complete!
       expect(@course.inactive?).to eq true
+    end
+
+    describe "#assigned_assignment_ids_by_user" do
+      before do
+        @course.save!
+        @student = User.create!
+        @course.enroll_student(@student, enrollment_state: "active")
+        @another_student = User.create!
+        @course.enroll_student(@another_student, enrollment_state: "active")
+        @assignment = @course.assignments.create!(title: "assigned to everyone")
+        @override_assignment = @course.assignments.create!(title: "assigned to one student", only_visible_to_overrides: true)
+        create_adhoc_override_for_assignment(@override_assignment, @another_student)
+      end
+
+      it "returns a hash with student IDs for keys and a set of assigned assignment IDs for values" do
+        expect(@course.assigned_assignment_ids_by_user).to include(
+          @student.id => Set[@assignment.id],
+          @another_student.id => Set[@assignment.id, @override_assignment.id]
+        )
+      end
+
+      it "excludes soft-deleted assignments" do
+        @assignment.destroy
+
+        aggregate_failures do
+          expect(@course.assigned_assignment_ids_by_user).to include(
+            @another_student.id => Set[@override_assignment.id]
+          )
+          expect(@course.assigned_assignment_ids_by_user).not_to include(
+            @student.id
+          )
+        end
+      end
     end
 
     describe "#grading_standard_or_default" do
@@ -2853,8 +2928,6 @@ describe Course do
       end
 
       describe "with canvas_for_elementary account setting on" do
-        include K5Common
-
         context "homeroom course" do
           before :once do
             toggle_k5_setting(@course.account)
@@ -3007,6 +3080,30 @@ describe Course do
               @course.tab_configuration = [{ id: Course::TAB_GROUPS }]
               last_tab_id = @course.tabs_available(@user, course_subject_tabs: true, include_external: true).last[:id]
               expect(last_tab_id).to start_with "context_external_tool_"
+            end
+          end
+
+          context "public k5 subject" do
+            before :once do
+              @course.update(is_public: true, indexed: true)
+              @course.groups.create!
+            end
+
+            it "does not show groups tabs without a current user" do
+              tab_ids = @course.tabs_available(nil, course_subject_tabs: true).pluck(:id)
+              expect(tab_ids).not_to include(Course::TAB_GROUPS)
+            end
+
+            it "does not show groups tabs to a user not enrolled in the class" do
+              user_factory
+              tab_ids = @course.tabs_available(@user, course_subject_tabs: true).pluck(:id)
+              expect(tab_ids).not_to include(Course::TAB_GROUPS)
+            end
+
+            it "shows the groups tab to an enrolled user" do
+              @course.enroll_student(user_factory).accept!
+              tab_ids = @course.tabs_available(@user, course_subject_tabs: true).pluck(:id)
+              expect(tab_ids).to include(Course::TAB_GROUPS)
             end
           end
         end
@@ -5204,7 +5301,7 @@ describe Course do
   describe "#sync_homeroom_enrollments" do
     before :once do
       @homeroom_course = course_factory(active_course: true)
-      @homeroom_course.account.settings[:enable_as_k5_account] = { value: true }
+      toggle_k5_setting(@homeroom_course.account, true)
       @homeroom_course.homeroom_course = true
       @homeroom_course.save!
 
@@ -5281,6 +5378,24 @@ describe Course do
       expect(@course.sync_homeroom_enrollments).not_to eq(false)
     end
 
+    it "returns false if course has a SIS batch id" do
+      batch = @course.root_account.sis_batches.create!
+      @course.sis_batch_id = batch.id
+      @course.save!
+      expect(@course.sync_homeroom_enrollments).to eq(false)
+    end
+
+    it "returns false if linked homeroom course is deleted" do
+      @homeroom_course.destroy!
+      expect(@course.sync_homeroom_enrollments).to eq(false)
+    end
+
+    it "returns false if linked homeroom course is no longer a homeroom course" do
+      @homeroom_course.homeroom_course = false
+      @homeroom_course.save!
+      expect(@course.sync_homeroom_enrollments).to eq(false)
+    end
+
     it "works with linked observers observing multiple students" do
       student2 = user_with_pseudonym
       UserObservationLink.create_or_restore(observer: @observer, student: @student, root_account: @course.root_account)
@@ -5296,7 +5411,7 @@ describe Course do
       before :once do
         @shard1.activate do
           account = Account.create!
-          account.enable_as_k5_account!
+          toggle_k5_setting(account, true)
           @cross_shard_course = course_factory(account: account, active_course: true)
           @cross_shard_course.sync_enrollments_from_homeroom = true
           @cross_shard_course.homeroom_course_id = @homeroom_course.id
@@ -5321,7 +5436,7 @@ describe Course do
   describe "#sync_homeroom_participation" do
     before :once do
       @homeroom_course = course_factory(active_course: true)
-      @homeroom_course.account.settings[:enable_as_k5_account] = { value: true }
+      toggle_k5_setting(@homeroom_course.account, true)
       @homeroom_course.homeroom_course = true
       @homeroom_course.save!
 
@@ -5350,6 +5465,32 @@ describe Course do
       expect(@course.restrict_enrollments_to_course_dates).to be_truthy
       expect(@course.start_at).to eq @homeroom_course.start_at
       expect(@course.conclude_at).to eq @homeroom_course.conclude_at
+    end
+
+    it "does not sync participation settings if course has a SIS batch id" do
+      batch = @course.root_account.sis_batches.create!
+      @course.sis_batch_id = batch.id
+      @course.save!
+      @homeroom_course.restrict_enrollments_to_course_dates = true
+      @homeroom_course.save!
+      @course.sync_homeroom_participation
+      expect(@course.restrict_enrollments_to_course_dates).to be_falsey
+    end
+
+    it "does not sync participation settings if linked homeroom course is deleted" do
+      @homeroom_course.restrict_enrollments_to_course_dates = true
+      @homeroom_course.save!
+      @homeroom_course.destroy!
+      @course.sync_homeroom_participation
+      expect(@course.restrict_enrollments_to_course_dates).to be_falsey
+    end
+
+    it "does not sync participation settings if linked homeroom course is no longer a homeroom course" do
+      @homeroom_course.restrict_enrollments_to_course_dates = true
+      @homeroom_course.homeroom_course = false
+      @homeroom_course.save!
+      @course.sync_homeroom_participation
+      expect(@course.restrict_enrollments_to_course_dates).to be_falsey
     end
 
     it "doesn't process courses with no linked homeroom" do

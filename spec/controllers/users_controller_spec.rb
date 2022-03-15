@@ -1079,7 +1079,7 @@ describe UsersController do
                "error-codes" => ["missing-input-response"]
              }.to_json)
       # Fallback for any dynamicsettings call that isn't mocked below
-      allow(Canvas::DynamicSettings).to receive(:find).with(any_args).and_call_original
+      allow(DynamicSettings).to receive(:find).with(any_args).and_call_original
     end
 
     after do
@@ -1087,22 +1087,22 @@ describe UsersController do
     end
 
     it "returns nil if there is no token" do
-      allow(Canvas::DynamicSettings).to receive(:find).with(tree: :private).and_return({ "recaptcha_server_key" => nil })
+      allow(DynamicSettings).to receive(:find).with(tree: :private).and_return({ "recaptcha_server_key" => nil })
       expect(subject.send(:validate_recaptcha, nil)).to be_nil
     end
 
     it "returns nil for valid recaptcha submissions" do
-      allow(Canvas::DynamicSettings).to receive(:find).with(tree: :private).and_return({ "recaptcha_server_key" => "test-token" })
+      allow(DynamicSettings).to receive(:find).with(tree: :private).and_return({ "recaptcha_server_key" => "test-token" })
       expect(subject.send(:validate_recaptcha, "valid-submit-key")).to be_nil
     end
 
     it "returns an error for missing recaptcha submissions" do
-      allow(Canvas::DynamicSettings).to receive(:find).with(tree: :private).and_return({ "recaptcha_server_key" => "test-token" })
+      allow(DynamicSettings).to receive(:find).with(tree: :private).and_return({ "recaptcha_server_key" => "test-token" })
       expect(subject.send(:validate_recaptcha, nil)).not_to be_nil
     end
 
     it "returns an error for invalid recaptcha submissions" do
-      allow(Canvas::DynamicSettings).to receive(:find).with(tree: :private).and_return({ "recaptcha_server_key" => "test-token" })
+      allow(DynamicSettings).to receive(:find).with(tree: :private).and_return({ "recaptcha_server_key" => "test-token" })
       expect(subject.send(:validate_recaptcha, "invalid-submit-key")).not_to be_nil
     end
   end
@@ -2620,10 +2620,23 @@ describe UsersController do
         course_with_student_logged_in(active_all: true)
       end
 
+      shared_examples_for "observer list" do
+        it "sets ENV.OBSERVED_USERS_LIST with self and observed users" do
+          get "user_dashboard"
+
+          observers = assigns[:js_env][:OBSERVED_USERS_LIST]
+          expect(observers.length).to be(1)
+          expect(observers[0][:name]).to eq(@student.name)
+          expect(observers[0][:id]).to eq(@student.id)
+        end
+      end
+
       context "disabled" do
         before(:once) do
           toggle_k5_setting(@account, false)
         end
+
+        it_behaves_like "observer list"
 
         it "only returns classic dashboard bundles" do
           get "user_dashboard"
@@ -2641,6 +2654,8 @@ describe UsersController do
           toggle_k5_setting(@account, true)
         end
 
+        it_behaves_like "observer list"
+
         it "returns K-5 dashboard bundles" do
           @current_user = @user
           get "user_dashboard"
@@ -2650,15 +2665,6 @@ describe UsersController do
           expect(assigns[:css_bundles].flatten).to include :k5_dashboard
           expect(assigns[:css_bundles].flatten).not_to include :dashboard
           expect(assigns[:js_env][:K5_USER]).to be_truthy
-        end
-
-        it "sets ENV.OBSERVER_LIST with self and observed users" do
-          get "user_dashboard"
-
-          observers = assigns[:js_env][:OBSERVER_LIST]
-          expect(observers.length).to be(1)
-          expect(observers[0][:name]).to eq(@student.name)
-          expect(observers[0][:id]).to eq(@student.id)
         end
 
         context "ENV.INITIAL_NUM_K5_CARDS" do
@@ -2723,6 +2729,92 @@ describe UsersController do
       get "user_dashboard"
       expect(assigns[:js_env][:CREATE_COURSES_PERMISSIONS][:PERMISSION]).to be(:teacher)
       expect(assigns[:js_env][:CREATE_COURSES_PERMISSIONS][:RESTRICT_TO_MCC_ACCOUNT]).to be_falsey
+    end
+  end
+
+  describe "#dashboard_sidebar" do
+    before :once do
+      @course1 = course_factory(active_all: true)
+      @user1 = user_factory(active_all: true)
+    end
+
+    before do
+      user_session(@user1)
+      allow(controller).to receive(:prepare_current_user_dashboard_items)
+    end
+
+    it "sets appropriate variables for students" do
+      @course1.enroll_student(@user1)
+
+      get "dashboard_sidebar"
+      expect(assigns[:user].id).to be(@user1.id)
+      expect(assigns[:is_observing_student]).to be(false)
+      expect(assigns[:show_recent_feedback]).to be(true)
+      expect(controller).not_to have_received(:prepare_current_user_dashboard_items)
+    end
+
+    it "sets appropriate variables for teachers" do
+      @course1.enroll_teacher(@user1)
+
+      get "dashboard_sidebar"
+      expect(assigns[:user].id).to be(@user1.id)
+      expect(assigns[:is_observing_student]).to be(false)
+      expect(assigns[:show_recent_feedback]).to be(false)
+      expect(controller).to have_received(:prepare_current_user_dashboard_items)
+    end
+
+    it "sets appropriate variables for users with teacher and student enrollments" do
+      @course1.enroll_teacher(@user1)
+      @course1.enroll_student(@user1)
+
+      get "dashboard_sidebar"
+      expect(assigns[:user].id).to be(@user1.id)
+      expect(assigns[:is_observing_student]).to be(false)
+      expect(assigns[:show_recent_feedback]).to be(true)
+      expect(controller).to have_received(:prepare_current_user_dashboard_items)
+    end
+
+    context "with observers" do
+      before :once do
+        Account.site_admin.enable_feature!(:observer_picker)
+        @course2 = course_factory(active_all: true)
+        @student = user_factory(active_all: true)
+        @course1.enroll_student(@student)
+        @course1.enroll_user(@user1, "ObserverEnrollment", associated_user_id: @student.id)
+        @course2.enroll_teacher(@user1)
+      end
+
+      it "sets variables for observer" do
+        get "dashboard_sidebar"
+        expect(assigns[:user].id).to be(@user1.id)
+        expect(assigns[:is_observing_student]).to be(false)
+        expect(assigns[:show_recent_feedback]).to be(false)
+        expect(controller).to have_received(:prepare_current_user_dashboard_items)
+      end
+
+      it "sets variables for observer observing themself" do
+        get "dashboard_sidebar", params: { observed_user: @user1.id }
+        expect(assigns[:user].id).to be(@user1.id)
+        expect(assigns[:is_observing_student]).to be(false)
+        expect(assigns[:show_recent_feedback]).to be(false)
+        expect(controller).to have_received(:prepare_current_user_dashboard_items)
+      end
+
+      it "sets variables for observer observing a student" do
+        get "dashboard_sidebar", params: { observed_user: @student.id }
+        expect(assigns[:user].id).to be(@student.id)
+        expect(assigns[:is_observing_student]).to be(true)
+        expect(assigns[:show_recent_feedback]).to be(true)
+        expect(controller).not_to have_received(:prepare_current_user_dashboard_items)
+      end
+
+      it "returns unauthorized if user passes observed_user who they are not observing" do
+        @another_student = user_factory(active_all: true)
+        @course1.enroll_student(@another_student)
+
+        get "dashboard_sidebar", params: { observed_user: @another_student.id }
+        expect(response).to be_unauthorized
+      end
     end
   end
 

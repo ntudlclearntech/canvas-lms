@@ -181,6 +181,7 @@ RSpec.shared_examples "DiscussionType" do
     expect(discussion_type.resolve("assignment { _id }")).to eq discussion.assignment_id.to_s
     expect(discussion_type.resolve("delayedPostAt")).to eq discussion.delayed_post_at
     expect(discussion_type.resolve("lockAt")).to eq discussion.lock_at
+    expect(discussion_type.resolve("userCount")).to eq discussion.course.users.count
   end
 
   it "orders root_entries by last_reply_at" do
@@ -250,7 +251,7 @@ RSpec.shared_examples "DiscussionType" do
     before do
       @anon_discussion = DiscussionTopic.create!(title: "Welcome whoever you are",
                                                  message: "anonymous discussion",
-                                                 anonymous_state: "fully_anonymous",
+                                                 anonymous_state: "full_anonymity",
                                                  context: @course,
                                                  user: @teacher,
                                                  editor: @teacher)
@@ -262,12 +263,76 @@ RSpec.shared_examples "DiscussionType" do
       course_with_student(course: @course)
       @anon_student_discussion = DiscussionTopic.create!(title: "Welcome whoever you are",
                                                          message: "anonymous discussion",
-                                                         anonymous_state: "fully_anonymous",
+                                                         anonymous_state: "full_anonymity",
                                                          context: @course,
                                                          user: @student,
                                                          editor: @student)
       @anon_student_discussion_type = GraphQLTypeTester.new(
         @anon_student_discussion,
+        current_user: @teacher
+      )
+      @anon_discussion_as_student_type = GraphQLTypeTester.new(
+        @anon_student_discussion,
+        current_user: @student
+      )
+
+      course_with_designer(course: @course)
+      @anon_designer_discussion = DiscussionTopic.create!(title: "Welcome whoever you are",
+                                                          message: "anonymous discussion",
+                                                          anonymous_state: "full_anonymity",
+                                                          context: @course,
+                                                          user: @designer,
+                                                          editor: @designer)
+      @anon_designer_discussion_type = GraphQLTypeTester.new(
+        @anon_designer_discussion,
+        current_user: @teacher
+      )
+
+      @anon_teacher_discussion_with_anonymous_author = DiscussionTopic.create!(title: "Welcome whoever you are",
+                                                                               message: "anonymous discussion",
+                                                                               anonymous_state: "partial_anonymity",
+                                                                               context: @course,
+                                                                               user: @teacher,
+                                                                               editor: @teacher,
+                                                                               is_anonymous_author: true)
+      @anon_teacher_discussion_with_anonymous_author_type = GraphQLTypeTester.new(
+        @anon_teacher_discussion_with_anonymous_author,
+        current_user: @teacher
+      )
+
+      @anon_teacher_discussion_with_non_anonymous_author = DiscussionTopic.create!(title: "Welcome whoever you are",
+                                                                                   message: "anonymous discussion",
+                                                                                   anonymous_state: "partial_anonymity",
+                                                                                   context: @course,
+                                                                                   user: @teacher,
+                                                                                   editor: @teacher,
+                                                                                   is_anonymous_author: false)
+      @anon_teacher_discussion_with_non_anonymous_author_type = GraphQLTypeTester.new(
+        @anon_teacher_discussion_with_non_anonymous_author,
+        current_user: @teacher
+      )
+
+      @anon_student_discussion_with_anonymous_author = DiscussionTopic.create!(title: "Welcome whoever you are",
+                                                                               message: "anonymous discussion",
+                                                                               anonymous_state: "partial_anonymity",
+                                                                               context: @course,
+                                                                               user: @student,
+                                                                               editor: @student,
+                                                                               is_anonymous_author: true)
+      @anon_student_discussion_with_anonymous_author_type = GraphQLTypeTester.new(
+        @anon_student_discussion_with_anonymous_author,
+        current_user: @teacher
+      )
+
+      @anon_student_discussion_with_non_anonymous_author = DiscussionTopic.create!(title: "Welcome whoever you are",
+                                                                                   message: "anonymous discussion",
+                                                                                   anonymous_state: "partial_anonymity",
+                                                                                   context: @course,
+                                                                                   user: @student,
+                                                                                   editor: @student,
+                                                                                   is_anonymous_author: false)
+      @anon_student_discussion_with_non_anonymous_author_type = GraphQLTypeTester.new(
+        @anon_student_discussion_with_non_anonymous_author,
         current_user: @teacher
       )
     end
@@ -296,12 +361,68 @@ RSpec.shared_examples "DiscussionType" do
       expect(@anon_discussion_type.resolve("editor(courseId: #{@course.id}) { shortName }")).to eq @teacher.short_name
     end
 
+    it "returns the designer author if a course id is provided" do
+      expect(@anon_designer_discussion_type.resolve("author(courseId: #{@course.id}) { shortName }")).to eq @designer.short_name
+    end
+
+    it "returns the designer editor if a course id is provided" do
+      expect(@anon_designer_discussion_type.resolve("editor(courseId: #{@course.id}) { shortName }")).to eq @designer.short_name
+    end
+
     it "does not return the student author if a course id is provided" do
       expect(@anon_student_discussion_type.resolve("author(courseId: #{@course.id}) { shortName }")).to eq nil
     end
 
     it "does not return the student editor if a course id is provided" do
       expect(@anon_student_discussion_type.resolve("editor(courseId: #{@course.id}) { shortName }")).to eq nil
+    end
+
+    context "partial anonymity" do
+      context "when is_anonymous_author is true" do
+        it "returns teacher as author" do
+          expect(@anon_teacher_discussion_with_anonymous_author_type.resolve("author(courseId: #{@course.id}) { shortName }")).to eq @teacher.short_name
+        end
+
+        it "does not return as student author" do
+          expect(@anon_student_discussion_with_anonymous_author_type.resolve("author(courseId: #{@course.id}) { shortName }")).to eq nil
+        end
+
+        it "does not return as student editor" do
+          expect(@anon_student_discussion_with_anonymous_author_type.resolve("editor(courseId: #{@course.id}) { shortName }")).to eq nil
+        end
+
+        it "returns student's anonymousAuthor" do
+          expect(@anon_student_discussion_with_anonymous_author_type.resolve("anonymousAuthor { shortName }")).to eq @anon_student_discussion_with_anonymous_author.discussion_topic_participants.where(user_id: @student.id).first.id.to_s(36)
+        end
+      end
+
+      context "when is_anonymous_author is false" do
+        it "returns teacher as author" do
+          expect(@anon_teacher_discussion_with_non_anonymous_author_type.resolve("author(courseId: #{@course.id}) { shortName }")).to eq @teacher.short_name
+        end
+
+        it "returns student as author" do
+          expect(@anon_student_discussion_with_non_anonymous_author_type.resolve("author(courseId: #{@course.id}) { shortName }")).to eq @student.short_name
+        end
+
+        it "returns student as editor" do
+          expect(@anon_student_discussion_with_non_anonymous_author_type.resolve("editor(courseId: #{@course.id}) { shortName }")).to eq @student.short_name
+        end
+
+        it "does not return student's anonymousAuthor" do
+          expect(@anon_student_discussion_with_non_anonymous_author_type.resolve("anonymousAuthor { shortName }")).to eq nil
+        end
+      end
+    end
+
+    context "can reply anonymously" do
+      it "returns false for teachers" do
+        expect(@anon_discussion_type.resolve("canReplyAnonymously")).to eq false
+      end
+
+      it "returns true for students" do
+        expect(@anon_discussion_as_student_type.resolve("canReplyAnonymously")).to eq true
+      end
     end
   end
 
@@ -456,6 +577,60 @@ describe Types::DiscussionType do
         .and_return(false)
       expect(GraphQLTypeTester.new(discussion, current_user: @teacher).resolve("availableForUser")).to be true
     end
+
+    describe "delayed post" do
+      before do
+        @delayed_discussion = DiscussionTopic.create!(title: "Welcome whoever you are",
+                                                      message: "delayed",
+                                                      context: @course,
+                                                      user: @teacher,
+                                                      editor: @teacher,
+                                                      delayed_post_at: 10.days.from_now)
+        @past_delayed_discussion = DiscussionTopic.create!(title: "Welcome whoever you are",
+                                                           message: "past delay",
+                                                           context: @course,
+                                                           user: @teacher,
+                                                           editor: @teacher,
+                                                           delayed_post_at: 1.day.ago)
+
+        @delayed_discussion.discussion_entries.create!(message: "teacher entry", user: @teacher)
+        @past_delayed_discussion.discussion_entries.create!(message: "teacher entry", user: @teacher)
+        discussion.discussion_entries.create!(message: "teacher entry", user: @teacher)
+
+        course_with_student(course: @course)
+
+        @delayed_type_with_student = GraphQLTypeTester.new(@delayed_discussion, current_user: @student)
+        @delayed_type_with_teacher = GraphQLTypeTester.new(@delayed_discussion, current_user: @teacher)
+        @nil_delayed_at_type_with_student = GraphQLTypeTester.new(discussion, current_user: @student)
+        @past_delayed_type_with_student = GraphQLTypeTester.new(@past_delayed_discussion, current_user: @student)
+      end
+
+      it "exposes title field" do
+        expect(@delayed_type_with_student.resolve("title")).to eq @delayed_discussion.title
+        expect(@delayed_type_with_teacher.resolve("title")).to eq @delayed_discussion.title
+      end
+
+      it "returns nil for message and emtpy entries array for student" do
+        expect(@delayed_type_with_student.resolve("message")).to be nil
+        expect(@delayed_type_with_student.resolve("discussionEntriesConnection { nodes { message } }")).to eq []
+      end
+
+      it "returns correct message and entries for teachers" do
+        expect(@delayed_type_with_teacher.resolve("message")).to eq @delayed_discussion.message
+        expect(@delayed_type_with_teacher.resolve("discussionEntriesConnection { nodes { message } }").count).to eq 1
+      end
+
+      it "returns correct message and entries of topics when delayed_post_at is nil" do
+        expect(discussion.delayed_post_at).to eq nil
+        expect(@nil_delayed_at_type_with_student.resolve("message")).to eq discussion.message
+        expect(@nil_delayed_at_type_with_student.resolve("discussionEntriesConnection { nodes { message } }").count).to eq 1
+      end
+
+      it "returns correct message and entries of topics when delayed_post_at is past" do
+        expect(@past_delayed_type_with_student.resolve("message")).to eq @past_delayed_discussion.message
+        expect(@past_delayed_type_with_student.resolve("discussionEntriesConnection { nodes { message } }").count).to eq 1
+      end
+    end
   end
 
   context "group discussion" do
@@ -466,6 +641,15 @@ describe Types::DiscussionType do
       it "finds lists the user" do
         expect(discussion_type.resolve("mentionableUsersConnection { nodes { _id } }")).to eq(discussion.context.participating_users_in_context.map(&:id).map(&:to_s))
       end
+    end
+  end
+
+  context "groups discussion" do
+    let_once(:discussion) { group_discussion_with_deleted_group }
+    include_examples "DiscussionType"
+
+    it "doesn't show child topic associated to a deleted group" do
+      expect(discussion_type.resolve("childTopics { contextName }")).to match_array(["group 1", "group 2"])
     end
   end
 

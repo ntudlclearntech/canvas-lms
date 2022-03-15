@@ -359,6 +359,19 @@ class Course < ActiveRecord::Base
     !!@skip_updating_account_associations
   end
 
+  def assigned_assignment_ids_by_user
+    @assigned_assignment_ids_by_user ||=
+      assignments
+      .active
+      .joins(:submissions)
+      .except(:order)
+      .pluck("assignments.id", "submissions.user_id")
+      .each_with_object({}) do |(assignment_id, user_id), hash|
+        hash[user_id] ||= Set.new
+        hash[user_id] << assignment_id
+      end
+  end
+
   def update_account_associations_if_changed
     if (saved_change_to_root_account_id? || saved_change_to_account_id?) && !self.class.skip_updating_account_associations?
       delay(synchronous: !Rails.env.production? || saved_change_to_id?).update_account_associations
@@ -885,7 +898,7 @@ class Course < ActiveRecord::Base
   scope :templates, -> { where(template: true) }
 
   scope :homeroom, -> { where(homeroom_course: true) }
-  scope :sync_homeroom_enrollments_enabled, -> { where(sync_enrollments_from_homeroom: true) }
+  scope :syncing_subjects, -> { joins("INNER JOIN #{Course.quoted_table_name} AS homeroom ON homeroom.id = courses.homeroom_course_id").where("homeroom.homeroom_course = true AND homeroom.workflow_state <> 'deleted'").where(sis_batch_id: nil).where(sync_enrollments_from_homeroom: true) }
 
   def potential_collaborators
     current_users
@@ -1287,7 +1300,10 @@ class Course < ActiveRecord::Base
   end
 
   def update_cached_due_dates
-    DueDateCacher.recompute_course(self) if saved_change_to_enrollment_term_id?
+    if saved_change_to_enrollment_term_id?
+      recompute_student_scores
+      DueDateCacher.recompute_course(self)
+    end
   end
 
   def update_final_scores_on_weighting_scheme_change
@@ -3231,6 +3247,7 @@ class Course < ActiveRecord::Base
         tabs -= hidden_external_tabs if hidden_external_tabs.present? && !(opts[:api] && check_for_permission.call(:read_as_admin))
 
         delete_unless.call([TAB_GRADES], :read_grades, :view_all_grades, :manage_grades)
+        delete_unless.call([TAB_GROUPS], :read_roster)
 
         delete_unless.call([TAB_PEOPLE], :read_roster)
         delete_unless.call([TAB_DISCUSSIONS], :read_forum, :post_to_forum, :create_forum, :moderate_forum)
@@ -3424,7 +3441,7 @@ class Course < ActiveRecord::Base
   end
 
   def self.sync_with_homeroom
-    where.not(homeroom_course_id: nil).sync_homeroom_enrollments_enabled.find_each(&:sync_with_homeroom)
+    syncing_subjects.find_each(&:sync_with_homeroom)
   end
 
   def sync_with_homeroom
@@ -3432,8 +3449,12 @@ class Course < ActiveRecord::Base
     sync_homeroom_enrollments
   end
 
+  def can_sync_with_homeroom?
+    elementary_subject_course? && sync_enrollments_from_homeroom && sis_batch_id.blank? && linked_homeroom_course.present? && linked_homeroom_course.elementary_homeroom_course? && !linked_homeroom_course.deleted?
+  end
+
   def sync_homeroom_participation
-    return unless linked_homeroom_course
+    return unless can_sync_with_homeroom?
 
     if linked_homeroom_course.restrict_enrollments_to_course_dates
       self.restrict_enrollments_to_course_dates = true
@@ -3447,7 +3468,7 @@ class Course < ActiveRecord::Base
   end
 
   def sync_homeroom_enrollments(progress = nil)
-    return false unless elementary_subject_course? && sync_enrollments_from_homeroom && linked_homeroom_course
+    return false unless can_sync_with_homeroom?
 
     progress&.calculate_completion!(0, linked_homeroom_course.enrollments.size)
     linked_homeroom_course.all_enrollments.find_each do |enrollment|

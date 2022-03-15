@@ -41,7 +41,17 @@ class PacePlansController < ApplicationController
     end
 
     progress = latest_progress
-    progress_json = progress_json(progress, @current_user, session) if progress
+    if progress
+      # start delayed job if it's not already started
+      if progress.queued?
+        if progress.delayed_job.present?
+          progress.delayed_job.update(run_at: Time.now)
+        else
+          progress = publish_pace_plan
+        end
+      end
+      progress_json = progress_json(progress, @current_user, session)
+    end
 
     js_env({
              BLACKOUT_DATES: [],
@@ -133,20 +143,24 @@ class PacePlansController < ApplicationController
   end
 
   def compress_dates
-    @pace_plan = PacePlan.new(create_params)
+    @pace_plan = @course.pace_plans.new(create_params)
+    unless @pace_plan.valid?
+      return render json: { success: false, errors: @pace_plan.errors.full_messages }, status: :unprocessable_entity
+    end
+
     @pace_plan.course = @course
     start_date = params.dig(:pace_plan, :start_date).present? ? Date.parse(params.dig(:pace_plan, :start_date)) : @pace_plan.start_date
-    compressed_module_items = @pace_plan.compress_dates(save: false, start_date: start_date)
-                                        .sort do |a, b|
-                                          a.module_item.position <=> b.module_item.position
-                                        end
 
-    days_from_start_date = 0
-    compressed_dates = {}
-    compressed_module_items.each do |item|
-      days_from_start_date += item.duration
-      compressed_dates[item.module_item_id] = start_date + days_from_start_date.days
+    if @pace_plan.end_date && start_date && @pace_plan.end_date < start_date
+      return render json: { success: false, errors: "End date cannot be before start date" }, status: :unprocessable_entity
     end
+
+    compressed_module_items = @pace_plan.compress_dates(save: false, start_date: start_date)
+                                        .sort_by { |ppmi| ppmi.module_item.position }
+                                        .group_by { |ppmi| ppmi.module_item.context_module }
+                                        .sort_by { |context_module, _items| context_module.position }
+                                        .to_h.values.flatten
+    compressed_dates = PacePlanDueDatesCalculator.new(@pace_plan).get_due_dates(compressed_module_items, start_date: start_date)
 
     render json: compressed_dates.to_json
   end
@@ -238,7 +252,6 @@ class PacePlansController < ApplicationController
   end
 
   def publish_pace_plan
-    @progress = Progress.create!(context: @pace_plan, tag: "pace_plan_publish")
-    @progress.process_job(@pace_plan, :publish, {})
+    @progress = @pace_plan.create_publish_progress(run_at: Time.now)
   end
 end

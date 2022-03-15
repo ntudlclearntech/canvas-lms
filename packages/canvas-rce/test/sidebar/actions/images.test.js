@@ -33,7 +33,7 @@ describe('Image dispatch shapes', () => {
     }
 
     it('returns a type of RECEIVE_IMAGES', () => {
-      const {type} = actions.receiveImages()
+      const {type} = actions.receiveImages({response, contextType})
       assert(type === actions.RECEIVE_IMAGES)
     })
 
@@ -45,7 +45,7 @@ describe('Image dispatch shapes', () => {
 
       it('includes files', () => {
         const {payload} = actions.receiveImages({response})
-        assert(payload.files === [])
+        assert.deepEqual(payload.files, [])
       })
 
       it('includes bookmark', () => {
@@ -56,6 +56,46 @@ describe('Image dispatch shapes', () => {
       it('includes searchString', () => {
         const {payload} = actions.receiveImages({response})
         assert(payload.searchString === 'panda')
+      })
+    })
+
+    describe('when the "category" is set to "buttons_and_icons', () => {
+      let buttonAndIconsResponse, opts
+
+      const subject = () => actions.receiveImages(buttonAndIconsResponse)
+
+      beforeEach(() => {
+        buttonAndIconsResponse = {
+          response: {
+            files: [
+              {id: 1, download_url: 'https://canvas.instructure.com/files/1/download'},
+              {id: 2, download_url: 'https://canvas.instructure.com/files/2/download'},
+              {id: 3, download_url: 'https://canvas.instructure.com/files/3/download'}
+            ]
+          },
+          contextType,
+          opts: {
+            category: 'buttons_and_icons'
+          }
+        }
+      })
+
+      it('applies the buttons and icons attribute to each file', () => {
+        assert.deepEqual(
+          subject().payload.files.map(f => f['data-inst-buttons-and-icons']),
+          [true, true, true]
+        )
+      })
+
+      it('applies the download url data attribute', () => {
+        assert.deepEqual(
+          subject().payload.files.map(f => f['data-download-url']),
+          [
+            'https://canvas.instructure.com/files/1/download',
+            'https://canvas.instructure.com/files/2/download',
+            'https://canvas.instructure.com/files/3/download'
+          ]
+        )
       })
     })
   })
@@ -119,6 +159,36 @@ describe('Image actions', () => {
       assert(dispatchSpy.called)
     })
 
+    it('sends specified options', () => {
+      const fetchImageStub = sinon.stub()
+      fetchImageStub.returns(new Promise((res, rej) => res({})))
+
+      const dispatch = fn => {
+        if (typeof fn === 'function') {
+          fn(dispatch, getState)
+        }
+      }
+
+      const getState = () => {
+        return {
+          source: {
+            fetchImages: fetchImageStub
+          },
+          images: {
+            user: {
+              files: [],
+              bookmark: null,
+              hasMore: true,
+              isLoading: false
+            }
+          },
+          contextType: 'user'
+        }
+      }
+      actions.fetchInitialImages({category: 'uncategorized'})(dispatch, getState)
+      assert.equal(fetchImageStub.firstCall.args[0].category, 'uncategorized')
+    })
+
     it('fetches initial page if necessary, part 2', () => {
       const dispatchSpy = sinon.spy()
       const getState = () => {
@@ -136,6 +206,36 @@ describe('Image actions', () => {
       }
       actions.fetchNextImages(sortBy, searchString)(dispatchSpy, getState)
       assert(dispatchSpy.called)
+    })
+
+    it('sends specified options', () => {
+      const fetchImageStub = sinon.stub()
+      fetchImageStub.returns(new Promise((res, rej) => res({})))
+
+      const dispatch = fn => {
+        if (typeof fn === 'function') {
+          fn(dispatch, getState)
+        }
+      }
+
+      const getState = () => {
+        return {
+          source: {
+            fetchImages: fetchImageStub
+          },
+          images: {
+            user: {
+              files: [],
+              bookmark: null,
+              hasMore: true,
+              isLoading: false
+            }
+          },
+          contextType: 'user'
+        }
+      }
+      actions.fetchNextImages({category: 'uncategorized'})(dispatch, getState)
+      assert.equal(fetchImageStub.firstCall.args[0].category, 'uncategorized')
     })
 
     it('skips the fetch if currently loading', () => {

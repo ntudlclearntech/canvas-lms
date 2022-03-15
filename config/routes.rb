@@ -951,6 +951,8 @@ CanvasRails::Application.routes.draw do
     end
   end
 
+  resources :jobs_v2, only: [:index]
+
   get "equation_images/:id" => "equation_images#show", :as => :equation_images, :id => /.+/
 
   # assignments at the top level (without a context) -- we have some specs that
@@ -2375,6 +2377,7 @@ CanvasRails::Application.routes.draw do
 
     scope(controller: :gradebooks) do
       put "courses/:course_id/update_final_grade_overrides", action: "update_final_grade_overrides"
+      put "courses/:course_id/apply_score_to_ungraded_submissions", action: "apply_score_to_ungraded_submissions"
     end
 
     scope(controller: :pace_plans) do

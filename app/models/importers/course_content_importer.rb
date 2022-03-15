@@ -176,11 +176,12 @@ module Importers
         Importers::CalendarEventImporter.process_migration(data, migration)
         Importers::LtiResourceLinkImporter.process_migration(data, migration)
         Importers::PacePlanImporter.process_migration(data, migration)
-        Importers::LatePolicyImporter.process_migration(data, migration)
 
         everything_selected = !migration.copy_options || migration.is_set?(migration.copy_options[:everything])
+
         if everything_selected || migration.is_set?(migration.copy_options[:all_course_settings])
           import_settings_from_migration(course, data, migration)
+          Importers::LatePolicyImporter.process_migration(data, migration) unless migration.should_skip_import? "LatePolicy"
         end
         migration.update_import_progress(90)
 
@@ -276,7 +277,8 @@ module Importers
       return unless ag
 
       assignments = migration.imported_migration_items_by_class(Assignment)
-      return unless assignments.any?
+      quizzes = migration.imported_migration_items_by_class(Quizzes::Quiz)
+      return unless assignments.any? || quizzes.any?
 
       # various callbacks run on assignment_group_id change, so we'll do these one by one
       # (the expected use case for this feature is a migration containing a single assignment anyhow)
@@ -286,6 +288,13 @@ module Importers
         assignment.assignment_group = ag
         assignment.position = nil
         assignment.save!
+      end
+
+      quizzes.each do |quiz|
+        next if quiz.assignment_group == ag
+
+        quiz.assignment_group = ag
+        quiz.save!
       end
     end
 
@@ -444,6 +453,11 @@ module Importers
       end
       atts = Course.clonable_attributes
       atts -= Canvas::Migration::MigratorHelper::COURSE_NO_COPY_ATTS
+
+      if course.root_account.settings[:prevent_course_availability_editing_by_teachers] && !course.account.grants_right?(migration.user, :read_as_admin)
+        atts -= [:restrict_enrollments_to_course_dates]
+      end
+
       course.settings_will_change! unless atts.empty?
 
       # superhax to force new wiki front page if home view changed (or is master course sync)

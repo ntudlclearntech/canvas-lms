@@ -703,12 +703,6 @@ describe ApplicationHelper do
     end
   end
 
-  describe "js_base_url" do
-    it "returns an immutable string" do
-      expect(js_base_url).to be_frozen
-    end
-  end
-
   describe "brand_config_account" do
     it "handles not having @domain_root_account set" do
       expect(helper.send(:brand_config_account)).to be_nil
@@ -832,6 +826,7 @@ describe ApplicationHelper do
     end
 
     it "returns false with no user" do
+      Account.site_admin.enable_feature!(:observer_picker)
       expect(planner_enabled?).to be false
     end
 
@@ -875,9 +870,15 @@ describe ApplicationHelper do
       end
 
       context "with the k5_parent_support flag disabled" do
-        it "returns false as an observer with k5_parent_support enabled" do
+        it "returns false as an observer" do
           @current_user = @observer
           expect(planner_enabled?).to be false
+        end
+
+        it "returns true as an observer with observer_picker flag enabled" do
+          Account.site_admin.enable_feature! :observer_picker
+          @current_user = @observer
+          expect(planner_enabled?).to be true
         end
       end
     end

@@ -20,17 +20,26 @@ import React from 'react'
 import {render as rtlRender} from '@testing-library/react'
 import OutcomeDescription from '../OutcomeDescription'
 import OutcomesContext from '@canvas/outcomes/react/contexts/OutcomesContext'
+import {defaultRatingsAndCalculationMethod} from './helpers'
 
 describe('OutcomeDescription', () => {
   const empty = ''
   const truncatedTestId = 'description-truncated'
   const truncatedTestContentId = 'description-truncated-content'
+  const ratingsTestId = 'outcome-management-ratings'
   const expandedTestId = 'description-expanded'
   const friendlyExpandedTestId = 'friendly-description-expanded'
+  const {calculationMethod, calculationInt, masteryPoints, pointsPossible, ratings} =
+    defaultRatingsAndCalculationMethod
   const defaultProps = (props = {}) => ({
     truncated: true,
     description: 'Description',
     friendlyDescription: '',
+    calculationMethod,
+    calculationInt,
+    masteryPoints,
+    pointsPossible,
+    ratings,
     ...props
   })
 
@@ -159,6 +168,16 @@ describe('OutcomeDescription', () => {
 
   describe('individual outcome rating and calculation FF', () => {
     describe('when feature flag enabled', () => {
+      it('renders ratings when description prop not provided/null and expanded', () => {
+        const {queryByTestId} = render(
+          <OutcomeDescription {...defaultProps({description: null, truncated: false})} />,
+          {
+            individualOutcomeRatingAndCalculationFF: true
+          }
+        )
+        expect(queryByTestId(ratingsTestId)).toBeInTheDocument()
+      })
+
       it('displays calculation method if description expanded', () => {
         const {getByText} = render(<OutcomeDescription {...defaultProps({truncated: false})} />, {
           individualOutcomeRatingAndCalculationFF: true

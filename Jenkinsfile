@@ -36,7 +36,8 @@ def buildParameters = [
   string(name: 'GERRIT_CHANGE_COMMIT_MESSAGE', value: "${env.GERRIT_CHANGE_COMMIT_MESSAGE}"),
   string(name: 'GERRIT_HOST', value: "${env.GERRIT_HOST}"),
   string(name: 'GERGICH_PUBLISH', value: "${env.GERGICH_PUBLISH}"),
-  string(name: 'MASTER_BOUNCER_RUN', value: "${env.MASTER_BOUNCER_RUN}")
+  string(name: 'MASTER_BOUNCER_RUN', value: "${env.MASTER_BOUNCER_RUN}"),
+  string(name: 'CRYSTALBALL_MAP_S3_VERSION', value: "${env.CRYSTALBALL_MAP_S3_VERSION}")
 ]
 
 def getSummaryUrl() {
@@ -44,10 +45,18 @@ def getSummaryUrl() {
 }
 
 def getDockerWorkDir() {
+  if (env.GERRIT_PROJECT == 'qti_migration_tool') {
+    return "/usr/src/app/vendor/${env.GERRIT_PROJECT}"
+  }
+
   return env.GERRIT_PROJECT == 'canvas-lms' ? '/usr/src/app' : "/usr/src/app/gems/plugins/${env.GERRIT_PROJECT}"
 }
 
 def getLocalWorkDir() {
+  if (env.GERRIT_PROJECT == 'qti_migration_tool') {
+    return "vendor/${env.GERRIT_PROJECT}"
+  }
+
   return env.GERRIT_PROJECT == 'canvas-lms' ? '.' : "gems/plugins/${env.GERRIT_PROJECT}"
 }
 
@@ -367,7 +376,7 @@ pipeline {
                 buildParameters += string(name: 'PATCHSET_TAG', value: "${env.PATCHSET_TAG}")
                 buildParameters += string(name: 'POSTGRES', value: "${env.POSTGRES}")
                 buildParameters += string(name: 'RUBY', value: "${env.RUBY}")
-                buildParameters += string(name: 'CANVAS_RAILS6_0', value: '1')
+                buildParameters += string(name: 'CANVAS_RAILS6_1', value: "${env.CANVAS_RAILS6_1}")
 
                 // If modifying any of our Jenkinsfiles set JENKINSFILE_REFSPEC for sub-builds to use Jenkinsfiles in
                 // the gerrit rather than master. Stable branches also need to check out the JENKINSFILE_REFSPEC to prevent
@@ -423,6 +432,33 @@ pipeline {
                     .obeysAllowStages(false)
                     .timeout(10)
                     .execute { runMigrationsStage() }
+
+                  extendedStage('Generate Crystalball Prediction')
+                    .hooks(buildSummaryReportHooks.call())
+                    .obeysAllowStages(false)
+                    .required(!configuration.isChangeMerged())
+                    .timeout(2)
+                    .execute {
+                      try {
+                        /* groovylint-disable-next-line GStringExpressionWithinString */
+                        sh '''
+                          diffFrom=\$(git --git-dir $LOCAL_WORKDIR/.git rev-parse ${GERRIT_PATCHSET_REVISION}^1)
+                          docker run --name=crystal --volume \$(pwd)/$LOCAL_WORKDIR/.git:$DOCKER_WORKDIR/.git \
+                                     -e CRYSTALBALL_DIFF_FROM=${diffFrom} \
+                                     -e CRYSTALBALL_DIFF_TO=${GERRIT_PATCHSET_REVISION} \
+                                     -e CRYSTALBALL_REPO_PATH=$DOCKER_WORKDIR \
+                                     $PATCHSET_TAG bundle exec crystalball --dry-run
+                          docker cp \$(docker ps -qa -f name=crystal):/usr/src/app/crystalball_spec_list.txt ./tmp/crystalball_spec_list.txt
+                        '''
+                        archiveArtifacts allowEmptyArchive: true, artifacts: 'tmp/crystalball_spec_list.txt'
+
+                        sh 'grep ":timestamp:" crystalball_map.yml | sed "s/:timestamp: //g" > ./tmp/crystalball_map_version.txt'
+                        archiveArtifacts allowEmptyArchive: true, artifacts: 'tmp/crystalball_map_version.txt'
+                      /* groovylint-disable-next-line CatchException */
+                      } catch (Exception e) {
+                        // don't fail build for this
+                      }
+                    }
 
                   extendedStage('Parallel Run Tests').obeysAllowStages(false).execute { stageConfig, buildConfig ->
                     def stages = [:]
@@ -552,7 +588,15 @@ pipeline {
                       string(name: 'POSTGRES_IMAGE_TAG', value: "${env.POSTGRES_IMAGE_TAG}"),
                     ])
 
-                  rspecStage.createDistribution(nestedStages)
+                  extendedStage('RspecQ Tests')
+                    .hooks(buildSummaryReportHooks.withRunManifest())
+                    .queue(nestedStages, jobName: '/Canvas/test-suites/test-queue', buildParameters: buildParameters + [
+                      string(name: 'CASSANDRA_IMAGE_TAG', value: "${env.CASSANDRA_IMAGE_TAG}"),
+                      string(name: 'DYNAMODB_IMAGE_TAG', value: "${env.DYNAMODB_IMAGE_TAG}"),
+                      string(name: 'POSTGRES_IMAGE_TAG', value: "${env.POSTGRES_IMAGE_TAG}"),
+                      string(name: 'UPSTREAM_TAG', value: "${env.BUILD_TAG}"),
+                      string(name: 'UPSTREAM', value: "${env.JOB_NAME}"),
+                    ])
 
                   parallel(nestedStages)
                 }

@@ -17,7 +17,7 @@
  */
 
 import $ from 'jquery'
-import getCookie from 'get-cookie'
+import getCookie from '@instructure/get-cookie'
 import parseLinkHeader from 'parse-link-header'
 import {defaultFetchOptions} from '@instructure/js-utils'
 
@@ -25,6 +25,11 @@ function constructRelativeUrl({path, params}: {path: string; params: {[k: string
   const queryString = $.param(params)
   if (!queryString.length) return path
   return `${path}?${queryString}`
+}
+
+// https://fetch.spec.whatwg.org/#requestinit
+interface RequestInit {
+  signal?: AbortSignal
 }
 
 export type DoFetchApiOpts = {

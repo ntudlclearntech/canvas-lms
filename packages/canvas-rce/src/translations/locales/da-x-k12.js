@@ -23,7 +23,7 @@ const locale = {
   "access_the_pretty_html_editor_37168efe": {
     "message": "Få adgang til det pæne HTML-redigeringsværktøj"
   },
-  "accessibility_checker_b3af1f6c": { "message": "Tilgægelighedskontrol" },
+  "accessibility_checker_b3af1f6c": { "message": "Tilgængelighedskontrol" },
   "add_8523c19b": { "message": "Tilføj" },
   "add_another_f4e50d57": { "message": "Tilføj en mere" },
   "add_cc_subtitles_55f0394e": { "message": "Tilføj undertekster" },
@@ -53,6 +53,7 @@ const locale = {
     "message": "Anvend ændringer på alle forekomster af denne knap og ikon i faget"
   },
   "apps_54d24a47": { "message": "Apps" },
+  "arrows_464a3e54": { "message": "Pile" },
   "aspect_ratio_will_be_preserved_cb5fdfb8": {
     "message": "Dimensionsforhold bevares"
   },
@@ -61,6 +62,8 @@ const locale = {
   "audio_and_video_recording_not_supported_please_use_5ce3f0d7": {
     "message": "Lyd- og videooptagelse understøttes ikke, brug en anden browser."
   },
+  "audio_options_feb58e2c": { "message": "Lydindstillinger" },
+  "audio_options_tray_33a90711": { "message": "Skuffe til lydindstillinger" },
   "audio_player_for_title_20cc70d": {
     "message": "Audioafspiller til { title }"
   },
@@ -68,6 +71,7 @@ const locale = {
     "message": "Der findes automatisk gemt indhold. Vil du indlæse det automatisk gemte indhold i stedet?"
   },
   "available_folders_694d0436": { "message": "Tilgængelige mapper" },
+  "basic_554cdc0a": { "message": "Grundlæggende" },
   "below_81d4dceb": { "message": "Under" },
   "bottom_third_5f5fec1d": { "message": "Nederste tredjedel" },
   "button_color_608a0242": { "message": "Knapfarve" },
@@ -152,11 +156,15 @@ const locale = {
   "default_numerical_ordered_list_48dd3548": {
     "message": "standard numerisk sorteret liste"
   },
+  "delimiters_4db4840d": { "message": "Begrænsere" },
   "describe_the_image_e65d2e32": { "message": "(Beskriv billedet)" },
   "describe_the_video_2fe8f46a": { "message": "(Beskriv videoen)" },
   "details_98a31b68": { "message": "Nærmere oplysninger" },
+  "diamond_b8dfe7ae": { "message": "Diamant" },
+  "dimension_type_55c83e4e": { "message": "Dimensionstype" },
   "dimensions_45ddb7b7": { "message": "Dimensioner" },
   "directionality_26ae9e08": { "message": "Retningsbestemthed" },
+  "directly_edit_latex_b7e9235b": { "message": "Rediger LaTeX direkte" },
   "discussions_a5f96392": { "message": "Diskussioner" },
   "discussions_index_6c36ced": { "message": "Diskussionsoversigt" },
   "display_options_315aba85": { "message": "Visningsindstillinger" },
@@ -195,6 +203,9 @@ const locale = {
     "message": "Indtast mindst 3 tegn for at søge"
   },
   "equation_1c5ac93c": { "message": "Regnestykke" },
+  "equation_editor_39fbc3f1": {
+    "message": "Redigeringsværktøj til regnestykker"
+  },
   "expand_preview_by_default_2abbf9f8": {
     "message": "Udvid forhåndsvisning som standard"
   },
@@ -234,6 +245,7 @@ const locale = {
     "message": "Gå til redigerings-værktøjslinjen"
   },
   "grades_a61eba0a": { "message": "Vurderinger" },
+  "greek_65c5b3f7": { "message": "Græsk" },
   "group_documents_8bfd6ae6": { "message": "Gruppens dokumenter" },
   "group_files_4324f3df": { "message": "Gruppefiler" },
   "group_files_82e5dcdb": { "message": "Gruppefiler" },
@@ -263,6 +275,7 @@ const locale = {
   "image_8ad06": { "message": "Billede" },
   "image_options_5412d02c": { "message": "Billedindstillinger" },
   "image_options_tray_90a46006": { "message": "Billedindstillinger-bakke" },
+  "image_to_crop_3a34487d": { "message": "Billede til beskæring" },
   "images_7ce26570": { "message": "Billeder" },
   "increase_indent_6d550a4a": { "message": "Øg indrykning" },
   "insert_593145ef": { "message": "Indsæt" },
@@ -291,9 +304,13 @@ const locale = {
   "media_af190855": { "message": "Medier" },
   "medium_5a8e9ead": { "message": "Medium" },
   "middle_27dc1d5": { "message": "I midten" },
+  "misc_3b692ea7": { "message": "Bland" },
   "miscellaneous_e9818229": { "message": "Diverse" },
   "modules_c4325335": { "message": "Forløb" },
   "multi_color_image_63d7372f": { "message": "Billede i flere farver" },
+  "must_be_at_least_percentage_22e373b6": {
+    "message": "Skal være mindst { percentage }%"
+  },
   "must_be_at_least_width_x_height_px_41dc825e": {
     "message": "Skal være mindst { width } x { height } px"
   },
@@ -322,6 +339,7 @@ const locale = {
     "message": "Åbn dialogen for denne genvejstast"
   },
   "open_title_application_fd624fc5": { "message": "Åbn { title } applikation" },
+  "operators_a2ef9a93": { "message": "Operatører" },
   "options_3ab0ea65": { "message": "Muligheder" },
   "ordered_and_unordered_lists_cfadfc38": {
     "message": "Sorterede og usorterede lister"
@@ -334,7 +352,13 @@ const locale = {
   },
   "pages_e5414c2c": { "message": "Sider" },
   "paragraph_5e5ad8eb": { "message": "Paragraf" },
+  "pentagon_17d82ea3": { "message": "Femkant" },
   "people_b4ebb13c": { "message": "Deltagere" },
+  "percentage_34ab7c2c": { "message": "Procentdel" },
+  "percentage_must_be_a_number_8033c341": {
+    "message": "Procent skal være et tal"
+  },
+  "pixels_52ece7d1": { "message": "Pixels" },
   "posted_when_a578f5ab": { "message": "Slået op: { when }" },
   "preformatted_d0670862": { "message": "Præformatteret" },
   "pretty_html_editor_28748756": { "message": "Pænt HTML-redigeringsværktøj" },
@@ -351,6 +375,7 @@ const locale = {
   "raw_html_editor_e3993e41": { "message": "Rå HTML-editor" },
   "record_7c9448b": { "message": "Optag" },
   "record_upload_media_5fdce166": { "message": "Optag/overfør medier" },
+  "relationships_6602af70": { "message": "Forhold" },
   "remove_link_d1f2f4d0": { "message": "Fjern link" },
   "resize_ec83d538": { "message": "Tilpas størrelse" },
   "restore_auto_save_deccd84b": {
@@ -371,6 +396,7 @@ const locale = {
   "shift_o_to_open_the_pretty_html_editor_55ff5a31": {
     "message": "Shift-O for at åbne det pæne html-redigeringsværktøj."
   },
+  "show_audio_options_b489926b": { "message": "Vis lydindstillinger" },
   "show_embed_options_ef8d7ef": { "message": "Vis indlejringsindstillinger" },
   "show_image_options_1e2ecc6b": { "message": "Vis billedindstillinger" },
   "show_link_options_545338fd": { "message": "Vis linkindstillinger" },

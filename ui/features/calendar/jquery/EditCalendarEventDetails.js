@@ -17,6 +17,7 @@
  */
 
 import $ from 'jquery'
+import I18n from 'i18n!calendar'
 import _ from 'underscore'
 import tz from '@canvas/timezone'
 import React from 'react'
@@ -163,7 +164,6 @@ export default class EditCalendarEventDetails {
 
     data.important =
       this.currentContextInfo.k5_course &&
-      ENV.FEATURES?.important_dates &&
       this.$form.find('#calendar_event_important_dates').prop('checked')
 
     return data
@@ -238,9 +238,7 @@ export default class EditCalendarEventDetails {
     }
 
     // Only show important date checkbox if selected context is k5 subject
-    this.$form
-      .find('#important_dates')
-      .toggle(this.currentContextInfo.k5_course && ENV.FEATURES?.important_dates)
+    this.$form.find('#important_dates').toggle(this.currentContextInfo.k5_course)
   }
 
   duplicateCheckboxChanged = (jsEvent, _propagate) =>
@@ -273,7 +271,7 @@ export default class EditCalendarEventDetails {
     if (this.event.startDate()) {
       const dateParts = this.event
         .startDate()
-        .toISOString()
+        .toISOString(true)
         .split('-')
         .map(v => parseInt(v, 10))
       dateParts[1] -= 1 // fix up month since they start at 0
@@ -285,13 +283,15 @@ export default class EditCalendarEventDetails {
       timeStyle: 'short'
     }).format
 
-    const dateFormatter = new Intl.DateTimeFormat(ENV.LOCALE || navigator.language, {
-      dateStyle: 'medium'
-    }).format
+    const dateFormatter = (date, timeZone) => {
+      const options = {dateStyle: 'medium'}
+      if (timeZone) options.timeZone = timeZone
+      return new Intl.DateTimeFormat(ENV.LOCALE || navigator.language, options).format(date)
+    }
 
     // set them up as appropriate variants of datetime_field
     $date
-      .val(dateFormatter(dateVal))
+      .val(dateFormatter(dateVal, ENV.TIMEZONE))
       .data('inputdate', dateVal.toISOString())
       .date_field()
       .change(_e => {
@@ -314,6 +314,10 @@ export default class EditCalendarEventDetails {
 
     // couple start and end times so that end time will never precede start
     return coupleTimeFields($start, $end, $date)
+  }
+
+  screenReaderMessageCallback = msg => {
+    return () => $.screenReaderFlashMessageExclusive(msg, true)
   }
 
   formSubmit = jsEvent => {
@@ -373,7 +377,11 @@ export default class EditCalendarEventDetails {
         }
       }
       const newEvent = commonEventFactory(objectData, this.event.possibleContexts())
-      newEvent.save(params)
+      newEvent.save(
+        params,
+        this.screenReaderMessageCallback(I18n.t('The event was successfully created')),
+        this.screenReaderMessageCallback(I18n.t('Event creation failed'))
+      )
     } else {
       this.event.title = params['calendar_event[title]']
       // event unfudges/unwraps values when sending to server (so wrap here)
@@ -389,7 +397,11 @@ export default class EditCalendarEventDetails {
         this.event.contextInfo = this.contextInfoForCode(data.context_code)
         params['calendar_event[context_code]'] = data.context_code
       }
-      this.event.save(params)
+      this.event.save(
+        params,
+        this.screenReaderMessageCallback(I18n.t('The event was successfully updated')),
+        this.screenReaderMessageCallback(I18n.t('Event update failed'))
+      )
     }
 
     return this.closeCB()

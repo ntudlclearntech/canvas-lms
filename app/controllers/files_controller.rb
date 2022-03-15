@@ -301,7 +301,7 @@ class FilesController < ApplicationController
         scope = Attachments::ScopedToUser.new(@context || @folder, @current_user).scope
         scope = scope.preload(:user) if params[:include].include?("user") && params[:sort] != "user"
         scope = scope.preload(:usage_rights) if params[:include].include?("usage_rights")
-        scope = Attachment.search_by_attribute(scope, :display_name, params[:search_term])
+        scope = Attachment.search_by_attribute(scope, :display_name, params[:search_term], normalize_unicode: true)
 
         order_clause = case params[:sort]
                        when "position" # undocumented; kept for compatibility
@@ -331,6 +331,10 @@ class FilesController < ApplicationController
 
         if params[:exclude_content_types].present?
           scope = scope.by_exclude_content_types(Array(params[:exclude_content_types]))
+        end
+
+        if params[:category].present?
+          scope = scope.for_category(params[:category])
         end
 
         url = @context ? context_files_url : api_v1_list_files_url(@folder)
@@ -941,6 +945,7 @@ class FilesController < ApplicationController
     @attachment.folder = Folder.where(id: params[:folder_id]).first
     @attachment.user = api_find(User, params[:user_id])
     @attachment.set_publish_state_for_usage_rights
+    @attachment.category = params[:category] if params[:category].present?
     @attachment.save!
 
     # apply duplicate handling

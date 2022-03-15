@@ -505,6 +505,40 @@ describe ContentMigration do
       expect(@copy_to.lti_resource_links.first.lookup_uuid).to eq "1b302c1e-c0a2-42dc-88b6-c029699a7c7a"
     end
 
+    context "with prevent_course_availability_editing_by_teachers on" do
+      it "does not copy restrict_enrollments_to_course_dates for teachers" do
+        @copy_from.root_account.settings[:prevent_course_availability_editing_by_teachers] = true
+        @copy_from.root_account.save!
+
+        @copy_to.restrict_enrollments_to_course_dates = false
+        @copy_to.save!
+
+        @copy_from.restrict_enrollments_to_course_dates = true
+        @copy_from.save!
+
+        run_course_copy
+
+        expect(@copy_to.restrict_enrollments_to_course_dates).to eq false
+      end
+
+      it "does copy restrict_enrollments_to_course_dates for admins" do
+        account_admin_user(user: @cm.user, account: @copy_to.account)
+
+        @copy_from.root_account.settings[:prevent_course_availability_editing_by_teachers] = true
+        @copy_from.root_account.save!
+
+        @copy_to.restrict_enrollments_to_course_dates = false
+        @copy_to.save!
+
+        @copy_from.restrict_enrollments_to_course_dates = true
+        @copy_from.save!
+
+        run_course_copy
+
+        expect(@copy_to.restrict_enrollments_to_course_dates).to eq true
+      end
+    end
+
     it "copies the overridable course visibility setting" do
       visibility_type = "superfunvisibility"
       allow_any_instantiation_of(@copy_from.root_account).to receive(:available_course_visibility_override_options)
@@ -830,6 +864,18 @@ describe ContentMigration do
       expect(new_tag2).to be_unpublished
     end
 
+    it "copies over link_settings of external tool items" do
+      link_settings = { selection_width: 456, selection_height: 789 }
+      tool = @copy_from.context_external_tools.create!(name: "b", url: "http://derp.derp/somethingelse", consumer_key: "12345", shared_secret: "secret")
+      mod = @copy_from.context_modules.create!(name: "some module")
+      tag = mod.add_item({ id: tool.id, type: "context_external_tool", url: tool.url, link_settings: link_settings })
+
+      run_course_copy
+
+      new_tag = @copy_to.context_module_tags.where(migration_id: mig_id(tag)).first
+      expect(new_tag.link_settings).to eq link_settings.stringify_keys
+    end
+
     it "preserves publish state of external tool items" do
       tool = @copy_from.context_external_tools.create!(name: "b", url: "http://derp.derp/somethingelse", consumer_key: "12345", shared_secret: "secret")
       mod = @copy_from.context_modules.create!(name: "some module")
@@ -865,12 +911,44 @@ describe ContentMigration do
       expect(page_to.body).to eq(body % @copy_to.id.to_s)
     end
 
-    it "copies over late policy" do
-      @copy_from.create_late_policy!(missing_submission_deduction_enabled: true, late_submission_deduction: 15.0, late_submission_interval: "day")
-      run_course_copy
+    context "with late policy" do
+      it "copies it over" do
+        @copy_from.create_late_policy!(missing_submission_deduction_enabled: true, late_submission_deduction: 15.0, late_submission_interval: "day")
+        run_course_copy
 
-      new_late_policy = @copy_to.late_policy
-      expect(new_late_policy.missing_submission_deduction_enabled).to be_truthy
+        new_late_policy = @copy_to.late_policy
+        expect(new_late_policy.missing_submission_deduction_enabled).to be_truthy
+      end
+
+      it "does not copy it over if the export should have had no settings" do
+        @copy_from.create_late_policy!(missing_submission_deduction_enabled: true, late_submission_deduction: 15.0, late_submission_interval: "day")
+        @copy_to.create_late_policy!(missing_submission_deduction_enabled: true, late_submission_deduction: 10.0, late_submission_interval: "day")
+
+        @cm.copy_options = { everything: true }
+        @cm.save!
+
+        run_export_and_import do |export|
+          export.selected_content = { all_course_settings: false }
+        end
+
+        expect(@copy_to.reload.late_policy.late_submission_deduction).to eq 10.0
+      end
+
+      # This is for faulty direct shares that were exported with
+      # late policy in their cartridges when they shouldn't have
+      it "does not copy it over if the import requires no settings" do
+        @copy_from.create_late_policy!(missing_submission_deduction_enabled: true, late_submission_deduction: 15.0, late_submission_interval: "day")
+        @copy_to.create_late_policy!(missing_submission_deduction_enabled: true, late_submission_deduction: 10.0, late_submission_interval: "day")
+
+        @cm.copy_options = { everything: false }
+        @cm.save!
+
+        run_export_and_import do |export|
+          export.selected_content = { all_course_settings: true }
+        end
+
+        expect(@copy_to.reload.late_policy.late_submission_deduction).to eq 10.0
+      end
     end
   end
 end

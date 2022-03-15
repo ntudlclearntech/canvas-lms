@@ -56,7 +56,9 @@ class ApplicationController < ActionController::Base
   around_action :compute_http_cost
 
   before_action :clear_idle_connections
+  before_action :set_sentry_trace
   before_action :annotate_apm
+  before_action :annotate_sentry
   before_action :check_pending_otp
   before_action :set_user_id_header
   before_action :set_time_zone
@@ -127,6 +129,10 @@ class ApplicationController < ActionController::Base
     @js_env = nil
   end
 
+  def set_sentry_trace
+    @sentry_trace = Sentry&.get_current_scope&.get_transaction&.to_sentry_trace
+  end
+
   ##
   # Sends data from rails to JavaScript
   #
@@ -171,14 +177,8 @@ class ApplicationController < ActionController::Base
           view_context.stylesheet_path(css_url_for("what_gets_loaded_inside_the_tinymce_editor", false, { force_high_contrast: true }))
         ]
 
-        # Cisco doesn't want to load lato extended. see LS-1559
-        if Setting.get("disable_lato_extended", "false") == "false"
-          editor_css << view_context.stylesheet_path(css_url_for("lato_extended"))
-          editor_hc_css << view_context.stylesheet_path(css_url_for("lato_extended"))
-        else
-          editor_css << view_context.stylesheet_path(css_url_for("lato"))
-          editor_hc_css << view_context.stylesheet_path(css_url_for("lato"))
-        end
+        editor_css << view_context.stylesheet_path(css_url_for("fonts"))
+        editor_hc_css << view_context.stylesheet_path(css_url_for("fonts"))
 
         @js_env_data_we_need_to_render_later = {}
         @js_env = {
@@ -187,6 +187,7 @@ class ApplicationController < ActionController::Base
           url_to_what_gets_loaded_inside_the_tinymce_editor_css: editor_css,
           url_for_high_contrast_tinymce_editor_css: editor_hc_css,
           current_user_id: @current_user&.id,
+          current_user_global_id: @current_user&.global_id,
           current_user_roles: @current_user&.roles(@domain_root_account),
           current_user_is_student: @context.respond_to?(:user_is_student?) && @context.user_is_student?(@current_user),
           current_user_types: @current_user.try { |u| u.account_users.active.map { |au| au.role.name } },
@@ -212,10 +213,21 @@ class ApplicationController < ActionController::Base
             collapse_global_nav: @current_user&.collapse_global_nav?,
             release_notes_badge_disabled: @current_user&.release_notes_badge_disabled?,
           },
-          DOC_VIEWER_URL: Rails.configuration.predoc['viewer_url']
+          DOC_VIEWER_URL: Rails.configuration.predoc["viewer_url"]
         }
 
-        dynamic_settings_tree = Canvas::DynamicSettings.find(tree: :private)
+        unless SentryExtensions::Settings.settings.blank?
+          @js_env[:SENTRY_FRONTEND] = {
+            dsn: SentryExtensions::Settings.settings[:frontend_dsn],
+            error_sample_rate: Setting.get("sentry_frontend_errors_sample_rate", "0.0"),
+
+            # these values need to correlate with the backend for Sentry features to work properly
+            environment: Canvas.environment,
+            revision: Canvas.revision
+          }
+        end
+
+        dynamic_settings_tree = DynamicSettings.find(tree: :private)
         if dynamic_settings_tree["api_gateway_enabled"] == "true"
           @js_env[:API_GATEWAY_URI] = dynamic_settings_tree["api_gateway_uri"]
         end
@@ -240,9 +252,9 @@ class ApplicationController < ActionController::Base
         @js_env[:ping_url] = polymorphic_url([:api_v1, @context, :ping]) if @context.is_a?(Course)
         @js_env[:TIMEZONE] = Time.zone.tzinfo.identifier unless @js_env[:TIMEZONE]
         @js_env[:CONTEXT_TIMEZONE] = @context.time_zone.tzinfo.identifier if !@js_env[:CONTEXT_TIMEZONE] && @context.respond_to?(:time_zone) && @context.time_zone.present?
-        unless @js_env[:LOCALE]
+        unless @js_env[:LOCALES]
           I18n.set_locale_with_localizer
-          @js_env[:LOCALE] = I18n.locale.to_s
+          @js_env[:LOCALES] = I18n.fallbacks[I18n.locale].map(&:to_s)
           @js_env[:BIGEASY_LOCALE] = I18n.bigeasy_locale
           @js_env[:FULLCALENDAR_LOCALE] = I18n.fullcalendar_locale
           @js_env[:MOMENT_LOCALE] = I18n.moment_locale
@@ -266,15 +278,14 @@ class ApplicationController < ActionController::Base
   # put feature checks on Account.site_admin and @domain_root_account that we're loading for every page in here
   # so altogether we can get them faster the vast majority of the time
   JS_ENV_SITE_ADMIN_FEATURES = %i[
-    cc_in_rce_video_tray featured_help_links
-    strip_origin_from_quiz_answer_file_references rce_buttons_and_icons important_dates feature_flag_filters k5_parent_support
+    featured_help_links feature_flag_filters k5_parent_support
     conferencing_in_planner remember_settings_tab word_count_in_speed_grader observer_picker lti_platform_storage
-    scale_equation_images
+    scale_equation_images new_equation_editor buttons_and_icons_cropper
   ].freeze
   JS_ENV_ROOT_ACCOUNT_FEATURES = %i[
     responsive_awareness responsive_misc product_tours files_dnd usage_rights_discussion_topics
-    inline_math_everywhere granular_permissions_manage_users create_course_subaccount_picker
-    lti_deep_linking_module_index_menu_modal lti_multiple_assignment_deep_linking
+    granular_permissions_manage_users create_course_subaccount_picker
+    lti_deep_linking_module_index_menu_modal lti_multiple_assignment_deep_linking buttons_and_icons_root_account
   ].freeze
   JS_ENV_BRAND_ACCOUNT_FEATURES = [
     :embedded_release_notes
@@ -668,6 +679,12 @@ class ApplicationController < ActionController::Base
     )
   end
 
+  def annotate_sentry
+    Sentry.set_tags({
+                      db_cluster: @domain_root_account&.shard&.database_server&.id
+                    })
+  end
+
   def store_session_locale
     return unless (locale = params[:session_locale])
 
@@ -731,7 +748,7 @@ class ApplicationController < ActionController::Base
       append_to_header("Content-Security-Policy", "frame-ancestors 'self' #{equivalent_domains.join(" ")};")
     end
     headers["Strict-Transport-Security"] = "max-age=31536000" if request.ssl?
-    RequestContext::Generator.store_request_meta(request, @context)
+    RequestContext::Generator.store_request_meta(request, @context, @sentry_trace)
     true
   end
 
@@ -2091,7 +2108,7 @@ class ApplicationController < ActionController::Base
   def safe_domain_file_url(attachment, host_and_shard: nil, verifier: nil, download: false, return_url: nil, fallback_url: nil) # TODO: generalize this
     host_and_shard ||= HostUrl.file_host_with_shard(@domain_root_account || Account.default, request.host_with_port)
     host, shard = host_and_shard
-    config = Canvas::DynamicSettings.find(tree: :private, cluster: attachment.shard.database_server.id)
+    config = DynamicSettings.find(tree: :private, cluster: attachment.shard.database_server.id)
     if config["attachment_specific_file_domain"] == "true"
       separator = config["attachment_specific_file_domain_separator"] || "."
       host = "a#{attachment.shard.id}-#{attachment.local_id}#{separator}#{host}"
@@ -2297,7 +2314,7 @@ class ApplicationController < ActionController::Base
 
     # Description type: ActiveSupport::SafeBuffer
     # no_cache_description is a string
-    no_cache_description = description.gsub(/(img src="\/(courses|users)\/\d+\/files\/\d+\/preview)(\??)(.*?")/, '\1?random=' + "#{Random.new_seed}" + '&\4')
+    no_cache_description = description.gsub(%r{(img src="/(courses|users)/\d+/files/\d+/preview)(\??)(.*?")}, '\1?random=' + Random.new_seed.to_s + '&\4')
 
     # the description comes from public_user_content/user_content, so we can suppose the content is safe
     no_cache_description.html_safe
@@ -2859,13 +2876,13 @@ class ApplicationController < ActionController::Base
     else
       return value_to_boolean(params[:force_stream]) if params.key?(:force_stream)
 
-      ::Canvas::DynamicSettings.find(tree: :private)["enable_template_streaming", failsafe: false] &&
+      ::DynamicSettings.find(tree: :private)["enable_template_streaming", failsafe: false] &&
         Setting.get("disable_template_streaming_for_#{controller_name}/#{action_name}", "false") != "true"
     end
   end
 
   def recaptcha_enabled?
-    Canvas::DynamicSettings.find(tree: :private)["recaptcha_server_key"].present? && @domain_root_account.self_registration_captcha?
+    DynamicSettings.find(tree: :private)["recaptcha_server_key"].present? && @domain_root_account.self_registration_captcha?
   end
 
   # Show Student View button on the following controller/action pages, as long as defined tabs are not hidden
@@ -2918,7 +2935,8 @@ class ApplicationController < ActionController::Base
 
   def should_show_migration_limitation_message
     @context.is_a?(Course) && @context.user_is_instructor?(@current_user) &&
-      @context.quiz_migration_alert_for_user(@current_user.id).present?
+      @context.quiz_migration_alert_for_user(@current_user.id).present? &&
+      %r{^/courses/\d+(/assignments|/quizzes|/modules|.?)$}.match?(request.path)
   end
   helper_method :should_show_migration_limitation_message
 

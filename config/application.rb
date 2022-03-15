@@ -136,7 +136,6 @@ module CanvasRails
 
     # Activate observers that should always be running
     config.active_record.observers = %i[cacher stream_item_cache live_events_observer]
-    config.active_record.allow_unsafe_raw_sql = :disabled
 
     config.active_support.encode_big_decimal_as_string = false
 
@@ -151,10 +150,10 @@ module CanvasRails
 
     config.middleware.use Rack::Chunked
     config.middleware.use Rack::Deflater, if: lambda { |*|
-      ::Canvas::DynamicSettings.find(tree: :private)["enable_rack_deflation", failsafe: true]
+      ::DynamicSettings.find(tree: :private)["enable_rack_deflation", failsafe: true]
     }
     config.middleware.use Rack::Brotli, if: lambda { |*|
-      ::Canvas::DynamicSettings.find(tree: :private)["enable_rack_brotli", failsafe: true]
+      ::DynamicSettings.find(tree: :private)["enable_rack_brotli", failsafe: true]
     }
 
     config.i18n.load_path << Rails.root.join("config/locales/locales.yml")
@@ -164,6 +163,12 @@ module CanvasRails
       require_dependency "canvas/plugins/default_plugins"
       Canvas::Plugins::DefaultPlugins.apply_all
       ActiveSupport::JSON::Encoding.escape_html_entities_in_json = true
+
+      if CANVAS_RAILS6_0
+        # On rails 6.1, this comes from switchman; on rails 6.0 canvas provides it
+        require_relative "#{__dir__}/../app/models/unsharded_record.rb"
+        Switchman::UnshardedRecord = UnshardedRecord
+      end
     end
 
     module PostgreSQLEarlyExtensions
@@ -289,7 +294,9 @@ module CanvasRails
     config.exceptions_app = ExceptionsApp.new
 
     config.before_initialize do
-      config.action_controller.asset_host = Canvas::Cdn.method(:asset_host_for)
+      config.action_controller.asset_host = lambda do |source, *_|
+        ::Canvas::Cdn.asset_host_for(source)
+      end
     end
 
     if config.action_dispatch.rack_cache != false
@@ -326,8 +333,8 @@ module CanvasRails
         # and these resources actually aren't even on disk in those cases.
         # do not remove this conditional until the asset build no longer
         # needs the rails app for anything.
-        require_dependency "canvas/dynamic_settings"
-        Canvas::DynamicSettingsInitializer.bootstrap!
+
+        DynamicSettingsInitializer.bootstrap!
       end
     end
 
@@ -358,6 +365,7 @@ module CanvasRails
       app.config.middleware.insert_after(config.session_store, RequestContext::Session)
       app.config.middleware.insert_before(Rack::Head, RequestThrottle)
       app.config.middleware.insert_before(Rack::MethodOverride, PreventNonMultipartParse)
+      app.config.middleware.insert_before(Sentry::Rails::CaptureExceptions, SentryTraceScrubber)
     end
 
     initializer("set_allowed_request_id_setters", after: :finisher_hook) do |app|

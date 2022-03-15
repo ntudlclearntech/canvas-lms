@@ -1208,7 +1208,7 @@ class CoursesController < ApplicationController
     reject!("Search term required") unless params[:search_term]
     return unless authorized_action(@context, @current_user, :read_as_admin)
 
-    users_scope = User.shard(Shard.current).active.distinct
+    users_scope = User.shard(Shard.current).has_created_account.distinct
     union_scope = teacher_scope(name_scope(users_scope), @context.root_account_id)
                   .union(
                     teacher_scope(email_scope(users_scope), @context.root_account_id),
@@ -1462,6 +1462,10 @@ class CoursesController < ApplicationController
                             @current_user.courses_for_enrollments(@current_user.teacher_enrollments).homeroom.to_a
                           end
 
+      if @context.elementary_homeroom_course?
+        @synced_subjects = Course.where(homeroom_course_id: @context.id).syncing_subjects.limit(100).select(&:elementary_subject_course?).sort_by { |c| Canvas::ICU.collation_key(c.name) }
+      end
+
       @alerts = @context.alerts
       add_crumb(t("#crumbs.settings", "Settings"), named_context_url(@context, :context_details_url))
 
@@ -1587,7 +1591,7 @@ class CoursesController < ApplicationController
   #   Let students attach files to discussions
   #
   # @argument allow_student_discussion_editing [Boolean]
-  #   Let students edit or delete their own discussion posts
+  #   Let students edit or delete their own discussion replies
   #
   # @argument allow_student_organized_groups [Boolean]
   #   Let students organize their own groups
@@ -2285,7 +2289,7 @@ class CoursesController < ApplicationController
             },
             STUDENT_PLANNER_ENABLED: planner_enabled?,
             TABS: @context.tabs_available(@current_user, course_subject_tabs: true, session: session),
-            OBSERVER_LIST: observed_users(@current_user, session, @context.id),
+            OBSERVED_USERS_LIST: observed_users(@current_user, session, @context.id),
             TAB_CONTENT_ONLY: embed_mode
           )
 
@@ -3103,7 +3107,7 @@ class CoursesController < ApplicationController
           @course.wiki.update_default_wiki_page_roles(@course.default_wiki_editing_roles, @default_wiki_editing_roles_was)
         end
         # Sync homeroom enrollments and participation if enabled and course isn't a SIS import
-        if @course.elementary_enabled? && value_to_boolean(params[:course][:sync_enrollments_from_homeroom]) && params[:course][:homeroom_course_id] && @course.sis_batch_id.blank?
+        if @course.can_sync_with_homeroom?
           progress = Progress.new(context: @course, tag: :sync_homeroom_enrollments)
           progress.user = @current_user
           progress.reset!

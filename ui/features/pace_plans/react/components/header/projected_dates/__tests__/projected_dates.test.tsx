@@ -17,6 +17,7 @@
  */
 
 import React from 'react'
+import {act} from '@testing-library/react'
 import {renderConnected} from '../../../../__tests__/utils'
 import {COURSE, PRIMARY_PLAN} from '../../../../__tests__/fixtures'
 
@@ -33,6 +34,7 @@ const defaultProps = {
   setStartDate: () => {},
   compressDates: jest.fn(),
   uncompressDates: jest.fn(),
+  toggleHardEndDates: jest.fn(),
   showProjections: true
 }
 
@@ -56,14 +58,22 @@ describe('ProjectedDates', () => {
   })
 
   it('shows projected start and end date when projections are shown', () => {
-    const {getByRole, getByText} = renderConnected(<ProjectedDates {...defaultProps} />)
+    const {getByRole} = renderConnected(<ProjectedDates {...defaultProps} />)
     const startDateInput = getByRole('combobox', {
       name: /^Start Date/
     }) as HTMLInputElement
+    const endDateInput = getByRole('combobox', {
+      name: /^End Date/
+    }) as HTMLInputElement
+    const specifiedEndDateCheckbox = getByRole('checkbox', {
+      name: 'Require Completion by Specified End Date'
+    })
     expect(startDateInput).toBeInTheDocument()
     expect(startDateInput.value).toBe('September 1, 2021')
-    expect(getByText(/^End Date/)).toBeInTheDocument()
-    expect(getByText('December 15, 2021')).toBeInTheDocument()
+    expect(endDateInput).toBeInTheDocument()
+    expect(endDateInput.value).toBe('December 15, 2021')
+    expect(specifiedEndDateCheckbox).toBeInTheDocument()
+    expect(specifiedEndDateCheckbox.checked).toBeTruthy()
   })
 
   it('shows the number of assignments and weeks in the plan when projections are shown', () => {
@@ -119,11 +129,46 @@ describe('ProjectedDates', () => {
       expect(getByTestId('paceplan-date-text').textContent).toStrictEqual('December 31, 2021')
     })
 
-    it('shows specified end date text', () => {
-      const {getAllByText, getByTestId} = renderConnected(<ProjectedDates {...defaultProps} />)
+    it('shows term end date text', () => {
+      window.ENV.VALID_DATE_RANGE = {
+        end_at: {date: COURSE.end_at, date_context: 'term'},
+        start_at: {date: COURSE.start_at, date_context: 'term'}
+      }
+      const plan = {
+        ...defaultProps.pacePlan,
+        hard_end_dates: false,
+        start_sate: '2022-01-03',
+        end_date: undefined
+      }
+      const {getAllByText, getByTestId} = renderConnected(
+        <ProjectedDates {...defaultProps} pacePlan={plan} />
+      )
+      expect(getAllByText('Required by term end date').length).toBeTruthy()
+      // expect the term end date
+      expect(getByTestId('paceplan-date-text').textContent).toStrictEqual('December 31, 2021')
+    })
+
+    it('shows specified end date input', () => {
+      const {getAllByText, getByDisplayValue} = renderConnected(
+        <ProjectedDates {...defaultProps} />
+      )
       expect(getAllByText('Required by specified end date').length).toBeTruthy()
-      // expect the plan end date
-      expect(getByTestId('paceplan-date-text').textContent).toStrictEqual('December 15, 2021')
+      // expect the specified plan end date
+      expect(getByDisplayValue('December 15, 2021')).toBeInTheDocument()
+    })
+
+    it('shows error if end date is before start date', () => {
+      const plan = {...defaultProps.pacePlan, start_date: '2021-08-01', end_date: '2021-07-31'}
+      const {getByText} = renderConnected(<ProjectedDates {...defaultProps} pacePlan={plan} />)
+      expect(getByText('Date is before student enrollment date')).toBeInTheDocument()
+    })
+
+    it('shows error if end date is after course end date', () => {
+      const d = new Date(ENV.VALID_DATE_RANGE.end_at.date)
+      d.setDate(d.getDate() + 1)
+      const plan = {...defaultProps.pacePlan, end_date: d.toISOString()}
+      const {getByText} = renderConnected(<ProjectedDates {...defaultProps} pacePlan={plan} />)
+      expect(getByText('Date is after the course end date')).toBeInTheDocument()
     })
 
     it('shows open-ended plan text', () => {
@@ -173,6 +218,26 @@ describe('ProjectedDates', () => {
 
       expect(defaultProps.uncompressDates).not.toHaveBeenCalled()
       expect(defaultProps.compressDates).toHaveBeenCalled()
+    })
+  })
+
+  describe('specified end date checkbox', () => {
+    it('toggles the setting when clicked', () => {
+      const {getByRole} = renderConnected(<ProjectedDates {...defaultProps} />)
+      const hardEndDatesToggle = getByRole('checkbox', {
+        name: 'Require Completion by Specified End Date'
+      })
+      expect(hardEndDatesToggle).not.toBeDisabled()
+      act(() => hardEndDatesToggle.click())
+      expect(defaultProps.toggleHardEndDates).toHaveBeenCalled()
+    })
+
+    it('is disabled while the plan is publishing', () => {
+      const {getByRole} = renderConnected(<ProjectedDates {...defaultProps} planPublishing />)
+      const hardEndDatesToggle = getByRole('checkbox', {
+        name: 'Require Completion by Specified End Date'
+      })
+      expect(hardEndDatesToggle).toBeDisabled()
     })
   })
 })

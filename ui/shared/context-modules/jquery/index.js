@@ -510,6 +510,15 @@ window.modules = (function () {
       $('#add_context_module_form:visible').dialog('close')
     },
 
+    addContentTagToEnv(content_tag) {
+      ENV.MODULE_FILE_DETAILS[content_tag.id] = {
+        content_details: content_tag.content_details,
+        content_id: content_tag.content_id,
+        id: content_tag.id,
+        module_id: content_tag.context_module_id
+      }
+    },
+
     addItemToModule($module, data) {
       if (!data) {
         return $('<div/>')
@@ -1571,6 +1580,7 @@ modules.initModuleManagement = function (duplicate) {
           'Are you sure you want to remove this item from the module?'
         ),
         success(data) {
+          delete ENV.MODULE_FILE_DETAILS[data.content_tag.id]
           $(this).slideUp(function () {
             $(this).remove()
             modules.updateTaggedItems()
@@ -1793,6 +1803,13 @@ modules.initModuleManagement = function (duplicate) {
 
   function generate_submit(id, focusLink = true) {
     return item_data => {
+      // a content item with an assignment_id means that an assignment was already created
+      // on the backend, so no module item should be created now. Reload the page to show
+      // the newly created assignment
+      if (item_data['item[assignment_id]']) {
+        return window.location.reload()
+      }
+
       const $module = $('#context_module_' + id)
       let nextPosition = modules.getNextPosition($module)
       item_data.content_details = ['items']
@@ -1805,6 +1822,7 @@ modules.initModuleManagement = function (duplicate) {
           $item.remove()
           data.content_tag.type = item_data['item[type]']
           $item = modules.addItemToModule($module, data.content_tag)
+          modules.addContentTagToEnv(data.content_tag)
           $module.find('.context_module_items.ui-sortable').sortable('enable').sortable('refresh')
           initNewItemPublishButton($item, data.content_tag)
           initNewItemDirectShare($item, data.content_tag)
@@ -1966,6 +1984,11 @@ modules.initModuleManagement = function (duplicate) {
       if ($items.length > 0) {
         const $item = $items.shift()
         const opts = modules.sortable_module_options
+        const k5TabsContainer = $('#k5-course-header').closest('.ic-Dashboard-tabs').eq(0)
+        const k5ModulesContainer = $('#k5-modules-container')
+        if (k5TabsContainer.length > 0 && k5ModulesContainer.length > 0) {
+          opts.sort = event => onContainerOverlapped(event, k5ModulesContainer, k5TabsContainer)
+        }
         opts.update = modules.updateModuleItemPositions
         $item.sortable(opts)
         requestAnimationFrame(next)
@@ -1999,6 +2022,18 @@ modules.initModuleManagement = function (duplicate) {
 
     const view = initPublishButton($item.find('.publish-icon'), publishData)
     overrideModel(view.model, view)
+  }
+
+  var onContainerOverlapped = function (event, sortableContainer, overlappingElement) {
+    const sortableContainerStart = sortableContainer?.position().top
+    const overlappingElementEnd = overlappingElement?.position().top + overlappingElement.height()
+    const isOverlapped = sortableContainerStart < overlappingElementEnd
+    // if the sortable container is overlapped by another element, the scroll should move when
+    // the draggable item is getting closer to the overlapping element
+    if (isOverlapped && event.pageY < overlappingElementEnd + 30) {
+      const scrollTo = window.scrollY - event.clientY * 0.05
+      $('html, body').scrollTop(scrollTo)
+    }
   }
 
   var initPublishButton = function ($el, data) {

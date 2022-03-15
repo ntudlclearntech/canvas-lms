@@ -21,6 +21,7 @@ import {
   createDiscussionEntryMock,
   deleteDiscussionEntryMock,
   getDiscussionQueryMock,
+  getAnonymousDiscussionQueryMock,
   getDiscussionSubentriesQueryMock,
   subscribeToDiscussionTopicMock,
   updateDiscussionEntryMock,
@@ -306,7 +307,7 @@ describe('DiscussionFullPage', () => {
     it('renders the dates properly', async () => {
       const container = setup(getDiscussionQueryMock())
       expect(await container.findByText('Nov 23, 2020 6:40pm')).toBeInTheDocument()
-      expect(await container.findByText('Last reply Apr 5 7:41pm')).toBeInTheDocument()
+      expect(await container.findByText('Last reply Apr 5, 2021 7:41pm')).toBeInTheDocument()
     })
   })
 
@@ -400,6 +401,49 @@ describe('DiscussionFullPage', () => {
     await waitFor(() =>
       expect(setOnSuccess).toHaveBeenCalledWith('The discussion entry was successfully created.')
     )
+  })
+
+  describe('partially anonymous discussion', () => {
+    beforeAll(() => {
+      window.ENV.discussion_anonymity_enabled = true
+    })
+
+    afterAll(() => {
+      window.ENV.discussion_anonymity_enabled = false
+    })
+
+    it('should be able to post an anonymous reply to the topic', async () => {
+      const mocks = [
+        ...getAnonymousDiscussionQueryMock(),
+        ...createDiscussionEntryMock({isAnonymousAuthor: true})
+      ]
+      const container = setup(mocks)
+
+      const replyButton = await container.findByTestId('discussion-topic-reply')
+      fireEvent.click(replyButton)
+
+      await waitFor(() => {
+        expect(tinymce.editors[0]).toBeDefined()
+      })
+
+      const rce = await container.findByTestId('DiscussionEdit-container')
+      expect(rce.style.display).toBe('')
+
+      document.querySelectorAll('textarea')[0].value = 'This is a reply'
+
+      expect(container.queryAllByText('This is a reply')).toBeTruthy()
+
+      const doReplyButton = await container.findByTestId('DiscussionEdit-submit')
+      fireEvent.click(doReplyButton)
+
+      await waitFor(() =>
+        expect(container.queryByTestId('DiscussionEdit-container')).not.toBeInTheDocument()
+      )
+
+      await waitFor(() =>
+        expect(setOnSuccess).toHaveBeenCalledWith('The discussion entry was successfully created.')
+      )
+    })
   })
 
   it('should be able to post a reply to an entry', async () => {

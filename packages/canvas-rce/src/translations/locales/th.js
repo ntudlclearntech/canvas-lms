@@ -53,6 +53,7 @@ const locale = {
     "message": "ปรับใช้การเปลี่ยนแปลงกับส่วนรายการทั้งหมดปุ่มและไอคอนนี้ในบทเรียนนี้"
   },
   "apps_54d24a47": { "message": "แอพ" },
+  "arrows_464a3e54": { "message": "ลูกศร" },
   "aspect_ratio_will_be_preserved_cb5fdfb8": {
     "message": "สัดส่วนจะถูกรักษาไว้ตามเดิม"
   },
@@ -61,6 +62,8 @@ const locale = {
   "audio_and_video_recording_not_supported_please_use_5ce3f0d7": {
     "message": "ไม่รองรับบันทึกเสียงและภาพ กรุณาใช้เบราเซอร์อื่น"
   },
+  "audio_options_feb58e2c": { "message": "ตัวเลือกเสียง" },
+  "audio_options_tray_33a90711": { "message": "ถาดตัวเลือกเสียง" },
   "audio_player_for_title_20cc70d": {
     "message": "เครื่องเล่นเสียงสำหรับ { title }"
   },
@@ -68,6 +71,7 @@ const locale = {
     "message": "มีเนื้อหาบันทึกอัตโนมัติ ต้องการโหลดเนื้อหาบันทึกอัตโนมัติแทนหรือไม่"
   },
   "available_folders_694d0436": { "message": "โฟลเดอร์ที่ใช้ได้" },
+  "basic_554cdc0a": { "message": "พื้นฐาน" },
   "below_81d4dceb": { "message": "ด้านล่าง" },
   "bottom_third_5f5fec1d": { "message": "อันดับที่สามจากด้านล่าง" },
   "button_color_608a0242": { "message": "สีปุ่ม" },
@@ -150,11 +154,15 @@ const locale = {
   "default_numerical_ordered_list_48dd3548": {
     "message": "รายการที่จัดลำดับแบบมีตัวเลขกำกับเริ่มต้น"
   },
+  "delimiters_4db4840d": { "message": "ตัวคั่น" },
   "describe_the_image_e65d2e32": { "message": "(ระบุรายละเอียดภาพ)" },
   "describe_the_video_2fe8f46a": { "message": "(ระบุรายละเอียดวิดีโอ)" },
   "details_98a31b68": { "message": "รายละเอียด" },
+  "diamond_b8dfe7ae": { "message": "เพชร" },
+  "dimension_type_55c83e4e": { "message": "ประเภทขนาด" },
   "dimensions_45ddb7b7": { "message": "ขนาด" },
   "directionality_26ae9e08": { "message": "ทิศทาง" },
+  "directly_edit_latex_b7e9235b": { "message": "แก้ไข LaTeX โดยตรง" },
   "discussions_a5f96392": { "message": "การพูดคุย" },
   "discussions_index_6c36ced": { "message": "ดัชนีการพูดคุย" },
   "display_options_315aba85": { "message": "แสดงตัวเลือก" },
@@ -191,6 +199,7 @@ const locale = {
     "message": "กรอกอย่างน้อย 3 ตัวอักษรเพื่อค้นหา"
   },
   "equation_1c5ac93c": { "message": "สมการ" },
+  "equation_editor_39fbc3f1": { "message": "ตัวแก้ไขสมการ" },
   "expand_preview_by_default_2abbf9f8": {
     "message": "ขยายตัวอย่างเป็นค่าเริ่มต้น"
   },
@@ -230,6 +239,7 @@ const locale = {
     "message": "ไปที่แถบเครื่องมือของโปรแกรมแก้ไข"
   },
   "grades_a61eba0a": { "message": "เกรด" },
+  "greek_65c5b3f7": { "message": "กรีก" },
   "group_documents_8bfd6ae6": { "message": "เอกสารของกลุ่ม" },
   "group_files_4324f3df": { "message": "ไฟล์ของกลุ่ม" },
   "group_files_82e5dcdb": { "message": "ไฟล์ของกลุ่ม" },
@@ -257,6 +267,7 @@ const locale = {
   "image_8ad06": { "message": "ภาพ" },
   "image_options_5412d02c": { "message": "ตัวเลือกภาพ" },
   "image_options_tray_90a46006": { "message": "ถาดตัวเลือกภาพ" },
+  "image_to_crop_3a34487d": { "message": "ภาพที่จะครอป" },
   "images_7ce26570": { "message": "ภาพ" },
   "increase_indent_6d550a4a": { "message": "เพิ่มการเยื้อง" },
   "insert_593145ef": { "message": "ใบกัด" },
@@ -280,13 +291,18 @@ const locale = {
   "loading_failed_e6a9d8ef": { "message": "โหลดล้มเหลว..." },
   "loading_folders_d8b5869e": { "message": "กำลังโหลดโฟลเดอร์" },
   "loading_please_wait_d276220a": { "message": "กำลังโหลด กรุณารอสักครู่" },
+  "loading_preview_9f077aa1": { "message": "กำลังโหลดตัวอย่าง" },
   "locked_762f138b": { "message": "ล็อคแล้ว" },
   "media_af190855": { "message": "มีเดีย" },
   "medium_5a8e9ead": { "message": "ปานกลาง" },
   "middle_27dc1d5": { "message": "ตรงกลาง" },
+  "misc_3b692ea7": { "message": "เบ็ดเตล็ด" },
   "miscellaneous_e9818229": { "message": "เบ็ดเตล็ด" },
   "modules_c4325335": { "message": "หน่วยการเรียน" },
   "multi_color_image_63d7372f": { "message": "ภาพหลายสี" },
+  "must_be_at_least_percentage_22e373b6": {
+    "message": "จะต้องเท่ากับอย่างน้อย { percentage }%"
+  },
   "must_be_at_least_width_x_height_px_41dc825e": {
     "message": "จะต้องเท่ากับอย่างน้อย { width } x { height }px"
   },
@@ -317,6 +333,7 @@ const locale = {
   "open_title_application_fd624fc5": {
     "message": "เปิดแอพพลิเคชั่น { title }"
   },
+  "operators_a2ef9a93": { "message": "ผู้ดำเนินการ" },
   "options_3ab0ea65": { "message": "ตัวเลือก" },
   "ordered_and_unordered_lists_cfadfc38": {
     "message": "รายการที่จัดลำดับและไม่ได้จัดลำดับ"
@@ -329,7 +346,13 @@ const locale = {
   },
   "pages_e5414c2c": { "message": "เพจ" },
   "paragraph_5e5ad8eb": { "message": "ย่อหน้า" },
+  "pentagon_17d82ea3": { "message": "ห้าเหลี่ยม" },
   "people_b4ebb13c": { "message": "บุคคล" },
+  "percentage_34ab7c2c": { "message": "เปอร์เซ็นต์" },
+  "percentage_must_be_a_number_8033c341": {
+    "message": "เปอร์เซ็นต์จะต้องเป็นตัวเลข"
+  },
+  "pixels_52ece7d1": { "message": "พิกเซล" },
   "posted_when_a578f5ab": { "message": "โพสต์เมื่อ: { when }" },
   "preformatted_d0670862": { "message": "กำหนดรูปแบบไว้ล่วงหน้า" },
   "pretty_html_editor_28748756": { "message": "HTML Editor ที่สวยงาม" },
@@ -346,6 +369,7 @@ const locale = {
   "raw_html_editor_e3993e41": { "message": "Raw HTML Editor" },
   "record_7c9448b": { "message": "บันทึก" },
   "record_upload_media_5fdce166": { "message": "บันทึก/อัพโหลดสื่อ" },
+  "relationships_6602af70": { "message": "ความสัมพันธ์" },
   "remove_link_d1f2f4d0": { "message": "ลบลิงค์" },
   "resize_ec83d538": { "message": "ปรับขนาด" },
   "restore_auto_save_deccd84b": {
@@ -366,6 +390,7 @@ const locale = {
   "shift_o_to_open_the_pretty_html_editor_55ff5a31": {
     "message": "Shift-O เพื่อเปิด HTML Editor ที่สวยงาม"
   },
+  "show_audio_options_b489926b": { "message": "แสดงตัวเลือกเสียง" },
   "show_embed_options_ef8d7ef": { "message": "แสดงตัวเลือกในการผนวก" },
   "show_image_options_1e2ecc6b": { "message": "แสดงตัวเลือกสำหรับภาพ" },
   "show_link_options_545338fd": { "message": "แสดงตัวเลือกสำหรับลิงค์" },

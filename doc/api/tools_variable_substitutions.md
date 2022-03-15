@@ -160,6 +160,60 @@ particular placement:
    </cartridge_basiclti_link>
 ```
 # Supported Substitutions
+## ResourceLink.id
+LTI - Custom parameter substitution: ResourceLink.id
+Returns the LTI value for the resource_link.id property
+Returns "$ResourceLink.id" otherwise.
+
+**Availability**: *always*  
+**Launch Parameter**: *resourcelink_id*  
+
+
+## ResourceLink.description
+LTI - Custom parameter substitution: ResourceLink.description
+Returns the LTI value for the resource_link.description property
+Returns "$ResourceLink.description" otherwise.
+
+**Availability**: *always*  
+**Launch Parameter**: *resourcelink_description*  
+
+
+## ResourceLink.title
+LTI - Custom parameter substitution: ResourceLink.title
+Returns the LTI value for the resource_link.title property
+Returns "$ResourceLink.title" otherwise.
+
+**Availability**: *always*  
+**Launch Parameter**: *resourcelink_title*  
+
+
+## ResourceLink.available.startDateTime
+LTI - Custom parameter substitution: ResourceLink.available.startDateTime
+Returns the ISO 8601 date and time when this resource is available for learners to access
+Returns "$ResourceLink.available.startDateTime" otherwise.
+
+**Availability**: *always*  
+**Launch Parameter**: *resourcelink_available_startdatetime*  
+
+
+## ResourceLink.available.endDateTime
+LTI - Custom parameter substitution: ResourceLink.available.endDateTime
+Returns the ISO 8601 date and time when this resource ceases to be available for learners to access
+Returns "$ResourceLink.available.endDateTime" otherwise.
+
+**Availability**: *always*  
+**Launch Parameter**: *resourcelink_available_enddatetime*  
+
+
+## ResourceLink.submission.endDateTime
+LTI - Custom parameter substitution: ResourceLink.submission.endDateTime
+Returns the ISO 8601 date and time when this resource stops accepting submissions.
+Returns "$ResourceLink.submission.endDateTime" otherwise.
+
+**Availability**: *always*  
+**Launch Parameter**: *resourcelink_submission_enddatetime*  
+
+
 ## com.instructure.User.observees
 If the current user is an observer in the launch
 context, this substitution returns a comma-separated

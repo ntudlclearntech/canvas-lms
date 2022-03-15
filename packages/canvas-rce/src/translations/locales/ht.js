@@ -52,17 +52,21 @@ const locale = {
     "message": "Aplike chanjman yo a tout reprezantasyon Bouton sa a ak Ikòn sa a nan Kou a"
   },
   "apps_54d24a47": { "message": "Apps" },
+  "arrows_464a3e54": { "message": "Flèch" },
   "aspect_ratio_will_be_preserved_cb5fdfb8": { "message": "Fòma ap konsève" },
   "assignments_1e02582c": { "message": "Sesyon" },
   "attributes_963ba262": { "message": "Atribi" },
   "audio_and_video_recording_not_supported_please_use_5ce3f0d7": {
     "message": "Anrejistreman odyo ak videyo a pa konpatib, tanpri, itilize lòt navigatè."
   },
+  "audio_options_feb58e2c": { "message": "Opsyon Odyo" },
+  "audio_options_tray_33a90711": { "message": "Plato Opsyon Odyo" },
   "audio_player_for_title_20cc70d": { "message": "Lektè odyo pou { title }" },
   "auto_saved_content_exists_would_you_like_to_load_t_fee528f2": {
     "message": "Anrejistreman otomatik kontni egziste. Èske w t ap pefere chaje kontni ki te anrejistre otomatikman yo pito?"
   },
   "available_folders_694d0436": { "message": "Dosye disponib" },
+  "basic_554cdc0a": { "message": "Bazik" },
   "below_81d4dceb": { "message": "Anba" },
   "bottom_third_5f5fec1d": { "message": "Tyè Enferyè" },
   "button_color_608a0242": { "message": "Koulè Bouton" },
@@ -141,11 +145,15 @@ const locale = {
   "default_numerical_ordered_list_48dd3548": {
     "message": "lis nimerik pa defo"
   },
+  "delimiters_4db4840d": { "message": "Delimitè" },
   "describe_the_image_e65d2e32": { "message": "(Dekri imaj la)" },
   "describe_the_video_2fe8f46a": { "message": "(Dekri videyo a)" },
   "details_98a31b68": { "message": "Detay" },
+  "diamond_b8dfe7ae": { "message": "Dyaman" },
+  "dimension_type_55c83e4e": { "message": "Tip Dimansyon" },
   "dimensions_45ddb7b7": { "message": "Dimansyon" },
   "directionality_26ae9e08": { "message": "Direksyonalite" },
+  "directly_edit_latex_b7e9235b": { "message": "Chanje LaTex Dirèkteman" },
   "discussions_a5f96392": { "message": "Diskisyon" },
   "discussions_index_6c36ced": { "message": "Endis Diskisyon" },
   "display_options_315aba85": { "message": "Opsyon Afichaj" },
@@ -182,6 +190,7 @@ const locale = {
     "message": "Antre omwen 3 karaktè pou ka chèche"
   },
   "equation_1c5ac93c": { "message": "Ekwasyon" },
+  "equation_editor_39fbc3f1": { "message": "Editè Ekwasyon" },
   "expand_preview_by_default_2abbf9f8": { "message": "Elaji apèsi pa Defo" },
   "expand_to_see_types_f5d29352": { "message": "Elaji pou w wè { types }" },
   "external_links_3d9f074e": { "message": "Lyen Ekstèn" },
@@ -215,6 +224,7 @@ const locale = {
     "message": "Ale sou ba zouti editè a"
   },
   "grades_a61eba0a": { "message": "Nòt" },
+  "greek_65c5b3f7": { "message": "Grèk" },
   "group_documents_8bfd6ae6": { "message": "Gwoupe Dokiman" },
   "group_files_4324f3df": { "message": "Gwoup Fichye" },
   "group_files_82e5dcdb": { "message": "Gwoup fichye" },
@@ -244,6 +254,7 @@ const locale = {
   "image_8ad06": { "message": "Imaj" },
   "image_options_5412d02c": { "message": "Opsyon Imaj" },
   "image_options_tray_90a46006": { "message": "Plato Opsyon Imaj" },
+  "image_to_crop_3a34487d": { "message": "Imaj pou koupe" },
   "images_7ce26570": { "message": "Imaj" },
   "increase_indent_6d550a4a": { "message": "Ogmante endantasyon" },
   "insert_593145ef": { "message": "Ensere" },
@@ -267,13 +278,18 @@ const locale = {
   "loading_failed_e6a9d8ef": { "message": "Chajman echwe." },
   "loading_folders_d8b5869e": { "message": "Chajman dosye" },
   "loading_please_wait_d276220a": { "message": "Chajman, tanpri tann" },
+  "loading_preview_9f077aa1": { "message": "Chajman apèsi" },
   "locked_762f138b": { "message": "Bloke" },
   "media_af190855": { "message": "Medya" },
   "medium_5a8e9ead": { "message": "Mwayen" },
   "middle_27dc1d5": { "message": "Mitan" },
+  "misc_3b692ea7": { "message": "Divès" },
   "miscellaneous_e9818229": { "message": "Divès" },
   "modules_c4325335": { "message": "Modil" },
   "multi_color_image_63d7372f": { "message": "Imaj Miltikolò" },
+  "must_be_at_least_percentage_22e373b6": {
+    "message": "Dwe omwen { percentage }%"
+  },
   "must_be_at_least_width_x_height_px_41dc825e": {
     "message": "Dwe omwen { width } x { height }px"
   },
@@ -304,6 +320,7 @@ const locale = {
   "open_title_application_fd624fc5": {
     "message": "Ouvri { title } aplikasyon"
   },
+  "operators_a2ef9a93": { "message": "Operatè" },
   "options_3ab0ea65": { "message": "Opsyon" },
   "ordered_and_unordered_lists_cfadfc38": {
     "message": "Lis Òdone e non Òdone"
@@ -316,7 +333,13 @@ const locale = {
   },
   "pages_e5414c2c": { "message": "Paj" },
   "paragraph_5e5ad8eb": { "message": "Paragraf" },
+  "pentagon_17d82ea3": { "message": "Pentagòn" },
   "people_b4ebb13c": { "message": "Moun" },
+  "percentage_34ab7c2c": { "message": "Pousantaj" },
+  "percentage_must_be_a_number_8033c341": {
+    "message": "Pousantaj la dwe se yon chif"
+  },
+  "pixels_52ece7d1": { "message": "Piksèl" },
   "posted_when_a578f5ab": { "message": "Poste: { when }" },
   "preformatted_d0670862": { "message": "Prefòmate" },
   "pretty_html_editor_28748756": { "message": "Bèl editè HTML" },
@@ -333,6 +356,7 @@ const locale = {
   "raw_html_editor_e3993e41": { "message": "Editè HTML Brit" },
   "record_7c9448b": { "message": "Anrejistre" },
   "record_upload_media_5fdce166": { "message": "Anrejistre/Chaje Medya" },
+  "relationships_6602af70": { "message": "Relasyon" },
   "remove_link_d1f2f4d0": { "message": "Elimine Lyen" },
   "resize_ec83d538": { "message": "Redimansyone" },
   "restore_auto_save_deccd84b": {
@@ -355,6 +379,7 @@ const locale = {
   "shift_o_to_open_the_pretty_html_editor_55ff5a31": {
     "message": "Shift-O pou ka ouvri bèl editè html la."
   },
+  "show_audio_options_b489926b": { "message": "Afiche opsyon odyo" },
   "show_embed_options_ef8d7ef": { "message": "Afiche opsyon entegrasyon" },
   "show_image_options_1e2ecc6b": { "message": "Afiche opsyon imaj" },
   "show_link_options_545338fd": { "message": "Afiche opsyon lyen" },

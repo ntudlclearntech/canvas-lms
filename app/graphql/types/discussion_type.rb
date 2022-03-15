@@ -63,7 +63,9 @@ module Types
     field :require_initial_post, Boolean, null: true
 
     field :message, String, null: true
-    delegate :message, to: :object
+    def message
+      available_for_user ? object.message : nil
+    end
 
     field :available_for_user, Boolean, null: false
     def available_for_user
@@ -74,6 +76,11 @@ module Types
       else
         !locked_info
       end
+    end
+
+    field :user_count, Integer, null: true
+    def user_count
+      object.course.nil? ? 0 : object.course.enrollments.not_fake.active_or_pending_by_date_ignoring_access.distinct.count(:user_id)
     end
 
     field :initial_post_required_for_current_user, Boolean, null: false
@@ -135,7 +142,9 @@ module Types
 
     field :child_topics, [Types::DiscussionType], null: true
     def child_topics
-      load_association(:child_topics)
+      load_association(:child_topics).then do |child_topics|
+        child_topics.select { |topic| topic.context.active? }
+      end
     end
 
     field :context_name, String, null: true
@@ -159,7 +168,7 @@ module Types
             user
           else
             Loaders::CourseRoleLoader.for(course_id: course_id, role_types: role_types, built_in_only: built_in_only).load(user).then do |roles|
-              if roles&.include?("TeacherEnrollment") || roles&.include?("TaEnrollment")
+              if roles&.include?("TeacherEnrollment") || roles&.include?("TaEnrollment") || roles&.include?("DesignerEnrollment") || (object.anonymous_state == "partial_anonymity" && !object.is_anonymous_author)
                 user
               end
             end
@@ -170,7 +179,7 @@ module Types
 
     field :anonymous_author, Types::AnonymousUserType, null: true
     def anonymous_author
-      if object.anonymous?
+      if object.anonymous_state == "full_anonymity" || (object.anonymous_state == "partial_anonymity" && object.is_anonymous_author)
         Loaders::DiscussionTopicParticipantLoader.for(object.id).load(object.user_id).then do |participant|
           {
             id: participant.id.to_s(36),
@@ -197,7 +206,7 @@ module Types
             user
           else
             Loaders::CourseRoleLoader.for(course_id: course_id, role_types: role_types, built_in_only: built_in_only).load(user).then do |roles|
-              if roles&.include?("TeacherEnrollment") || roles&.include?("TaEnrollment")
+              if roles&.include?("TeacherEnrollment") || roles&.include?("TaEnrollment") || roles&.include?("DesignerEnrollment") || (object.anonymous_state == "partial_anonymity" && !object.is_anonymous_author)
                 user
               end
             end
@@ -224,6 +233,15 @@ module Types
     field :can_unpublish, Boolean, null: false
     def can_unpublish
       object.can_unpublish?
+    end
+
+    field :can_reply_anonymously, Boolean, null: false
+    def can_reply_anonymously
+      return false unless object.context.is_a?(Course)
+
+      Loaders::CourseRoleLoader.for(course_id: object.context.id, role_types: nil, built_in_only: nil).load(current_user).then do |roles|
+        !(roles&.include?("TeacherEnrollment") || roles&.include?("TaEnrollment") || roles&.include?("DesignerEnrollment"))
+      end
     end
 
     field :entries_total_pages, Integer, null: true do
@@ -276,7 +294,7 @@ module Types
     end
 
     def get_entries(search_term: nil, filter: nil, sort_order: :asc, root_entries: false)
-      return [] if object.initial_post_required?(current_user, session)
+      return [] if object.initial_post_required?(current_user, session) || !available_for_user
 
       Loaders::DiscussionEntryLoader.for(
         current_user: current_user,

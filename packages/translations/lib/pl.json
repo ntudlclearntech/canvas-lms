@@ -101,6 +101,9 @@
     "are_you_sure_you_want_to_delete_this_planner_item_b71e330c": {
         "message": "Czy na pewno chcesz usunąć ten element planera?"
     },
+    "arrows_464a3e54": {
+        "message": "Strzałki"
+    },
     "aspect_ratio_will_be_preserved_cb5fdfb8": {
         "message": "Współczynnik proporcji zostanie zachowany"
     },
@@ -146,6 +149,12 @@
     "audio_and_video_recording_not_supported_please_use_5ce3f0d7": {
         "message": "Nagrywanie dźwięku i wideo nie jest obsługiwane; użyj innej przeglądarki."
     },
+    "audio_options_feb58e2c": {
+        "message": "Opcje audio"
+    },
+    "audio_options_tray_33a90711": {
+        "message": "Panel opcji audio"
+    },
     "audio_player_for_title_20cc70d": {
         "message": "Odtwarzacz audio dla { title }"
     },
@@ -154,6 +163,9 @@
     },
     "available_folders_694d0436": {
         "message": "Dostępne foldery"
+    },
+    "basic_554cdc0a": {
+        "message": "Podstawowy"
     },
     "beginning_of_your_to_do_history_61ef2dce": {
         "message": "Początek historii listy zadań"
@@ -371,6 +383,9 @@
     "delete_a6efa79d": {
         "message": "Usuń"
     },
+    "delimiters_4db4840d": {
+        "message": "Ograniczniki"
+    },
     "describe_the_image_e65d2e32": {
         "message": "(opisz obraz)"
     },
@@ -394,6 +409,9 @@
     },
     "directionality_26ae9e08": {
         "message": "Kierunkowość"
+    },
+    "directly_edit_latex_b7e9235b": {
+        "message": "Edytuj bezpośrednio w LaTeX"
     },
     "discussion_6719c51d": {
         "message": "Dyskusja"
@@ -496,6 +514,9 @@
     },
     "equation_1c5ac93c": {
         "message": "Równanie"
+    },
+    "equation_editor_39fbc3f1": {
+        "message": "Edytor równań"
     },
     "error_loading_grades_e0b38f4d": {
         "message": "Błąd podczas wczytywania ocen"
@@ -629,6 +650,9 @@
     "grades_loaded_5056277c": {
         "message": "Wczytano oceny"
     },
+    "greek_65c5b3f7": {
+        "message": "Greckie"
+    },
     "group_documents_8bfd6ae6": {
         "message": "Grupuj dokumenty"
     },
@@ -697,6 +721,9 @@
     },
     "image_options_tray_90a46006": {
         "message": "Panel opcji obrazu"
+    },
+    "image_to_crop_3a34487d": {
+        "message": "Obraz do przycięcia"
     },
     "images_7ce26570": {
         "message": "Zdjęcia"
@@ -812,6 +839,9 @@
     "loading_please_wait_d276220a": {
         "message": "Ładowanie, proszę czekać"
     },
+    "loading_preview_9f077aa1": {
+        "message": "Wczytywanie podglądu"
+    },
     "location_3b6ff307": {
         "message": "Położenie:"
     },
@@ -832,6 +862,9 @@
     },
     "middle_27dc1d5": {
         "message": "Środkowy"
+    },
+    "misc_3b692ea7": {
+        "message": "Różne"
     },
     "miscellaneous_e9818229": {
         "message": "Różne"
@@ -953,6 +986,9 @@
     "open_title_application_fd624fc5": {
         "message": "Otwórz aplikację { title }"
     },
+    "operators_a2ef9a93": {
+        "message": "Operatory"
+    },
     "opportunities_popup_f6703842": {
         "message": "okienko wyskakujące z okazjami"
     },
@@ -994,6 +1030,9 @@
     },
     "percentage_34ab7c2c": {
         "message": "Wartość procentowa"
+    },
+    "percentage_must_be_a_number_8033c341": {
+        "message": "Odsetek musi być liczbą"
     },
     "pixels_52ece7d1": {
         "message": "Piksele"
@@ -1058,6 +1097,9 @@
     "redo_363c58b7": {
         "message": "Cofnij"
     },
+    "relationships_6602af70": {
+        "message": "Powiązania"
+    },
     "reminder_date_4564d12d": {
         "message": "Przypomnienie: { date }"
     },
@@ -1120,6 +1162,9 @@
     },
     "show_all_ae37d610": {
         "message": "Pokaż wszystko"
+    },
+    "show_audio_options_b489926b": {
+        "message": "Pokaż opcje audio"
     },
     "show_embed_options_ef8d7ef": {
         "message": "Pokaż opcje osadzania"

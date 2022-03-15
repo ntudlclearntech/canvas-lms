@@ -155,6 +155,11 @@ SelectContentDialog.handleContentItemResult = function (result, tool) {
   $('#external_tool_create_url').val(result.url)
   $('#external_tool_create_title').val(result.title || tool.name)
   $('#external_tool_create_custom_params').val(JSON.stringify(result.custom))
+  if (result.iframe) {
+    $('#external_tool_create_iframe_width').val(result.iframe.width)
+    $('#external_tool_create_iframe_height').val(result.iframe.height)
+  }
+
   $('#context_external_tools_select .domain_message').hide()
 
   // content item with an assignment_id means that an assignment was already
@@ -247,7 +252,7 @@ SelectContentDialog.Events = {
         $external_content_info_alerts.on('focus', function () {
           const iframeWidth = $iframe.outerWidth(true)
           const iframeHeight = $iframe.outerHeight(true)
-          $iframe.css('border', '2px solid #008EE2')
+          $iframe.css('border', '2px solid #0374B5')
           $(this).removeClass('screenreader-only')
           const alertHeight = $(this).outerHeight(true)
           $iframe
@@ -378,7 +383,9 @@ SelectContentDialog.extractContextExternalToolItemData = function () {
     'item[url]': $('#external_tool_create_url').val(),
     'item[title]': $('#external_tool_create_title').val(),
     'item[custom_params]': $('#external_tool_create_custom_params').val(),
-    'item[assignment_id]': $('#external_tool_create_assignment_id').val()
+    'item[assignment_id]': $('#external_tool_create_assignment_id').val(),
+    'item[iframe][width]': $('#external_tool_create_iframe_width').val(),
+    'item[iframe][height]': $('#external_tool_create_iframe_height').val()
   }
 }
 
@@ -387,6 +394,8 @@ SelectContentDialog.resetExternalToolFields = function () {
   $('#external_tool_create_title').val('')
   $('#external_tool_create_custom_params').val('')
   $('#external_tool_create_assignment_id').val('')
+  $('#external_tool_create_iframe_width').val('')
+  $('#external_tool_create_iframe_height').val('')
 }
 
 $(document).ready(function () {
@@ -516,6 +525,11 @@ $(document).ready(function () {
       }
     } else if (item_type == 'context_external_tool') {
       var item_data = SelectContentDialog.extractContextExternalToolItemData()
+      if (item_data['item[assignment_id]']) {
+        // don't keep fields populated after an assignment was created
+        // since assignment creation via deep link requires another tool launch
+        SelectContentDialog.resetExternalToolFields()
+      }
 
       $dialog.find('.alert-error').remove()
 
@@ -623,16 +637,17 @@ $(document).ready(function () {
 
           if (item_data['item[type]'] == 'attachment') {
             BaseUploader.prototype.onUploadPosted = attachment => {
+              let file_matches = false
               // if the uploaded file replaced and existing file that already has a module item, don't create a new item
               const adding_to_module_id = $dialog.data().context_module_id
               if (
-                !Object.keys(ENV.MODULE_FILE_DETAILS).find(
-                  fdkey =>
-                    // there's module item with the id of the replaced file
-                    ENV.MODULE_FILE_DETAILS[fdkey].content_id == attachment.replacingFileId && // eslint-disable-line eqeqeq
-                    // and the module item is in the module we're working in
+                !Object.keys(ENV.MODULE_FILE_DETAILS).find(fdkey => {
+                  file_matches =
+                    ENV.MODULE_FILE_DETAILS[fdkey].content_id == attachment.replacingFileId &&
                     ENV.MODULE_FILE_DETAILS[fdkey].module_id == adding_to_module_id // eslint-disable-line eqeqeq
-                )
+                  if (file_matches) ENV.MODULE_FILE_DETAILS[fdkey].content_id = attachment.id
+                  return file_matches
+                })
               ) {
                 process_upload(attachment, false)
               }

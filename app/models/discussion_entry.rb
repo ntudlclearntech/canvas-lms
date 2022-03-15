@@ -26,7 +26,7 @@ class DiscussionEntry < ActiveRecord::Base
   include TextHelper
   include HtmlTextHelper
 
-  attr_readonly :discussion_topic_id, :user_id, :parent_id
+  attr_readonly :discussion_topic_id, :user_id, :parent_id, :is_anonymous_author
   has_many :discussion_entry_drafts, inverse_of: :discussion_entry
   has_many :legacy_subentries, -> { where("legacy=true") }, class_name: "DiscussionEntry", foreign_key: "parent_id"
   has_many :root_discussion_replies, -> { where("legacy=false OR legacy=true AND parent_id=root_entry_id") }, class_name: "DiscussionEntry", foreign_key: "root_entry_id"
@@ -304,7 +304,9 @@ class DiscussionEntry < ActiveRecord::Base
   protected :infer_root_entry_id
 
   def update_topic
-    if discussion_topic
+    # only update last_reply_at if it is nil or
+    # it is older than this entry's creation for over 60 seconds
+    if discussion_topic.last_reply_at.nil? || (discussion_topic.last_reply_at && ((created_at.utc - discussion_topic.last_reply_at.utc).to_i > 60))
       last_reply_at = [discussion_topic.last_reply_at, created_at].compact.max
       DiscussionTopic.where(id: discussion_topic_id).update_all(last_reply_at: last_reply_at, updated_at: Time.now.utc)
     end
@@ -325,6 +327,9 @@ class DiscussionEntry < ActiveRecord::Base
 
     given { |user, session| !discussion_topic.is_announcement && context.grants_right?(user, session, :read_forum) && discussion_topic.visible_for?(user) }
     can :read
+
+    given { |user, session| discussion_topic.is_announcement && context.grants_right?(user, session, :participate_as_student) && discussion_topic.visible_for?(user) }
+    can :create
 
     given { |user, session| context.grants_right?(user, session, :post_to_forum) && !discussion_topic.locked_for?(user) && discussion_topic.visible_for?(user) }
     can :reply and can :create and can :read
@@ -646,9 +651,22 @@ class DiscussionEntry < ActiveRecord::Base
 
     if discussion_topic.anonymous?
       discussion_topic_participant = DiscussionTopicParticipant.find_by(discussion_topic_id: discussion_topic_id, user_id: user.id)
+      roles = if context.is_a?(Course)
+                Enrollment
+                  .joins(:course)
+                  .where.not(enrollments: { workflow_state: "deleted" })
+                  .where.not(courses: { workflow_state: "deleted" })
+                  .where(course_id: context.id)
+                  .where(user_id: user.id)
+                  .select(:type, :user_id)
+                  .distinct
+                  .pluck(:type)
+              else
+                []
+              end
 
-      if discussion_topic_participant.user == current_user
-        t("You")
+      if discussion_topic_participant.user == current_user || roles&.include?("TeacherEnrollment") || roles&.include?("TaEnrollment") || roles&.include?("DesignerEnrollment") || (discussion_topic.anonymous_state == "partial_anonymity" && !is_anonymous_author)
+        user.short_name
       else
         t("Anonymous") + " " + discussion_topic_participant&.id.to_s(36)
       end

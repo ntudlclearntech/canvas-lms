@@ -35,7 +35,7 @@ const setPlanItemDuration = jest.fn()
 
 const defaultProps = {
   pacePlan: PRIMARY_PLAN,
-  dueDate: '2020-01-01',
+  dueDate: '2020-01-01T02:00:00-05:00',
   excludeWeekends: false,
   pacePlanItem: PRIMARY_PLAN.modules[0].items[0],
   pacePlanItemPosition: 0,
@@ -50,6 +50,10 @@ const defaultProps = {
   isStacked: false,
   isStudentPlan: false
 }
+
+beforeAll(() => {
+  ENV.CONTEXT_TIMEZONE = 'America/New_York' // to match defaultProps.dueDate
+})
 
 afterEach(() => {
   jest.clearAllMocks()
@@ -157,5 +161,19 @@ describe('AssignmentRow', () => {
       })
     ).not.toBeInTheDocument()
     expect(getByText('2')).toBeInTheDocument()
+  })
+
+  describe('localized', () => {
+    const locale = ENV.LOCALE
+    beforeAll(() => {
+      ENV.LOCALE = 'en-GB'
+    })
+    afterAll(() => {
+      ENV.LOCALE = locale
+    })
+    it('localizes the projected dates', () => {
+      const {getByText} = renderConnected(<AssignmentRow {...defaultProps} />)
+      expect(getByText('Wed, 1 Jan 2020')).toBeInTheDocument()
+    })
   })
 })

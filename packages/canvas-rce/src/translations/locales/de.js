@@ -53,6 +53,7 @@ const locale = {
     "message": "Änderungen für alle Schaltflächen und Icons im Kurs übernehmen"
   },
   "apps_54d24a47": { "message": "Apps" },
+  "arrows_464a3e54": { "message": "Pfeile" },
   "aspect_ratio_will_be_preserved_cb5fdfb8": {
     "message": "Seitenverhältnis wird beibehalten"
   },
@@ -61,11 +62,14 @@ const locale = {
   "audio_and_video_recording_not_supported_please_use_5ce3f0d7": {
     "message": "Aufzeichnung von Audio und Video wird nicht unterstützt, bitte nutzen Sie einen anderen Browser."
   },
+  "audio_options_feb58e2c": { "message": "Audiooptionen" },
+  "audio_options_tray_33a90711": { "message": "Fach für Audiooptionen" },
   "audio_player_for_title_20cc70d": { "message": "Audioplayer für { title }" },
   "auto_saved_content_exists_would_you_like_to_load_t_fee528f2": {
     "message": "Automatisch gespeicherte Inhalte vorhanden. Möchten Sie lieber die automatisch gespeicherten Inhalte laden?"
   },
   "available_folders_694d0436": { "message": "Verfügbare Ordner" },
+  "basic_554cdc0a": { "message": "Grundlegend" },
   "below_81d4dceb": { "message": "Unten" },
   "bottom_third_5f5fec1d": { "message": "Unteres Drittel" },
   "button_color_608a0242": { "message": "Farbe der Schaltfläche" },
@@ -152,11 +156,15 @@ const locale = {
   "default_numerical_ordered_list_48dd3548": {
     "message": "Standardmäßig numerisch sortierte Liste"
   },
+  "delimiters_4db4840d": { "message": "Trennzeichen" },
   "describe_the_image_e65d2e32": { "message": "(Beschreiben Sie das Bild)" },
   "describe_the_video_2fe8f46a": { "message": "(Beschreiben Sie das Video)" },
   "details_98a31b68": { "message": "Details" },
+  "diamond_b8dfe7ae": { "message": "Diamond" },
+  "dimension_type_55c83e4e": { "message": "Dimensionstyp" },
   "dimensions_45ddb7b7": { "message": "Abmessungen" },
   "directionality_26ae9e08": { "message": "Schreibrichtung" },
+  "directly_edit_latex_b7e9235b": { "message": "LaTeX direkt bearbeiten" },
   "discussions_a5f96392": { "message": "Diskussionen" },
   "discussions_index_6c36ced": { "message": "Diskussionsindex" },
   "display_options_315aba85": { "message": "Anzeigeoptionen" },
@@ -193,6 +201,7 @@ const locale = {
     "message": "Geben Sie für die Suche mindestens 3 Zeichen ein."
   },
   "equation_1c5ac93c": { "message": "Gleichung" },
+  "equation_editor_39fbc3f1": { "message": "Formel-Editor" },
   "expand_preview_by_default_2abbf9f8": {
     "message": "Vorschau standardmäßig erweitern"
   },
@@ -232,6 +241,7 @@ const locale = {
     "message": "Gehen Sie zur Editor-Symbolleiste"
   },
   "grades_a61eba0a": { "message": "Noten" },
+  "greek_65c5b3f7": { "message": "Griechisch" },
   "group_documents_8bfd6ae6": { "message": "Gruppendokumente" },
   "group_files_4324f3df": { "message": "Gruppendateien" },
   "group_files_82e5dcdb": { "message": "Gruppendateien" },
@@ -263,6 +273,7 @@ const locale = {
   "image_8ad06": { "message": "Bild" },
   "image_options_5412d02c": { "message": "Bildoptionen" },
   "image_options_tray_90a46006": { "message": "Fach für Bildoptionen" },
+  "image_to_crop_3a34487d": { "message": "Bild zum Zuschneiden" },
   "images_7ce26570": { "message": "Bilder" },
   "increase_indent_6d550a4a": { "message": "Einzug vergrößern" },
   "insert_593145ef": { "message": "Einfügen" },
@@ -286,13 +297,18 @@ const locale = {
   "loading_failed_e6a9d8ef": { "message": "Ladevorgang fehlgeschlagen" },
   "loading_folders_d8b5869e": { "message": "Ordner werden geladen" },
   "loading_please_wait_d276220a": { "message": "Ladevorgang, bitte warten" },
+  "loading_preview_9f077aa1": { "message": "Vorschau wird geladen" },
   "locked_762f138b": { "message": "Gesperrt" },
   "media_af190855": { "message": "Medien" },
   "medium_5a8e9ead": { "message": "Medium" },
   "middle_27dc1d5": { "message": "Mitte" },
+  "misc_3b692ea7": { "message": "Sonstige" },
   "miscellaneous_e9818229": { "message": "Verschiedenes" },
   "modules_c4325335": { "message": "Module" },
   "multi_color_image_63d7372f": { "message": "Mehrfarbiges Bild" },
+  "must_be_at_least_percentage_22e373b6": {
+    "message": "Mindestens { percentage }%"
+  },
   "must_be_at_least_width_x_height_px_41dc825e": {
     "message": "Mindestgröße ist { width } x { height } px."
   },
@@ -323,6 +339,7 @@ const locale = {
   "open_title_application_fd624fc5": {
     "message": "Anwendung { title } öffnen"
   },
+  "operators_a2ef9a93": { "message": "Operatoren" },
   "options_3ab0ea65": { "message": "Optionen" },
   "ordered_and_unordered_lists_cfadfc38": {
     "message": "Geordnete und ungeordnete Listen"
@@ -335,7 +352,13 @@ const locale = {
   },
   "pages_e5414c2c": { "message": "Seiten" },
   "paragraph_5e5ad8eb": { "message": "Absatz" },
+  "pentagon_17d82ea3": { "message": "Pentagon" },
   "people_b4ebb13c": { "message": "Teilnehmer" },
+  "percentage_34ab7c2c": { "message": "Prozentsatz" },
+  "percentage_must_be_a_number_8033c341": {
+    "message": "Prozentsatz muss eine Zahl sein"
+  },
+  "pixels_52ece7d1": { "message": "Pixel" },
   "posted_when_a578f5ab": { "message": "Gepostet am: { when }" },
   "preformatted_d0670862": { "message": "Vorformatiert" },
   "pretty_html_editor_28748756": { "message": "Pretty HTML-Editor" },
@@ -352,6 +375,7 @@ const locale = {
   "raw_html_editor_e3993e41": { "message": "Raw-HTML-Editor" },
   "record_7c9448b": { "message": "Aufnehmen" },
   "record_upload_media_5fdce166": { "message": "Medien aufzeichnen/hochladen" },
+  "relationships_6602af70": { "message": "Beziehungen" },
   "remove_link_d1f2f4d0": { "message": "Link entfernen" },
   "resize_ec83d538": { "message": "Größe ändern" },
   "restore_auto_save_deccd84b": {
@@ -374,6 +398,7 @@ const locale = {
   "shift_o_to_open_the_pretty_html_editor_55ff5a31": {
     "message": "Shift-O, um den Pretty HTML-Editor zu öffnen."
   },
+  "show_audio_options_b489926b": { "message": "Audiooptionen anzeigen" },
   "show_embed_options_ef8d7ef": { "message": "Einbettungsoptionen anzeigen" },
   "show_image_options_1e2ecc6b": { "message": "Bildoptionen anzeigen" },
   "show_link_options_545338fd": { "message": "Link-Optionen anzeigen" },
