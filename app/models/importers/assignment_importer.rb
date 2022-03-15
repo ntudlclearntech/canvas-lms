@@ -433,7 +433,9 @@ module Importers
 
         if needs_new_tag
           tag = current_tag || item.build_external_tool_tag
-          tag.update(url: hash[:external_tool_url], new_tab: hash[:external_tool_new_tab])
+          tag.mark_as_importing! migration
+
+          tag.update(migration_id: hash[:migration_id], url: hash[:external_tool_url], new_tab: hash[:external_tool_new_tab])
           if hash[:external_tool_id] && migration && !migration.cross_institution?
             tool_id = hash[:external_tool_id].to_i
 
@@ -458,6 +460,9 @@ module Importers
           end
           if hash[:external_tool_data_json]
             tag.external_data = JSON.parse(hash[:external_tool_data_json])
+          end
+          if hash[:external_tool_link_settings_json]
+            tag.link_settings = JSON.parse(hash[:external_tool_link_settings_json])
           end
           tag.content_type = "ContextExternalTool"
           unless tag.save

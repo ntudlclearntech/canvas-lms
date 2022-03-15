@@ -55,6 +55,7 @@ const locale = {
     "message": "Appliquer des modifications à toutes les instances de ce bouton et icône dans le cours"
   },
   "apps_54d24a47": { "message": "Applications" },
+  "arrows_464a3e54": { "message": "Flèches" },
   "aspect_ratio_will_be_preserved_cb5fdfb8": {
     "message": "Les proportions seront préservées"
   },
@@ -63,6 +64,8 @@ const locale = {
   "audio_and_video_recording_not_supported_please_use_5ce3f0d7": {
     "message": "Enregistrement audio et vidéo non pris en charge; veuillez utiliser un autre navigateur."
   },
+  "audio_options_feb58e2c": { "message": "Options audio" },
+  "audio_options_tray_33a90711": { "message": "Plateau des Options Audio" },
   "audio_player_for_title_20cc70d": {
     "message": "Lecteur audio pour { title }"
   },
@@ -70,6 +73,7 @@ const locale = {
     "message": "Le contenu enregistré automatiquement existe. Désirez-vous charger le contenu enregistré automatiquement à la place?"
   },
   "available_folders_694d0436": { "message": "Dossiers disponibles" },
+  "basic_554cdc0a": { "message": "Basique" },
   "below_81d4dceb": { "message": "Au dessous de" },
   "bottom_third_5f5fec1d": { "message": "Troisième inférieure" },
   "button_color_608a0242": { "message": "Couleur du bouton" },
@@ -162,11 +166,15 @@ const locale = {
   "default_numerical_ordered_list_48dd3548": {
     "message": "liste triée numériquement par défaut"
   },
+  "delimiters_4db4840d": { "message": "Délimiteurs" },
   "describe_the_image_e65d2e32": { "message": "(Décrire l’image)" },
   "describe_the_video_2fe8f46a": { "message": "(Décrire la vidéo)" },
   "details_98a31b68": { "message": "Détails" },
+  "diamond_b8dfe7ae": { "message": "Diamant" },
+  "dimension_type_55c83e4e": { "message": "Type de dimension" },
   "dimensions_45ddb7b7": { "message": "Dimensions" },
   "directionality_26ae9e08": { "message": "Directionnalité" },
+  "directly_edit_latex_b7e9235b": { "message": "Éditer directement LaTeX" },
   "discussions_a5f96392": { "message": "Discussions" },
   "discussions_index_6c36ced": { "message": "Index des discussions" },
   "display_options_315aba85": { "message": "Options d''affichage" },
@@ -205,6 +213,7 @@ const locale = {
     "message": "Saisir au moins 3 caractères à rechercher"
   },
   "equation_1c5ac93c": { "message": "Équation" },
+  "equation_editor_39fbc3f1": { "message": "Editeur d''équation" },
   "expand_preview_by_default_2abbf9f8": {
     "message": "Développer l’aperçu par défaut"
   },
@@ -248,6 +257,7 @@ const locale = {
     "message": "Aller à la barre d’outils de l’éditeur"
   },
   "grades_a61eba0a": { "message": "Notes" },
+  "greek_65c5b3f7": { "message": "Grec" },
   "group_documents_8bfd6ae6": { "message": "Documents de groupe" },
   "group_files_4324f3df": { "message": "Fichiers du groupe" },
   "group_files_82e5dcdb": { "message": "Fichiers du groupe" },
@@ -281,6 +291,7 @@ const locale = {
   "image_options_tray_90a46006": {
     "message": "Plateau des options pour l’image"
   },
+  "image_to_crop_3a34487d": { "message": "Image à recadrer" },
   "images_7ce26570": { "message": "Images" },
   "increase_indent_6d550a4a": { "message": "Augmenter le retrait" },
   "insert_593145ef": { "message": "Insérer" },
@@ -308,13 +319,18 @@ const locale = {
   "loading_please_wait_d276220a": {
     "message": "Chargement en cours, veuillez patienter..."
   },
+  "loading_preview_9f077aa1": { "message": "Chargement de l’aperçu" },
   "locked_762f138b": { "message": "Verrouillé" },
   "media_af190855": { "message": "Support média" },
   "medium_5a8e9ead": { "message": "Moyen" },
   "middle_27dc1d5": { "message": "Milieu" },
+  "misc_3b692ea7": { "message": "Divers" },
   "miscellaneous_e9818229": { "message": "Divers" },
   "modules_c4325335": { "message": "Modules" },
   "multi_color_image_63d7372f": { "message": "Image multicolore" },
+  "must_be_at_least_percentage_22e373b6": {
+    "message": "Doit être au moins { percentage }%"
+  },
   "must_be_at_least_width_x_height_px_41dc825e": {
     "message": "Doit être au moins { width } x { height }px"
   },
@@ -345,6 +361,7 @@ const locale = {
   "open_title_application_fd624fc5": {
     "message": "Ouvrir l’application { title }"
   },
+  "operators_a2ef9a93": { "message": "Opérateurs" },
   "options_3ab0ea65": { "message": "Options" },
   "ordered_and_unordered_lists_cfadfc38": {
     "message": "Listes triées et non triées"
@@ -357,7 +374,13 @@ const locale = {
   },
   "pages_e5414c2c": { "message": "Pages" },
   "paragraph_5e5ad8eb": { "message": "Paragraphe" },
+  "pentagon_17d82ea3": { "message": "Pentagone" },
   "people_b4ebb13c": { "message": "Personnes" },
+  "percentage_34ab7c2c": { "message": "Pourcentage" },
+  "percentage_must_be_a_number_8033c341": {
+    "message": "Le pourcentage doit être un chiffre"
+  },
+  "pixels_52ece7d1": { "message": "Pixels" },
   "posted_when_a578f5ab": { "message": "Publié : { when }" },
   "preformatted_d0670862": { "message": "Préformaté" },
   "pretty_html_editor_28748756": { "message": "Éditeur Pretty HTML" },
@@ -376,6 +399,7 @@ const locale = {
   "record_upload_media_5fdce166": {
     "message": "Enregistrer/téléverser support média"
   },
+  "relationships_6602af70": { "message": "Relations" },
   "remove_link_d1f2f4d0": { "message": "Retirer le lien" },
   "resize_ec83d538": { "message": "Redimensionner" },
   "restore_auto_save_deccd84b": {
@@ -400,6 +424,7 @@ const locale = {
   "shift_o_to_open_the_pretty_html_editor_55ff5a31": {
     "message": "MAJ-O pour ouvrir l’éditeur Pretty HTML."
   },
+  "show_audio_options_b489926b": { "message": "Afficher les options audio" },
   "show_embed_options_ef8d7ef": { "message": "Afficher les options intégrées" },
   "show_image_options_1e2ecc6b": { "message": "Afficher les options d’image" },
   "show_link_options_545338fd": { "message": "Afficher les options de lien" },

@@ -27,7 +27,7 @@ class Account < ActiveRecord::Base
 
   INSTANCE_GUID_SUFFIX = "canvas-lms"
   # a list of columns necessary for validation and save callbacks to work on a slim object
-  BASIC_COLUMNS_FOR_CALLBACKS = %i[id parent_account_id root_account_id name workflow_state].freeze
+  BASIC_COLUMNS_FOR_CALLBACKS = %i[id parent_account_id root_account_id name workflow_state settings].freeze
 
   include Workflow
   include BrandConfigHelpers
@@ -266,6 +266,7 @@ class Account < ActiveRecord::Base
 
   # Help link settings
   add_setting :custom_help_links, root_only: true
+  add_setting :new_custom_help_links, root_only: true
   add_setting :help_link_icon, root_only: true
   add_setting :help_link_name, root_only: true
   add_setting :support_url, root_only: true
@@ -292,6 +293,7 @@ class Account < ActiveRecord::Base
   add_setting :can_add_pronouns, boolean: true, root_only: true, default: false
   add_setting :can_change_pronouns, boolean: true, root_only: true, default: true
   add_setting :enable_sis_export_pronouns, boolean: true, root_only: true, default: true
+  add_setting :pronouns, root_only: true
 
   add_setting :self_enrollment
   add_setting :equella_endpoint
@@ -308,8 +310,8 @@ class Account < ActiveRecord::Base
   add_setting :admins_can_change_passwords, boolean: true, root_only: true, default: false
   add_setting :admins_can_view_notifications, boolean: true, root_only: true, default: false
   add_setting :canvadocs_prefer_office_online, boolean: true, root_only: true, default: false
-  add_setting :outgoing_email_default_name
-  add_setting :external_notification_warning, boolean: true, default: false
+  add_setting :outgoing_email_default_name, root_only: true
+  add_setting :external_notification_warning, boolean: true, root_only: true, default: false
   # Terms of Use and Privacy Policy settings for the root account
   add_setting :terms_changed_at, root_only: true
   add_setting :account_terms_required, root_only: true, boolean: true, default: true
@@ -331,7 +333,7 @@ class Account < ActiveRecord::Base
   add_setting :app_center_access_token
   add_setting :enable_offline_web_export, boolean: true, default: false, inheritable: true
   add_setting :disable_rce_media_uploads, boolean: true, default: false, inheritable: true
-  add_setting :allow_gradebook_show_first_last_names, boolean: true, root_only: true, default: false
+  add_setting :allow_gradebook_show_first_last_names, boolean: true, default: false
 
   add_setting :strict_sis_check, boolean: true, root_only: true, default: false
   add_setting :lock_all_announcements, default: false, boolean: true, inheritable: true
@@ -631,14 +633,22 @@ class Account < ActiveRecord::Base
   end
 
   def settings
-    result = read_attribute(:settings)
+    # If the settings attribute is not loaded because it's an old cached object or something, return an empty blob that is read-only
+    unless has_attribute?(:settings)
+      return SettingsWrapper.new(self, {}.freeze)
+    end
+
+    result = self[:settings]
     if result
       @old_settings ||= result.dup
-      return result
+      return SettingsWrapper.new(self, result)
     end
-    return write_attribute(:settings, {}) unless frozen?
+    unless frozen?
+      self[:settings] = {}
+      return SettingsWrapper.new(self, self[:settings])
+    end
 
-    {}.freeze
+    SettingsWrapper.new(self, {}.freeze)
   end
 
   def domain(current_host = nil)
@@ -651,6 +661,10 @@ class Account < ActiveRecord::Base
 
   def root_account?
     root_account_id.nil? || local_root_account_id.zero?
+  end
+
+  def primary_settings_root_account?
+    root_account?
   end
 
   def root_account
@@ -1027,18 +1041,27 @@ class Account < ActiveRecord::Base
     end
   end
 
+  def self.add_federated_parent_to_chain!(chain)
+    chain
+  end
+
   def self.add_site_admin_to_chain!(chain)
+    add_federated_parent_to_chain!(chain)
     chain << Account.site_admin unless chain.last.site_admin?
     chain
   end
 
-  def account_chain(include_site_admin: false)
+  def account_chain(include_site_admin: false, include_federated_parent: false)
     @account_chain ||= Account.account_chain(self).tap do |chain|
       # preload the root account and parent accounts that we also found here
       ra = chain.find(&:root_account?)
       chain.each { |a| a.root_account = ra if a.root_account_id == ra.id }
       chain.each_with_index { |a, idx| a.parent_account = chain[idx + 1] if a.parent_account_id == chain[idx + 1]&.id }
     end.freeze
+
+    if include_federated_parent
+      return @account_chain_with_federated_parent ||= Account.add_federated_parent_to_chain!(@account_chain.dup).freeze
+    end
 
     if include_site_admin
       return @account_chain_with_site_admin ||= Account.add_site_admin_to_chain!(@account_chain.dup).freeze
@@ -1352,7 +1375,7 @@ class Account < ActiveRecord::Base
     given { |user| user && courses.where(id: user.enrollments.active.admin.pluck(:course_id)).exists? }
     can :read
 
-    given { |user| !site_admin? && root_account? && grants_right?(user, :manage_site_settings) }
+    given { |user| !site_admin? && primary_settings_root_account? && grants_right?(user, :manage_site_settings) }
     can :manage_privacy_settings
 
     given do |user|
@@ -1754,6 +1777,7 @@ class Account < ActiveRecord::Base
   TAB_JOBS = 15
   TAB_DEVELOPER_KEYS = 16
   TAB_RELEASE_NOTES = 17
+  TAB_JOBS_V2 = 18
 
   def external_tool_tabs(opts, user)
     tools = ContextExternalTool.active.find_all_for(self, :account_navigation)
@@ -1772,6 +1796,7 @@ class Account < ActiveRecord::Base
       tabs << { id: TAB_PLUGINS, label: t("#account.tab_plugins", "Plugins"), css_class: "plugins", href: :plugins_path, no_args: true } if root_account? && grants_right?(user, :manage_site_settings)
       tabs << { id: TAB_RELEASE_NOTES, label: t("Release Notes"), css_class: "release_notes", href: :account_release_notes_manage_path } if root_account? && ReleaseNote.enabled? && grants_right?(user, :manage_release_notes)
       tabs << { id: TAB_JOBS, label: t("#account.tab_jobs", "Jobs"), css_class: "jobs", href: :jobs_path, no_args: true } if root_account? && grants_right?(user, :view_jobs)
+      tabs << { id: TAB_JOBS_V2, label: t("#account.tab_jobs_v2", "Jobs v2"), css_class: "jobs_v2", href: :jobs_v2_index_path, no_args: true } if root_account? && grants_right?(user, :view_jobs) && feature_enabled?(:jobs_v2)
     else
       tabs << { id: TAB_COURSES, label: t("#account.tab_courses", "Courses"), css_class: "courses", href: :account_path } if user && grants_right?(user, :read_course_list)
       tabs << { id: TAB_USERS, label: t("People"), css_class: "users", href: :account_users_path } if user && grants_right?(user, :read_roster)

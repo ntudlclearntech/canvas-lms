@@ -37,7 +37,9 @@ const SUBJECT_ALLOW_LIST = [
   'lti.screenReaderAlert',
   'lti.scrollToTop',
   'lti.setUnloadMessage',
+  'lti.showAlert',
   'lti.showModuleNavigation',
+  'org.imsglobal.lti.capabilities',
   'requestFullWindowLaunch',
   'toggleCourseNavigationMenu'
 ]
@@ -81,6 +83,11 @@ async function ltiMessageHandler(e, platformStorageFeatureFlag = false) {
     if (platformStorageFeatureFlag) {
       responseMessages.sendUnsupportedSubjectError()
     }
+    return false
+  }
+
+  // temporary: ignore LTI Platform Storage messages when feature flag is off
+  if (!platformStorageFeatureFlag && subject.includes('org.imsglobal.lti')) {
     return false
   }
 

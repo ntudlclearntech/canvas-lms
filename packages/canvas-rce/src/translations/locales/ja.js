@@ -53,6 +53,7 @@ const locale = {
     "message": "コース内のこのボタンとアイコンのすべてのインスタンスに変更を適用する"
   },
   "apps_54d24a47": { "message": "アプリ" },
+  "arrows_464a3e54": { "message": "矢印" },
   "aspect_ratio_will_be_preserved_cb5fdfb8": {
     "message": "アスペクト比は維持されます"
   },
@@ -61,6 +62,8 @@ const locale = {
   "audio_and_video_recording_not_supported_please_use_5ce3f0d7": {
     "message": "音声および動画の記録はサポートされていません。他のブラウザを使用してください。"
   },
+  "audio_options_feb58e2c": { "message": "オーディオオプション" },
+  "audio_options_tray_33a90711": { "message": "オーディオオプショントレイ" },
   "audio_player_for_title_20cc70d": {
     "message": "{ title }のオーディオプレーヤー"
   },
@@ -68,6 +71,7 @@ const locale = {
     "message": "自動保存されたコンテンツが存在します。自動保存されたコンテンツを代わりにロードしますか？"
   },
   "available_folders_694d0436": { "message": "使用可能なフォルダ" },
+  "basic_554cdc0a": { "message": "ベーシック" },
   "below_81d4dceb": { "message": "下の" },
   "bottom_third_5f5fec1d": { "message": "下から3番目" },
   "button_color_608a0242": { "message": "ボタンの色" },
@@ -156,11 +160,15 @@ const locale = {
   "default_numerical_ordered_list_48dd3548": {
     "message": "デフォルトの番号順リスト"
   },
+  "delimiters_4db4840d": { "message": "デリミタ" },
   "describe_the_image_e65d2e32": { "message": "(画像の説明)" },
   "describe_the_video_2fe8f46a": { "message": "（ビデオを説明する）" },
   "details_98a31b68": { "message": "詳細" },
+  "diamond_b8dfe7ae": { "message": "ダイヤモンド" },
+  "dimension_type_55c83e4e": { "message": "サイズタイプ" },
   "dimensions_45ddb7b7": { "message": "寸法" },
   "directionality_26ae9e08": { "message": "方向性" },
+  "directly_edit_latex_b7e9235b": { "message": "ディレクトリ編集 LaTeX" },
   "discussions_a5f96392": { "message": "ディスカッション" },
   "discussions_index_6c36ced": { "message": "ディスカッションのインデックス" },
   "display_options_315aba85": { "message": "オプションを表示する" },
@@ -197,6 +205,7 @@ const locale = {
     "message": "検索する語を3文字以上入力してください"
   },
   "equation_1c5ac93c": { "message": "方程式" },
+  "equation_editor_39fbc3f1": { "message": "方程式エディタ" },
   "expand_preview_by_default_2abbf9f8": {
     "message": "デフォルトによるプレビューの拡大"
   },
@@ -236,6 +245,7 @@ const locale = {
     "message": "エディタのツールバーに移動する"
   },
   "grades_a61eba0a": { "message": "成績" },
+  "greek_65c5b3f7": { "message": "ギリシャ文字" },
   "group_documents_8bfd6ae6": { "message": "グループドキュメント" },
   "group_files_4324f3df": { "message": "グループファイル" },
   "group_files_82e5dcdb": { "message": "グループ ファイル" },
@@ -265,6 +275,7 @@ const locale = {
   "image_8ad06": { "message": "画像" },
   "image_options_5412d02c": { "message": "画像オプション" },
   "image_options_tray_90a46006": { "message": "画像オプショントレイ" },
+  "image_to_crop_3a34487d": { "message": "クロップする画像" },
   "images_7ce26570": { "message": "画像" },
   "increase_indent_6d550a4a": { "message": "インデント" },
   "insert_593145ef": { "message": "挿入" },
@@ -292,13 +303,18 @@ const locale = {
   "loading_please_wait_d276220a": {
     "message": "読み込み中 - しばらくお待ちください"
   },
+  "loading_preview_9f077aa1": { "message": "プレビュー読み込み中" },
   "locked_762f138b": { "message": "ロックされています" },
   "media_af190855": { "message": "メディア" },
   "medium_5a8e9ead": { "message": "中" },
   "middle_27dc1d5": { "message": "中位" },
+  "misc_3b692ea7": { "message": "その他" },
   "miscellaneous_e9818229": { "message": "その他" },
   "modules_c4325335": { "message": "モジュール" },
   "multi_color_image_63d7372f": { "message": "マルチカラー画像" },
+  "must_be_at_least_percentage_22e373b6": {
+    "message": "{ percentage }%以上でなければなりません"
+  },
   "must_be_at_least_width_x_height_px_41dc825e": {
     "message": "少なくとも { width } x { height }px でなければなりません"
   },
@@ -329,6 +345,7 @@ const locale = {
   "open_title_application_fd624fc5": {
     "message": "{ title }アプリケーションを開く"
   },
+  "operators_a2ef9a93": { "message": "演算子" },
   "options_3ab0ea65": { "message": "オプション" },
   "ordered_and_unordered_lists_cfadfc38": {
     "message": "番号付きリストと番号無しリスト"
@@ -341,7 +358,13 @@ const locale = {
   },
   "pages_e5414c2c": { "message": "ページ" },
   "paragraph_5e5ad8eb": { "message": "段落" },
+  "pentagon_17d82ea3": { "message": "ペンタゴン" },
   "people_b4ebb13c": { "message": "メンバー" },
+  "percentage_34ab7c2c": { "message": "割合" },
+  "percentage_must_be_a_number_8033c341": {
+    "message": "パーセンテージは数字でなければなりません"
+  },
+  "pixels_52ece7d1": { "message": "ピクセル" },
   "posted_when_a578f5ab": { "message": "投稿済み:{ when }" },
   "preformatted_d0670862": { "message": "フォーマット済み" },
   "pretty_html_editor_28748756": { "message": "Pretty HTML エディタ" },
@@ -358,6 +381,7 @@ const locale = {
   "raw_html_editor_e3993e41": { "message": "無変換の HTML エディタ" },
   "record_7c9448b": { "message": "記録" },
   "record_upload_media_5fdce166": { "message": "メディアの記録/アップロード" },
+  "relationships_6602af70": { "message": "関係" },
   "remove_link_d1f2f4d0": { "message": "リンクの削除" },
   "resize_ec83d538": { "message": "サイズ変更" },
   "restore_auto_save_deccd84b": {
@@ -379,6 +403,9 @@ const locale = {
   "selected_274ce24f": { "message": "選択されました" },
   "shift_o_to_open_the_pretty_html_editor_55ff5a31": {
     "message": "Shift-Oでpretty HTMLエディタを開きます。"
+  },
+  "show_audio_options_b489926b": {
+    "message": "オーディオオプションを表示する"
   },
   "show_embed_options_ef8d7ef": { "message": "埋め込みオプションを表示する" },
   "show_image_options_1e2ecc6b": { "message": "画像オプションを表示" },

@@ -418,6 +418,30 @@ describe Assignment do
       end
     end
 
+    describe "#assigned_to_student" do
+      it "returns assignments assigned to the given student" do
+        assignment = @course.assignments.create!
+        expect(@course.assignments.assigned_to_student(@initial_student.id)).to include assignment
+      end
+
+      it "does not return assignments not assigned to the given student" do
+        new_student = student_in_course(course: @course, active_all: true, user_name: "new student").user
+        assignment = @course.assignments.create!(only_visible_to_overrides: true)
+        create_adhoc_override_for_assignment(assignment, new_student)
+        aggregate_failures do
+          expect(@course.assignments.assigned_to_student(new_student.id)).to include assignment
+          expect(@course.assignments.assigned_to_student(@initial_student.id)).not_to include assignment
+        end
+      end
+
+      it "returns assignments for a which a student does not have visibility but is assigned" do
+        assignment = @course.assignments.create!
+        # deactivated students can not view assignments they are assigned to
+        @course.enrollments.find_by(user: @initial_student).deactivate
+        expect(@course.assignments.assigned_to_student(@initial_student.id)).to include assignment
+      end
+    end
+
     describe "#update_submittable" do
       before do
         Timecop.freeze(1.day.ago) do
@@ -516,10 +540,6 @@ describe Assignment do
   end
 
   describe "#visible_to_students_in_course_with_da" do
-    before(:once) do
-      Account.site_admin.enable_feature!(:visible_assignments_scope_change)
-    end
-
     let(:student_enrollment) { @course.enrollments.find_by(user: @student) }
     let(:visible_assignments) do
       Assignment.visible_to_students_in_course_with_da(@student.id, @course.id)
@@ -1424,6 +1444,16 @@ describe Assignment do
       new_assmt = assmt.reload.duplicate
       new_assmt.save!
       expect(new_assmt.points_possible).to eq 3
+    end
+
+    it "sets peer_reviews_assigned to false" do
+      assignment = @course.assignments.create!(title: "buggy mcbugface", points_possible: 100)
+      assignment.update!(peer_reviews_assigned: true)
+
+      new_assignment = assignment.duplicate
+      new_assignment.save!
+
+      expect(new_assignment.peer_reviews_assigned).to be false
     end
 
     context "with an assignment that can't be duplicated" do
@@ -3413,6 +3443,33 @@ describe Assignment do
       score = @assignment.interpret_grade("55%")
       decimal_part = score.to_s.split(".")[1]
       expect(decimal_part.length).to be <= 3
+    end
+
+    context "with numeric grading standard" do
+      before(:once) do
+        @assignment.update!(grading_type: "letter_grade", points_possible: 10.0)
+        grading_standard = @course.grading_standards.build(title: "Number Before Letter")
+        grading_standard.data = {
+          "1" => 0.9,
+          "2" => 0.8,
+          "3" => 0.7,
+          "4" => 0.6,
+          "5" => 0.5,
+          "6" => 0
+        }
+        grading_standard.assignments << @assignment
+        grading_standard.save!
+      end
+
+      it "does not match a numeric grading standard if points are preferred over grading scheme value" do
+        @assignment.points_possible = 100
+        expect(@assignment.interpret_grade("1", prefer_points_over_scheme: true)).to eq 1.0
+      end
+
+      it "matches a numeric grading standard if grading scheme value is preferred over points" do
+        @assignment.points_possible = 100
+        expect(@assignment.interpret_grade("1")).to eq 100.0
+      end
     end
 
     context "with alphanumeric grades" do

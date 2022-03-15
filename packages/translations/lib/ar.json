@@ -101,6 +101,9 @@
     "are_you_sure_you_want_to_delete_this_planner_item_b71e330c": {
         "message": "هل أنت متأكد أنك تريد حذف عنصر المخطط هذا؟"
     },
+    "arrows_464a3e54": {
+        "message": "الأسهم"
+    },
     "aspect_ratio_will_be_preserved_cb5fdfb8": {
         "message": "سيتم الاحتفاظ بنسبة العرض إلى الارتفاع"
     },
@@ -146,6 +149,12 @@
     "audio_and_video_recording_not_supported_please_use_5ce3f0d7": {
         "message": "تسجيل الصوت والفيديو غير مدعوم، يرجى استخدام مستعرض مختلف."
     },
+    "audio_options_feb58e2c": {
+        "message": "خيارات الصوت"
+    },
+    "audio_options_tray_33a90711": {
+        "message": "علبة خيارات الصوت"
+    },
     "audio_player_for_title_20cc70d": {
         "message": "مشغل الصوت لـ { title }"
     },
@@ -154,6 +163,9 @@
     },
     "available_folders_694d0436": {
         "message": "المجلدات المتاحة"
+    },
+    "basic_554cdc0a": {
+        "message": "أساسي"
     },
     "beginning_of_your_to_do_history_61ef2dce": {
         "message": "بداية سجل قائمة المهام الخاصة بك"
@@ -371,6 +383,9 @@
     "delete_a6efa79d": {
         "message": "حذف"
     },
+    "delimiters_4db4840d": {
+        "message": "المحدِدات"
+    },
     "describe_the_image_e65d2e32": {
         "message": "(وصف الصورة)"
     },
@@ -394,6 +409,9 @@
     },
     "directionality_26ae9e08": {
         "message": "الاتجاهية"
+    },
+    "directly_edit_latex_b7e9235b": {
+        "message": "تحرير LaTeX مباشرةً"
     },
     "discussion_6719c51d": {
         "message": "النقاش"
@@ -496,6 +514,9 @@
     },
     "equation_1c5ac93c": {
         "message": "معادلة"
+    },
+    "equation_editor_39fbc3f1": {
+        "message": "محرر المعادلات"
     },
     "error_loading_grades_e0b38f4d": {
         "message": "خطأ أثناء تحميل الدرجات"
@@ -629,6 +650,9 @@
     "grades_loaded_5056277c": {
         "message": "تم تحميل الدرجات"
     },
+    "greek_65c5b3f7": {
+        "message": "اليونانية"
+    },
     "group_documents_8bfd6ae6": {
         "message": "مستندات المجموعة"
     },
@@ -697,6 +721,9 @@
     },
     "image_options_tray_90a46006": {
         "message": "علبة خيارات الصورة"
+    },
+    "image_to_crop_3a34487d": {
+        "message": "الصور المراد قصها"
     },
     "images_7ce26570": {
         "message": "الصور"
@@ -812,6 +839,9 @@
     "loading_please_wait_d276220a": {
         "message": "جارٍ التحميل، يرجى الانتظار"
     },
+    "loading_preview_9f077aa1": {
+        "message": "جارٍ تحميل المعاينة"
+    },
     "location_3b6ff307": {
         "message": "الموقع:"
     },
@@ -832,6 +862,9 @@
     },
     "middle_27dc1d5": {
         "message": "الأوسط"
+    },
+    "misc_3b692ea7": {
+        "message": "متنوع"
     },
     "miscellaneous_e9818229": {
         "message": "متنوعات"
@@ -953,6 +986,9 @@
     "open_title_application_fd624fc5": {
         "message": "فتح تطبيق { title }"
     },
+    "operators_a2ef9a93": {
+        "message": "المشغلون"
+    },
     "opportunities_popup_f6703842": {
         "message": "النافذة المنبثقة للفرص"
     },
@@ -994,6 +1030,9 @@
     },
     "percentage_34ab7c2c": {
         "message": "نسبة مئوية"
+    },
+    "percentage_must_be_a_number_8033c341": {
+        "message": "يجب أن تكون النسبة المئوية رقمًا"
     },
     "pixels_52ece7d1": {
         "message": "بكسل"
@@ -1058,6 +1097,9 @@
     "redo_363c58b7": {
         "message": "إعادة"
     },
+    "relationships_6602af70": {
+        "message": "العلاقات"
+    },
     "reminder_date_4564d12d": {
         "message": "التذكير: { date }"
     },
@@ -1120,6 +1162,9 @@
     },
     "show_all_ae37d610": {
         "message": "عرض الكل"
+    },
+    "show_audio_options_b489926b": {
+        "message": "إظهار خيارات الصوت"
     },
     "show_embed_options_ef8d7ef": {
         "message": "إظهار خيارات التضمين"

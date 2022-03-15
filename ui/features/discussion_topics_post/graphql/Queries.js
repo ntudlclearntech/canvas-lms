@@ -23,6 +23,8 @@ import {DiscussionEntryDraft} from './DiscussionEntryDraft'
 import gql from 'graphql-tag'
 import {PageInfo} from './PageInfo'
 import {User} from './User'
+import {GroupSet} from './GroupSet'
+import {Group} from './Group'
 
 export const DISCUSSION_QUERY = gql`
   query GetDiscussionQuery(
@@ -34,7 +36,7 @@ export const DISCUSSION_QUERY = gql`
     $filter: DiscussionFilterType
     $sort: DiscussionSortOrderType
     $courseID: ID
-    $rolePillTypes: [String!] = ["TaEnrollment", "TeacherEnrollment"]
+    $rolePillTypes: [String!] = ["TaEnrollment", "TeacherEnrollment", "DesignerEnrollment"]
   ) {
     legacyNode(_id: $discussionID, type: Discussion) {
       ... on Discussion {
@@ -91,6 +93,14 @@ export const DISCUSSION_QUERY = gql`
           searchTerm: $searchTerm
         )
         searchEntryCount(filter: $filter, searchTerm: $searchTerm)
+        groupSet {
+          ...GroupSet
+          groupsConnection {
+            nodes {
+              ...Group
+            }
+          }
+        }
       }
     }
   }
@@ -100,6 +110,8 @@ export const DISCUSSION_QUERY = gql`
   ${DiscussionEntry.fragment}
   ${DiscussionEntryDraft.fragment}
   ${PageInfo.fragment}
+  ${GroupSet.fragment}
+  ${Group.fragment}
 `
 
 export const DISCUSSION_SUBENTRIES_QUERY = gql`
@@ -111,7 +123,7 @@ export const DISCUSSION_SUBENTRIES_QUERY = gql`
     $last: Int
     $sort: DiscussionSortOrderType
     $courseID: ID
-    $rolePillTypes: [String!] = ["TaEnrollment", "TeacherEnrollment"]
+    $rolePillTypes: [String!] = ["TaEnrollment", "TeacherEnrollment", "DesignerEnrollment"]
     $relativeEntryId: ID
     $includeRelativeEntry: Boolean
     $beforeRelativeEntry: Boolean

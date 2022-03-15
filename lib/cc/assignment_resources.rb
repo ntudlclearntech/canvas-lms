@@ -48,7 +48,9 @@ module CC
 
       # Student Annotation assignments need to include the attachment they're using
       add_item_to_export(assignment.annotatable_attachment) if assignment.annotated_document?
-
+      if assignment.external_tool?
+        add_item_to_export(ContextExternalTool.from_content_tag(assignment.external_tool_tag, assignment.context))
+      end
       migration_id = create_key(assignment)
 
       lo_folder = File.join(@export_dir, migration_id)
@@ -261,6 +263,7 @@ module CC
         end
         node.external_tool_url assignment.external_tool_tag.url
         node.external_tool_data_json assignment.external_tool_tag.external_data.to_json if assignment.external_tool_tag.external_data
+        node.external_tool_link_settings_json assignment.external_tool_tag.link_settings.to_json if assignment.external_tool_tag.link_settings
         node.external_tool_new_tab assignment.external_tool_tag.new_tab
 
         # Exporting the lookup_id allows Canvas to rebind

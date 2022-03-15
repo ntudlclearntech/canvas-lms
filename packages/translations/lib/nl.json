@@ -101,6 +101,9 @@
     "are_you_sure_you_want_to_delete_this_planner_item_b71e330c": {
         "message": "Weet je zeker dat je dit planneritem wilt verwijderen?"
     },
+    "arrows_464a3e54": {
+        "message": "Pijlen"
+    },
     "aspect_ratio_will_be_preserved_cb5fdfb8": {
         "message": "Beeldverhouding blijft behouden"
     },
@@ -146,6 +149,12 @@
     "audio_and_video_recording_not_supported_please_use_5ce3f0d7": {
         "message": "Audio- en video-opname wordt niet ondersteund; gebruik een andere browser."
     },
+    "audio_options_feb58e2c": {
+        "message": "Audio-opties"
+    },
+    "audio_options_tray_33a90711": {
+        "message": "Gebied met audio-opties"
+    },
     "audio_player_for_title_20cc70d": {
         "message": "Audio-speler voor { title }"
     },
@@ -154,6 +163,9 @@
     },
     "available_folders_694d0436": {
         "message": "Beschikbare mappen"
+    },
+    "basic_554cdc0a": {
+        "message": "Basis"
     },
     "beginning_of_your_to_do_history_61ef2dce": {
         "message": "Begin van je To-do-historie"
@@ -371,6 +383,9 @@
     "delete_a6efa79d": {
         "message": "Verwijderen"
     },
+    "delimiters_4db4840d": {
+        "message": "Scheidingstekens"
+    },
     "describe_the_image_e65d2e32": {
         "message": "(Beschrijf de afbeelding)"
     },
@@ -394,6 +409,9 @@
     },
     "directionality_26ae9e08": {
         "message": "richting"
+    },
+    "directly_edit_latex_b7e9235b": {
+        "message": "LaTeX rechtstreeks bewerken"
     },
     "discussion_6719c51d": {
         "message": "Discussie"
@@ -496,6 +514,9 @@
     },
     "equation_1c5ac93c": {
         "message": "Vergelijking"
+    },
+    "equation_editor_39fbc3f1": {
+        "message": "Vergelijkingseditor"
     },
     "error_loading_grades_e0b38f4d": {
         "message": "Fout bij laden van cijfers"
@@ -629,6 +650,9 @@
     "grades_loaded_5056277c": {
         "message": "Cijfers geladen"
     },
+    "greek_65c5b3f7": {
+        "message": "Grieks"
+    },
     "group_documents_8bfd6ae6": {
         "message": "Documenten groeperen"
     },
@@ -697,6 +721,9 @@
     },
     "image_options_tray_90a46006": {
         "message": "Beeldoptiescel"
+    },
+    "image_to_crop_3a34487d": {
+        "message": "Afbeelding voor bijsnijden"
     },
     "images_7ce26570": {
         "message": "Afbeeldingen"
@@ -812,6 +839,9 @@
     "loading_please_wait_d276220a": {
         "message": "Bezig met laden, even wachten"
     },
+    "loading_preview_9f077aa1": {
+        "message": "Voorbeeld laden"
+    },
     "location_3b6ff307": {
         "message": "Locatie:"
     },
@@ -832,6 +862,9 @@
     },
     "middle_27dc1d5": {
         "message": "Midden"
+    },
+    "misc_3b692ea7": {
+        "message": "Diversen"
     },
     "miscellaneous_e9818229": {
         "message": "Diversen"
@@ -953,6 +986,9 @@
     "open_title_application_fd624fc5": {
         "message": "{ title } applicatie openen"
     },
+    "operators_a2ef9a93": {
+        "message": "Operators"
+    },
     "opportunities_popup_f6703842": {
         "message": "mogelijkheden popup"
     },
@@ -994,6 +1030,9 @@
     },
     "percentage_34ab7c2c": {
         "message": "Percentage"
+    },
+    "percentage_must_be_a_number_8033c341": {
+        "message": "Percentage moet een getal zijn"
     },
     "pixels_52ece7d1": {
         "message": "Pixels"
@@ -1058,6 +1097,9 @@
     "redo_363c58b7": {
         "message": "Opnieuw"
     },
+    "relationships_6602af70": {
+        "message": "Relaties"
+    },
     "reminder_date_4564d12d": {
         "message": "Herinnering: { date }"
     },
@@ -1120,6 +1162,9 @@
     },
     "show_all_ae37d610": {
         "message": "Alles tonen"
+    },
+    "show_audio_options_b489926b": {
+        "message": "Audio-opties weergeven"
     },
     "show_embed_options_ef8d7ef": {
         "message": "Ingesloten opties weergeven"

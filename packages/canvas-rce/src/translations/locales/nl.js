@@ -53,6 +53,7 @@ const locale = {
     "message": "Wijzigingen toepassen bij alle gevallen van deze knop en pictogram in de cursus"
   },
   "apps_54d24a47": { "message": "Apps" },
+  "arrows_464a3e54": { "message": "Pijlen" },
   "aspect_ratio_will_be_preserved_cb5fdfb8": {
     "message": "Beeldverhouding blijft behouden"
   },
@@ -61,6 +62,8 @@ const locale = {
   "audio_and_video_recording_not_supported_please_use_5ce3f0d7": {
     "message": "Audio- en video-opname wordt niet ondersteund; gebruik een andere browser."
   },
+  "audio_options_feb58e2c": { "message": "Audio-opties" },
+  "audio_options_tray_33a90711": { "message": "Gebied met audio-opties" },
   "audio_player_for_title_20cc70d": {
     "message": "Audio-speler voor { title }"
   },
@@ -68,6 +71,7 @@ const locale = {
     "message": "Er is automatisch opgeslagen inhoud aanwezig. Wil je liever  de automatisch opgeslagen inhoud laden?"
   },
   "available_folders_694d0436": { "message": "Beschikbare mappen" },
+  "basic_554cdc0a": { "message": "Basis" },
   "below_81d4dceb": { "message": "Hieronder" },
   "bottom_third_5f5fec1d": { "message": "Derde van beneden" },
   "button_color_608a0242": { "message": "Knopkleur" },
@@ -156,11 +160,15 @@ const locale = {
   "default_numerical_ordered_list_48dd3548": {
     "message": "standaard geordende numerieke lijst"
   },
+  "delimiters_4db4840d": { "message": "Scheidingstekens" },
   "describe_the_image_e65d2e32": { "message": "(Beschrijf de afbeelding)" },
   "describe_the_video_2fe8f46a": { "message": "(beschrijf de video)" },
   "details_98a31b68": { "message": "Details" },
+  "diamond_b8dfe7ae": { "message": "Diamant" },
+  "dimension_type_55c83e4e": { "message": "Afmetingstype" },
   "dimensions_45ddb7b7": { "message": "Afmetingen" },
   "directionality_26ae9e08": { "message": "richting" },
+  "directly_edit_latex_b7e9235b": { "message": "LaTeX rechtstreeks bewerken" },
   "discussions_a5f96392": { "message": "Discussies" },
   "discussions_index_6c36ced": { "message": "Discussieoverzicht" },
   "display_options_315aba85": { "message": "Weergaveopties" },
@@ -197,6 +205,7 @@ const locale = {
     "message": "Voer minimaal 3 tekens in om te gaan zoeken"
   },
   "equation_1c5ac93c": { "message": "Vergelijking" },
+  "equation_editor_39fbc3f1": { "message": "Vergelijkingseditor" },
   "expand_preview_by_default_2abbf9f8": {
     "message": "Uitvouwvoorbeeld is standaard"
   },
@@ -242,6 +251,7 @@ const locale = {
     "message": "Ga naar de werkbalk van de editor"
   },
   "grades_a61eba0a": { "message": "Cijfers" },
+  "greek_65c5b3f7": { "message": "Grieks" },
   "group_documents_8bfd6ae6": { "message": "Documenten groeperen" },
   "group_files_4324f3df": { "message": "Groepsbestanden" },
   "group_files_82e5dcdb": { "message": "Groepsbestanden" },
@@ -271,6 +281,7 @@ const locale = {
   "image_8ad06": { "message": "Afbeelding" },
   "image_options_5412d02c": { "message": "Beeldopties" },
   "image_options_tray_90a46006": { "message": "Beeldoptiescel" },
+  "image_to_crop_3a34487d": { "message": "Afbeelding voor bijsnijden" },
   "images_7ce26570": { "message": "Afbeeldingen" },
   "increase_indent_6d550a4a": { "message": "Inspringen vergroten" },
   "insert_593145ef": { "message": "Invoegen" },
@@ -300,13 +311,18 @@ const locale = {
   "loading_please_wait_d276220a": {
     "message": "Bezig met laden, even wachten"
   },
+  "loading_preview_9f077aa1": { "message": "Voorbeeld laden" },
   "locked_762f138b": { "message": "Vergrendeld" },
   "media_af190855": { "message": "Media" },
   "medium_5a8e9ead": { "message": "Medium" },
   "middle_27dc1d5": { "message": "Midden" },
+  "misc_3b692ea7": { "message": "Diversen" },
   "miscellaneous_e9818229": { "message": "Diversen" },
   "modules_c4325335": { "message": "Modules" },
   "multi_color_image_63d7372f": { "message": "Veelkleurige afbeelding" },
+  "must_be_at_least_percentage_22e373b6": {
+    "message": "Moet ten minste { percentage }% zijn"
+  },
   "must_be_at_least_width_x_height_px_41dc825e": {
     "message": "Moet minstens { width } x { height }px zijn"
   },
@@ -337,6 +353,7 @@ const locale = {
   "open_title_application_fd624fc5": {
     "message": "{ title } applicatie openen"
   },
+  "operators_a2ef9a93": { "message": "Operators" },
   "options_3ab0ea65": { "message": "Opties" },
   "ordered_and_unordered_lists_cfadfc38": {
     "message": "Geordende en ongeordende lijsten"
@@ -349,7 +366,13 @@ const locale = {
   },
   "pages_e5414c2c": { "message": "Pagina''s" },
   "paragraph_5e5ad8eb": { "message": "Alinea" },
+  "pentagon_17d82ea3": { "message": "Vijfhoek" },
   "people_b4ebb13c": { "message": "Personen" },
+  "percentage_34ab7c2c": { "message": "Percentage" },
+  "percentage_must_be_a_number_8033c341": {
+    "message": "Percentage moet een getal zijn"
+  },
+  "pixels_52ece7d1": { "message": "Pixels" },
   "posted_when_a578f5ab": { "message": "Geplaatst: { when }" },
   "preformatted_d0670862": { "message": "Voorgeformatteerd" },
   "pretty_html_editor_28748756": { "message": "Pretty HTML-editor" },
@@ -366,6 +389,7 @@ const locale = {
   "raw_html_editor_e3993e41": { "message": "Editor voor onbewerkte HTML" },
   "record_7c9448b": { "message": "Opnemen" },
   "record_upload_media_5fdce166": { "message": "Media opnemen/uploaden" },
+  "relationships_6602af70": { "message": "Relaties" },
   "remove_link_d1f2f4d0": { "message": "Link verwijderen" },
   "resize_ec83d538": { "message": "Grootte wijzigen" },
   "restore_auto_save_deccd84b": {
@@ -388,6 +412,7 @@ const locale = {
   "shift_o_to_open_the_pretty_html_editor_55ff5a31": {
     "message": "Shift-O om de pretty HTML-editor te openen."
   },
+  "show_audio_options_b489926b": { "message": "Audio-opties weergeven" },
   "show_embed_options_ef8d7ef": { "message": "Ingesloten opties weergeven" },
   "show_image_options_1e2ecc6b": { "message": "Afbeeldingsopties weergeven" },
   "show_link_options_545338fd": { "message": "Linkopties weergeven" },

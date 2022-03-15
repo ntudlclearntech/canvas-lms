@@ -25,8 +25,19 @@ import {PresentationContent, ScreenReaderContent} from '@instructure/ui-a11y-con
 import {stripHtmlTags} from '@canvas/outcomes/stripHtmlTags'
 import useCanvasContext from '@canvas/outcomes/react/hooks/useCanvasContext'
 import ProficiencyCalculation from '../MasteryCalculation/ProficiencyCalculation'
+import {prepareRatings} from '@canvas/outcomes/react/hooks/useRatings'
+import Ratings from './Ratings'
+import {ratingsShape} from './shapes'
 
-const OutcomeDescription = ({description, friendlyDescription, truncated}) => {
+const OutcomeDescription = ({
+  description,
+  friendlyDescription,
+  truncated,
+  calculationMethod,
+  calculationInt,
+  masteryPoints,
+  ratings
+}) => {
   const {friendlyDescriptionFF, isStudent, individualOutcomeRatingAndCalculationFF} =
     useCanvasContext()
   const shouldShowFriendlyDescription = friendlyDescriptionFF && friendlyDescription
@@ -102,7 +113,21 @@ const OutcomeDescription = ({description, friendlyDescription, truncated}) => {
       )}
 
       {!truncated && individualOutcomeRatingAndCalculationFF && (
-        <ProficiencyCalculation individualOutcome="display" canManage={false} />
+        <View>
+          <Ratings
+            ratings={prepareRatings(ratings)}
+            masteryPoints={{
+              value: masteryPoints,
+              error: null
+            }}
+            canManage={false}
+          />
+          <ProficiencyCalculation
+            method={{calculationMethod, calculationInt}}
+            individualOutcome="display"
+            canManage={false}
+          />
+        </View>
       )}
     </View>
   )
@@ -114,6 +139,10 @@ OutcomeDescription.defaultProps = {
 
 OutcomeDescription.propTypes = {
   description: PropTypes.string,
+  calculationMethod: PropTypes.string,
+  calculationInt: PropTypes.number,
+  masteryPoints: PropTypes.number,
+  ratings: ratingsShape,
   friendlyDescription: PropTypes.string,
   truncated: PropTypes.bool.isRequired
 }

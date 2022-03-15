@@ -52,7 +52,7 @@ describe('Reply Preview', () => {
 
   it('created at timestamp renders', () => {
     const container = setup(mockProps())
-    expect(container.getByText('Aug 10 6:10pm')).toBeTruthy()
+    expect(container.getByText('Aug 10, 2021 6:10pm')).toBeTruthy()
   })
 
   it('message renders', () => {
@@ -67,6 +67,11 @@ describe('Reply Preview', () => {
   it('shows deleted message when deleted', () => {
     const container = setup(mockProps({deleted: true}))
     expect(container.getByText('Deleted by Harry Potter')).toBeTruthy()
+  })
+
+  it('shows deleted without by message when deleted', () => {
+    const container = setup(mockProps({editor: null, deleted: true}))
+    expect(container.getByText('Deleted')).toBeTruthy()
   })
 
   it('read more button should be visible when message length is greater than 170 characters', () => {

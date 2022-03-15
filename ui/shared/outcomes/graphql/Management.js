@@ -104,6 +104,13 @@ export const FIND_GROUP_OUTCOMES = gql`
                 _id
                 description
                 title
+                calculationMethod
+                calculationInt
+                masteryPoints
+                ratings {
+                  description
+                  points
+                }
                 isImported(
                   targetContextType: $outcomesContextType
                   targetContextId: $outcomesContextId
@@ -154,6 +161,13 @@ export const SEARCH_GROUP_OUTCOMES = gql`
                 description
                 title
                 displayName
+                calculationMethod
+                calculationInt
+                masteryPoints
+                ratings {
+                  description
+                  points
+                }
                 canEdit
                 contextType
                 contextId
@@ -215,6 +229,14 @@ export const CREATE_LEARNING_OUTCOME = gql`
         title
         displayName
         description
+        calculationMethod
+        calculationInt
+        masteryPoints
+        pointsPossible
+        ratings {
+          description
+          points
+        }
       }
       errors {
         attribute
@@ -244,6 +266,14 @@ export const UPDATE_LEARNING_OUTCOME = gql`
         title
         displayName
         description
+        calculationMethod
+        calculationInt
+        masteryPoints
+        pointsPossible
+        ratings {
+          description
+          points
+        }
       }
       errors {
         attribute

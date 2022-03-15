@@ -101,6 +101,9 @@
     "are_you_sure_you_want_to_delete_this_planner_item_b71e330c": {
         "message": "Haluatko varmasti poistaa tämän kalenterin kohteen?"
     },
+    "arrows_464a3e54": {
+        "message": "Nuolet"
+    },
     "aspect_ratio_will_be_preserved_cb5fdfb8": {
         "message": "Kuvasuhde säilytetään"
     },
@@ -146,6 +149,12 @@
     "audio_and_video_recording_not_supported_please_use_5ce3f0d7": {
         "message": "Ääni- ja videonauhoituksia ei tueta, valitse eri selain."
     },
+    "audio_options_feb58e2c": {
+        "message": "Äänivalinnat"
+    },
+    "audio_options_tray_33a90711": {
+        "message": "Ääniasetusten ilmoitusalue"
+    },
     "audio_player_for_title_20cc70d": {
         "message": "Äänisoitin kohteelle { title }"
     },
@@ -154,6 +163,9 @@
     },
     "available_folders_694d0436": {
         "message": "Saatavissa olevat kansiot"
+    },
+    "basic_554cdc0a": {
+        "message": "Perus"
     },
     "beginning_of_your_to_do_history_61ef2dce": {
         "message": "Tehtävähistoriasi alku"
@@ -371,6 +383,9 @@
     "delete_a6efa79d": {
         "message": "Poista"
     },
+    "delimiters_4db4840d": {
+        "message": "Erottimet"
+    },
     "describe_the_image_e65d2e32": {
         "message": "(Kuvaa kuva)"
     },
@@ -394,6 +409,9 @@
     },
     "directionality_26ae9e08": {
         "message": "Suuntaisuus"
+    },
+    "directly_edit_latex_b7e9235b": {
+        "message": "Muokkaa LaTeX:iä suoraan"
     },
     "discussion_6719c51d": {
         "message": "Keskustelu"
@@ -496,6 +514,9 @@
     },
     "equation_1c5ac93c": {
         "message": "Yhtälö"
+    },
+    "equation_editor_39fbc3f1": {
+        "message": "Yhtälöeditori"
     },
     "error_loading_grades_e0b38f4d": {
         "message": "Virhe arvosanoja ladattaessa"
@@ -629,6 +650,9 @@
     "grades_loaded_5056277c": {
         "message": "Arvosanat ladattu"
     },
+    "greek_65c5b3f7": {
+        "message": "kreikka"
+    },
     "group_documents_8bfd6ae6": {
         "message": "Ryhmän asiakirjat"
     },
@@ -697,6 +721,9 @@
     },
     "image_options_tray_90a46006": {
         "message": "Kuva-asetusten ilmoitusalue"
+    },
+    "image_to_crop_3a34487d": {
+        "message": "Rajattava kuva"
     },
     "images_7ce26570": {
         "message": "Kuvat"
@@ -812,6 +839,9 @@
     "loading_please_wait_d276220a": {
         "message": "Ladataan, odota"
     },
+    "loading_preview_9f077aa1": {
+        "message": "Esikatselua ladataan"
+    },
     "location_3b6ff307": {
         "message": "Sijainti:"
     },
@@ -832,6 +862,9 @@
     },
     "middle_27dc1d5": {
         "message": "Kohtalainen"
+    },
+    "misc_3b692ea7": {
+        "message": "Sekalainen"
     },
     "miscellaneous_e9818229": {
         "message": "Muut asiat"
@@ -953,6 +986,9 @@
     "open_title_application_fd624fc5": {
         "message": "Avoin { title }-sovellus"
     },
+    "operators_a2ef9a93": {
+        "message": "Operaattorit"
+    },
     "opportunities_popup_f6703842": {
         "message": "mahdollisuuksien ponnahdusikkuna"
     },
@@ -994,6 +1030,9 @@
     },
     "percentage_34ab7c2c": {
         "message": "Prosenttimäärä"
+    },
+    "percentage_must_be_a_number_8033c341": {
+        "message": "Prosenttiosuuden täytyy olla numero"
     },
     "pixels_52ece7d1": {
         "message": "Pikselit"
@@ -1058,6 +1097,9 @@
     "redo_363c58b7": {
         "message": "Suorita uudelleen"
     },
+    "relationships_6602af70": {
+        "message": "Suhteet"
+    },
     "reminder_date_4564d12d": {
         "message": "Muistutus: { date }"
     },
@@ -1120,6 +1162,9 @@
     },
     "show_all_ae37d610": {
         "message": "Näytä kaikki"
+    },
+    "show_audio_options_b489926b": {
+        "message": "Näytä ääniasetukset"
     },
     "show_embed_options_ef8d7ef": {
         "message": "Näytä upotusasetukset"

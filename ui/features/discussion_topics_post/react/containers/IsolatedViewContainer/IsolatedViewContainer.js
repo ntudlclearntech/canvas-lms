@@ -45,7 +45,7 @@ import {IsolatedThreadsContainer} from '../IsolatedThreadsContainer/IsolatedThre
 import {IsolatedParent} from './IsolatedParent'
 import LoadingIndicator from '@canvas/loading-indicator'
 import PropTypes from 'prop-types'
-import React, {useCallback, useContext, useMemo, useState} from 'react'
+import React, {useCallback, useContext, useEffect, useMemo, useState} from 'react'
 import {Tray} from '@instructure/ui-tray'
 import {useMutation, useQuery} from 'react-apollo'
 import {View} from '@instructure/ui-view'
@@ -70,7 +70,7 @@ export const IsolatedViewContainer = props => {
     props.removeDraftFromDiscussionCache(cache, result)
     addReplyToDiscussionEntry(cache, variables, newDiscussionEntry)
 
-    props.setHighlightEntryId(newDiscussionEntry.id)
+    props.setHighlightEntryId(newDiscussionEntry._id)
   }
 
   const [createDiscussionEntry] = useMutation(CREATE_DISCUSSION_ENTRY, {
@@ -181,11 +181,12 @@ export const IsolatedViewContainer = props => {
     }
   }
 
-  const onUpdate = (discussionEntry, message) => {
+  const onUpdate = (discussionEntry, message, fileId) => {
     updateDiscussionEntry({
       variables: {
         discussionEntryId: discussionEntry._id,
-        message
+        message,
+        removeAttachment: !fileId
       }
     })
   }
@@ -194,25 +195,27 @@ export const IsolatedViewContainer = props => {
     window.open(getSpeedGraderUrl(discussionEntry.author._id), '_blank')
   }
 
-  const onReplySubmit = (message, replyId, includeReplyPreview) => {
+  const onReplySubmit = (message, includeReplyPreview, replyId, isAnonymousAuthor) => {
     createDiscussionEntry({
       variables: {
         discussionTopicId: props.discussionTopic._id,
         replyFromEntryId: replyId,
+        isAnonymousAuthor,
         message,
-        includeReplyPreview
+        includeReplyPreview,
+        courseID: ENV.course_id
       },
-      optimisticResponse: getOptimisticResponse(
+      optimisticResponse: getOptimisticResponse({
         message,
-        replyId,
-        props.discussionEntryId,
-        null,
-        buildQuotedReply(
+        parentId: replyId,
+        rootEntryId: props.discussionEntryId,
+        quotedEntry: buildQuotedReply(
           isolatedEntryOlderDirection.data?.legacyNode?.discussionSubentriesConnection.nodes,
           props.replyFromId
         ),
-        props.discussionTopic.anonymousState != null
-      )
+        isAnonymous:
+          !!props.discussionTopic.anonymousState && props.discussionTopic.canReplyAnonymously
+      })
     })
   }
 
@@ -379,6 +382,29 @@ export const IsolatedViewContainer = props => {
     }
   }, [entriesAreLoading])
 
+  const hasMoreOlderReplies =
+    isolatedEntryOlderDirection.data?.legacyNode?.discussionSubentriesConnection?.pageInfo
+      ?.hasPreviousPage
+
+  useEffect(() => {
+    if (
+      props.highlightEntryId &&
+      props.highlightEntryId !== props.discussionEntryId &&
+      !fetchingMoreOlderReplies
+    ) {
+      const isOnSubentries =
+        isolatedEntryOlderDirection.data.legacyNode?.discussionSubentriesConnection.nodes.some(
+          entry => entry._id === props.highlightEntryId
+        )
+
+      if (!isOnSubentries && hasMoreOlderReplies) {
+        setFetchingMoreOlderReplies(true)
+        fetchOlderEntries()
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [props.highlightEntryId, props.discussionEntryId])
+
   const renderIsolatedView = () => {
     return (
       <>
@@ -407,9 +433,15 @@ export const IsolatedViewContainer = props => {
               margin="none none x-small"
             >
               <DiscussionEdit
-                discussionAnonymousState={props.discussionTopic.anonymousState}
-                onSubmit={(text, includeReplyPreview) => {
-                  onReplySubmit(text, props.replyFromId, includeReplyPreview)
+                discussionAnonymousState={props.discussionTopic?.anonymousState}
+                canReplyAnonymously={props.discussionTopic?.canReplyAnonymously}
+                onSubmit={(message, includeReplyPreview, _fileId, anonymousAuthorState) => {
+                  onReplySubmit(
+                    message,
+                    includeReplyPreview,
+                    props.replyFromId,
+                    anonymousAuthorState
+                  )
                   props.setRCEOpen(false)
                 }}
                 onCancel={() => props.setRCEOpen(false)}
@@ -460,10 +492,7 @@ export const IsolatedViewContainer = props => {
               }}
               goToTopic={props.goToTopic}
               highlightEntryId={props.highlightEntryId}
-              hasMoreOlderReplies={
-                isolatedEntryOlderDirection.data?.legacyNode?.discussionSubentriesConnection
-                  ?.pageInfo?.hasPreviousPage
-              }
+              hasMoreOlderReplies={hasMoreOlderReplies}
               hasMoreNewerReplies={
                 isolatedEntryNewerDirection.data?.legacyNode?.discussionSubentriesConnection
                   ?.pageInfo?.hasNextPage && !!props.relativeEntryId

@@ -23,14 +23,15 @@ const demoData = [
   {id: 'course_11', name: 'Test 101'},
   {id: 'course_12', name: 'History 101'},
   {id: 'course_13', name: 'English 101'},
-  {id: '1', name: 'Rob Orton', full_name: 'Rob Orton', pronounds: null},
-  {id: '2', name: 'Matthew Lemon', full_name: 'Matthew Lemon', pronounds: null},
-  {id: '3', name: 'Drake Harper', full_name: 'Drake Harpert', pronounds: null},
-  {id: '4', name: 'Davis Hyer', full_name: 'Davis Hyer', pronounds: null}
+  {id: '1', name: 'Rob Orton', full_name: 'Rob Orton', pronouns: null},
+  {id: '2', name: 'Matthew Lemon', full_name: 'Matthew Lemon', pronouns: null},
+  {id: '3', name: 'Drake Harper', full_name: 'Drake Harpert', pronouns: null},
+  {id: '4', name: 'Davis Hyer', full_name: 'Davis Hyer', pronouns: null, isLast: true}
 ]
 
 const defaultProps = {
-  menuData: demoData
+  menuData: demoData,
+  onUserFilterSelect: jest.fn()
 }
 
 const setup = props => {
@@ -79,6 +80,25 @@ describe('Address Book Component', () => {
       expect(popover).toBeTruthy()
     })
 
+    it('Should close popup menu when address button is pressed and popup is open', async () => {
+      const {container} = setup({...defaultProps, open: true})
+      const button = container.querySelector('button')
+      fireEvent.click(button)
+      const popover = screen.queryByTestId('address-book-popover')
+      expect(popover).toBeFalsy()
+    })
+
+    it('Should close popup menu when focus is changed', async () => {
+      const {container} = setup({...defaultProps})
+      const input = container.querySelector('input')
+      fireEvent.focus(input)
+      let popover = await screen.findByTestId('address-book-popover')
+      expect(popover).toBeTruthy()
+      fireEvent.blur(input)
+      popover = screen.queryByTestId('address-book-popover')
+      expect(popover).toBeFalsy()
+    })
+
     it('Should render popup menu when textInput is focused', async () => {
       const {container} = setup({...defaultProps})
       const input = container.querySelector('input')
@@ -121,6 +141,31 @@ describe('Address Book Component', () => {
       fireEvent.keyDown(input, {key: 'Enter', keyCode: 13})
       expect(onSelectSpy.mock.calls.length).toBe(1)
       expect(onSelectSpy.mock.calls[0][0]).toBe('2')
+    })
+
+    it('Should render loading bar below rendered menu items when loading more menu data', async () => {
+      const {queryByTestId} = setup({
+        ...defaultProps,
+        open: true,
+        isLoading: true,
+        isLoadingMoreMenuData: true
+      })
+      const items = await screen.findAllByTestId('address-book-item')
+      expect(items.length > 0).toBe(true)
+      expect(queryByTestId('menu-loading-spinner')).toBeInTheDocument()
+    })
+
+    it('Should not render old data when clicking into a new sub-menu', () => {
+      const {queryByTestId, queryAllByTestId} = setup({
+        ...defaultProps,
+        open: true,
+        isLoading: true,
+        isLoadingMoreMenuData: false
+      })
+
+      expect(queryAllByTestId('address-book-item').length).toBe(0)
+      expect(queryByTestId('address-book-popover')).not.toBeInTheDocument()
+      expect(queryByTestId('menu-loading-spinner')).toBeInTheDocument()
     })
   })
 
@@ -169,6 +214,17 @@ describe('Address Book Component', () => {
       await screen.findByTestId('address-book-tag')
       expect(onSelectedIdsChangeMock.mock.calls[0][0]).toStrictEqual([demoData[4]])
     })
+
+    it('Should be able to remove a tag', async () => {
+      setup({...defaultProps, open: true})
+      const popover = await screen.findByTestId('address-book-popover')
+      const items = popover.querySelectorAll('li')
+      fireEvent.mouseDown(items[4])
+      const tag = await screen.findByTestId('address-book-tag')
+      expect(tag).toBeInTheDocument()
+      fireEvent.click(tag.querySelector('span'))
+      expect(screen.queryByTestId('address-book-tag')).not.toBeInTheDocument()
+    })
   })
 
   describe('Callbacks', () => {
@@ -189,6 +245,21 @@ describe('Address Book Component', () => {
       expect(onSelectSpy.mock.calls.length).toBe(1)
     })
 
+    it('Should call onUserFilterSelect when item is selected', async () => {
+      const onSelectSpy = jest.fn()
+      const onUserFilterSelectSpy = jest.fn()
+      setup({
+        ...defaultProps,
+        open: true,
+        onSelect: onSelectSpy,
+        onUserFilterSelect: onUserFilterSelectSpy
+      })
+      const popover = await screen.findByTestId('address-book-popover')
+      const items = popover.querySelectorAll('li')
+      fireEvent.mouseDown(items[4])
+      expect(onUserFilterSelectSpy.mock.calls.length).toBe(1)
+    })
+
     it('Should call back for group clicks', async () => {
       const onSelectSpy = jest.fn()
       setup({...defaultProps, open: true, onSelect: onSelectSpy})
@@ -207,6 +278,40 @@ describe('Address Book Component', () => {
       fireEvent.mouseDown(items[0])
       expect(onSelectSpy.mock.calls.length).toBe(1)
       expect(onSelectSpy.mock.calls[0][0].includes(BACK_BUTTON_TYPE)).toBe(true)
+    })
+  })
+  describe('Intersection Observer', () => {
+    const intersectionObserverMock = () => ({
+      observe: () => null,
+      unobserve: () => null
+    })
+    beforeEach(() => {
+      window.IntersectionObserver = jest.fn().mockImplementation(intersectionObserverMock)
+    })
+    it('Should create an observer when more data is available', async () => {
+      const component = setup({
+        ...defaultProps,
+        open: true,
+        hasMoreMenuData: true
+      })
+      expect(component).toBeTruthy()
+      const items = await screen.findAllByTestId('address-book-item')
+      expect(items.length > 0).toBe(true)
+
+      expect(window.IntersectionObserver).toHaveBeenCalledTimes(1)
+    })
+
+    it('Should not create an observer when no more data is available', async () => {
+      const component = setup({
+        ...defaultProps,
+        open: true,
+        hasMoreMenuData: false
+      })
+      expect(component).toBeTruthy()
+      const items = await screen.findAllByTestId('address-book-item')
+      expect(items.length > 0).toBe(true)
+
+      expect(window.IntersectionObserver).toHaveBeenCalledTimes(0)
     })
   })
 })

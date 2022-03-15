@@ -67,6 +67,7 @@ class Submission < ActiveRecord::Base
   attr_readonly :assignment_id
   attr_accessor :visible_to_user,
                 :skip_grade_calc,
+                :skip_grader_check,
                 :grade_posting_in_progress,
                 :score_unchanged
   attr_writer :versioned_originality_reports,
@@ -202,6 +203,10 @@ class Submission < ActiveRecord::Base
               assignments.submission_types IN ('', 'none', 'not_graded', 'on_paper', 'wiki_page', 'external_tool')
             )
             AND assignments.submission_types IS NOT NULL
+            AND NOT (
+              late_policy_status IS NULL
+              AND grader_id IS NOT NULL
+            )
           )
         )
       SQL
@@ -1630,7 +1635,7 @@ class Submission < ActiveRecord::Base
   private :late_policy_relevant_changes?
 
   def ensure_grader_can_grade
-    return true if grader_can_grade?
+    return true if grader_can_grade? || skip_grader_check
 
     error_msg = I18n.t(
       "cannot be changed at this time: %{grading_error}",
@@ -2377,7 +2382,7 @@ class Submission < ActiveRecord::Base
 
     def missing?
       return false if excused?
-      return false if Account.site_admin.feature_enabled?(:remove_missing_status_when_graded) && grader_id && late_policy_status.nil?
+      return false if grader_id && late_policy_status.nil?
       return late_policy_status == "missing" if late_policy_status.present?
       return false if submitted_at.present?
       return false unless past_due?
@@ -2842,10 +2847,12 @@ class Submission < ActiveRecord::Base
   end
 
   def word_count
-    return nil unless body
-
-    tinymce_wordcount_count_regex = /[\w\u2019\x27\-\u00C0-\u1FFF]+/
-    @word_count ||= ActionController::Base.helpers.strip_tags(body).scan(tinymce_wordcount_count_regex).size
+    if body && submission_type != "online_quiz"
+      tinymce_wordcount_count_regex = /[\w\u2019\x27\-\u00C0-\u1FFF]+/
+      ActionController::Base.helpers.strip_tags(body).scan(tinymce_wordcount_count_regex).size
+    elsif versioned_attachments.present?
+      Attachment.where(id: versioned_attachments.pluck(:id)).sum(:word_count)
+    end
   end
 
   private

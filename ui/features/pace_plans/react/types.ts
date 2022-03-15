@@ -78,6 +78,7 @@ export interface PacePlan {
   readonly modules: Module[]
   readonly exclude_weekends: boolean
   readonly hard_end_dates: boolean
+  readonly course: Course
   readonly course_id: string
   readonly course_section_id?: string
   readonly user_id?: string
@@ -85,6 +86,7 @@ export interface PacePlan {
   readonly context_id: string
   readonly published_at?: string
   readonly compressed_due_dates: PacePlanItemDueDates | undefined
+  readonly updated_at: string
 }
 
 export interface Progress {

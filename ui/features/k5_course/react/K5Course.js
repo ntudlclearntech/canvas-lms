@@ -66,7 +66,7 @@ import ResourcesPage from '@canvas/k5/react/ResourcesPage'
 import EmptyModules from './EmptyModules'
 import EmptyHome from './EmptyHome'
 import ObserverOptions, {
-  ObserverListShape,
+  ObservedUsersListShape,
   shouldShowObserverOptions
 } from '@canvas/observer-picker'
 import GroupsPage from '@canvas/k5/react/GroupsPage'
@@ -310,7 +310,7 @@ export const CourseHeaderOptions = forwardRef(
       studentViewPath,
       canReadAsAdmin,
       courseContext,
-      observerList,
+      observedUsersList,
       currentUser,
       handleChangeObservedUser,
       showingMobileNav,
@@ -361,7 +361,7 @@ export const CourseHeaderOptions = forwardRef(
             <Heading as="h1">{courseContext}</Heading>
           </ScreenReaderContent>
           <ObserverOptions
-            observerList={observerList}
+            observedUsersList={observedUsersList}
             currentUser={currentUser}
             handleChangeObservedUser={handleChangeObservedUser}
             canAddObservee={false}
@@ -422,7 +422,7 @@ CourseHeaderOptions.propTypes = {
   studentViewPath: PropTypes.string.isRequired,
   canReadAsAdmin: PropTypes.bool.isRequired,
   courseContext: PropTypes.string.isRequired,
-  observerList: ObserverListShape.isRequired,
+  observedUsersList: ObservedUsersListShape.isRequired,
   handleChangeObservedUser: PropTypes.func.isRequired,
   currentUser: PropTypes.object.isRequired,
   showingMobileNav: PropTypes.bool.isRequired,
@@ -463,26 +463,28 @@ export function K5Course({
   hasWikiPages,
   hasSyllabusBody,
   parentSupportEnabled,
-  observerList,
+  observedUsersList,
   selfEnrollment,
   tabContentOnly,
-  currentUserRoles,
   isMasterCourse
 }) {
-  const initialObservedId = observerList.find(o => o.id === savedObservedId(currentUser.id))
+  const initialObservedId = observedUsersList.find(o => o.id === savedObservedId(currentUser.id))
     ? savedObservedId(currentUser.id)
     : undefined
 
   const renderTabs = toRenderTabs(tabs, hasSyllabusBody)
   const {activeTab, currentTab, handleTabChange} = useTabState(defaultTab, renderTabs)
   const [tabsRef, setTabsRef] = useState(null)
+  const [observedUserId, setObservedUserId] = useState(initialObservedId)
   const plannerInitialized = usePlanner({
     plannerEnabled,
     isPlannerActive: () => activeTab.current === TAB_IDS.SCHEDULE,
     focusFallback: tabsRef,
     singleCourse: true,
-    observedUserId: initialObservedId,
-    isObserver: currentUserRoles.includes('observer')
+    observedUserId,
+    isObserver:
+      observedUsersList.length > 1 ||
+      (observedUsersList.length === 1 && observedUsersList[0].id !== currentUser.id)
   })
 
   /* Rails renders the modules partial into #k5-modules-container. After the first render, we hide that div and
@@ -495,9 +497,8 @@ export function K5Course({
   const tabsPaddingRef = useRef(null)
   const [modulesExist, setModulesExist] = useState(true)
   const [windowSize, setWindowSize] = useState(() => getWindowSize())
-  const [observedUserId, setObservedUserId] = useState(initialObservedId)
   const showObserverOptions =
-    parentSupportEnabled && shouldShowObserverOptions(observerList, currentUser)
+    parentSupportEnabled && shouldShowObserverOptions(observedUsersList, currentUser)
   const showingMobileNav = windowSize.width < MOBILE_NAV_BREAKPOINT_PX
   useEffect(() => {
     modulesRef.current = document.getElementById('k5-modules-container')
@@ -627,7 +628,7 @@ export function K5Course({
           studentViewPath={`${studentViewPath + window.location.hash}`}
           courseContext={name}
           parentSupportEnabled={parentSupportEnabled}
-          observerList={observerList}
+          observedUsersList={observedUsersList}
           currentUser={currentUser}
           handleChangeObservedUser={setObservedUserId}
           showingMobileNav={showingMobileNav}
@@ -740,10 +741,9 @@ K5Course.propTypes = {
   hasWikiPages: PropTypes.bool.isRequired,
   hasSyllabusBody: PropTypes.bool.isRequired,
   parentSupportEnabled: PropTypes.bool.isRequired,
-  observerList: ObserverListShape.isRequired,
+  observedUsersList: ObservedUsersListShape.isRequired,
   selfEnrollment: PropTypes.object,
   tabContentOnly: PropTypes.bool,
-  currentUserRoles: PropTypes.array.isRequired,
   isMasterCourse: PropTypes.bool.isRequired
 }
 

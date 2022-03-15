@@ -135,6 +135,31 @@ module Factories
     @rubric.update_criteria(rubric_params)
   end
 
+  def outcome_with_individual_ratings(opts = {})
+    context = opts[:context] || opts[:course] || @course
+    @outcome_group ||= context.root_outcome_group
+    @outcome = opts[:outcome] || outcome_model(context: context,
+                                               outcome_context: opts[:outcome_context] || context,
+                                               title: "new outcome",
+                                               description: "<p>This is <b>awesome</b>.</p>",
+                                               calculation_method: "n_mastery",
+                                               calculation_int: 3,
+                                               rubric_criterion: {
+                                                 mastery_points: 3,
+                                                 points_possible: 5,
+                                                 ratings: [
+                                                   { description: "Rating Criteria 1", points: 5 },
+                                                   { description: "Rating Criteria 2", points: 3 },
+                                                   { description: "Rating Criteria 3", points: 2 }
+                                                 ]
+                                               })
+    [opts[:outcome_context], context].compact.uniq.each do |ctxt|
+      root = ctxt.root_outcome_group
+      root.add_outcome(@outcome)
+      root.save!
+    end
+  end
+
   def make_group_structure(group_attrs, context, parent_group = nil)
     outcomes = group_attrs.delete(:outcomes) || 0
     groups = group_attrs.delete(:groups)

@@ -101,6 +101,9 @@
     "are_you_sure_you_want_to_delete_this_planner_item_b71e330c": {
         "message": "Vill du ta bort det här Planner-objektet?"
     },
+    "arrows_464a3e54": {
+        "message": "Pilar"
+    },
     "aspect_ratio_will_be_preserved_cb5fdfb8": {
         "message": "Bildförhållande kommer att behållas"
     },
@@ -146,6 +149,12 @@
     "audio_and_video_recording_not_supported_please_use_5ce3f0d7": {
         "message": "Ljud- och videoinspelning stöds inte. Använd en annan webbläsare."
     },
+    "audio_options_feb58e2c": {
+        "message": "Ljudalternativ"
+    },
+    "audio_options_tray_33a90711": {
+        "message": "Fack för ljudalternativ"
+    },
     "audio_player_for_title_20cc70d": {
         "message": "Ljudspelare för { title }"
     },
@@ -154,6 +163,9 @@
     },
     "available_folders_694d0436": {
         "message": "Tillgängliga mappar"
+    },
+    "basic_554cdc0a": {
+        "message": "Grundläggande"
     },
     "beginning_of_your_to_do_history_61ef2dce": {
         "message": "Början av din att göra-historik"
@@ -371,6 +383,9 @@
     "delete_a6efa79d": {
         "message": "Ta bort"
     },
+    "delimiters_4db4840d": {
+        "message": "Avgränsare"
+    },
     "describe_the_image_e65d2e32": {
         "message": "(Beskriv bilden)"
     },
@@ -394,6 +409,9 @@
     },
     "directionality_26ae9e08": {
         "message": "Textens riktning"
+    },
+    "directly_edit_latex_b7e9235b": {
+        "message": "Direktredigera LaTeX"
     },
     "discussion_6719c51d": {
         "message": "Diskussion"
@@ -496,6 +514,9 @@
     },
     "equation_1c5ac93c": {
         "message": "Ekvation"
+    },
+    "equation_editor_39fbc3f1": {
+        "message": "Ekvationsredigeraren"
     },
     "error_loading_grades_e0b38f4d": {
         "message": "Det gick inte att läsa in omdömen"
@@ -629,6 +650,9 @@
     "grades_loaded_5056277c": {
         "message": "Omdömen har lästs in"
     },
+    "greek_65c5b3f7": {
+        "message": "Grekiska"
+    },
     "group_documents_8bfd6ae6": {
         "message": "Gruppera dokument"
     },
@@ -697,6 +721,9 @@
     },
     "image_options_tray_90a46006": {
         "message": "Alternativfält för bilder"
+    },
+    "image_to_crop_3a34487d": {
+        "message": "Bild till beskärning"
     },
     "images_7ce26570": {
         "message": "Bilder"
@@ -812,6 +839,9 @@
     "loading_please_wait_d276220a": {
         "message": "Läser in, vänta"
     },
+    "loading_preview_9f077aa1": {
+        "message": "Förhandsgranskning av inläsning"
+    },
     "location_3b6ff307": {
         "message": "Plats:"
     },
@@ -832,6 +862,9 @@
     },
     "middle_27dc1d5": {
         "message": "Mitten"
+    },
+    "misc_3b692ea7": {
+        "message": "Diverse"
     },
     "miscellaneous_e9818229": {
         "message": "Blandat"
@@ -953,6 +986,9 @@
     "open_title_application_fd624fc5": {
         "message": "Öppna programmet { title }"
     },
+    "operators_a2ef9a93": {
+        "message": "Operatörer"
+    },
     "opportunities_popup_f6703842": {
         "message": "popupfönster med möjligheter"
     },
@@ -994,6 +1030,9 @@
     },
     "percentage_34ab7c2c": {
         "message": "Procent"
+    },
+    "percentage_must_be_a_number_8033c341": {
+        "message": "Procenttalet måste vara ett tal"
     },
     "pixels_52ece7d1": {
         "message": "Pixlar"
@@ -1058,6 +1097,9 @@
     "redo_363c58b7": {
         "message": "Gör om"
     },
+    "relationships_6602af70": {
+        "message": "Relationer"
+    },
     "reminder_date_4564d12d": {
         "message": "Påminnelse: { date }"
     },
@@ -1120,6 +1162,9 @@
     },
     "show_all_ae37d610": {
         "message": "Visa alla"
+    },
+    "show_audio_options_b489926b": {
+        "message": "Visa ljudalternativ"
     },
     "show_embed_options_ef8d7ef": {
         "message": "Visa inbäddningsalternativ"

@@ -35,13 +35,52 @@ require "tmpdir"
 require "crystalball"
 
 ENV["RAILS_ENV"] = "test"
-require_relative "../config/environment"
 
-if ENV["COVERAGE"] == "1"
-  puts "Code Coverage enabled"
-  require_relative "coverage_tool"
-  CoverageTool.start("RSpec:#{Process.pid}")
+# SimpleCov needs to be added first thing in the spec_helper.rb
+# No other configurations should be loaded/performed before this block
+if ENV["COVERAGE"] == "1" && (ENV["SUPPRESS_OUTPUT"] != "1")
+  require_relative("canvas_simplecov")
+  require_relative("coverage_tool")
+  puts "Code Coverage enabled" unless ENV["SUPPRESS_OUTPUT"] == "1"
+  CoverageTool.start("RSpec")
 end
+
+if ENV["CRYSTALBALL_MAP"] == "1"
+  require_relative("support/crystalball")
+
+  Coverage.start unless Coverage.running?
+  Crystalball::MapGenerator.start! do |config|
+    config.register Crystalball::MapGenerator::CoverageStrategy.new
+    config.map_storage_path = "log/results/crystalball_results/#{ENV.fetch("PARALLEL_INDEX", "0")}_map.yml"
+  end
+
+  module Crystalball
+    class MapGenerator
+      class CoverageStrategy
+        def after_register
+          Coverage.start unless Coverage.running?
+        end
+
+        def call(example_map, example)
+          puts "Calling Coverage Strategy for #{example.inspect}"
+          before = Coverage.peek_result
+          yield example_map, example
+          after = Coverage.peek_result
+          example_map.push(*execution_detector.detect(before, after).sort)
+
+          if example.metadata[:location].include?("selenium")
+            # rubocop:disable Specs/NoExecuteScript
+            js_coverage = ::SeleniumDriverSetup.driver.execute_script("return window.__coverage__")&.keys&.uniq
+            # rubocop:enable Specs/NoExecuteScript
+            example_map.used_files.concat(js_coverage.sort) if js_coverage
+          end
+        end
+      end
+    end
+  end
+end
+
+require_relative "../config/environment"
 
 require "rspec/rails"
 
@@ -58,6 +97,7 @@ module WebMock::API
   end
 end
 
+require "delayed/testing"
 Dir[Rails.root.join("spec/support/**/*.rb")].sort.each { |f| require f }
 require "sharding_spec_helper"
 
@@ -154,27 +194,6 @@ if ENV["ENABLE_AXE_SELENIUM"] == "1"
     if ENV["RSPEC_PROCESSES"]
       config.serialize_output = true
       config.serialize_prefix = "log/results/stormbreaker_results"
-    end
-  end
-end
-
-if ENV["ENABLE_CRYSTALBALL"] == "1"
-  Crystalball::MapGenerator.start! do |config|
-    config.register Crystalball::MapGenerator::CoverageStrategy.new
-    config.map_storage_path = "log/results/crystalball_results/#{ENV.fetch("PARALLEL_INDEX", "0")}_map.yml"
-  end
-
-  module Crystalball
-    class MapGenerator
-      class CoverageStrategy
-        def call(example_map, example)
-          puts "Calling Coverage Strategy for #{example.inspect}"
-          before = Coverage.peek_result
-          yield example_map, example
-          after = Coverage.peek_result
-          example_map.push(*execution_detector.detect(before, after))
-        end
-      end
     end
   end
 end
@@ -408,6 +427,12 @@ RSpec.configure do |config|
 
   # The Pact specs have prerequisite setup steps so we exclude them by default
   config.filter_run_excluding :pact_live_events if ENV.fetch("RUN_LIVE_EVENTS_CONTRACT_TESTS", "0") == "0"
+
+  if ENV["CRYSTALBALL_MAP"] == "1"
+    config.filter_run_excluding :pact_live_events
+    config.filter_run_excluding :pact
+  end
+
   # The Pact build needs RspecJunitFormatter and does not run RSpecQ
   file = "log/results/results-#{ENV.fetch("PARALLEL_INDEX", "0").to_i}.xml"
   config.add_formatter "RspecJunitFormatter", file if ENV["PACT_BROKER"] && ENV["JENKINS_HOME"]
@@ -417,6 +442,7 @@ RSpec.configure do |config|
   config.include RequestHelper, type: :request
   config.include Onceler::BasicHelpers
   config.include PGCollkeyHelper
+  config.include ActionDispatch::TestProcess::FixtureFile
   config.project_source_dirs << "gems" # so that failures here are reported properly
 
   if ENV["RSPEC_LOG"]
@@ -451,7 +477,7 @@ RSpec.configure do |config|
     Folder.reset_path_lookups!
     Rails.logger.try(:info, "Running #{self.class.description} #{@method_name}")
     Attachment.current_root_account = nil
-    Canvas::DynamicSettings.reset_cache!
+    DynamicSettings.reset_cache!
     ActiveRecord::Migration.verbose = false
     RequestStore.clear!
     MultiCache.reset
@@ -699,11 +725,11 @@ RSpec.configure do |config|
   end
 
   def override_dynamic_settings(data)
-    original_fallback = Canvas::DynamicSettings.fallback_data
-    Canvas::DynamicSettings.fallback_data = data
+    original_fallback = DynamicSettings.fallback_data
+    DynamicSettings.fallback_data = data
     yield
   ensure
-    Canvas::DynamicSettings.fallback_data = original_fallback
+    DynamicSettings.fallback_data = original_fallback
   end
 
   def json_parse(json_string = response.body)
@@ -815,18 +841,11 @@ RSpec.configure do |config|
   end
 
   def run_job(job)
-    Delayed::Worker.new.perform(job)
+    Delayed::Testing.run_job(job)
   end
 
   def run_jobs
-    while (job = Delayed::Job.get_and_lock_next_available(
-      "spec run_jobs",
-      Delayed::Settings.queue,
-      0,
-      Delayed::MAX_PRIORITY
-    ))
-      run_job(job)
-    end
+    Delayed::Testing.drain
   end
 
   def track_jobs(&block)

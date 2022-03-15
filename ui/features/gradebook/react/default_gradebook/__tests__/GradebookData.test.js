@@ -22,9 +22,25 @@ import {RequestDispatch} from '@canvas/network'
 import GradebookData from '../GradebookData'
 import Gradebook from '../Gradebook'
 import PerformanceControls from '../PerformanceControls'
+import {defaultGradebookProps} from './GradebookSpecHelper'
 
 const defaultProps = {
-  gradebookEnv: {context_id: '1'},
+  ...defaultGradebookProps,
+  gradebookEnv: {
+    context_id: '1',
+    enhanced_gradebook_filters: false,
+    settings: {
+      filter_rows_by: {
+        section_id: null,
+        student_group_id: null
+      },
+      filter_columns_by: {
+        assignment_group_id: null,
+        context_module_id: null,
+        grading_period_id: null
+      }
+    }
+  },
   performance_controls: {
     students_chunk_size: 2 // students per page
   }
@@ -34,7 +50,9 @@ describe('GradebookData', () => {
   it('renders', () => {
     const wrapper = shallow(<GradebookData {...defaultProps} />)
     expect(wrapper.find(Gradebook).exists()).toBeTruthy()
-    expect(wrapper.prop('isModulesLoading')).toStrictEqual(true)
+    expect(wrapper.prop('isFiltersLoading')).toStrictEqual(false)
+    expect(wrapper.prop('isModulesLoading')).toStrictEqual(false)
+    expect(wrapper.prop('filters')).toStrictEqual([])
     expect(wrapper.prop('modules')).toStrictEqual([])
     expect(wrapper.prop('dispatch')).toBeInstanceOf(RequestDispatch)
     expect(wrapper.prop('performanceControls')).toBeInstanceOf(PerformanceControls)

@@ -128,6 +128,7 @@ class Assignment < ActiveRecord::Base
   has_many :conditional_release_rules, class_name: "ConditionalRelease::Rule", dependent: :destroy, foreign_key: "trigger_assignment_id", inverse_of: :trigger_assignment
   has_many :conditional_release_associations, class_name: "ConditionalRelease::AssignmentSetAssociation", dependent: :destroy, inverse_of: :assignment
 
+  scope :assigned_to_student, ->(student_id) { joins(:submissions).where(submissions: { user_id: student_id }) }
   scope :anonymous, -> { where(anonymous_grading: true) }
   scope :moderated, -> { where(moderated_grading: true) }
   scope :auditable, -> { anonymous.or(moderated) }
@@ -281,6 +282,8 @@ class Assignment < ActiveRecord::Base
       result.send(:"#{attr}=", nil)
     end
     result.peer_review_count = 0
+    result.peer_reviews_assigned = false
+
     # Default to the last position of all active assignments in the group.  Clients can still
     # override later.  Just helps to avoid duplicate positions.
     result.position = Assignment.active.where(assignment_group: assignment_group).maximum(:position) + 1
@@ -333,6 +336,13 @@ class Assignment < ActiveRecord::Base
     result.post_to_sis = false
 
     result
+  end
+
+  def finish_duplicating
+    return unless ["duplicating", "failed_to_duplicate"].include?(workflow_state)
+
+    self.workflow_state =
+      (duplicate_of&.workflow_state == "published" || !can_unpublish?) ? "published" : "unpublished"
   end
 
   def can_duplicate?
@@ -1303,12 +1313,9 @@ class Assignment < ActiveRecord::Base
       event :publish, transitions_to: :published
     end
     state :duplicating do
-      event :finish_duplicating, transitions_to: :unpublished
       event :fail_to_duplicate, transitions_to: :failed_to_duplicate
     end
-    state :failed_to_duplicate do
-      event :finish_duplicating, transitions_to: :unpublished
-    end
+    state :failed_to_duplicate
     state :importing do
       event :finish_importing, transitions_to: :unpublished
       event :fail_to_import, transitions_to: :fail_to_import
@@ -1453,14 +1460,14 @@ class Assignment < ActiveRecord::Base
     round_if_whole(result).to_s
   end
 
-  def interpret_grade(grade)
+  def interpret_grade(grade, prefer_points_over_scheme: false)
     case grade.to_s
     when /^[+-]?\d*\.?\d+%$/
       # interpret as a percentage
       percentage = grade.to_f / 100.0.to_d
       points_possible.to_f * percentage
     when /^[+-]?\d*\.?\d+$/
-      if uses_grading_standard && (standard_based_score = grading_standard_or_default.grade_to_score(grade))
+      if !prefer_points_over_scheme && uses_grading_standard && (standard_based_score = grading_standard_or_default.grade_to_score(grade))
         (points_possible || 0.0) * standard_based_score / 100.0
       else
         grade.to_f
@@ -1479,10 +1486,10 @@ class Assignment < ActiveRecord::Base
     end
   end
 
-  def grade_to_score(grade = nil)
+  def grade_to_score(grade = nil, prefer_points_over_scheme: false)
     return nil if grade.blank?
 
-    parsed_grade = interpret_grade(grade)
+    parsed_grade = interpret_grade(grade, prefer_points_over_scheme: prefer_points_over_scheme)
     case self.grading_type
     when "points", "percent", "letter_grade", "gpa_scale"
       score = parsed_grade
@@ -1898,11 +1905,11 @@ class Assignment < ActiveRecord::Base
     all_submissions.where(user_id: user_id).first_or_initialize
   end
 
-  def compute_grade_and_score(grade, score)
+  def compute_grade_and_score(grade, score, prefer_points_over_scheme: false)
     grade = nil if grade == ""
 
     if grade
-      score = grade_to_score(grade)
+      score = grade_to_score(grade, prefer_points_over_scheme: prefer_points_over_scheme)
     end
     if score
       grade = score_to_grade(score, grade)
@@ -1930,10 +1937,12 @@ class Assignment < ActiveRecord::Base
     ensure_grader_can_adjudicate(grader: opts[:grader], provisional: opts[:provisional], occupy_slot: true) do
       if grade_group_students
         find_or_create_submissions(students, Submission.preload(:grading_period, :stream_item)) do |submission|
+          submission.skip_grader_check = true if opts[:skip_grader_check]
           submissions << save_grade_to_submission(submission, original_student, group, opts)
         end
       else
-        submission = find_or_create_submission(original_student)
+        submission = find_or_create_submission(original_student, skip_grader_check: opts[:skip_grader_check])
+        submission.skip_grader_check = true if opts[:skip_grader_check]
         submissions << save_grade_to_submission(submission, original_student, group, opts)
       end
     end
@@ -2017,7 +2026,7 @@ class Assignment < ActiveRecord::Base
     return if submission.user != original_student && submission.excused?
 
     grader = opts[:grader]
-    grade, score = compute_grade_and_score(opts[:grade], opts[:score])
+    grade, score = compute_grade_and_score(opts[:grade], opts[:score], prefer_points_over_scheme: opts[:prefer_points_over_scheme])
 
     did_grade = false
     submission.attributes = opts.slice(:submission_type, :url, :body)
@@ -2080,12 +2089,13 @@ class Assignment < ActiveRecord::Base
   end
   private :save_grade_to_submission
 
-  def find_or_create_submission(user)
+  def find_or_create_submission(user, skip_grader_check: false)
     Assignment.unique_constraint_retry do
       s = all_submissions.where(user_id: user).first
       unless s
         s = submissions.build
         user.is_a?(User) ? s.user = user : s.user_id = user
+        s.skip_grader_check = true if skip_grader_check
         s.save!
       end
       s
@@ -2847,12 +2857,8 @@ class Assignment < ActiveRecord::Base
   scope :for_group_category, ->(group_category_id) { where(group_category_id: group_category_id) }
 
   scope :visible_to_students_in_course_with_da, lambda { |user_id, course_id|
-    if Account.site_admin.feature_enabled?(:visible_assignments_scope_change)
-      joins(:assignment_student_visibilities)
-        .where(assignment_student_visibilities: { user_id: user_id, course_id: course_id })
-    else
-      joins(:submissions).where(submissions: { user_id: user_id })
-    end
+    joins(:assignment_student_visibilities)
+      .where(assignment_student_visibilities: { user_id: user_id, course_id: course_id })
   }
 
   # course_ids should be courses that restrict visibility based on overrides

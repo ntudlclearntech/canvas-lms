@@ -134,7 +134,6 @@ shared_context "in-process server selenium tests" do
     @dj_connection = Delayed::Backend::ActiveRecord::Job.connection
 
     allow(ActiveRecord::Base).to receive(:connection).and_return(@db_connection)
-    allow_any_instance_of(Switchman::ConnectionPoolProxy).to receive(:connection).and_return(@db_connection)
     allow(Delayed::Backend::ActiveRecord::Job).to receive(:connection).and_return(@dj_connection)
     allow(Delayed::Backend::ActiveRecord::Job::Failed).to receive(:connection).and_return(@dj_connection)
   end
@@ -255,7 +254,8 @@ shared_context "in-process server selenium tests" do
           browser_errors_we_dont_care_about.none? { |s| e.message.include?(s) }
       end
 
-      if javascript_errors.present?
+      # Crystalball is going to get a few JS errors when using istanbul-instrumenter
+      if javascript_errors.present? && ENV["CRYSTALBALL_MAP"] != "1"
         raise javascript_errors.map(&:message).join("\n\n")
       end
     end

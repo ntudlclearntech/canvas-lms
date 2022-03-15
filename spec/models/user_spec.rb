@@ -806,8 +806,8 @@ describe User do
         observer_enrollment2.save!
 
         @teacher_course = course_factory(course_name: "English ", active_course: true)
-        teacher_enrollment = @teacher_course.enroll_user(@user, "TeacherEnrollment", enrollment_state: "active")
-        teacher_enrollment.save!
+        @teacher_enrollment = @teacher_course.enroll_user(@user, "TeacherEnrollment", enrollment_state: "active")
+        @teacher_enrollment.save!
 
         @student_course = course_factory(course_name: "Leadership", active_course: true)
         student_enrollment = @student_course.enroll_user(@user, "StudentEnrollment", enrollment_state: "active")
@@ -829,6 +829,22 @@ describe User do
           [@teacher_course.id, "TeacherEnrollment"],
           [@student_course.id, "StudentEnrollment"]
         ]
+      end
+
+      it "returns only own courses with active enrollments if the associated_user is the current user when there are other active enrollments" do
+        # In some cases, courses would be returned if there was at least one active enrollment
+        # even if the enrollment under test was not active.
+        # Ensure there is at least one active enrollment in the course.
+        @teacher_course.enroll_user(user_model, "StudentEnrollment", enrollment_state: "active")
+
+        # Marking the enrollment_state as completed instead of @teacher_enrollment.complete! because
+        # the query is done on enrollment_state
+        @teacher_enrollment.enrollment_state.update(state: "completed")
+        expect(@observer
+         .courses_with_primary_enrollment(:current_and_invited_courses, nil, observee_user: @observer)
+         .map { |c| [c.id, c.primary_enrollment_type] }).to eq [
+           [@student_course.id, "StudentEnrollment"]
+         ]
       end
 
       describe "with cross sharding" do
@@ -2329,13 +2345,15 @@ describe User do
       end
 
       it "sorts by the current locale" do
-        I18n.locale = :es
-        expect(User.sortable_name_order_by_clause).to match(/'es'/)
-        expect(User.sortable_name_order_by_clause).not_to match(/'root'/)
-        # english has no specific sorting rules, so use root
-        I18n.locale = :en
-        expect(User.sortable_name_order_by_clause).not_to match(/'es'/)
-        expect(User.sortable_name_order_by_clause).to match(/'root'/)
+        I18n.with_locale(:es) do
+          expect(User.sortable_name_order_by_clause).to match(/'es'/)
+          expect(User.sortable_name_order_by_clause).not_to match(/'root'/)
+        end
+        I18n.with_locale(:en) do
+          # english has no specific sorting rules, so use root
+          expect(User.sortable_name_order_by_clause).not_to match(/'es'/)
+          expect(User.sortable_name_order_by_clause).to match(/'root'/)
+        end
       end
     end
 
@@ -2989,6 +3007,77 @@ describe User do
         )
         # ensure seeking user gets permissions it should on target user
         expect(target.grants_right?(seeker, :read_full_profile)).to eq true
+      end
+    end
+  end
+
+  describe "cached_course_ids_for_observed_user" do
+    before :once do
+      @observer = user_factory(active_all: true)
+      @student1 = user_factory(active_all: true)
+      @student2 = user_factory(active_all: true)
+      @course1 = course_factory(active_all: true)
+      @course2 = course_factory(active_all: true)
+    end
+
+    it "returns course ids where user is observing student" do
+      @course1.enroll_student(@student1)
+      @course2.enroll_student(@student1)
+      @course1.enroll_user(@observer, "ObserverEnrollment", associated_user_id: @student1.id)
+      @course2.enroll_user(@observer, "ObserverEnrollment", associated_user_id: @student1.id)
+
+      course_ids = @observer.cached_course_ids_for_observed_user(@student1)
+      expect(course_ids).to contain_exactly(@course1.id, @course2.id)
+    end
+
+    it "returns empty array if not observing student" do
+      @course2.enroll_student(@observer)
+      @course1.enroll_student(@student1)
+
+      course_ids = @observer.cached_course_ids_for_observed_user(@student1)
+      expect(course_ids).to eq([])
+    end
+
+    it "returns course ids only for passed student, even if observing others" do
+      @course1.enroll_student(@student1)
+      @course2.enroll_student(@student2)
+      @course1.enroll_user(@observer, "ObserverEnrollment", associated_user_id: @student1.id)
+      @course2.enroll_user(@observer, "ObserverEnrollment", associated_user_id: @student2.id)
+
+      course_ids = @observer.cached_course_ids_for_observed_user(@student1)
+      expect(course_ids).to contain_exactly(@course1.id)
+      course_ids = @observer.cached_course_ids_for_observed_user(@student2)
+      expect(course_ids).to contain_exactly(@course2.id)
+    end
+
+    it "does not include inactive enrollments" do
+      @course1.enroll_student(@student1)
+      @course2.enroll_student(@student1)
+      @course1.enroll_user(@observer, "ObserverEnrollment", associated_user_id: @student1.id, enrollment_state: :completed)
+      @course2.enroll_user(@observer, "ObserverEnrollment", associated_user_id: @student1.id)
+
+      course_ids = @observer.cached_course_ids_for_observed_user(@student1)
+      expect(course_ids).to contain_exactly(@course2.id)
+    end
+
+    context "with sharding" do
+      specs_require_sharding
+
+      before :once do
+        @shard2.activate do
+          account2 = Account.create!
+          @course3 = course_factory(active_all: true, account: account2)
+        end
+      end
+
+      it "includes course ids from another shard" do
+        @course1.enroll_student(@student1)
+        @course3.enroll_student(@student1)
+        @course1.enroll_user(@observer, "ObserverEnrollment", associated_user_id: @student1.id)
+        @course3.enroll_user(@observer, "ObserverEnrollment", associated_user_id: @student1.id)
+
+        course_ids = @observer.cached_course_ids_for_observed_user(@student1)
+        expect(course_ids).to contain_exactly(@course1.id, @course3.id)
       end
     end
   end

@@ -24,6 +24,7 @@ import I18n from 'i18n!pace_plans_footer'
 import {Button} from '@instructure/ui-buttons'
 import {Flex} from '@instructure/ui-flex'
 import {Spinner} from '@instructure/ui-spinner'
+import {Tooltip} from '@instructure/ui-tooltip'
 
 import {StoreState} from '../types'
 import {getAutoSaving, getShowLoadingOverlay} from '../reducers/ui'
@@ -65,19 +66,29 @@ export const Footer: React.FC<ComponentProps> = ({
   ) : (
     I18n.t('Publish')
   )
+  let cancelTip, pubTip
+  if (autoSaving || planPublishing) {
+    cancelTip = I18n.t('You cannot cancel while publishing')
+    pubTip = I18n.t('You cannot publish while publishing')
+  } else if (showLoadingOverlay) {
+    cancelTip = I18n.t('You cannot cancel while loading the plan')
+    pubTip = I18n.t('You cannot publish while loading the plan')
+  } else {
+    cancelTip = I18n.t('There are no pending changes to cancel')
+    pubTip = I18n.t('There are no pending changes to publish')
+  }
   return (
     <Flex as="section" justifyItems="end">
-      <Button
-        color="secondary"
-        interaction={disabled ? 'disabled' : 'enabled'}
-        onClick={resetPlan}
-        margin="0 small 0"
-      >
-        {I18n.t('Cancel')}
-      </Button>
-      <Button color="primary" interaction={disabled ? 'disabled' : 'enabled'} onClick={publishPlan}>
-        {publishLabel}
-      </Button>
+      <Tooltip renderTip={disabled && cancelTip} on={disabled ? ['hover', 'focus'] : []}>
+        <Button color="secondary" margin="0 small 0" onClick={() => disabled || resetPlan()}>
+          {I18n.t('Cancel')}
+        </Button>
+      </Tooltip>
+      <Tooltip renderTip={disabled && pubTip} on={disabled ? ['hover', 'focus'] : []}>
+        <Button color="primary" onClick={() => disabled || publishPlan()}>
+          {publishLabel}
+        </Button>
+      </Tooltip>
     </Flex>
   )
 }

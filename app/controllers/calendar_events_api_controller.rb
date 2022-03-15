@@ -181,7 +181,7 @@ require "atom"
 #           "type": "string"
 #         },
 #         "important_dates": {
-#           "description": "Boolean indicating whether this has important dates. Only present if the Important Dates feature flag is enabled",
+#           "description": "Boolean indicating whether this has important dates.",
 #           "example": true,
 #           "type": "boolean"
 #         }
@@ -273,7 +273,7 @@ require "atom"
 #           "$ref": "AssignmentOverride"
 #         },
 #         "important_dates": {
-#           "description": "Boolean indicating whether this has important dates. Only present if the Important Dates feature flag is enabled",
+#           "description": "Boolean indicating whether this has important dates.",
 #           "example": true,
 #           "type": "boolean"
 #         }
@@ -322,8 +322,7 @@ class CalendarEventsApiController < ApplicationController
   #   Array of attributes to exclude. Possible values are "description", "child_events" and "assignment"
   # @argument important_dates [Boolean]
   #   Defaults to false.
-  #   If true, only events with important dates set to true will be returned. This requires the Important Dates
-  #   feature flag to be turned on or it will be ignored.
+  #   If true, only events with important dates set to true will be returned.
   #
   # @returns [CalendarEvent]
   def index
@@ -367,8 +366,7 @@ class CalendarEventsApiController < ApplicationController
   #   assignments. Ignored if type is not "assignment".
   # @argument important_dates [Boolean]
   #   Defaults to false
-  #   If true, only events with important dates set to true will be returned. This requires the Important Dates
-  #   feature flag to be turned on or it will be ignored.
+  #   If true, only events with important dates set to true will be returned.
   #
   # @returns [CalendarEvent]
   def user_index
@@ -506,20 +504,21 @@ class CalendarEventsApiController < ApplicationController
       # Create duplicates if necessary
       events = []
       dup_options = get_duplicate_params(params[:calendar_event])
-      if dup_options[:count] > 0
+
+      if dup_options[:count] > RECURRING_EVENT_LIMIT
+        InstStatsd::Statsd.gauge("calendar_events_api.recurring.count_exceeding_limit", dup_options[:count])
+        return render json: {
+          message: t("only a maximum of %{limit} events can be created",
+                     limit: RECURRING_EVENT_LIMIT)
+        }, status: :bad_request
+      elsif dup_options[:count] > 0
+        InstStatsd::Statsd.gauge("calendar_events_api.recurring.count", dup_options[:count])
         events += create_event_and_duplicates(dup_options)
       else
         events = [@event]
       end
 
       return unless events.all? { |event| authorize_user_for_conference(@current_user, event.web_conference) }
-
-      if dup_options[:count] > RECURRING_EVENT_LIMIT
-        return render json: {
-          message: t("only a maximum of %{limit} events can be created",
-                     limit: RECURRING_EVENT_LIMIT)
-        }, status: :bad_request
-      end
 
       CalendarEvent.transaction do
         error = events.detect { |event| !event.save }
@@ -1085,7 +1084,7 @@ class CalendarEventsApiController < ApplicationController
   def get_options(codes, user = @current_user)
     @all_events = value_to_boolean(params[:all_events])
     @undated = value_to_boolean(params[:undated])
-    @important_dates = Account.site_admin.feature_enabled?(:important_dates) && value_to_boolean(params[:important_dates])
+    @important_dates = value_to_boolean(params[:important_dates])
     if !@all_events && !@undated
       validate_dates
       @start_date ||= Time.zone.now.beginning_of_day
@@ -1473,6 +1472,6 @@ class CalendarEventsApiController < ApplicationController
   end
 
   def includes(keys = params[:include])
-    (Array(keys) + DEFAULT_INCLUDES).uniq
+    (Array(keys) + DEFAULT_INCLUDES).uniq - (params[:excludes] || [])
   end
 end

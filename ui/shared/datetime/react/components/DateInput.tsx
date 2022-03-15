@@ -107,6 +107,10 @@ export type CanvasDateInputProps = {
    * data test id for test selection
    */
   dataTestid?: string
+  /**
+   * Specifies the input size. One of: small medium large
+   */
+  size?: string
 }
 
 /**
@@ -129,7 +133,8 @@ export default function CanvasDateInput({
   layout = 'stacked',
   width,
   dateIsDisabled,
-  dataTestid
+  dataTestid,
+  size
 }: CanvasDateInputProps) {
   const todayMoment = moment().tz(timezone)
   const selectedMoment = selectedDate ? moment.tz(selectedDate, timezone) : null
@@ -218,7 +223,7 @@ export default function CanvasDateInput({
     setInputValue(value)
     // If we have been asked to show the running value, hide the popup
     if (isShowingCalendar && withRunningValue) handleHideCalendar()
-    const newDate = tz.parse(value)
+    const newDate = tz.parse(value, timezone)
     if (newDate) {
       const msgs: CanvasDateInputMessageType[] = withRunningValue
         ? [{type: 'success', text: formatDate(newDate)}]
@@ -280,13 +285,9 @@ export default function CanvasDateInput({
     }
   }
 
-  function handleKeyDown(e: KeyboardEvent) {
+  function handleKey(e: KeyboardEvent) {
     if (e.key === 'Enter') {
       handleBlur()
-    } else if (e.key === 'ArrowDown' || e.keyCode === 40) {
-      modifySelectedMoment(1, 'day')
-    } else if (e.key === 'ArrowUp' || e.keyCode === 38) {
-      modifySelectedMoment(-1, 'day')
     }
   }
 
@@ -371,7 +372,7 @@ export default function CanvasDateInput({
       value={inputValue}
       onChange={handleChange}
       onPaste={trackPasteEvent}
-      onKeyDown={handleKeyDown}
+      onKeyUp={handleKey}
       isInline
       placement={placement}
       messages={messages.concat(internalMessages)}
@@ -396,6 +397,7 @@ export default function CanvasDateInput({
       layout={layout}
       width={width}
       data-testid={dataTestid}
+      size={size}
     >
       {renderDays()}
     </DateInput>

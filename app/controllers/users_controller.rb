@@ -517,8 +517,18 @@ class UsersController < ApplicationController
              CREATE_COURSES_PERMISSIONS: {
                PERMISSION: create_permission_root_account || create_permission_mcc_account,
                RESTRICT_TO_MCC_ACCOUNT: !!(!create_permission_root_account && create_permission_mcc_account)
-             }
+             },
+             OBSERVED_USERS_LIST: observed_users(@current_user, session),
+             CAN_ADD_OBSERVEE: @current_user
+                                 .profile
+                                 .tabs_available(@current_user, root_account: @domain_root_account)
+                                 .any? { |t| t[:id] == UserProfile::TAB_OBSERVEES }
            })
+
+    # prefetch dashboard cards with the right observer url param
+    if @current_user.roles(@domain_root_account).include?("observer") && (Account.site_admin.feature_enabled?(:k5_parent_support) || Account.site_admin.feature_enabled?(:observer_picker))
+      @cards_prefetch_observer_param = @selected_observed_user&.id
+    end
 
     if k5_user?
       # things needed only for k5 dashboard
@@ -527,30 +537,16 @@ class UsersController < ApplicationController
 
       js_env({
                HIDE_K5_DASHBOARD_GRADES_TAB: active_courses.empty? || active_courses.all? { |c| c.tab_hidden?(Course::TAB_GRADES) },
-               OBSERVER_LIST: observed_users(@current_user, session),
                SELECTED_CONTEXT_CODES: @current_user.get_preference(:selected_calendar_contexts),
                SELECTED_CONTEXTS_LIMIT: @domain_root_account.settings[:calendar_contexts_limit] || 10,
                INITIAL_NUM_K5_CARDS: Rails.cache.read(["last_known_k5_cards_count", @current_user.global_id].cache_key) || 5,
-               CAN_ADD_OBSERVEE: @current_user
-                          .profile
-                          .tabs_available(@current_user, root_account: @domain_root_account)
-                          .any? { |t| t[:id] == UserProfile::TAB_OBSERVEES },
                OPEN_TEACHER_TODOS_IN_NEW_TAB: @current_user.feature_enabled?(:open_todos_in_new_tab)
              })
-
-      # prefetch dashboard cards with the right observer url param
-      if Account.site_admin.feature_enabled?(:k5_parent_support) && @current_user.roles(@domain_root_account).include?("observer")
-        @cards_prefetch_observer_param = @selected_observed_user&.id
-      end
 
       css_bundle :k5_common, :k5_dashboard, :dashboard_card
       js_bundle :k5_dashboard
     else
       # things needed only for classic dashboard
-      js_env({
-               DASHBOARD_SIDEBAR_URL: dashboard_sidebar_url
-             })
-
       css_bundle :dashboard
       js_bundle :dashboard
     end
@@ -622,13 +618,22 @@ class UsersController < ApplicationController
 
   def dashboard_sidebar
     GuardRail.activate(:secondary) do
-      unless @current_user&.has_student_enrollment? && !@current_user.non_student_enrollment?
-        # it's not even using any of this for students - it's just using planner now
+      @user = params[:observed_user].present? && Account.site_admin.feature_enabled?(:observer_picker) ? api_find(User, params[:observed_user]) : @current_user
+      @is_observing_student = @current_user != @user
+      course_ids = nil
+
+      if @is_observing_student
+        course_ids = @current_user.cached_course_ids_for_observed_user(@user)
+        return render_unauthorized_action unless course_ids.any?
+      end
+
+      if (!@user&.has_student_enrollment? || @user.non_student_enrollment?) && !@is_observing_student
+        # it's not even using any of this for students/observers observing students - it's just using planner now
         prepare_current_user_dashboard_items
       end
 
-      if (@show_recent_feedback = @current_user.student_enrollments.active.exists?)
-        @recent_feedback = @current_user&.recent_feedback || []
+      if (@show_recent_feedback = @user.student_enrollments.active.exists?)
+        @recent_feedback = @user.recent_feedback(course_ids: course_ids) || []
       end
     end
 
@@ -1104,24 +1109,24 @@ class UsersController < ApplicationController
         return render_unauthorized_action unless (included_course_ids - valid_course_ids).empty?
       end
 
-      submissions = []
-
       filter = Array(params[:filter])
       only_submittable = filter.include?("submittable")
       only_current_grading_period = filter.include?("current_grading_period")
 
       course_ids = user.participating_student_course_ids
+      # participating_student_course_ids returns ids relative to user, but included_course_ids are relative to the current shard
+      course_ids.map! { |course_id| Shard.relative_id_for(course_id, user.shard, Shard.current) }
       course_ids = course_ids.select { |id| included_course_ids.include?(id) } unless included_course_ids.empty?
 
-      Shard.partition_by_shard(course_ids) do |shard_course_ids|
+      submissions = Shard.partition_by_shard(course_ids) do |shard_course_ids|
         subs = Submission.active.preload(:assignment)
                          .missing
                          .where(user_id: user.id,
                                 assignments: { context_id: shard_course_ids })
                          .merge(Assignment.published)
         subs = subs.merge(Assignment.not_locked) if only_submittable
-        subs = subs.in_current_grading_period_for_courses(course_ids) if only_current_grading_period
-        submissions = subs.order(:cached_due_date, :id)
+        subs = subs.in_current_grading_period_for_courses(shard_course_ids) if only_current_grading_period
+        subs.order(:cached_due_date, :id)
       end
       assignments = Api.paginate(submissions, self, api_v1_user_missing_submissions_url).map(&:assignment)
 
@@ -2607,7 +2612,7 @@ class UsersController < ApplicationController
   #     "expires_at": 1521667783000,
   #   }
   def pandata_events_token
-    settings = Canvas::DynamicSettings.find("events", service: "pandata")
+    settings = DynamicSettings.find("events", service: "pandata")
     dk_ids = Setting.get("pandata_events_token_allowed_developer_key_ids", "").split(",")
 
     unless @access_token
@@ -3141,7 +3146,7 @@ class UsersController < ApplicationController
     return nil unless @access_token.nil?
 
     response = CanvasHttp.post("https://www.google.com/recaptcha/api/siteverify", form_data: {
-                                 secret: Canvas::DynamicSettings.find(tree: :private)["recaptcha_server_key"],
+                                 secret: DynamicSettings.find(tree: :private)["recaptcha_server_key"],
                                  response: recaptcha_response
                                })
 

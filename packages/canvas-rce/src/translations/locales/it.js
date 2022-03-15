@@ -53,6 +53,7 @@ const locale = {
     "message": "Applica modifiche a tutte le istanze di questo pulsante e questa icona nel corso"
   },
   "apps_54d24a47": { "message": "App" },
+  "arrows_464a3e54": { "message": "Frecce" },
   "aspect_ratio_will_be_preserved_cb5fdfb8": {
     "message": "Le proporzioni verranno mantenute"
   },
@@ -61,6 +62,10 @@ const locale = {
   "audio_and_video_recording_not_supported_please_use_5ce3f0d7": {
     "message": "Registrazione audio e video non supportata; usa un altro browser."
   },
+  "audio_options_feb58e2c": { "message": "Opzioni audio" },
+  "audio_options_tray_33a90711": {
+    "message": "Area di notifica opzioni audio"
+  },
   "audio_player_for_title_20cc70d": {
     "message": "Riproduttore audio di { title }"
   },
@@ -68,6 +73,7 @@ const locale = {
     "message": "Contenuto salvataggio automatico esistente. Caricare al suo posto il contenuto salvato automaticamente?"
   },
   "available_folders_694d0436": { "message": "Cartelle disponibili" },
+  "basic_554cdc0a": { "message": "Base" },
   "below_81d4dceb": { "message": "Sotto" },
   "bottom_third_5f5fec1d": { "message": "Terzo inferiore" },
   "button_color_608a0242": { "message": "Colore pulsanti" },
@@ -162,11 +168,15 @@ const locale = {
   "default_numerical_ordered_list_48dd3548": {
     "message": "elenco ordinato numericamente predefinito"
   },
+  "delimiters_4db4840d": { "message": "Delimitatori" },
   "describe_the_image_e65d2e32": { "message": "(Descrivi l’immagine)" },
   "describe_the_video_2fe8f46a": { "message": "(Descrivi il video)" },
   "details_98a31b68": { "message": "Dettagli" },
+  "diamond_b8dfe7ae": { "message": "Rombo" },
+  "dimension_type_55c83e4e": { "message": "Tipo di dimensione" },
   "dimensions_45ddb7b7": { "message": "Dimensioni" },
   "directionality_26ae9e08": { "message": "Direzionalità" },
+  "directly_edit_latex_b7e9235b": { "message": "Modifica direttamente LaTeX" },
   "discussions_a5f96392": { "message": "Discussioni" },
   "discussions_index_6c36ced": { "message": "Indice discussioni" },
   "display_options_315aba85": { "message": "Visualizza opzioni" },
@@ -203,6 +213,7 @@ const locale = {
     "message": "Inserisci almeno 3 caratteri per la ricerca"
   },
   "equation_1c5ac93c": { "message": "Equazione" },
+  "equation_editor_39fbc3f1": { "message": "Editor equazione" },
   "expand_preview_by_default_2abbf9f8": {
     "message": "Espandi anteprima per impostazione predefinita"
   },
@@ -244,6 +255,7 @@ const locale = {
     "message": "Vai alla barra degli strumenti dell''editor"
   },
   "grades_a61eba0a": { "message": "Voti" },
+  "greek_65c5b3f7": { "message": "Greco" },
   "group_documents_8bfd6ae6": { "message": "Documenti di gruppo" },
   "group_files_4324f3df": { "message": "File di gruppo" },
   "group_files_82e5dcdb": { "message": "File gruppo" },
@@ -275,6 +287,7 @@ const locale = {
   "image_8ad06": { "message": "Immagine" },
   "image_options_5412d02c": { "message": "Opzioni immagine" },
   "image_options_tray_90a46006": { "message": "Barra opzioni immagine" },
+  "image_to_crop_3a34487d": { "message": "Immagine da ritagliare" },
   "images_7ce26570": { "message": "Immagini" },
   "increase_indent_6d550a4a": { "message": "Aumenta rientro" },
   "insert_593145ef": { "message": "Inserisci" },
@@ -302,13 +315,18 @@ const locale = {
   "loading_please_wait_d276220a": {
     "message": "Caricamento in corso, attendere"
   },
+  "loading_preview_9f077aa1": { "message": "Caricamento dell’anteprima" },
   "locked_762f138b": { "message": "Bloccato" },
   "media_af190855": { "message": "Elementi multimediali" },
   "medium_5a8e9ead": { "message": "Medio" },
   "middle_27dc1d5": { "message": "Centro" },
+  "misc_3b692ea7": { "message": "Varie" },
   "miscellaneous_e9818229": { "message": "Varie" },
   "modules_c4325335": { "message": "Moduli" },
   "multi_color_image_63d7372f": { "message": "Immagine multicolore" },
+  "must_be_at_least_percentage_22e373b6": {
+    "message": "Deve essere almeno { percentage }%"
+  },
   "must_be_at_least_width_x_height_px_41dc825e": {
     "message": "Deve essere almeno { width } x { height }px"
   },
@@ -339,6 +357,7 @@ const locale = {
   "open_title_application_fd624fc5": {
     "message": "Apri applicazione { title }"
   },
+  "operators_a2ef9a93": { "message": "Operatori" },
   "options_3ab0ea65": { "message": "Opzioni" },
   "ordered_and_unordered_lists_cfadfc38": {
     "message": "Elenchi ordinati e non ordinati"
@@ -351,7 +370,13 @@ const locale = {
   },
   "pages_e5414c2c": { "message": "Pagine" },
   "paragraph_5e5ad8eb": { "message": "Paragrafo" },
+  "pentagon_17d82ea3": { "message": "Pentagono" },
   "people_b4ebb13c": { "message": "Persone" },
+  "percentage_34ab7c2c": { "message": "Percentuale" },
+  "percentage_must_be_a_number_8033c341": {
+    "message": "La percentuale dev’essere un numero"
+  },
+  "pixels_52ece7d1": { "message": "Pixel" },
   "posted_when_a578f5ab": { "message": "Postato: { when }" },
   "preformatted_d0670862": { "message": "Preformattato" },
   "pretty_html_editor_28748756": { "message": "Editor HTML sicuro" },
@@ -370,6 +395,7 @@ const locale = {
   "record_upload_media_5fdce166": {
     "message": "Registra/Carica file multimediali"
   },
+  "relationships_6602af70": { "message": "Relazioni" },
   "remove_link_d1f2f4d0": { "message": "Rimuovi link" },
   "resize_ec83d538": { "message": "Ridimensiona" },
   "restore_auto_save_deccd84b": {
@@ -390,6 +416,7 @@ const locale = {
   "shift_o_to_open_the_pretty_html_editor_55ff5a31": {
     "message": "Maiusc+O per aprire l’editor html sicuro."
   },
+  "show_audio_options_b489926b": { "message": "Mostra opzioni audio" },
   "show_embed_options_ef8d7ef": { "message": "Mostra opzioni Incorpora" },
   "show_image_options_1e2ecc6b": { "message": "Mostra opzioni immagine" },
   "show_link_options_545338fd": { "message": "Mostra opzioni link" },

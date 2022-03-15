@@ -122,10 +122,10 @@ RSpec.describe ApplicationController do
         expect(controller.js_env[:files_domain]).to eq "files.example.com"
       end
 
-      it "auto-sets timezone and locale" do
+      it "auto-sets timezone and locales" do
         I18n.with_locale(:fr) do
           Time.use_zone("Alaska") do
-            expect(@controller.js_env[:LOCALE]).to eq "fr"
+            expect(@controller.js_env[:LOCALES]).to eq ["fr", "en"] # 'en' is always the last fallback
             expect(@controller.js_env[:BIGEASY_LOCALE]).to eq "fr_FR"
             expect(@controller.js_env[:FULLCALENDAR_LOCALE]).to eq "fr"
             expect(@controller.js_env[:MOMENT_LOCALE]).to eq "fr"
@@ -439,19 +439,19 @@ RSpec.describe ApplicationController do
         end
 
         it "loads gateway uri from dynamic settings" do
-          allow(Canvas::DynamicSettings).to receive(:find).and_return({
-                                                                        "api_gateway_enabled" => "true",
-                                                                        "api_gateway_uri" => "http://the-gateway/graphql"
-                                                                      })
+          allow(DynamicSettings).to receive(:find).and_return({
+                                                                "api_gateway_enabled" => "true",
+                                                                "api_gateway_uri" => "http://the-gateway/graphql"
+                                                              })
           jsenv = controller.js_env({})
           expect(jsenv[:API_GATEWAY_URI]).to eq("http://the-gateway/graphql")
         end
 
         it "will not expose gateway uri from dynamic settings if not enabled" do
-          allow(Canvas::DynamicSettings).to receive(:find).and_return({
-                                                                        "api_gateway_enabled" => "false",
-                                                                        "api_gateway_uri" => "http://the-gateway/graphql"
-                                                                      })
+          allow(DynamicSettings).to receive(:find).and_return({
+                                                                "api_gateway_enabled" => "false",
+                                                                "api_gateway_uri" => "http://the-gateway/graphql"
+                                                              })
           jsenv = controller.js_env({})
           expect(jsenv[:API_GATEWAY_URI]).to be_nil
         end
@@ -2404,18 +2404,42 @@ RSpec.describe ApplicationController do
             QuizMigrationAlert.create!(user_id: @teacher.id, course_id: @course.id, migration_id: "10000000000040")
         end
 
-        it "returns true" do
-          controller.params[:controller] = "courses"
-          controller.params[:action] = "show"
-          expect(controller.send(:should_show_migration_limitation_message)).to eq(true)
+        it "returns true if the path is allowed" do
+          [
+            "/courses/1",
+            "/courses/1/assignments",
+            "/courses/1/quizzes",
+            "/courses/1/modules",
+          ].each do |path|
+            allow(controller).to receive(:request).and_return(double({ path: path }))
+            expect(controller.send(:should_show_migration_limitation_message)).to eq(true)
+          end
+        end
+
+        it "returns false if he path is not allowed" do
+          [
+            "/courses/1/gradebook/speed_grader",
+            "/courses/1/assignments/1"
+          ].each do |path|
+            allow(controller).to receive(:request).and_return(double({ path: path }))
+            expect(controller.send(:should_show_migration_limitation_message)).to eq(false)
+          end
         end
       end
 
       context "when the teacher doesn't have a quiz migration alert" do
-        it "returns false" do
-          controller.params[:controller] = "courses"
-          controller.params[:action] = "show"
-          expect(controller.send(:should_show_migration_limitation_message)).to eq(false)
+        it "returns false in any path" do
+          [
+            "/courses/1",
+            "/courses/1/assignments",
+            "/courses/1/quizzes",
+            "/courses/1/modules",
+            "/courses/1/gradebook/speed_grader",
+            "/courses/1/assignments/1"
+          ].each do |path|
+            allow(controller).to receive(:request).and_return(double({ path: path }))
+            expect(controller.send(:should_show_migration_limitation_message)).to eq(false)
+          end
         end
       end
     end
@@ -2433,10 +2457,18 @@ RSpec.describe ApplicationController do
           QuizMigrationAlert.create!(user_id: @student.id, course_id: @course.id, migration_id: "10000000000040")
       end
 
-      it "returns false" do
-        controller.params[:controller] = "courses"
-        controller.params[:action] = "show"
-        expect(controller.send(:should_show_migration_limitation_message)).to eq(false)
+      it "returns false even in any path" do
+        [
+          "/courses/1",
+          "/courses/1/assignments",
+          "/courses/1/quizzes",
+          "/courses/1/modules",
+          "/courses/1/some_path",
+          "/courses/1/assignments/1"
+        ].each do |path|
+          allow(controller).to receive(:request).and_return(double({ path: path }))
+          expect(controller.send(:should_show_migration_limitation_message)).to eq(false)
+        end
       end
     end
   end
@@ -2534,6 +2566,13 @@ describe CoursesController do
       expect(data["is_master_course_child_content"]).to be_truthy
       expect(data["restricted_by_master_course"]).to be_truthy
       expect(data["master_course_restrictions"]).to eq({ content: true })
+    end
+  end
+
+  describe "annotate_sentry" do
+    it "sets the db_cluster tag correctly" do
+      expect(Sentry).to receive(:set_tags).with({ db_cluster: Account.default.shard.database_server.id })
+      get "index"
     end
   end
 

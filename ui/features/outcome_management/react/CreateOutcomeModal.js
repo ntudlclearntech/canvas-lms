@@ -41,9 +41,24 @@ import {useManageOutcomes} from '@canvas/outcomes/react/treeBrowser'
 import useCanvasContext from '@canvas/outcomes/react/hooks/useCanvasContext'
 import {useMutation} from 'react-apollo'
 import OutcomesRceField from './shared/OutcomesRceField'
+import ProficiencyCalculation, {
+  defaultProficiencyCalculation
+} from './MasteryCalculation/ProficiencyCalculation'
+import useRatings, {
+  defaultRatings,
+  defaultMasteryPoints
+} from '@canvas/outcomes/react/hooks/useRatings'
+import {processRatingsAndMastery} from '@canvas/outcomes/react/helpers/ratingsHelpers'
+import Ratings from './Management/Ratings'
 
 const CreateOutcomeModal = ({isOpen, onCloseHandler, onSuccess, starterGroupId}) => {
-  const {contextType, contextId, friendlyDescriptionFF, isMobileView} = useCanvasContext()
+  const {
+    contextType,
+    contextId,
+    friendlyDescriptionFF,
+    isMobileView,
+    individualOutcomeRatingAndCalculationFF
+  } = useCanvasContext()
   const [title, titleChangeHandler] = useInput()
   const [displayName, displayNameChangeHandler] = useInput()
   const [friendlyDescription, friendlyDescriptionChangeHandler] = useInput()
@@ -55,9 +70,23 @@ const CreateOutcomeModal = ({isOpen, onCloseHandler, onSuccess, starterGroupId})
     collection: 'OutcomeManagementPanel',
     initialGroupId: starterGroupId
   })
+  const {
+    ratings,
+    masteryPoints,
+    setRatings,
+    setMasteryPoints,
+    hasError: proficiencyRatingsError
+  } = useRatings({
+    initialRatings: defaultRatings,
+    initialMasteryPoints: defaultMasteryPoints
+  })
 
   const [selectedGroup, setSelectedGroup] = useState(null)
   const [selectedGroupAncestorIds, setSelectedGroupAncestorIds] = useState([])
+  const [proficiencyCalculation, setProficiencyCalculation] = useState(
+    defaultProficiencyCalculation
+  )
+  const [proficiencyCalculationError, setProficiencyCalculationError] = useState(false)
 
   useEffect(() => {
     if (rootId && collections[rootId] && !selectedGroup) {
@@ -93,19 +122,34 @@ const CreateOutcomeModal = ({isOpen, onCloseHandler, onSuccess, starterGroupId})
     !invalidTitle &&
     !invalidDisplayName &&
     selectedGroup &&
-    friendlyDescriptionMessages.length === 0
+    friendlyDescriptionMessages.length === 0 &&
+    (individualOutcomeRatingAndCalculationFF
+      ? !proficiencyCalculationError && !proficiencyRatingsError
+      : true)
+
+  const updateProficiencyCalculation = (calculationMethodKey, calculationInt) =>
+    setProficiencyCalculation({calculationMethod: calculationMethodKey, calculationInt})
 
   const onCreateOutcomeHandler = () => {
     ;(async () => {
       try {
+        const input = {
+          groupId: selectedGroup.id,
+          title,
+          displayName,
+          description
+        }
+        if (individualOutcomeRatingAndCalculationFF) {
+          input.calculationMethod = proficiencyCalculation.calculationMethod
+          input.calculationInt = proficiencyCalculation.calculationInt
+          const {masteryPoints: inputMasteryPoints, ratings: inputRatings} =
+            processRatingsAndMastery(ratings, masteryPoints.value)
+          input.masteryPoints = inputMasteryPoints
+          input.ratings = inputRatings
+        }
         const createLearningOutcomeResult = await createLearningOutcome({
           variables: {
-            input: {
-              groupId: selectedGroup.id,
-              title,
-              displayName,
-              description
-            }
+            input
           }
         })
 
@@ -219,6 +263,27 @@ const CreateOutcomeModal = ({isOpen, onCloseHandler, onSuccess, starterGroupId})
                 onChange={friendlyDescriptionChangeHandler}
                 messages={friendlyDescriptionMessages}
               />
+            </View>
+          )}
+          {individualOutcomeRatingAndCalculationFF && (
+            <View as="div" padding="small 0 0">
+              <Ratings
+                ratings={ratings}
+                onChangeRatings={setRatings}
+                masteryPoints={masteryPoints}
+                onChangeMasteryPoints={setMasteryPoints}
+                canManage
+              />
+              <View as="div" minHeight="14rem">
+                <hr style={{margin: '1rem 0 0'}} />
+                <ProficiencyCalculation
+                  update={updateProficiencyCalculation}
+                  setError={setProficiencyCalculationError}
+                  masteryPoints={masteryPoints.value}
+                  individualOutcome="edit"
+                  canManage
+                />
+              </View>
             </View>
           )}
           <View as="div" padding="x-small 0 0">

@@ -18,10 +18,10 @@
 
 import React from 'react'
 import {render as rtlRender, fireEvent} from '@testing-library/react'
-
 import ManageOutcomeItem from '../ManageOutcomeItem'
 import OutcomesContext from '@canvas/outcomes/react/contexts/OutcomesContext'
 import {MockedProvider} from '@apollo/react-testing'
+import {defaultRatingsAndCalculationMethod} from './helpers'
 
 const render = (
   children,
@@ -56,10 +56,16 @@ const render = (
 describe('ManageOutcomeItem', () => {
   let onMenuHandlerMock
   let onCheckboxHandlerMock
+  const {calculationMethod, calculationInt, masteryPoints, ratings} =
+    defaultRatingsAndCalculationMethod
   const defaultProps = (props = {}) => ({
     linkId: '2',
     title: 'Outcome Title',
     description: 'Outcome Description',
+    calculationMethod,
+    calculationInt,
+    masteryPoints,
+    ratings,
     outcomeContextType: 'Account',
     outcomeContextId: '1',
     isChecked: false,
@@ -122,6 +128,22 @@ describe('ManageOutcomeItem', () => {
     fireEvent.click(getByText('Expand description for outcome Outcome Title'))
     fireEvent.click(getByText('Collapse description for outcome Outcome Title'))
     expect(queryByTestId('description-truncated')).toBeInTheDocument()
+  })
+
+  it('displays disabled caret button with "not-allowed" cursor if no description', () => {
+    const {queryByTestId} = render(<ManageOutcomeItem {...defaultProps({description: null})} />)
+    expect(queryByTestId('icon-arrow-right').closest('button')).toHaveAttribute('disabled')
+    expect(queryByTestId('icon-arrow-right').closest('button').style).toHaveProperty(
+      'cursor',
+      'not-allowed'
+    )
+  })
+
+  it('displays enabled caret button if no description but individualOutcomeRatingAndCalculationFF on', () => {
+    const {queryByTestId} = render(<ManageOutcomeItem {...defaultProps({description: null})} />, {
+      individualOutcomeRatingAndCalculationFF: true
+    })
+    expect(queryByTestId('icon-arrow-right').closest('button')).toBeEnabled()
   })
 
   it('handles click on individual outcome -> kebab menu -> remove option', () => {

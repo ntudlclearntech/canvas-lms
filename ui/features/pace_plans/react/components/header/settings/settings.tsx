@@ -22,7 +22,6 @@ import I18n from 'i18n!pace_plans_settings'
 import moment from 'moment-timezone'
 import {connect} from 'react-redux'
 
-import {ScreenReaderContent} from '@instructure/ui-a11y-content'
 import {Button, CloseButton, IconButton} from '@instructure/ui-buttons'
 import {Checkbox} from '@instructure/ui-checkbox'
 import {Heading} from '@instructure/ui-heading'
@@ -35,14 +34,15 @@ import {showFlashAlert} from '@canvas/alerts/react/FlashAlert'
 import BlackoutDates from './blackout_dates'
 import * as PacePlanApi from '../../../api/pace_plan_api'
 import {StoreState, PacePlan} from '../../../types'
+import {Course} from '../../../shared/types'
 import {getCourse} from '../../../reducers/course'
 import {getExcludeWeekends, getPacePlan, getPlanPublishing} from '../../../reducers/pace_plans'
 import {pacePlanActions} from '../../../actions/pace_plans'
 import {actions as uiActions} from '../../../actions/ui'
-import PacePlanDateInput from '../../../shared/components/pace_plan_date_input'
 import UpdateExistingPlansModal from '../../../shared/components/update_existing_plans_modal'
 
 interface StoreProps {
+  readonly course: Course
   readonly courseId: string
   readonly excludeWeekends: boolean
   readonly pacePlan: PacePlan
@@ -55,10 +55,13 @@ interface DispatchProps {
   readonly setEndDate: typeof pacePlanActions.setEndDate
   readonly showLoadingOverlay: typeof uiActions.showLoadingOverlay
   readonly toggleExcludeWeekends: typeof pacePlanActions.toggleExcludeWeekends
-  readonly toggleHardEndDates: typeof pacePlanActions.toggleHardEndDates
 }
 
-type ComponentProps = StoreProps & DispatchProps
+interface PassedProps {
+  readonly margin?: string
+}
+
+type ComponentProps = StoreProps & DispatchProps & PassedProps
 
 interface LocalState {
   readonly changeMadeToBlackoutDates: boolean
@@ -170,49 +173,12 @@ export class Settings extends React.Component<ComponentProps, LocalState> {
     )
   }
 
-  renderHardEndDatesCheckbox() {
-    return (
-      <View as="div" margin="small 0 0" width="100%">
-        <Checkbox
-          data-testid="require-end-date-toggle"
-          label={I18n.t('Require Completion by Specified End Date')}
-          checked={this.props.pacePlan.hard_end_dates}
-          disabled={this.props.planPublishing}
-          onChange={() => {
-            this.props.toggleHardEndDates()
-            // this has the dual affect of setting the plan's end_date
-            // when unchecked and setting a default value for when it
-            // gets checked
-            this.props.setEndDate(ENV.VALID_DATE_RANGE.end_at.date)
-          }}
-        />
-      </View>
-    )
-  }
-
-  renderHardEndDatesInput() {
-    if (!this.props.pacePlan.hard_end_dates) return null
-
-    return (
-      <View id="pace-plans-required-end-date-input" as="div" margin="small 0 0" width="100%">
-        <PacePlanDateInput
-          label={<ScreenReaderContent>{I18n.t('End Date')}</ScreenReaderContent>}
-          interaction="enabled"
-          dateValue={this.props.pacePlan.end_date}
-          onDateChange={this.props.setEndDate}
-          validateDay={this.validateEnd}
-          width="100%"
-        />
-      </View>
-    )
-  }
-
   render() {
     if (this.props.pacePlan.context_type === 'Enrollment') {
       return null
     }
     return (
-      <div>
+      <div style={{display: 'inline-block'}}>
         {this.renderBlackoutDatesModal()}
         <UpdateExistingPlansModal
           open={this.state.showUpdateExistingPlansModal}
@@ -222,7 +188,7 @@ export class Settings extends React.Component<ComponentProps, LocalState> {
         <Popover
           on="click"
           renderTrigger={
-            <IconButton screenReaderLabel={I18n.t('Modify Settings')}>
+            <IconButton screenReaderLabel={I18n.t('Modify Settings')} margin={this.props.margin}>
               <IconSettingsLine />
             </IconButton>
           }
@@ -241,10 +207,6 @@ export class Settings extends React.Component<ComponentProps, LocalState> {
                 disabled={this.props.planPublishing}
                 onChange={() => this.props.toggleExcludeWeekends()}
               />
-            </View>
-            <View>
-              {this.renderHardEndDatesCheckbox()}
-              {this.renderHardEndDatesInput()}
             </View>
             {/* Commented out since we're not implementing these features yet */}
             {/* </View> */}
@@ -268,6 +230,7 @@ export class Settings extends React.Component<ComponentProps, LocalState> {
 
 const mapStateToProps = (state: StoreState): StoreProps => {
   return {
+    course: getCourse(state),
     courseId: getCourse(state).id,
     excludeWeekends: getExcludeWeekends(state),
     pacePlan: getPacePlan(state),
@@ -280,6 +243,5 @@ export default connect(mapStateToProps, {
   setEditingBlackoutDates: uiActions.setEditingBlackoutDates,
   setEndDate: pacePlanActions.setEndDate,
   showLoadingOverlay: uiActions.showLoadingOverlay,
-  toggleExcludeWeekends: pacePlanActions.toggleExcludeWeekends,
-  toggleHardEndDates: pacePlanActions.toggleHardEndDates
+  toggleExcludeWeekends: pacePlanActions.toggleExcludeWeekends
 })(Settings)

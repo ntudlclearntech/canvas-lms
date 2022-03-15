@@ -284,7 +284,7 @@ class LearningOutcome < ActiveRecord::Base
       ratings.each do |rating|
         criterion[:ratings] << {
           description: rating[:description] || t(:no_comment, "No Comment"),
-          points: rating[:points].to_f || 0
+          points: rating[:points].to_f || 0.00
         }
       end
       criterion[:ratings] = criterion[:ratings].sort_by { |r| r[:points] }.reverse
@@ -405,7 +405,7 @@ class LearningOutcome < ActiveRecord::Base
 
   def update_associated_rubrics
     updateable_rubrics.in_batches(of: 100).each do |relation|
-      relation.transaction do
+      Rubric.transaction do
         relation.lock("FOR UPDATE OF rubrics").each do |rubric|
           rubric.update_learning_outcome_criteria(self)
         end

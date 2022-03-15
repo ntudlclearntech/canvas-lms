@@ -23,8 +23,8 @@ require_dependency "services/rich_content"
 module Services
   describe RichContent do
     before do
-      allow(Canvas::DynamicSettings).to receive(:find).with(any_args).and_call_original
-      allow(Canvas::DynamicSettings).to receive(:find)
+      allow(DynamicSettings).to receive(:find).with(any_args).and_call_original
+      allow(DynamicSettings).to receive(:find)
         .with("rich-content-service", default_ttl: 5.minutes)
         .and_return(DynamicSettings::FallbackProxy.new(
                       "app-host" => "rce-app",
@@ -85,6 +85,26 @@ module Services
         allow(CanvasSecurity::ServicesJwt).to receive(:for_user).and_raise(Canvas::Security::InvalidJwtKey)
         env = described_class.env_for(user: {}, domain: "domain")
         expect(env[:JWT]).to eq("InvalidJwtKey")
+      end
+
+      describe "RICH_CONTENT_CAN_EDIT_FILES" do
+        context "when the user can edit context files" do
+          subject { described_class.env_for(user: user, context: context)[:RICH_CONTENT_CAN_EDIT_FILES] }
+
+          let(:user) { double("user", global_id: "some-global-id") }
+          let(:context) { double("allowed_context", grants_right?: true) }
+
+          it { is_expected.to be_truthy }
+        end
+
+        context "when the user cannot edit context files" do
+          subject { described_class.env_for(user: user, context: context)[:RICH_CONTENT_CAN_EDIT_FILES] }
+
+          let(:user) { double("user", global_id: "some-global-id") }
+          let(:context) { double("allowed_context", grants_right?: false) }
+
+          it { is_expected.to be_falsey }
+        end
       end
     end
   end

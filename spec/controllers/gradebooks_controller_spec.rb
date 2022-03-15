@@ -351,7 +351,7 @@ describe GradebooksController do
       expect(submission[:workflow_state]).to eq "graded"
     end
 
-    it "returns submissions of even inactive students" do
+    it "returns submissions for inactive students" do
       user_session(@teacher)
       assignment = @course.assignments.create!(points_possible: 10)
       assignment.grade_student(@student, grade: 6.6, grader: @teacher)
@@ -359,6 +359,17 @@ describe GradebooksController do
       enrollment.deactivate
       get :grade_summary, params: { course_id: @course.id, id: @student.id }
       expect(assigns.fetch(:js_env).fetch(:submissions).first.fetch(:score)).to be 6.6
+    end
+
+    it "returns assignments for inactive students" do
+      user_session(@teacher)
+      assignment = @course.assignments.create!(points_possible: 10)
+      assignment.grade_student(@student, grade: 6.6, grader: @teacher)
+      enrollment = @course.enrollments.find_by(user: @student)
+      enrollment.deactivate
+      get :grade_summary, params: { course_id: @course.id, id: @student.id }
+      assignment_id = assigns.dig(:js_env, :assignment_groups, 0, :assignments, 0, :id)
+      expect(assignment_id).to eq assignment.id
     end
 
     context "assignment sorting" do
@@ -638,14 +649,14 @@ describe GradebooksController do
 
       describe "js_env enhanced_gradebook_filters" do
         it "sets enhanced_gradebook_filters in js_env as true if enabled" do
-          Account.site_admin.enable_feature!(:enhanced_gradebook_filters)
+          @course.enable_feature!(:enhanced_gradebook_filters)
           user_session(@teacher)
           get :show, params: { course_id: @course.id }
           expect(assigns[:js_env][:GRADEBOOK_OPTIONS][:enhanced_gradebook_filters]).to eq(true)
         end
 
         it "sets enhanced_gradebook_filters in js_env as false if disabled" do
-          Account.site_admin.disable_feature!(:enhanced_gradebook_filters)
+          @course.disable_feature!(:enhanced_gradebook_filters)
           user_session(@teacher)
           get :show, params: { course_id: @course.id }
           expect(assigns[:js_env][:GRADEBOOK_OPTIONS][:enhanced_gradebook_filters]).to eq(false)
@@ -688,6 +699,68 @@ describe GradebooksController do
         @admin.set_preference(:gradebook_version, "default")
         get "show", params: { course_id: @course.id, version: "individual" }
         expect(response).to render_template("gradebooks/gradebook")
+      end
+
+      describe "score to ungraded" do
+        before do
+          options = ::Gradebook::ApplyScoreToUngradedSubmissions::Options.new(
+            percent: 50,
+            excused: false,
+            mark_as_missing: false,
+            only_apply_to_past_due: false
+          )
+          @progress = Gradebook::ApplyScoreToUngradedSubmissions.queue_apply_score(course: @course, grader: @teacher, options: options)
+        end
+
+        describe "FF disabled" do
+          before do
+            @course.account.disable_feature!(:apply_score_to_ungraded)
+          end
+
+          it "sets gradebook_score_to_ungraded_progress in js_env as null" do
+            user_session(@teacher)
+            get :show, params: { course_id: @course.id }
+            expect(assigns[:js_env][:GRADEBOOK_OPTIONS][:gradebook_score_to_ungraded_progress]).to eq(nil)
+          end
+        end
+
+        describe "FF enabled" do
+          before do
+            @course.account.enable_feature!(:apply_score_to_ungraded)
+          end
+
+          it "sets gradebook_score_to_ungraded_progress in js_env as null if the last progress has workflow state failed" do
+            @progress.fail!
+
+            user_session(@teacher)
+            get :show, params: { course_id: @course.id }
+            expect(assigns[:js_env][:GRADEBOOK_OPTIONS][:gradebook_score_to_ungraded_progress]).to eq(nil)
+          end
+
+          it "sets gradebook_score_to_ungraded_progress object in js_env if the last progress has workflow state queued" do
+            @progress.update_attribute(:workflow_state, "queued")
+
+            user_session(@teacher)
+            get :show, params: { course_id: @course.id }
+            expect(assigns[:js_env][:GRADEBOOK_OPTIONS][:gradebook_score_to_ungraded_progress]).to eq(@progress)
+          end
+
+          it "sets gradebook_score_to_ungraded_progress object in js_env if the last progress has workflow state running" do
+            @progress.start!
+
+            user_session(@teacher)
+            get :show, params: { course_id: @course.id }
+            expect(assigns[:js_env][:GRADEBOOK_OPTIONS][:gradebook_score_to_ungraded_progress]).to eq(@progress)
+          end
+
+          it "sets gradebook_score_to_ungraded_progress object in js_env if the last progress has workflow state completed" do
+            @progress.update_attribute(:workflow_state, "completed")
+
+            user_session(@teacher)
+            get :show, params: { course_id: @course.id }
+            expect(assigns[:js_env][:GRADEBOOK_OPTIONS][:gradebook_score_to_ungraded_progress]).to eq(@progress)
+          end
+        end
       end
     end
 
@@ -906,6 +979,11 @@ describe GradebooksController do
       it "includes late_policy" do
         get :show, params: { course_id: @course.id }
         expect(gradebook_options).to have_key :late_policy
+      end
+
+      it "includes message_attachment_upload_folder_id" do
+        get :show, params: { course_id: @course.id }
+        expect(gradebook_options).to have_key :message_attachment_upload_folder_id
       end
 
       it "includes grading_schemes" do
@@ -1931,6 +2009,58 @@ describe GradebooksController do
         end
       end
 
+      describe "set default grade" do
+        before do
+          user_session(@teacher)
+        end
+
+        let(:post_params) do
+          {
+            course_id: @course.id,
+            submission: {
+              assignment_id: @assignment.id,
+              user_id: @student.id,
+              grade: 10,
+              set_by_default_grade: true
+            }
+          }
+        end
+
+        it "does not set the grader_id on missing submissions if set_by_default_grade is true" do
+          @assignment.update!(due_at: 10.days.ago, submission_types: "online_text_entry")
+
+          expect { post(:update_submission, params: post_params, format: :json) }.not_to change {
+            @submission.reload.grader_id
+          }.from(nil)
+        end
+
+        it "sets the grader_id on missing submissions if set_by_default_grade is false" do
+          post_params[:submission][:set_by_default_grade] = false
+          @assignment.update!(due_at: 10.days.ago, submission_types: "online_text_entry")
+
+          expect { post(:update_submission, params: post_params, format: :json) }.to change {
+            @submission.reload.grader_id
+          }.from(nil).to(@teacher.id)
+        end
+
+        it "sets the grader_id on missing submissions when set_by_default_grade is true and the late policy status is missing" do
+          @assignment.update!(due_at: 10.days.ago, submission_types: "online_text_entry")
+          @submission.update!(late_policy_status: "missing")
+
+          expect { post(:update_submission, params: post_params, format: :json) }.to change {
+            @submission.reload.grader_id
+          }.from(nil).to(@teacher.id)
+        end
+
+        it "sets the grader_id on non missing submissions when set_by_default_grade is true" do
+          @assignment.update!(due_at: 10.days.from_now, submission_types: "online_text_entry")
+
+          expect { post(:update_submission, params: post_params, format: :json) }.to change {
+            @submission.reload.grader_id
+          }.from(nil).to(@teacher.id)
+        end
+      end
+
       describe "anonymous assignment" do
         before(:once) do
           @assignment.update!(anonymous_grading: true)
@@ -2833,6 +2963,7 @@ describe GradebooksController do
       AssignmentGroup.add_never_drop_assignment(ag, a)
       @controller.instance_variable_set(:@context, @course)
       @controller.instance_variable_set(:@current_user, @user)
+      @controller.instance_variable_set(:@presenter, @controller.send(:grade_summary_presenter))
       expect(@controller.light_weight_ags_json([ag])).to eq [
         {
           id: ag.id,
@@ -2870,6 +3001,7 @@ describe GradebooksController do
 
       @controller.instance_variable_set(:@context, @course)
       @controller.instance_variable_set(:@current_user, @user)
+      @controller.instance_variable_set(:@presenter, @controller.send(:grade_summary_presenter))
       expect(@controller.light_weight_ags_json([ag])).to eq [
         {
           id: ag.id,
@@ -3108,6 +3240,159 @@ describe GradebooksController do
       aggregate_failures do
         expect(progress).not_to be nil
         expect(progress.tag).to eq "override_grade_update"
+      end
+    end
+  end
+
+  describe "PUT 'apply_score_to_ungraded_submissions'" do
+    before do
+      @course.account.enable_feature!(:apply_score_to_ungraded)
+      user_session(@teacher)
+    end
+
+    let(:other_course) do
+      other_course = Course.create!(account: @course.account)
+      other_course.enroll_teacher(@teacher, enrollment_state: "active")
+      other_course
+    end
+
+    def make_request(**additional_params)
+      put :apply_score_to_ungraded_submissions, params: additional_params.reverse_merge({ course_id: @course.id }), format: :json
+      JSON.parse(response.body)
+    end
+
+    describe "authorization" do
+      it "rejects requests if the caller does not have the manage_grades permission" do
+        user_session(@student)
+        make_request(percent: 50.0)
+        assert_unauthorized
+      end
+
+      it "rejects requests if the account does not have the apply_score_to_ungraded feature enabled" do
+        @course.account.disable_feature!(:apply_score_to_ungraded)
+        make_request(percent: 50.0)
+        assert_unauthorized
+      end
+    end
+
+    describe "grade values" do
+      it "accepts a percent value" do
+        make_request(percent: 50.0)
+        expect(response).to be_successful
+      end
+
+      it "accepts a true value for excused" do
+        make_request(excused: true)
+        expect(response).to be_successful
+      end
+
+      it "does not accept both a percent and a true value for excused" do
+        json = make_request(excused: true, percent: 50.0)
+        expect(json["error"]).to eq "cannot_both_score_and_excuse"
+      end
+
+      it "requires either a percent value or a true value for excused" do
+        json = make_request
+        expect(json["error"]).to eq "no_score_or_excused_provided"
+      end
+    end
+
+    describe "additional options" do
+      describe "course section" do
+        let(:course_section) { @course.course_sections.create! }
+
+        it "accepts a valid course_section_id if the section belongs to the course" do
+          make_request(percent: 50.0, course_section_id: course_section.id)
+          expect(response).to be_successful
+        end
+
+        it "returns a 404 if the supplied course_section_id is not a section for the course" do
+          other_section = other_course.course_sections.create!
+          make_request(percent: 50.0, course_section_id: other_section.id)
+          expect(response).to be_not_found
+        end
+      end
+
+      describe "assignment group" do
+        it "accepts a valid assignment_group_id that is part of the course" do
+          assignment_group = @course.assignment_groups.create!(name: "a group")
+          make_request(percent: 50.0, assignment_group_id: assignment_group.id)
+          expect(response).to be_successful
+        end
+
+        it "returns a 404 if the supplied assignment_group_id is not an assignment group in the course" do
+          other_assignment_group = other_course.assignment_groups.create!
+          make_request(percent: 50.0, assignment_group_id: other_assignment_group.id)
+          expect(response).to be_not_found
+        end
+      end
+
+      describe "context module" do
+        it "accepts a valid module_id that is part of the course" do
+          context_module = @course.context_modules.create!
+          make_request(percent: 50.0, module_id: context_module.id)
+          expect(response).to be_successful
+        end
+
+        it "returns a 404 if the supplied module_id is not a module in the course" do
+          other_module = other_course.context_modules.create!
+          make_request(percent: 50.0, module_id: other_module.id)
+          expect(response).to be_not_found
+        end
+      end
+
+      describe "student group" do
+        let(:student_group) do
+          group_category = @course.group_categories.create!(name: "category")
+          group_category.create_groups(1)
+          group_category.groups.first
+        end
+
+        it "accepts a valid student_group_id that is part of the course" do
+          make_request(percent: 50.0, group_id: student_group.id)
+          expect(response).to be_successful
+        end
+
+        it "returns a 404 if the supplied student_group_id is not a group in the course" do
+          other_category = other_course.group_categories.create!(name: "othergory")
+          other_category.create_groups(1)
+          other_group = other_category.groups.first
+
+          make_request(percent: 50.0, group_id: other_group.id)
+          expect(response).to be_not_found
+        end
+      end
+
+      describe "grading period" do
+        let(:period_helper) { Factories::GradingPeriodHelper.new }
+
+        it "accepts an active grading period that is used by the course" do
+          grading_period = period_helper.create_with_group_for_account(@course.account)
+          @course.enrollment_term.update!(grading_period_group: grading_period.grading_period_group)
+
+          make_request(percent: 50.0, grading_period_id: grading_period.id)
+          expect(response).to be_successful
+        end
+
+        it "returns a 400 if given a closed grading period in the course" do
+          grading_period = period_helper.create_with_group_for_account(
+            @course.account,
+            start_date: 10.days.ago,
+            end_date: 1.day.ago,
+            close_date: 1.day.ago
+          )
+          @course.enrollment_term.update!(grading_period_group: grading_period.grading_period_group)
+
+          json = make_request(percent: 50.0, grading_period_id: grading_period.id)
+          expect(json["error"]).to eq "cannot_apply_to_closed_grading_period"
+        end
+
+        it "returns a 404 if given a grading period not used by the course" do
+          grading_period = period_helper.create_with_group_for_account(@course.account)
+          make_request(percent: 50.0, grading_period_id: grading_period.id)
+
+          expect(response).to be_not_found
+        end
       end
     end
   end

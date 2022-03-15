@@ -1727,11 +1727,11 @@ describe CoursesController do
         expect(assigns[:js_env][:COURSE][:has_syllabus_body]).to be_falsey
       end
 
-      it "sets ENV.OBSERVER_LIST with self and observed users" do
+      it "sets ENV.OBSERVED_USERS_LIST with self and observed users" do
         user_session(@student)
 
         get "show", params: { id: @course.id }
-        observers = assigns[:js_env][:OBSERVER_LIST]
+        observers = assigns[:js_env][:OBSERVED_USERS_LIST]
         expect(observers.length).to be(1)
         expect(observers[0][:name]).to eq(@student.name)
         expect(observers[0][:id]).to eq(@student.id)
@@ -1787,6 +1787,13 @@ describe CoursesController do
       end
 
       describe "update" do
+        before :once do
+          @subject = @course
+          @homeroom = course_factory
+          @homeroom.homeroom_course = true
+          @homeroom.save!
+        end
+
         it "syncs enrollments if setting is set" do
           progress = double("Progress").as_null_object
           allow(Progress).to receive(:new).and_return(progress)
@@ -1795,9 +1802,9 @@ describe CoursesController do
           user_session(@teacher)
 
           get "update", params: {
-            id: @course.id,
+            id: @subject.id,
             course: {
-              homeroom_course_id: "17",
+              homeroom_course_id: @homeroom.id,
               sync_enrollments_from_homeroom: "1"
             }
           }
@@ -1809,14 +1816,14 @@ describe CoursesController do
           expect(progress).not_to receive(:process_job)
 
           user_session(@teacher)
-          sis = @course.account.sis_batches.create
-          @course.sis_batch_id = sis.id
-          @course.save!
+          sis = @subject.account.sis_batches.create
+          @subject.sis_batch_id = sis.id
+          @subject.save!
 
           get "update", params: {
-            id: @course.id,
+            id: @subject.id,
             course: {
-              homeroom_course_id: "17",
+              homeroom_course_id: @homeroom.id,
               sync_enrollments_from_homeroom: "1"
             }
           }
@@ -3827,6 +3834,18 @@ describe CoursesController do
       get "content_share_users", params: { course_id: @course.id, search_term: "teacher" }
       json = json_parse(response.body)
       expect(json[0]).to include({ "name" => "search teacher" })
+    end
+
+    it "does not include pending users" do
+      user_session(@teacher)
+      @search_context = @course
+      course_with_teacher(name: "pending user")
+      @user.update_attribute(:workflow_state, "creation_pending")
+      course_with_teacher(name: "not pending user", active_all: true)
+      get "content_share_users", params: { course_id: @search_context.id, search_term: "pending" }
+      json = json_parse(response.body)
+      expect(json.length).to be(1)
+      expect(json[0]).to include({ "name" => "not pending user" })
     end
 
     context "sharding" do

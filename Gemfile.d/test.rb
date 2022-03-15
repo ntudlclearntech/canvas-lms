@@ -22,9 +22,8 @@ group :test do
   gem "rails-controller-testing", "1.0.5"
 
   gem "dotenv", "2.7.5", require: false
-  gem "testingbot", require: false
   gem "brakeman", require: false
-  gem "simplecov", "0.15.1", require: false
+  gem "simplecov", "0.21.2", require: false
     gem "docile", "1.1.5", require: false
   gem "simplecov-rcov", "0.2.3", require: false
   gem "puma", "5.2.2", require: false
@@ -39,7 +38,7 @@ group :test do
   gem "rspec-mocks", "3.10.2"
   gem "shoulda-matchers", "4.3.0"
 
-  gem "once-ler", "0.1.4"
+  gem "once-ler", "2.0.0"
   gem "sauce_whisk", "0.2.2"
 
   gem "selenium-webdriver", "3.142.7", require: false
@@ -58,11 +57,15 @@ group :test do
     gem "pact-support", "1.16.8", require: false
   gem "pact-messages", "0.2.0"
   gem "pact_broker-client", "1.40.0"
-  gem "database_cleaner", "~> 1.5", ">= 1.5.3"
+  if CANVAS_RAILS6_0
+    gem "database_cleaner", "~> 1.5", ">= 1.5.3"
+  else
+    gem "database_cleaner", "~> 2.0"
+  end
   gem "json-schema", "~> 2.8.1"
 
   gem "parallel_tests"
-  gem "rspecq", github: "kyler-instructure/rspecq", ref: "9c6cb347db06ae64c4ec3f9002640f72f780e4a6"
+  gem "rspecq", github: "kyler-instructure/rspecq", ref: "8cea6a3225cf0856a26c6c6b93a5ea5605082aa0"
   gem "flakey_spec_catcher", "~> 0.11.2", require: false
   gem "factory_bot", "6.1.0", require: false
   gem "rspec_junit_formatter", require: false
