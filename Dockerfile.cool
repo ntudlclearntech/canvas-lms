@@ -5,6 +5,10 @@ WORKDIR /var/canvas
 RUN adduser --disabled-password --gecos canvas --uid 1001 canvasuser \
   && chown -R canvasuser:canvasuser /var/canvas
 ENV RAILS_ENV=production
+ENV JS_BUILD_NO_FALLBACK=1
+ENV COMPILE_ASSETS_STYLEGUIDE=0
+ENV COMPILE_ASSETS_API_DOCS=0
+ENV COMPILE_ASSETS_BRAND_CONFIGS=0
 # 0-1. Set up locales
 RUN apt-get update && apt-get install -y locales \
   && sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen && locale-gen
@@ -101,5 +105,6 @@ RUN bundle _2.2.19_ config set --local path 'vendor/bundle' \
 
 CMD ./config.sh \
   && rm -rf public/dist/brandable_css/* \
+  && RAILS_ENV=production bundle exec rake brand_configs:write \
   && RAILS_ENV=production bundle exec rake css:compile \
   && bundle _2.2.19_ exec passenger start
