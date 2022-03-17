@@ -9201,7 +9201,7 @@ zh-Hant:
       second: 秒
       year: 年
   day_9d999bec: 日
-  day_s_7cc1231f: 日（複數）
+  day_s_7cc1231f: 日
   days_af2ac87b: 天
   days_late_a3a721b0: （已晚天數）
   deactivate_key_developername_65bb2736: "停用金鑰%{developerName}"

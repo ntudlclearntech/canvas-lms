@@ -86,7 +86,7 @@ export default function SpeedGraderStatusMenu(props) {
           <TimeLateInput
             lateSubmissionInterval={props.lateSubmissionInterval}
             locale={props.locale}
-            renderLabelBefore
+            renderLabelBefore={false}
             secondsLate={props.secondsLate}
             onSecondsLateUpdated={props.updateSubmission}
             width="5rem"
