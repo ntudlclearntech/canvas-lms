@@ -2,11 +2,13 @@
 {{#each this}}
 <li id="enrollment_{{id}}" class="user user_{{user_id}} {{typeClass}}" title="{{user.name}}: {{user.login_id}}">
   <span class="links">
+    {{!--
     {{#if can_be_removed}}
     <a href="/courses/{{course_id}}/unenroll/{{id}}" class="unenroll_user_link no-hover" title="{{#t}}Remove User from Section{{/t}}">
       <img alt="delete_enrollment" src="/images/delete_circle.png" />
     </a>
     {{/if}}
+    --}}
     <a href="/confirmations/{{user_id}}/re_send/{{user_id}}?enrollment_id={{id}}" class="re_send_confirmation_url" style="display: none;">&nbsp;</a>
   </span>
   <a href="/courses/{{course_id}}/users/{{user_id}}"
