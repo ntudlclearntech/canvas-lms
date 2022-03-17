@@ -22,7 +22,6 @@
   "dependencies": {
     "@apollo/client": "^3.4.16",
     "@instructure/brandable_css": "^3",
-    "@instructure/canvas-rce-old": "https://gitlab.dlc.ntu.edu.tw/ntu-cool/canvas-rce-old.git#a3def08b",
     "@instructure/canvas-theme": "^7",
     "@instructure/debounce": "^7",
     "@instructure/js-utils": "*",
