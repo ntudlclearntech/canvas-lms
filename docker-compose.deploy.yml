@@ -79,6 +79,3 @@ services:
   jobs:
     << : *default-setting
     command: bundle exec script/delayed_job run
-
-  redis:
-    image: redis:6.2-rc-alpine
