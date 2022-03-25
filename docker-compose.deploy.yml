@@ -6,8 +6,6 @@ x-default:
   group_add:
     - canvasuser
   user: canvasuser
-  links:
-    - redis
   logging:
     driver: json-file
     options:
