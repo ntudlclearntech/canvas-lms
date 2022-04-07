@@ -15,10 +15,10 @@ x-default:
     - CASSANDRA_SERVERS
     - CASSANDRA_PAGE_VIEWS_KEYSPACE
     - CASSANDRA_AUDITORS_KEYSPACE
-    - DATABASE_DATABASE
-    - DATABASE_USERNAME
-    - DATABASE_PASSWORD
-    - DATABASE_HOST
+    - DB_DATABASE
+    - DB_USERNAME
+    - DB_PASSWORD
+    - DB_HOST
     - DOMAIN_DOMAIN
     - DOMAIN_SSL
     - DYNAMIC_SETTINGS_ENCRYPTION_SECRET
@@ -60,10 +60,10 @@ x-default:
     - DEVELOPER_KEYS_U_MEETING_ID
     - EXTERNAL_TOOLS_COOL_GRADEBOOK_ID
   volumes:
-    - ${CANVAS_LMS_EXTERNAL_TMP_DIRECTORY}:/var/canvas/tmp
-    - ${CANVAS_LMS_EXTERNAL_LOG_DIRECTORY}:/var/canvas/log
-    - ${CANVAS_LMS_EXTERNAL_SAML_DIRECTORY}:/var/canvas/config/saml
-    - ${CANVAS_LMS_EXTERNAL_CSS_DIRECTORY}:/var/canvas/public/dist/brandable_css
+    - ${CANVAS_LMS_EXTERNAL_TMP_DIR}:/var/canvas/tmp
+    - ${CANVAS_LMS_EXTERNAL_LOG_DIR}:/var/canvas/log
+    - ${CANVAS_LMS_EXTERNAL_SAML_DIR}:/var/canvas/config/saml
+    - ${CANVAS_LMS_EXTERNAL_CSS_DIR}:/var/canvas/public/dist/brandable_css
     - /etc/timezone:/etc/timezone:ro
     - /etc/localtime:/etc/localtime:ro
   restart: always

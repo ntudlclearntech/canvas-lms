@@ -47,11 +47,11 @@ create_database_config_file() {
 production:
   adapter: "<%= ENV.fetch('DATABASE_ADAPTER', 'postgresql') %>"
   encoding: "<%= ENV.fetch('DATABASE_ENCODING', 'utf8') %>"
-  database: "<%= ENV.fetch('DATABASE_DATABASE', 'canvas_production') %>"
+  database: "<%= ENV.fetch('DB_DATABASE', 'canvas_production') %>"
   timeout: "<%= ENV.fetch('DATABASE_TIMEOUT', '5000') %>"
-  username: "<%= ENV.fetch('DATABASE_USERNAME', 'canvas1') %>"
-  password: "<%= ENV.fetch('DATABASE_PASSWORD', 'canvas2') %>"
-  host: "<%= ENV.fetch('DATABASE_HOST', 'localhost') %>"
+  username: "<%= ENV.fetch('DB_USERNAME', 'canvas1') %>"
+  password: "<%= ENV.fetch('DB_PASSWORD', 'canvas2') %>"
+  host: "<%= ENV.fetch('DB_HOST', 'localhost') %>"
 EOF
 }
 
