@@ -1915,8 +1915,8 @@ zh-Hant:
     formats:
       date_at_time: "%b %-d at %k:%M"
       default: "%Y-%m-%d"
-      full: "%Y年%m月%-d日 %k:%M"
-      full_with_weekday: "%a %Y年%m月%-d日 %k:%M"
+      full: "%Y年%m月%-d日 %P %k:%M"
+      full_with_weekday: "%a %Y年%m月%-d日 %P %k:%M"
       long: "%Y %B %-d"
       long_with_weekday: "%A, %B %-d"
       medium: "%Y年%m月%-d日"
@@ -1935,6 +1935,6 @@ zh-Hant:
   time:
     event: "%{date} %{time}"
     formats:
-      tiny: "%k:%M"
-      tiny_on_the_hour: "%k:%M"
+      tiny: "%P %k:%M"
+      tiny_on_the_hour: "%P %k:%M"
   proper_noun_singular_genitive: "%{noun}"
