@@ -196,7 +196,7 @@ export default class TotalGradeColumnHeader extends ColumnHeader {
                           <a
                             href={I18n.t(
                               'custom.total_grade_popover_link_url',
-                              'https://gra103.aca.ntu.edu.tw/gra2007/gra/hamson/Grading%20Policy.pdf'
+                              'https://www.aca.ntu.edu.tw/WebUPD/acaEN/GAADRules/110%E5%AD%B8%E7%94%9F%E6%88%90%E7%B8%BE%E8%A9%95%E9%87%8F%E8%BE%A6%E6%B3%95.pdf'
                             )}
                             target="_blank"
                             rel="noopener noreferrer"
