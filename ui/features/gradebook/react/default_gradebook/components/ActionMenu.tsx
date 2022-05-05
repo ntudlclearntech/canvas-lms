@@ -66,7 +66,6 @@ export type ActionMenuProps = {
     isEnabled: boolean
     publishToSisUrl: string
   }
-  variant: 'OfficialCourse' | 'NonOfficialCourse'
 }
 
 export type ActionMenuState = {
@@ -351,7 +350,6 @@ class ActionMenu extends React.Component<ActionMenuProps, ActionMenuState> {
         <MenuItemSeparator />
 
         <MenuItem
-          disabled={this.props.variant !== 'OfficialCourse'}
           onClick={() => {
             this.handleGoToCoolGradebook()
           }}
