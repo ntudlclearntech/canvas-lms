@@ -2025,7 +2025,6 @@ class Gradebook extends React.Component<GradebookProps, GradebookState> {
     const component = this.options.enhanced_gradebook_filters ? EnhancedActionMenu : ActionMenu
     const mountPoint = document.querySelector(`[data-component='${componentId}']`)
     const props = this.getActionMenuProps()
-    props.variant = mountPoint.getAttribute('data-variant')
     return renderComponent(component, mountPoint, props)
   }
 
