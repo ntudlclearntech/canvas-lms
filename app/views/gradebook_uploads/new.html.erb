@@ -29,9 +29,12 @@
     </div>
 
     <%= form_for [@context, GradebookUpload.new], html: { class: 'ic-Form-group', multipart: true, title: t("Choose a CSV file to upload:") } do |f| %>
+    <% if false # Hide user guide from users #260
+    %>  
       <p>
         <a class="icon-question" target="_blank" href="<%= t(:'#community.instructor_import_grades') %>"><%= t "What should the CSV file look like?" %></a>
       </p>
+    <% end %>
       <div class="ic-Form-control">
         <%= f.label :uploaded_data, t("Choose a CSV file to upload:"), class: 'ic-Label' %>
         <%= f.file_field :uploaded_data, class: 'ic-Input' %>
