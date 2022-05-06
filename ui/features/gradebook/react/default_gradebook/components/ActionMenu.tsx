@@ -80,8 +80,7 @@ class ActionMenu extends React.Component<ActionMenuProps, ActionMenuState> {
     postGradesLtis: [],
     publishGradesToSis: {
       publishToSisUrl: undefined
-    },
-    variant: 'NonOfficialCourse'
+    }
   }
 
   static gotoUrl(url) {
