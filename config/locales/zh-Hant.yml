@@ -21960,6 +21960,7 @@ zh-Hant:
         warnings: 
           draft_version: 這是測驗的草稿版本的預覽
           quiz_locked: 此測驗已鎖定，學生無法作答。
+        hint: 請勿同時使用多個設備、瀏覽器、分頁開啟同一份測驗的作答畫面，避免作答結果無法正確儲存。
       single_answer: 
         upload: 上傳
       statistics: 
