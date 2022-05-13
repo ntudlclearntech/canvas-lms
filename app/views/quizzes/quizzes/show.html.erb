@@ -398,6 +398,11 @@
         <%= render :partial => 'quiz_show_student' %>
       <% end %>
     </div>
+    <div class="row-fluid">
+      <p class="alert">
+        <strong><%= t('hint', "Please do not use multiple devices, browsers, or tabs to open the same quiz at the same time, so as to avoid storing answers incorrectly.") %></strong>
+      </p>
+    </div>
 
     <% preview_mode = can_do(@quiz, @current_user, :preview) && !can_do(@context, @current_user, :participate_as_student) %>
 
