@@ -635,6 +635,7 @@ class AssignmentsController < ApplicationController
   def new
     @assignment ||= @context.assignments.temp_record
     @assignment.workflow_state = "unpublished"
+    @assignment.points_possible = 100
     add_crumb_on_new_quizzes(true)
 
     if params[:submission_types] == "discussion_topic"
