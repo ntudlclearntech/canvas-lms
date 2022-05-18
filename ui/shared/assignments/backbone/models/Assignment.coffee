@@ -68,8 +68,6 @@ export default class Assignment extends Model
     if (@postToSISEnabled())
       if !@get('id') && @get('post_to_sis') != false
         @set 'post_to_sis', !!ENV?.POST_TO_SIS_DEFAULT
-    if (!(@get('points_possible')?))
-      @set 'points_possible', 100
 
   isQuiz: => @_hasOnlyType 'online_quiz'
   isDiscussionTopic: => @_hasOnlyType 'discussion_topic'
