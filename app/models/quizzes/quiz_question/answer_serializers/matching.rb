@@ -97,7 +97,7 @@ module Quizzes::QuizQuestion::AnswerSerializers
     #   [{ "answer_id": "1", "match_id": null }]
     def deserialize(submission_data, full: false)
       answers.each_with_object([]) do |answer_record, out|
-        answer_id = answer_record[:id]
+        answer_id = answer_record["id"]
         answer_key = build_answer_key(answer_id)
 
         match_id = submission_data[answer_key] # this is always a string

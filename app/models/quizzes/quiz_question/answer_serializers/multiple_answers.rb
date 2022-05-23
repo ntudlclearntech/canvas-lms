@@ -77,7 +77,7 @@ module Quizzes::QuizQuestion::AnswerSerializers
     #   []
     def deserialize(submission_data, full: false)
       answers.each_with_object([]) do |answer_record, out|
-        answer_id = answer_record[:id]
+        answer_id = answer_record["id"]
 
         is_selected = submission_data[answer_key(answer_id)]
         is_selected = Util.to_boolean(is_selected)
