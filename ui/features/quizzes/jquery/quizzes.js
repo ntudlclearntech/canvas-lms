@@ -2620,6 +2620,13 @@ $(document).ready(function () {
       $form.fillFormData(question)
     }
 
+    /**
+     * Issue https://gitlab.dlc.ntu.edu.tw/ntu-cool/canvas-lms/-/issues/269
+     * Function updateFormQuestion will determine whether $form is in the div.group
+     * to decide whether span.question_points_holder is displayed or not,
+     * so we need to insert $form into $question before update FormQuestion.
+     */
+    $question.hide().after($form)
     const data = quiz.updateFormQuestion($form)
     $form.find('.form_answers').empty()
     if (data.question_type == 'calculated_question') {
@@ -2714,7 +2721,7 @@ $(document).ready(function () {
 
     limitTextInputFor($form, question.question_type)
 
-    $question.hide().after($form)
+    // $question.hide().after($form) // comment it For issue #269
     quiz.showFormQuestion($form)
     $form
       .attr('action', $question.find('.update_question_url').attr('href'))
