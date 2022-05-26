@@ -58,7 +58,7 @@ class SummaryMessageConsolidator
     GuardRail.activate(:secondary) do
       DelayedMessage.connection.select_all(
         DelayedMessage.select("communication_channel_id").select("root_account_id").distinct
-          .where("workflow_state = ? AND send_at <= ?", "pending", Time.now.to_s(:db))
+          .where("workflow_state = ? AND send_at <= ?", "pending", Time.now.utc.to_s(:db))
           .to_sql
       )
     end
@@ -66,7 +66,7 @@ class SummaryMessageConsolidator
 
   def delayed_message_ids_for_batch(batch)
     DelayedMessage
-      .where("workflow_state = ? AND send_at <= ?", "pending", Time.now.to_s(:db))
+      .where("workflow_state = ? AND send_at <= ?", "pending", Time.now.utc.to_s(:db))
       .where(batch) # hash condition will properly handle the case where root_account_id is null
       .pluck(:id)
   end
