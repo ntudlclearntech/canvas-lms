@@ -1935,6 +1935,6 @@ zh-Hant:
   time:
     event: "%{date} %{time}"
     formats:
-      tiny: "%k:%M"
+      tiny: "%P %l:%M"
       tiny_on_the_hour: "%k:%M"
   proper_noun_singular_genitive: "%{noun}"
