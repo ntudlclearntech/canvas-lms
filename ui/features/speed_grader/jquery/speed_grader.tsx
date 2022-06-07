@@ -74,7 +74,7 @@ import round from 'round'
 import _ from 'underscore'
 import INST from 'browser-sniffer'
 // @ts-ignore
-import I18n from 'i18n!speed_grader'
+import {useScope as useI18nScope} from '@canvas/i18n'
 import natcompare from '@canvas/util/natcompare'
 import qs from 'qs'
 import tz from '@canvas/timezone'
@@ -122,6 +122,8 @@ import 'jquery-scroll-to-visible/jquery.scrollTo'
 import 'jquery-selectmenu'
 import '@canvas/jquery/jquery.disableWhileLoading'
 import '@canvas/util/jquery/fixDialogButtons'
+
+const I18n = useI18nScope('speed_grader')
 
 const {Alert} = Alerts as any
 
@@ -254,6 +256,12 @@ function unexcuseSubmission(grade, submission, assignment) {
   return grade === '' && submission.excused && assignment.grading_type === 'pass_fail'
 }
 
+// anonymous_name is preferred and will be available for all anonymous
+// assignments. Fall back to naming based on index for assignments that are not
+// anonymous, but the teacher has selected to 'Hide Student Names' in SpeedGrader.
+const anonymousName = student =>
+  student.anonymous_name || I18n.t('Student %{number}', {number: student.index + 1})
+
 const utils = {
   getParam(name) {
     const pathRegex = new RegExp(`${name}/([^/]+)`)
@@ -346,19 +354,32 @@ function mergeStudentsAndSubmission() {
     window.jsonData.submissionsMap[submission[anonymizableUserId]] = submission
   })
 
+  jsonData.studentsWithSubmissions = jsonData.studentsWithSubmissions.reduce(
+    (students, student, index) => {
+      const submission = jsonData.submissionsMap[student[anonymizableId]]
+      // Hide students that don't have a submission object. This is legacy support
+      // for when we used to not create submission objects for assigned concluded students.
+      // For all new assignments, every assigned student (regardless of concluded/inactive
+      // status) should have a submission object.
+      if (submission) {
+        student.enrollments = jsonData.studentEnrollmentMap[student[anonymizableId]]
+        student.section_ids = Object.keys(jsonData.studentSectionIdsMap[student[anonymizableId]])
+        student.submission = submission
+        student.submission_state = SpeedgraderHelpers.submissionState(student, ENV.grading_role)
+        student.index = index
+        students.push(student)
+      }
+
+      return students
+    },
+    []
+  )
+
   // need to presort by anonymous_id for anonymous assignments so that the index property can be consistent
   if (isAnonymous)
     window.jsonData.studentsWithSubmissions.sort((a, b) =>
-      a.anonymous_id > b.anonymous_id ? 1 : -1
+      a.anonymous_name_position > b.anonymous_name_position ? 1 : -1
     )
-
-  window.jsonData.studentsWithSubmissions.forEach((student, index) => {
-    student.enrollments = window.jsonData.studentEnrollmentMap[student[anonymizableId]]
-    student.section_ids = Object.keys(window.jsonData.studentSectionIdsMap[student[anonymizableId]])
-    student.submission = window.jsonData.submissionsMap[student[anonymizableId]]
-    student.submission_state = SpeedgraderHelpers.submissionState(student, ENV.grading_role)
-    student.index = index
-  })
 
   // handle showing students only in a certain section.
   if (!window.jsonData.GROUP_GRADING_MODE) {
@@ -457,7 +478,7 @@ function initDropdown() {
     let {name} = student
     const className = SpeedgraderHelpers.classNameBasedOnStudent({submission_state, submission})
     if (hideStudentNames || isAnonymous) {
-      name = I18n.t('Student %{number}', {number: student.index + 1})
+      name = anonymousName(student)
     }
 
     return {[anonymizableId]: student[anonymizableId], anonymizableId, name, className}
@@ -1493,7 +1514,7 @@ EG = {
   getStudentNameAndGrade: (student = EG.currentStudent) => {
     let studentName
     if (utils.shouldHideStudentNames()) {
-      studentName = I18n.t('student_index', 'Student %{index}', {index: student.index + 1})
+      studentName = anonymousName(student)
     } else {
       studentName = student.name
     }
@@ -2120,7 +2141,12 @@ EG = {
   },
 
   updateWordCount(wordCount) {
-    if (ENV.FEATURES?.word_count_in_speed_grader) {
+    if (
+      ENV.FEATURES?.word_count_in_speed_grader &&
+      !['basic_lti_launch', 'external_tool'].includes(
+        this.currentStudent.submission.submission_type
+      )
+    ) {
       // xsslint safeString.method toLocaleString
       // xsslint safeString.method t
       const wordCountHTML = wordCount
@@ -2594,18 +2620,18 @@ EG = {
     $grded_so_far.text(
       I18n.t('portion_graded', '%{x}/%{y}', {
         x: I18n.n(gradedStudents.length),
-        y: I18n.n(window.jsonData.context.students.length)
+        y: I18n.n(window.jsonData.studentsWithSubmissions.length)
       })
     )
   },
 
   totalStudentCount() {
     if (sectionToShow) {
-      return _.filter(window.jsonData.context.students, student =>
+      return _.filter(jsonData.studentsWithSubmissions, student =>
         _.includes(student.section_ids, sectionToShow)
       ).length
     } else {
-      return window.jsonData.context.students.length
+      return jsonData.studentsWithSubmissions.length
     }
   },
 
@@ -3018,8 +3044,7 @@ EG = {
     hideStudentName =
       opts.hideStudentNames && window.jsonData.studentMap[comment[anonymizableAuthorId]]
     if (hideStudentName) {
-      const {index} = window.jsonData.studentMap[comment[anonymizableAuthorId]]
-      comment.author_name = I18n.t('Student %{position}', {position: index + 1})
+      comment.author_name = anonymousName(window.jsonData.studentMap[comment[anonymizableAuthorId]])
     }
     // anonymous commentors
     if (comment.author_name == null) {
@@ -3299,6 +3324,7 @@ EG = {
         }
         return historySubmission.attempt === submission.attempt
       }) || 0
+    const foundMatchingSubmission = historyIndex !== -1
     historyIndex = historyIndex === -1 ? 0 : historyIndex
 
     if (typeof submission.submission_history === 'undefined') {
@@ -3306,8 +3332,14 @@ EG = {
       submission.submission_history[historyIndex] = {submission: $.extend(true, {}, submission)}
     }
 
-    // update the nested submission in submission_history if needed
-    if (student.submission?.submission_history?.[historyIndex]?.submission) {
+    // update the nested submission in submission_history if needed, assuming we
+    // could map the submission we got to a specific attempt (notably, with
+    // Quizzes.Next submissions and possibly other LTIs we don't get an
+    // "attempt" field)
+    if (
+      foundMatchingSubmission &&
+      student.submission?.submission_history?.[historyIndex]?.submission
+    ) {
       const versionedAttachments =
         submission.submission_history[historyIndex].submission?.versioned_attachments || []
       submission.submission_history[historyIndex].submission = $.extend(
@@ -3647,7 +3679,7 @@ EG = {
         snapshot =>
           snapshot &&
           $.map(
-            window.jsonData.context.students,
+            jsonData.studentsWithSubmissions,
             student => snapshot === student && student.name
           )[0]
       )
@@ -4071,7 +4103,7 @@ function renderPostGradesMenu() {
   )
 
   function onHideGrades() {
-    EG.postPolicies.showHideAssignmentGradesTray({submissionsMap})
+    EG.postPolicies.showHideAssignmentGradesTray({submissionsMap, submissions})
   }
 
   function onPostGrades() {

@@ -56,7 +56,7 @@ class Attachment < ActiveRecord::Base
   FILE_SIZE_LIMIT = 50 * 1024 * 1024
   #########################################
 
-  BUTTONS_AND_ICONS = "buttons_and_icons"
+  BUTTONS_AND_ICONS = "icon_maker_icons"
   UNCATEGORIZED = "uncategorized"
   VALID_CATEGORIES = [BUTTONS_AND_ICONS, UNCATEGORIZED].freeze
 
@@ -403,8 +403,13 @@ class Attachment < ActiveRecord::Base
     end
     dup.updated_at = Time.zone.now
     dup.clone_updated = true
-    dup.set_publish_state_for_usage_rights unless locked?
+    dup.set_publish_state_for_usage_rights unless locked? || usage_rights_not_required(options)
     dup
+  end
+
+  def usage_rights_not_required(options)
+    options[:migration]&.for_course_copy? &&
+      !options[:migration].source_course.usage_rights_required
   end
 
   def self.find_existing_attachment_for_clone(context, options = {})
@@ -1265,7 +1270,7 @@ class Attachment < ActiveRecord::Base
       "image/gif" => "image",
       "image/bmp" => "image",
       "image/svg+xml" => "image",
-      # "image/webp" => "image", not supported by safari as of Version 13.1.1
+      "image/webp" => "image",
       "image/vnd.microsoft.icon" => "image",
       "application/x-rar" => "zip",
       "application/x-rar-compressed" => "zip",

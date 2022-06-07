@@ -73,16 +73,15 @@ module SpeedGrader
 
       res[:context][:rep_for_student] = {}
 
-      # If we're working with anonymous IDs, skip students who don't have a
-      # valid submission object, which means no inactive or concluded students
-      # even if the user has elected to show them in gradebook
-      includes = assignment.anonymize_students? ? [] : gradebook_includes(user: current_user, course: course)
+      includes = gradebook_includes(user: current_user, course: course)
       students = assignment.representatives(user: current_user, includes: includes, group_id: group_id_filter, section_id: section_id_filter) do |rep, others|
         others.each { |s| res[:context][:rep_for_student][s.id] = rep.id }
       end
 
-      # Ensure that any test students are sorted last
-      students = students.sort_by { |r| r.preferences[:fake_student] == true ? 1 : 0 }
+      unless assignment.anonymize_students?
+        # Ensure that any test students are sorted last
+        students = students.sort_by { |r| r.preferences[:fake_student] == true ? 1 : 0 }
+      end
 
       enrollments = course.apply_enrollment_visibility(
         gradebook_enrollment_scope(user: current_user, course: course),
@@ -110,6 +109,9 @@ module SpeedGrader
         if anonymous_students?(current_user: current_user, assignment: assignment)
           anonymous_ids = student_ids_to_anonymous_ids(current_user: current_user, assignment: assignment, course: course, submissions: submissions)
           json[:anonymous_id] = anonymous_ids[student.id.to_s]
+          identity = assignment.anonymous_student_identities.fetch(student.id, {})
+          json[:anonymous_name] = identity[:name]
+          json[:anonymous_name_position] = identity[:position]
         end
         json[:needs_provisional_grade] = assignment.can_be_moderated_grader?(current_user) if provisional_grader_or_moderator?
         json[:rubric_assessments] = rubric_assessments_to_json(

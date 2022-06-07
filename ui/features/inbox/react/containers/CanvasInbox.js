@@ -17,16 +17,18 @@
  */
 
 import React, {useState, useEffect, useContext} from 'react'
+import {ConversationContext} from '../../util/constants'
 import ComposeModalManager from './ComposeModalContainer/ComposeModalManager'
 import {MessageDetailContainer} from './MessageDetailContainer/MessageDetailContainer'
 import MessageListActionContainer from './MessageListActionContainer'
 import ConversationListContainer from './ConversationListContainer'
 import {NoSelectedConversation} from '../components/NoSelectedConversation/NoSelectedConversation'
 import {AlertManagerContext} from '@canvas/alerts/react/AlertManager'
-import I18n from 'i18n!conversations_2'
+import {useScope as useI18nScope} from '@canvas/i18n'
 import {useMutation} from 'react-apollo'
 import {DELETE_CONVERSATIONS} from '../../graphql/Mutations'
 import {CONVERSATIONS_QUERY} from '../../graphql/Queries'
+import {decodeQueryString} from 'query-string-encoding'
 import {responsiveQuerySizes} from '../../util/utils'
 import {CondensedButton, IconButton} from '@instructure/ui-buttons'
 
@@ -35,6 +37,8 @@ import {IconArrowOpenStartLine, IconXSolid} from '@instructure/ui-icons'
 import {Responsive} from '@instructure/ui-responsive'
 import {Text} from '@instructure/ui-text'
 import {View} from '@instructure/ui-view'
+
+const I18n = useI18nScope('conversations_2')
 
 const CanvasInbox = () => {
   const [scope, setScope] = useState('inbox')
@@ -49,13 +53,96 @@ const CanvasInbox = () => {
   const [isReplyAll, setIsReplyAll] = useState(false)
   const [isForward, setIsForward] = useState(false)
   const [displayUnarchiveButton, setDisplayUnarchiveButton] = useState(false)
+  const [multiselect, setMultiselect] = useState(false)
+  const [isSubmissionCommentsType, setIsSubmissionCommentsType] = useState(false)
+  const [messageOpenEvent, setMessageOpenEvent] = useState(false)
   const userID = ENV.current_user_id?.toString()
+  const [urlUserRecipient, setUrlUserRecepient] = useState()
+  const [selectedIds, setSelectedIds] = useState([])
+
+  const setFilterStateToCurrentWindowHash = () => {
+    const validFilters = ['inbox', 'unread', 'starred', 'sent', 'archived', 'submission_comments']
+
+    const urlHash = window.location.hash
+    const hashParams = urlHash.substring('#filter='.length)
+    const hashData = decodeQueryString(hashParams)
+    const filterType = hashData.filter(i => i.type !== undefined)[0]?.type
+    const courseSelection = hashData.filter(i => i.course !== undefined)[0]?.course
+
+    const newCourseFilter = courseSelection || null
+    setCourseFilter(newCourseFilter)
+
+    const isValidFilter = filterType && validFilters.includes(filterType)
+    if (isValidFilter) setScope(filterType)
+  }
+
+  const setUrlUserRecepientFromUrlParam = () => {
+    const urlData = new URLSearchParams(window.location.search)
+    const userIdFromUrlData = urlData.get('user_id')
+    const userNameFromUrlData = urlData.get('user_name')
+    if (userIdFromUrlData && userNameFromUrlData) {
+      setUrlUserRecepient({
+        _id: userIdFromUrlData,
+        name: userNameFromUrlData,
+        commonCoursesInfo: [],
+        itemType: 'user'
+      })
+      setComposeModal(true)
+    }
+  }
+
+  // Get initial filter settings and set listener
+  // also get initial recepient settings if it exists in the url
+  useEffect(() => {
+    setFilterStateToCurrentWindowHash()
+    setUrlUserRecepientFromUrlParam()
+    window.addEventListener('hashchange', setFilterStateToCurrentWindowHash)
+  }, [])
+
+  // pre-populate recepients if urlUserRecipientId exists
+  useEffect(() => {
+    if (urlUserRecipient) {
+      setSelectedIds([urlUserRecipient])
+    }
+  }, [urlUserRecipient])
+
+  // Keep the url updated
+  useEffect(() => {
+    const courseHash = courseFilter ? `&course=${courseFilter}` : ''
+    window.location.hash = `#filter=type=${scope}${courseHash}`
+  }, [courseFilter, scope])
+
+  // upon compose modal close, disregard url recipient going forward
+  useEffect(() => {
+    if (urlUserRecipient && !composeModal) {
+      setUrlUserRecepient(null)
+      setSelectedIds([])
+    }
+  }, [composeModal, urlUserRecipient])
+
+  // Keep the contextUpdated
+  useEffect(() => {
+    setIsSubmissionCommentsType(scope === 'submission_comments')
+  }, [scope])
+
+  const conversationContext = {
+    multiselect,
+    setMultiselect,
+    messageOpenEvent,
+    setMessageOpenEvent,
+    isSubmissionCommentsType,
+    setIsSubmissionCommentsType
+  }
 
   const updateSelectedConversations = conversations => {
     setSelectedConversations(conversations)
     setDeleteDisabled(conversations.length === 0)
     setArchiveDisabled(conversations.length === 0)
     setSelectedConversationMessage(null)
+  }
+
+  const onSelectedIdsChange = ids => {
+    setSelectedIds(ids)
   }
 
   const {setOnFailure, setOnSuccess} = useContext(AlertManagerContext)
@@ -154,7 +241,8 @@ const CanvasInbox = () => {
     setComposeModal(true)
   }
 
-  const onForward = () => {
+  const onForward = ({conversationMessage = null} = {}) => {
+    setSelectedConversationMessage(conversationMessage)
     setIsForward(true)
     setComposeModal(true)
   }
@@ -166,7 +254,7 @@ const CanvasInbox = () => {
       setDisplayUnarchiveButton(false)
     } else {
       setDisplayUnarchiveButton(
-        selectedConversations[0].conversationParticipantsConnection?.nodes?.some(cp => {
+        selectedConversations[0].participants?.some(cp => {
           return cp.user._id === userID && cp.workflowState === 'archived'
         })
       )
@@ -188,10 +276,11 @@ const CanvasInbox = () => {
         }
       }}
       render={(responsiveProps, matches) => (
-        <div className="canvas-inbox-container">
+        <ConversationContext.Provider value={conversationContext}>
           <Flex height="100vh" as="div" direction="column">
             {(matches.includes('desktop') ||
-              (matches.includes('mobile') && !selectedConversations.length)) && (
+              (matches.includes('mobile') && !selectedConversations.length) ||
+              multiselect) && (
               <Flex.Item
                 data-testid={
                   matches.includes('desktop')
@@ -201,6 +290,7 @@ const CanvasInbox = () => {
               >
                 <MessageListActionContainer
                   activeMailbox={scope}
+                  activeCourseFilter={courseFilter}
                   onSelectMailbox={newScope => {
                     setSelectedConversations([])
                     setScope(newScope)
@@ -231,7 +321,8 @@ const CanvasInbox = () => {
             <Flex.Item shouldGrow shouldShrink>
               <Flex height="100%" as="div" align="center" justifyItems="center">
                 {(matches.includes('desktop') ||
-                  (matches.includes('mobile') && !selectedConversations.length)) && (
+                  (matches.includes('mobile') && !selectedConversations.length) ||
+                  multiselect) && (
                   <Flex.Item width={responsiveProps.conversationListWidth} height="100%">
                     <ConversationListContainer
                       course={courseFilter}
@@ -242,7 +333,9 @@ const CanvasInbox = () => {
                   </Flex.Item>
                 )}
                 {(matches.includes('desktop') ||
-                  (matches.includes('mobile') && selectedConversations.length > 0)) && (
+                  (matches.includes('mobile') &&
+                    selectedConversations.length > 0 &&
+                    !multiselect)) && (
                   <Flex.Item
                     shouldGrow
                     shouldShrink
@@ -290,6 +383,8 @@ const CanvasInbox = () => {
                             onReply({conversationMessage, replyAll: true})
                           }
                           onDelete={handleDelete}
+                          onForward={conversationMessage => onForward({conversationMessage})}
+                          scope={scope}
                         />
                       </>
                     ) : (
@@ -317,8 +412,10 @@ const CanvasInbox = () => {
             }}
             open={composeModal}
             conversationsQueryOption={conversationsQueryOption}
+            onSelectedIdsChange={onSelectedIdsChange}
+            selectedIds={selectedIds}
           />
-        </div>
+        </ConversationContext.Provider>
       )}
     />
   )

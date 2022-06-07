@@ -20,15 +20,17 @@ import {SetState, GetState} from 'zustand'
 import uuid from 'uuid'
 import doFetchApi from '@canvas/do-fetch-api-effect'
 // @ts-ignore
-import I18n from 'i18n!gradebook'
+import {useScope as useI18nScope} from '@canvas/i18n'
 import type {PartialFilter, AppliedFilter, FilterCondition, Filter} from '../gradebook.d'
 import {
   deserializeFilter,
-  serializeFilter,
   compareFilterByDate,
   findAllAppliedFilterValuesOfType
 } from '../Gradebook.utils'
+import GradebookApi from '../apis/GradebookApi'
 import type {GradebookStore} from './index'
+
+const I18n = useI18nScope('gradebook')
 
 export type FiltersState = {
   filters: Filter[]
@@ -105,6 +107,7 @@ export default (set: SetState<GradebookStore>, get: GetState<GradebookStore>): F
     // Is assignment group filter not represented?
     if (
       initialColumnFilterSettings.assignment_group_id &&
+      initialColumnFilterSettings.assignment_group_id !== '0' &&
       !findAllAppliedFilterValuesOfType('assignment-group', get().filters).includes(
         initialColumnFilterSettings.assignment_group_id
       )
@@ -120,6 +123,7 @@ export default (set: SetState<GradebookStore>, get: GetState<GradebookStore>): F
     // Is module filter not represented?
     if (
       initialColumnFilterSettings.context_module_id &&
+      initialColumnFilterSettings.context_module_id !== '0' &&
       !findAllAppliedFilterValuesOfType('module', get().filters).includes(
         initialColumnFilterSettings.context_module_id
       )
@@ -183,22 +187,48 @@ export default (set: SetState<GradebookStore>, get: GetState<GradebookStore>): F
       })
   },
 
-  saveStagedFilter: () => {
+  saveStagedFilter: async () => {
     const stagedFilter = get().stagedFilter
     if (!stagedFilter) throw new Error('staged filter is null')
 
-    const {name, payload} = serializeFilter(stagedFilter)
+    const otherFilters = get().filters.filter(f => f.id !== stagedFilter.id)
+    const previouslyAppliedFilters = otherFilters.filter(f => f.is_applied)
 
-    return doFetchApi({
-      path: `/api/v1/courses/${get().courseId}/gradebook_filters`,
-      method: 'POST',
-      body: {gradebook_filter: {name, payload}}
-    })
+    if (stagedFilter.is_applied && previouslyAppliedFilters.length > 0) {
+      try {
+        await Promise.all(
+          previouslyAppliedFilters.map(applidFilter =>
+            GradebookApi.updateGradebookFilter(get().courseId, {
+              ...applidFilter,
+              is_applied: false
+            })
+          )
+        )
+      } catch (err) {
+        set({
+          flashMessages: get().flashMessages.concat([
+            {
+              key: `filters-create-error-${Date.now()}`,
+              message: I18n.t('There was an error updating a filter.'),
+              variant: 'error'
+            }
+          ])
+        })
+      }
+    }
+
+    return GradebookApi.createGradebookFilter(get().courseId, stagedFilter)
       .then(response => {
         const newFilter = deserializeFilter(response.json)
         set({
           stagedFilter: null,
-          filters: get().filters.concat([newFilter]).sort(compareFilterByDate)
+          filters: get()
+            .filters.map(f => ({
+              ...f,
+              is_applied: stagedFilter.is_applied ? false : f.is_applied
+            }))
+            .concat([newFilter])
+            .sort(compareFilterByDate)
         })
       })
       .catch(() => {
@@ -214,44 +244,33 @@ export default (set: SetState<GradebookStore>, get: GetState<GradebookStore>): F
       })
   },
 
-  updateFilter: (filter: Filter) => {
-    const originalFilter = get().filters.find(f => f.id !== filter.id)
+  updateFilter: async (filter: Filter) => {
+    const originalFilter = get().filters.find(f => f.id === filter.id)
+    const otherFilters = get().filters.filter(f => f.id !== filter.id)
+    const previouslyAppliedFilters = otherFilters.filter(f => f.is_applied)
 
     // optimistic update
     set({
-      filters: get()
-        .filters.filter(f => f.id !== filter.id)
+      filters: otherFilters
+        .map(f => ({
+          ...f,
+          is_applied: filter.is_applied ? false : f.is_applied
+        }))
         .concat([filter])
         .sort(compareFilterByDate)
     })
 
-    const {name, payload} = serializeFilter(filter)
-
-    return doFetchApi({
-      path: `/api/v1/courses/${get().courseId}/gradebook_filters/${filter.id}`,
-      method: 'PUT',
-      body: {gradebook_filter: {name, payload}}
-    })
-      .then(response => {
-        const updatedFilter = deserializeFilter(response.json)
-        set({
-          filters: get()
-            .filters.filter(f => f.id !== filter.id)
-            .concat([updatedFilter])
-            .sort(compareFilterByDate)
-        })
-      })
-      .catch(() => {
-        // rewind
-        if (originalFilter) {
-          set({
-            filters: get()
-              .filters.filter(f => f.id !== filter.id)
-              .concat([originalFilter])
-              .sort(compareFilterByDate)
-          })
-        }
-
+    if (filter.is_applied && previouslyAppliedFilters.length > 0) {
+      try {
+        await Promise.all(
+          previouslyAppliedFilters.map(applidFilter =>
+            GradebookApi.updateGradebookFilter(get().courseId, {
+              ...applidFilter,
+              is_applied: false
+            })
+          )
+        )
+      } catch (err) {
         set({
           flashMessages: get().flashMessages.concat([
             {
@@ -261,17 +280,46 @@ export default (set: SetState<GradebookStore>, get: GetState<GradebookStore>): F
             }
           ])
         })
+      }
+    }
+
+    try {
+      const response = await GradebookApi.updateGradebookFilter(get().courseId, filter)
+      const updatedFilter = deserializeFilter(response.json)
+      set({
+        filters: get()
+          .filters.filter(f => f.id !== filter.id)
+          .concat([updatedFilter])
+          .sort(compareFilterByDate)
       })
+    } catch (err) {
+      // rewind
+      if (originalFilter) {
+        set({
+          filters: get()
+            .filters.filter(f => f.id !== filter.id)
+            .concat([originalFilter])
+            .sort(compareFilterByDate)
+        })
+      }
+
+      set({
+        flashMessages: get().flashMessages.concat([
+          {
+            key: `filters-create-error-${Date.now()}`,
+            message: I18n.t('There was an error updating a filter.'),
+            variant: 'error'
+          }
+        ])
+      })
+    }
   },
 
   deleteFilter: (filter: Filter) => {
     // Optimistic update
     set({filters: get().filters.filter(f => f.id !== filter.id)})
 
-    return doFetchApi({
-      path: `/api/v1/courses/${get().courseId}/gradebook_filters/${filter.id}`,
-      method: 'DELETE'
-    }).catch(() => {
+    return GradebookApi.deleteGradebookFilter(get().courseId, filter.id).catch(() => {
       // rewind
       const isAbsent = get().filters.some(f => f.id === filter.id)
       if (!isAbsent) {

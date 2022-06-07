@@ -72,14 +72,15 @@ import GradingPeriodSetsApi from '@canvas/grading/jquery/gradingPeriodSetsApi'
 // @ts-ignore
 import InputFilterView from 'backbone-input-filter-view'
 // @ts-ignore
-import I18n from 'i18n!gradebook'
+import {useScope as useI18nScope} from '@canvas/i18n'
 import CourseGradeCalculator from '@canvas/grading/CourseGradeCalculator'
 import * as EffectiveDueDates from '@canvas/grading/EffectiveDueDates'
 import GradeFormatHelper from '@canvas/grading/GradeFormatHelper'
 import AssignmentOverrideHelper from '@canvas/due-dates/AssignmentOverrideHelper'
 // @ts-ignore
 import UserSettings from '@canvas/user-settings'
-import Spinner from 'spin.js'
+import {View} from '@instructure/ui-view'
+import {Spinner} from '@instructure/ui-spinner'
 // @ts-ignore
 import GradeDisplayWarningDialog from '../../jquery/GradeDisplayWarningDialog.coffee'
 import PostGradesFrameDialog from '../../jquery/PostGradesFrameDialog'
@@ -181,6 +182,8 @@ import {
   columnWidths
 } from './initialState'
 
+const I18n = useI18nScope('gradebook')
+
 const GradebookGrid = React.lazy(() => import('./components/GradebookGrid'))
 
 const ASSIGNMENT_KEY_REGEX = /^assignment_(?!group)/
@@ -230,6 +233,7 @@ type GradebookState = {
   isGridLoaded: boolean
   modules: Module[]
   sections: Section[]
+  isStatusesModalOpen: boolean
 }
 
 class Gradebook extends React.Component<GradebookProps, GradebookState> {
@@ -300,8 +304,6 @@ class Gradebook extends React.Component<GradebookProps, GradebookState> {
 
   show_attendance?: boolean
 
-  statusesModal?: HTMLElement & {open?: () => void}
-
   studentGroups: StudentGroupMap = {}
 
   studentGroupsEnabled?: boolean
@@ -355,8 +357,6 @@ class Gradebook extends React.Component<GradebookProps, GradebookState> {
 
   defaultSortType: string = 'assignment_group'
 
-  spinner?: Spinner
-
   gridDisplaySettings: GridDisplaySettings
 
   startedInitializing?: boolean
@@ -379,6 +379,10 @@ class Gradebook extends React.Component<GradebookProps, GradebookState> {
     this.gradingPeriodSet = this.options.grading_period_set
       ? GradingPeriodSetsApi.deserializeSet(this.options.grading_period_set)
       : null
+    this.gridDisplaySettings = getInitialGridDisplaySettings(
+      this.options.settings,
+      this.props.colors
+    )
     this.gradingPeriodId = this.getCurrentGradingPeriod()
 
     this.state = {
@@ -388,7 +392,8 @@ class Gradebook extends React.Component<GradebookProps, GradebookState> {
       isEssentialDataLoaded: false,
       isGridLoaded: false,
       modules: [],
-      sections: this.options.sections.length > 1 ? this.options.sections : []
+      sections: this.options.sections.length > 1 ? this.options.sections : [],
+      isStatusesModalOpen: false
     }
     this.course = getCourseFromOptions(this.options)
     this.courseFeatures = getCourseFeaturesFromOptions(this.options)
@@ -427,10 +432,6 @@ class Gradebook extends React.Component<GradebookProps, GradebookState> {
     $.subscribe('currentSection/change', this.updateCurrentSection)
     this.courseContent = getInitialCourseContent(this.options)
     this.gradebookContent = getInitialGradebookContent(this.options)
-    this.gridDisplaySettings = getInitialGridDisplaySettings(
-      this.options.settings,
-      this.props.colors
-    )
     this.contentLoadStates = getInitialContentLoadStates(this.options)
     this.actionStates = getInitialActionStates()
     this.setAssignments({})
@@ -456,6 +457,9 @@ class Gradebook extends React.Component<GradebookProps, GradebookState> {
     this.initShowSeparateFirstLastNames(
       this.options.settings.show_separate_first_last_names === 'true' &&
         this.options.allow_separate_first_last_names
+    )
+    this.initHideAssignmentGroupTotals(
+      this.options.settings.hide_assignment_group_totals === 'true'
     )
     this.initSubmissionStateMap()
     this.gradebookColumnSizeSettings = this.options.gradebook_column_size_settings
@@ -562,17 +566,6 @@ class Gradebook extends React.Component<GradebookProps, GradebookState> {
     }
     this.startedInitializing = true
     if (this.gridReady.state() !== 'resolved') {
-      if (!this.spinner) {
-        this.spinner = new Spinner()
-      }
-      $(this.spinner.spin().el)
-        .css({
-          opacity: 0.5,
-          top: '55px',
-          left: '50%'
-        })
-        .addClass('use-css-transitions-for-show-hide')
-        .appendTo('#main')
       return $('#gradebook-grid-wrapper').hide()
     } else {
       return $('#gradebook_grid').trigger('resize.fillWindowWithMe')
@@ -675,7 +668,6 @@ class Gradebook extends React.Component<GradebookProps, GradebookState> {
     this.setAssignmentGroupsLoaded(true)
     assignmentGroups.forEach(assignmentGroup => {
       let group = this.assignmentGroups[assignmentGroup.id]
-
       if (!group) {
         group = assignmentGroup
         this.assignmentGroups[group.id] = group
@@ -721,7 +713,7 @@ class Gradebook extends React.Component<GradebookProps, GradebookState> {
   }
 
   gotSections = sections => {
-    this.setSections(sections.map(htmlEscape))
+    this.setSections(sections)
     this.hasSections.resolve()
     return this.postGradesStore.setSections(this.sections)
   }
@@ -1777,7 +1769,6 @@ class Gradebook extends React.Component<GradebookProps, GradebookState> {
     this.renderFilters()
     this.arrangeColumnsBy(this.getColumnOrder(), true)
     this.renderGradebookSettingsModal()
-    this.renderStatusesModal()
     return $('#keyboard-shortcuts').click(function () {
       const questionMarkKeyDown = $.Event('keydown', {
         keyCode: 191,
@@ -1934,9 +1925,9 @@ class Gradebook extends React.Component<GradebookProps, GradebookState> {
       allowShowSeparateFirstLastNames: this.options.allow_separate_first_last_names,
       showSeparateFirstLastNames: this.gridDisplaySettings.showSeparateFirstLastNames,
       onSelectShowSeparateFirstLastNames: this.toggleShowSeparateFirstLastNames,
-      onSelectShowStatusesModal: () => {
-        this.statusesModal?.open?.()
-      },
+      hideAssignmentGroupTotals: this.gridDisplaySettings.hideAssignmentGroupTotals,
+      onSelectHideAssignmentGroupTotals: this.toggleHideAssignmentGroupTotals,
+      onSelectShowStatusesModal: () => this.setState({isStatusesModalOpen: true}),
       onSelectViewUngradedAsZero: () => {
         confirmViewUngradedAsZero({
           currentValue: this.gridDisplaySettings.viewUngradedAsZero,
@@ -1965,15 +1956,24 @@ class Gradebook extends React.Component<GradebookProps, GradebookState> {
     )
   }
 
-  getAssignmentOrder = () => {
+  getAssignmentOrder = (assignmentGroupId?: string) => {
     return this.gridData.columns.scrollable.reduce((acc: string[], column) => {
       const matches = column.match(/assignment_(\d+)/)
       if (matches) {
-        const assignmentId = matches[1]
-        acc.push(assignmentId)
+        if (
+          assignmentGroupId === undefined ||
+          this.assignments[parseInt(matches[1])]?.assignment_group_id === assignmentGroupId
+        ) {
+          const assignmentId = matches[1]
+          acc.push(assignmentId)
+        }
       }
       return acc
     }, [])
+  }
+
+  getStudentOrder = () => {
+    return this.gridData.rows.map(row => row.id)
   }
 
   getActionMenuProps = () => {
@@ -2091,14 +2091,19 @@ class Gradebook extends React.Component<GradebookProps, GradebookState> {
       allowViewUngradedAsZero: this.courseFeatures.allowViewUngradedAsZero,
       loadCurrentViewOptions: () => {
         const {criterion, direction} = this.getColumnSortSettingsViewOptionsMenuProps()
-        const {viewUngradedAsZero, showUnpublishedAssignments, showSeparateFirstLastNames} =
-          this.gridDisplaySettings
+        const {
+          viewUngradedAsZero,
+          showUnpublishedAssignments,
+          showSeparateFirstLastNames,
+          hideAssignmentGroupTotals
+        } = this.gridDisplaySettings
 
         return {
           columnSortSettings: {criterion, direction},
           showNotes: this.isTeacherNotesColumnShown(),
           showSeparateFirstLastNames,
           showUnpublishedAssignments,
+          hideAssignmentGroupTotals,
           statusColors: this.state.gridColors,
           viewUngradedAsZero
         }
@@ -2109,6 +2114,7 @@ class Gradebook extends React.Component<GradebookProps, GradebookState> {
 
   handleViewOptionsUpdated = ({
     columnSortSettings: {criterion, direction} = {criterion: undefined, direction: undefined},
+    hideAssignmentGroupTotals,
     showNotes,
     showUnpublishedAssignments,
     showSeparateFirstLastNames,
@@ -2137,6 +2143,7 @@ class Gradebook extends React.Component<GradebookProps, GradebookState> {
 
     // Finally, the remaining options are saved to the user's settings.
     const {
+      hideAssignmentGroupTotals: oldHideAssignmentGroupTotals,
       showUnpublishedAssignments: oldShowUnpublished,
       showSeparateFirstLastNames: oldShowSeparateFirstLastNames,
       viewUngradedAsZero: oldViewUngradedAsZero
@@ -2148,15 +2155,21 @@ class Gradebook extends React.Component<GradebookProps, GradebookState> {
     const showSeparateFirstLastNamesChanged =
       oldShowSeparateFirstLastNames !== showSeparateFirstLastNames
     const colorsChanged = !_.isEqual(this.state.gridColors, colors)
+    const hideAssignmentGroupTotalsChanged =
+      oldHideAssignmentGroupTotals !== hideAssignmentGroupTotals
 
     if (
       colorsChanged ||
+      hideAssignmentGroupTotalsChanged ||
       showUnpublishedChanged ||
       viewUngradedAsZeroChanged ||
       showSeparateFirstLastNamesChanged
     ) {
       const changedSettings = {
         colors: colorsChanged ? colors : undefined,
+        hideAssignmentGroupTotals: hideAssignmentGroupTotalsChanged
+          ? hideAssignmentGroupTotals
+          : undefined,
         showUnpublishedAssignments: showUnpublishedChanged ? showUnpublishedAssignments : undefined,
         showSeparateFirstLastNames: showSeparateFirstLastNamesChanged
           ? showSeparateFirstLastNames
@@ -2195,12 +2208,14 @@ class Gradebook extends React.Component<GradebookProps, GradebookState> {
 
   saveUpdatedUserSettings = ({
     colors,
+    hideAssignmentGroupTotals,
     showUnpublishedAssignments,
     viewUngradedAsZero,
     showSeparateFirstLastNames
   }) => {
     return this.saveSettings({
       colors,
+      hideAssignmentGroupTotals,
       showUnpublishedAssignments,
       showSeparateFirstLastNames,
       viewUngradedAsZero
@@ -2213,6 +2228,11 @@ class Gradebook extends React.Component<GradebookProps, GradebookState> {
       if (colors !== undefined) {
         this.gridDisplaySettings.colors = colors
         this.setState({gridColors: statusColors(this.gridDisplaySettings.colors)})
+      }
+
+      if (hideAssignmentGroupTotals !== undefined) {
+        this.gridDisplaySettings.hideAssignmentGroupTotals = hideAssignmentGroupTotals
+        this.updateAllTotalColumns()
       }
 
       if (showUnpublishedAssignments !== undefined) {
@@ -2258,19 +2278,6 @@ class Gradebook extends React.Component<GradebookProps, GradebookState> {
         this.hideNotesColumn()
       }
     })
-  }
-
-  renderStatusesModal = () => {
-    const statusesModalMountPoint = document.querySelector("[data-component='StatusesModal']")
-    const statusesModalProps = {
-      onClose: () => {
-        return this.viewOptionsMenu?.focus()
-      },
-      colors: this.state.gridColors,
-      afterUpdateStatusColors: this.updateGridColors
-    }
-    this.statusesModal = renderComponent(StatusesModal, statusesModalMountPoint, statusesModalProps)
-    return this.statusesModal
   }
 
   checkForUploadComplete = () => {
@@ -2433,6 +2440,11 @@ class Gradebook extends React.Component<GradebookProps, GradebookState> {
         const column =
           this.gridData.columns.definitions[getAssignmentGroupColumnId(assignmentGroupId)]
         if (column) {
+          if (
+            this.options.enhanced_gradebook_filters &&
+            this.gridDisplaySettings.hideAssignmentGroupTotals
+          )
+            continue
           scrollableColumns.push(column)
         }
       }
@@ -2759,13 +2771,6 @@ class Gradebook extends React.Component<GradebookProps, GradebookState> {
   }
 
   onGridInit = () => {
-    if (this.spinner) {
-      // TODO: this "if @spinner" crap is necessary because the outcome
-      // gradebook kicks off the gradebook (unnecessarily).  back when the
-      // gradebook was slow, this code worked, but now the spinner may never
-      // initialize.  fix the way outcome gradebook loads
-      $(this.spinner.el).remove()
-    }
     $('#gradebook-grid-wrapper').show()
     this.uid = this.gradebookGrid?.grid.getUID()
     $('#accessibility_warning').focus(function () {
@@ -2836,6 +2841,7 @@ class Gradebook extends React.Component<GradebookProps, GradebookState> {
   }
 
   saveSettings = ({
+    hideAssignmentGroupTotals = this.gridDisplaySettings.hideAssignmentGroupTotals,
     selectedViewOptionsFilters = this.listSelectedViewOptionsFilters(),
     showConcludedEnrollments = this.getEnrollmentFilters().concluded,
     showInactiveEnrollments = this.getEnrollmentFilters().inactive,
@@ -2854,6 +2860,7 @@ class Gradebook extends React.Component<GradebookProps, GradebookState> {
       gradebook_settings: {
         enter_grades_as: this.gridDisplaySettings.enterGradesAs,
         filter_columns_by: underscore(this.gridDisplaySettings.filterColumnsBy),
+        hide_assignment_group_totals: hideAssignmentGroupTotals ? 'true' : 'false',
         selected_view_options_filters: selectedViewOptionsFilters,
         show_concluded_enrollments: showConcludedEnrollments ? 'true' : 'false',
         show_inactive_enrollments: showInactiveEnrollments ? 'true' : 'false',
@@ -3744,6 +3751,25 @@ class Gradebook extends React.Component<GradebookProps, GradebookState> {
   }
 
   // Gradebook Application State Methods
+  initHideAssignmentGroupTotals = (hideAssignmentGroupTotals = false) => {
+    this.gridDisplaySettings.hideAssignmentGroupTotals = hideAssignmentGroupTotals
+  }
+
+  toggleHideAssignmentGroupTotals = () => {
+    const toggleableAction = () => {
+      this.gridDisplaySettings.hideAssignmentGroupTotals =
+        !this.gridDisplaySettings.hideAssignmentGroupTotals
+      this.updateColumnsAndRenderViewOptionsMenu()
+      this.renderActionMenu()
+    }
+    toggleableAction()
+    // on success, do nothing since the render happened earlier
+    return this.saveSettings({
+      hideAssignmentGroupTotals: this.gridDisplaySettings.hideAssignmentGroupTotals
+    }).catch(toggleableAction)
+    // this pattern keeps the ui snappier rather than waiting for ajax call to complete
+  }
+
   initShowSeparateFirstLastNames = (showSeparateFirstLastNames = false) => {
     this.gridDisplaySettings.showSeparateFirstLastNames = showSeparateFirstLastNames
   }
@@ -4618,22 +4644,16 @@ class Gradebook extends React.Component<GradebookProps, GradebookState> {
   executeApplyScoreToUngraded = args => {
     const {value, ...options} = args
 
-    // TODO: if updated Gradebook filters are enabled, we should use those
-    // instead, either by replacing the lines below with checks against the
-    // current filters or by passing the ID of the active filter (and looking up
-    // the contents of the filter on the back-end)
-    const optionsWithFilters = {
+    const optionsWithAssignmentsAndStudentIds = {
       ...options,
-      courseSectionId: this.getFilterRowsBySetting('sectionId'),
-      gradingPeriodId: this.getFilterColumnsBySetting('gradingPeriodId'),
-      moduleId: this.getFilterColumnsBySetting('contextModuleId'),
-      studentGroupId: this.getFilterRowsBySetting('studentGroupId')
+      assignment_ids: this.getAssignmentOrder(args.assignmentGroupId),
+      student_ids: this.getStudentOrder()
     }
 
     if (value === 'excused') {
-      optionsWithFilters.excuse = true
+      optionsWithAssignmentsAndStudentIds.excused = true
     } else {
-      optionsWithFilters.percent = value
+      optionsWithAssignmentsAndStudentIds.percent = value
     }
 
     this.isRunningScoreToUngraded = true
@@ -4648,7 +4668,10 @@ class Gradebook extends React.Component<GradebookProps, GradebookState> {
         )
       )
       .then(() => {
-        this.scoreToUngradedManager!.startProcess(this.options.context_id, optionsWithFilters)
+        this.scoreToUngradedManager!.startProcess(
+          this.options.context_id,
+          optionsWithAssignmentsAndStudentIds
+        )
           .then(
             FlashAlert.showFlashSuccess(I18n.t('Score to ungraded process finished successfully'))
           )
@@ -4799,6 +4822,17 @@ class Gradebook extends React.Component<GradebookProps, GradebookState> {
             </div>
           ))}
         </Portal>
+        {this.state.isStatusesModalOpen && (
+          <StatusesModal
+            onClose={() => {
+              this.viewOptionsMenu?.focus()
+              this.setState({isStatusesModalOpen: false})
+            }}
+            colors={this.state.gridColors}
+            afterUpdateStatusColors={this.updateGridColors}
+          />
+        )}
+
         <Portal node={this.props.settingsModalButtonContainer}>
           <Button
             renderIcon={IconSettingsSolid}
@@ -4817,6 +4851,11 @@ class Gradebook extends React.Component<GradebookProps, GradebookState> {
             variant="DefaultGradebook"
           />
         </Portal>
+        {(!this.state.isGridLoaded || !this.state.isEssentialDataLoaded) && (
+          <View as="div" width="100%" textAlign="center">
+            <Spinner renderTitle={I18n.t('Loading Gradebook')} margin="large auto 0 auto" />
+          </View>
+        )}
         {!this.props.hideGrid && (
           <ErrorBoundary
             errorComponent={

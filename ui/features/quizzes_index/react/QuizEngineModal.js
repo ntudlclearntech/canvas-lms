@@ -19,13 +19,15 @@
 import React, {useState} from 'react'
 import $ from 'jquery'
 import '@canvas/jquery/jquery.ajaxJSON'
-import I18n from 'i18n!quiz_engine_modal'
+import {useScope as useI18nScope} from '@canvas/i18n'
 import CanvasModal from '@canvas/instui-bindings/react/Modal'
 import {Link} from '@instructure/ui-link'
 import {RadioInputGroup, RadioInput} from '@instructure/ui-radio-input'
 import {Text} from '@instructure/ui-text'
 import {Button} from '@instructure/ui-buttons'
 import getCookie from '@instructure/get-cookie'
+
+const I18n = useI18nScope('quiz_engine_modal')
 
 const CLASSIC = 'classic'
 const NEW = 'new'
@@ -62,10 +64,10 @@ function QuizEngineModal({setOpen, onDismiss}) {
   )
   const footer = (
     <div>
-      <Button onClick={onDismiss} margin="0 x-small 0 0" variant="light">
+      <Button onClick={onDismiss} margin="0 x-small 0 0" color="primary-inverse">
         {I18n.t('Cancel')}
       </Button>
-      <Button type="submit" onClick={handleSubmit} variant="primary" disabled={!option}>
+      <Button type="submit" onClick={handleSubmit} color="primary" disabled={!option}>
         {I18n.t('Submit')}
       </Button>
     </div>

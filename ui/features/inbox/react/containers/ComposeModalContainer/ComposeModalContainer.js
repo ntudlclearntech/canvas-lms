@@ -21,7 +21,7 @@ import closedCaptionLanguages from '@canvas/util/closedCaptionLanguages'
 import {ComposeActionButtons} from '../../components/ComposeActionButtons/ComposeActionButtons'
 import {Conversation} from '../../../graphql/Conversation'
 import HeaderInputs from './HeaderInputs'
-import I18n from 'i18n!conversations_2'
+import {useScope as useI18nScope} from '@canvas/i18n'
 import {Modal} from '@instructure/ui-modal'
 import ModalBody from './ModalBody'
 import ModalHeader from './ModalHeader'
@@ -34,6 +34,8 @@ import {uploadFiles} from '@canvas/upload-file'
 import UploadMedia from '@instructure/canvas-media'
 import {MediaCaptureStrings, SelectStrings, UploadMediaStrings} from '../../../util/constants'
 
+const I18n = useI18nScope('conversations_2')
+
 const ComposeModalContainer = props => {
   const {setOnFailure, setOnSuccess} = useContext(AlertManagerContext)
 
@@ -45,7 +47,6 @@ const ComposeModalContainer = props => {
   const [sendIndividualMessages, setSendIndividualMessages] = useState(false)
   const [userNote, setUserNote] = useState(false)
   const [selectedContext, setSelectedContext] = useState()
-  const [selectedIds, setSelectedIds] = useState([])
   const [mediaUploadOpen, setMediaUploadOpen] = useState(false)
   const [uploadingMediaFile, setUploadingMediaFile] = useState(false)
   const [mediaUploadFile, setMediaUploadFile] = useState(null)
@@ -131,12 +132,8 @@ const ComposeModalContainer = props => {
     setSendIndividualMessages(prev => !prev)
   }
 
-  const onContextSelect = id => {
-    setSelectedContext(id)
-  }
-
-  const onSelectedIdsChange = ids => {
-    setSelectedIds(ids)
+  const onContextSelect = context => {
+    setSelectedContext({contextID: context.contextID, contextName: context.contextName})
   }
 
   const validMessageFields = () => {
@@ -170,7 +167,7 @@ const ComposeModalContainer = props => {
           includedMessages: props.pastConversation?.conversationMessagesConnection.nodes.map(
             c => c._id
           ),
-          recipients: selectedIds.map(rec => rec?._id || rec.id),
+          recipients: props.selectedIds.map(rec => rec?._id || rec.id),
           mediaCommentId: mediaUploadFile?.mediaObject?.media_object?.media_id,
           mediaCommentType: mediaUploadFile?.mediaObject?.media_object?.media_type,
           contextCode: ENV.CONVERSATIONS.ACCOUNT_CONTEXT_CODE
@@ -182,8 +179,8 @@ const ComposeModalContainer = props => {
           attachmentIds: attachments.map(a => a.id),
           body,
           userNote,
-          contextCode: selectedContext,
-          recipients: selectedIds.map(rec => rec?._id || rec.id),
+          contextCode: selectedContext?.contextID,
+          recipients: props.selectedIds.map(rec => rec?._id || rec.id),
           subject,
           groupConversation: !sendIndividualMessages,
           mediaCommentId: mediaUploadFile?.mediaObject?.media_object?.media_id,
@@ -201,7 +198,7 @@ const ComposeModalContainer = props => {
     setBody(null)
     setBodyMessages([])
     setSelectedContext(null)
-    setSelectedIds([])
+    props.onSelectedIdsChange([])
     props.setSendingMessage(false)
     setSubject(null)
     setSendIndividualMessages(false)
@@ -243,12 +240,15 @@ const ComposeModalContainer = props => {
               replaceAttachment={replaceAttachment}
             >
               <HeaderInputs
+                activeCourseFilter={selectedContext}
+                setUserNote={setUserNote}
                 contextName={props.pastConversation?.contextName}
                 courses={props.courses}
+                selectedRecipients={props.selectedIds}
                 isReply={props.isReply}
                 isForward={props.isForward}
                 onContextSelect={onContextSelect}
-                onSelectedIdsChange={onSelectedIdsChange}
+                onSelectedIdsChange={props.onSelectedIdsChange}
                 onUserNoteChange={onUserNoteChange}
                 onSendIndividualMessagesChange={onSendIndividualMessagesChange}
                 onSubjectChange={onSubjectChange}
@@ -330,5 +330,7 @@ ComposeModalContainer.propTypes = {
   open: PropTypes.bool,
   pastConversation: Conversation.shape,
   sendingMessage: PropTypes.bool,
-  setSendingMessage: PropTypes.func
+  setSendingMessage: PropTypes.func,
+  onSelectedIdsChange: PropTypes.func,
+  selectedIds: PropTypes.array
 }

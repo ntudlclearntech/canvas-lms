@@ -18,11 +18,11 @@
 
 import React, {useCallback, useEffect, useState} from 'react'
 import PropTypes from 'prop-types'
-import I18n from 'i18n!observer_options'
+import {useScope as useI18nScope} from '@canvas/i18n'
 
 import {View} from '@instructure/ui-view'
 import {ScreenReaderContent, AccessibleContent} from '@instructure/ui-a11y-content'
-import {IconUserLine, IconAddLine} from '@instructure/ui-icons'
+import {IconAddLine} from '@instructure/ui-icons'
 import {Avatar} from '@instructure/ui-avatar'
 import {Text} from '@instructure/ui-text'
 
@@ -34,13 +34,17 @@ import {savedObservedId, saveObservedId} from '../ObserverGetObservee'
 import AddStudentModal from './AddStudentModal'
 import {parseObservedUsersList, parseObservedUsersResponse} from './utils'
 
+const I18n = useI18nScope('observer_options')
+
 const ObserverOptions = ({
   observedUsersList,
   currentUser,
   handleChangeObservedUser,
   margin,
   canAddObservee,
-  currentUserRoles
+  currentUserRoles,
+  autoFocus,
+  renderLabel
 }) => {
   const [observedUsers, setObservedUsers] = useState(() =>
     parseObservedUsersList(observedUsersList)
@@ -77,16 +81,6 @@ const ObserverOptions = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const selectAvatar =
-    /* don't show the default Canvas avatar */
-    selectedUser?.avatarUrl && !selectedUser.avatarUrl.includes('avatar-50.png') ? (
-      /* hack to shrink the avatar - should be able to use size="xx-small" on inst-ui 7.9.0 */
-      <span style={{fontSize: '0.5rem', verticalAlign: 'middle'}}>
-        <Avatar name={selectedUser.name} src={selectedUser.avatarUrl} size="auto" />
-      </span>
-    ) : (
-      <IconUserLine />
-    )
   const onNewStudentPaired = async () => {
     try {
       const {json} = await doFetchApi({
@@ -115,6 +109,15 @@ const ObserverOptions = ({
       })
     }
   }
+
+  const userAvatar = user => {
+    if (!user) return
+    const avatarUrl =
+      user.avatarUrl && !user.avatarUrl.includes('avatar-50.png') ? user.avatarUrl : undefined
+    return <Avatar name={user.name} src={avatarUrl} size="xx-small" margin="auto 0" />
+  }
+
+  const selectAvatar = userAvatar(selectedUser)
 
   const addStudentOption = (
     <CanvasAsyncSelect.Option
@@ -153,7 +156,7 @@ const ObserverOptions = ({
           key={u.id}
           id={u.id}
           value={u.id}
-          renderBeforeLabel={<IconUserLine />}
+          renderBeforeLabel={userAvatar(u)}
         >
           {u.name}
         </CanvasAsyncSelect.Option>
@@ -164,16 +167,20 @@ const ObserverOptions = ({
     return (
       <View as="div" margin={margin}>
         <CanvasAsyncSelect
+          autoFocus={!!autoFocus}
           data-testid="observed-student-dropdown"
           inputValue={selectSearchValue}
           renderLabel={
-            <ScreenReaderContent>{I18n.t('Select a student to view')}</ScreenReaderContent>
+            <ScreenReaderContent>
+              {renderLabel || I18n.t('Select a student to view')}
+            </ScreenReaderContent>
           }
           noOptionsLabel={I18n.t('No Results')}
           onInputChange={e => setSelectSearchValue(e.target.value)}
           onOptionSelected={(_e, id) => {
             handleOptionSelected(id)
           }}
+          selectedOptionId={selectedUser?.id}
           renderBeforeInput={selectAvatar}
           shouldNotWrap
         >
@@ -228,7 +235,9 @@ ObserverOptions.propTypes = {
   handleChangeObservedUser: PropTypes.func.isRequired,
   margin: PropTypes.string,
   canAddObservee: PropTypes.bool.isRequired,
-  currentUserRoles: PropTypes.arrayOf(PropTypes.string).isRequired
+  currentUserRoles: PropTypes.arrayOf(PropTypes.string).isRequired,
+  autoFocus: PropTypes.bool,
+  renderLabel: PropTypes.string
 }
 
 export default ObserverOptions

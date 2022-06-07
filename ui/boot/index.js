@@ -25,6 +25,10 @@ import {up as configureDateTimeMomentParser} from './initializers/configureDateT
 import {up as configureDateTime} from './initializers/configureDateTime'
 import {up as enableDTNPI} from './initializers/enableDTNPI'
 import {initSentry} from './initializers/initSentry'
+import {up as renderRailsFlashNotifications} from './initializers/renderRailsFlashNotifications'
+import {up as activateCourseMenuToggler} from './initializers/activateCourseMenuToggler'
+import {up as enhanceUserContent} from './initializers/enhanceUserContent'
+import {isolate} from '@canvas/sentry'
 
 try {
   initSentry()
@@ -37,9 +41,24 @@ try {
 // on the page from rails, so this should not cause a new network request.
 moment().locale(ENV.MOMENT_LOCALE)
 
-configureDateTimeMomentParser()
-configureDateTime()
-enableDTNPI()
+let runOnceAfterLocaleFiles = () => {
+  configureDateTimeMomentParser()
+  configureDateTime()
+  isolate(renderRailsFlashNotifications)()
+  isolate(activateCourseMenuToggler)()
+  isolate(enhanceUserContent)()
+}
+
+window.addEventListener('canvasReadyStateChange', function({ detail }) {
+  if (detail === 'localeFiles' || window.canvasReadyState === 'complete') {
+    runOnceAfterLocaleFiles()
+    runOnceAfterLocaleFiles = () => {}
+  }
+})
+
+isolate(enableDTNPI)({
+  endpoint: window.ENV.DATA_COLLECTION_ENDPOINT
+})
 
 async function setupSentry() {
   const Raven = await import('raven-js')

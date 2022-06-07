@@ -19,7 +19,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import {Button, IconButton} from '@instructure/ui-buttons'
-import I18n from 'i18n!ProficiencyRating'
+import {useScope as useI18nScope} from '@canvas/i18n'
 import {IconTrashLine} from '@instructure/ui-icons'
 import {Popover} from '@instructure/ui-popover'
 import {RadioInput} from '@instructure/ui-radio-input'
@@ -31,6 +31,8 @@ import {Flex} from '@instructure/ui-flex'
 import ColorPicker, {PREDEFINED_COLORS} from '@canvas/color-picker'
 import ConfirmMasteryModal from '../ConfirmMasteryModal'
 import requiredIf from '../shared/requiredIf'
+
+const I18n = useI18nScope('ProficiencyRating')
 
 function formatColor(color) {
   if (color[0] !== '#') {
@@ -47,6 +49,7 @@ class ProficiencyRating extends React.Component {
     focusField: PropTypes.oneOf(['description', 'points', 'mastery', 'trash']),
     mastery: requiredIf(({individualOutcome}) => !individualOutcome, PropTypes.bool),
     onColorChange: requiredIf(({individualOutcome}) => !individualOutcome, PropTypes.func),
+    onFocusChange: PropTypes.func,
     onDelete: PropTypes.func.isRequired,
     onDescriptionChange: PropTypes.func.isRequired,
     onMasteryChange: PropTypes.func.isRequired,
@@ -62,6 +65,7 @@ class ProficiencyRating extends React.Component {
   static defaultProps = {
     descriptionError: null,
     focusField: null,
+    onFocusChange: () => {},
     pointsError: null,
     canManage: window.ENV?.PERMISSIONS ? ENV.PERMISSIONS.manage_proficiency_scales : true,
     isMobileView: false,
@@ -80,7 +84,19 @@ class ProficiencyRating extends React.Component {
     this.colorButton = null
   }
 
+  componentDidMount() {
+    this.handleFocus()
+  }
+
   componentDidUpdate() {
+    this.handleFocus()
+  }
+
+  handleBlur = () => {
+    this.props.onFocusChange()
+  }
+
+  handleFocus = () => {
     if (this.props.canManage) {
       if (this.props.focusField === 'trash') {
         setTimeout(
@@ -163,6 +179,7 @@ class ProficiencyRating extends React.Component {
                 {I18n.t(`Change description for mastery level %{position}`, {position})}
               </ScreenReaderContent>
             }
+            onBlur={this.handleBlur}
             onChange={this.handleDescriptionChange}
             inputRef={element => this.setDescriptionRef(element)}
             defaultValue={description}
@@ -223,6 +240,7 @@ class ProficiencyRating extends React.Component {
                   {I18n.t(`Change points for mastery level %{position}`, {position})}
                 </ScreenReaderContent>
               }
+              onBlur={this.handleBlur}
               onChange={this.handlePointChange}
               defaultValue={I18n.n(points)}
               width={isMobileView ? (individualOutcome ? '3rem' : '7rem') : '4rem'}
@@ -268,9 +286,9 @@ class ProficiencyRating extends React.Component {
         {canManage ? (
           <Popover
             on="click"
-            show={this.state.showColorPopover}
+            isShowingContent={this.state.showColorPopover}
             onToggle={this.handleMenuToggle}
-            onShow={this.focusColorPicker}
+            onPositioned={this.focusColorPicker}
             shouldContainFocus
             // Note: without this prop, there's a focus issue where the window will scroll up
             // on Chrome which seems to be caused by an issue within Popover (possibly INSTUI-1799)
@@ -278,8 +296,7 @@ class ProficiencyRating extends React.Component {
             // when it mounts (and resolves the scroll behavior), so we manually focus on
             // mount with focusColorPicker
             shouldFocusContentOnTriggerBlur
-          >
-            <Popover.Trigger>
+            renderTrigger={
               <Button ref={this.setColorRef} variant="link">
                 <div>
                   <span className="colorPickerIcon" style={{background: formatColor(color)}} />
@@ -289,25 +306,24 @@ class ProficiencyRating extends React.Component {
                   <span aria-hidden="true">{I18n.t('Change')}</span>
                 </div>
               </Button>
-            </Popover.Trigger>
-            <Popover.Content>
-              <ColorPicker
-                ref={this.setColorPickerRef}
-                parentComponent="ProficiencyRating"
-                colors={PREDEFINED_COLORS}
-                currentColor={formatColor(color)}
-                hidePrompt
-                nonModal
-                hideOnScroll={false}
-                withAnimation={false}
-                withBorder={false}
-                withBoxShadow={false}
-                withArrow={false}
-                focusOnMount={false}
-                afterClose={this.handleMenuClose}
-                setStatusColor={this.setColor}
-              />
-            </Popover.Content>
+            }
+          >
+            <ColorPicker
+              ref={this.setColorPickerRef}
+              parentComponent="ProficiencyRating"
+              colors={PREDEFINED_COLORS}
+              currentColor={formatColor(color)}
+              hidePrompt
+              nonModal
+              hideOnScroll={false}
+              withAnimation={false}
+              withBorder={false}
+              withBoxShadow={false}
+              withArrow={false}
+              focusOnMount={false}
+              afterClose={this.handleMenuClose}
+              setStatusColor={this.setColor}
+            />
           </Popover>
         ) : (
           <>
@@ -332,7 +348,7 @@ class ProficiencyRating extends React.Component {
   }
 
   renderDeleteButton = () => {
-    const {disableDelete, position, individualOutcome} = this.props
+    const {disableDelete, position} = this.props
     const {showDeleteModal} = this.state
 
     return (
@@ -342,21 +358,19 @@ class ProficiencyRating extends React.Component {
           withBorder={false}
           disabled={disableDelete}
           elementRef={this.setTrashRef}
-          onClick={individualOutcome ? this.handleRealDelete : this.handleDelete}
+          onClick={this.handleDelete}
           renderIcon={<IconTrashLine />}
           screenReaderLabel={I18n.t(`Delete mastery level %{position}`, {position})}
           data-testid="rating-delete-btn"
         />
-        {!individualOutcome && (
-          <ConfirmMasteryModal
-            onConfirm={this.handleRealDelete}
-            modalText={I18n.t('This will remove the mastery level from your mastery scale.')}
-            isOpen={showDeleteModal}
-            onClose={this.handleCloseDeleteModal}
-            title={I18n.t('Remove Mastery Level')}
-            confirmButtonText={I18n.t('Confirm')}
-          />
-        )}
+        <ConfirmMasteryModal
+          onConfirm={this.handleRealDelete}
+          modalText={I18n.t('This will remove the mastery level from your mastery scale.')}
+          isOpen={showDeleteModal}
+          onClose={this.handleCloseDeleteModal}
+          title={I18n.t('Remove Mastery Level')}
+          confirmButtonText={I18n.t('Confirm')}
+        />
       </div>
     )
   }

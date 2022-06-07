@@ -18,8 +18,10 @@
 
 import axios from '@canvas/axios'
 import qs from 'qs'
-import I18n from 'i18n!upload_file'
+import {useScope as useI18nScope} from '@canvas/i18n'
 import resolveProgress from '@canvas/progress/resolve_progress'
+
+const I18n = useI18nScope('upload_file')
 
 // error interpretations. specifically avoid reporting an unhelpful "Network
 // Error". TODO: more introspection of the errors for more detailed/specific
@@ -233,9 +235,12 @@ export function uploadFiles(files, uploadUrl) {
   // be found at /doc/api/file_uploads.md
   const uploadPromises = files.map(file => {
     if (file.url) {
+      // I believe this code is dead now, everything calling it seems to be
+      // using files from a file input (the LTI path now uses uploadFiles in
+      // AttemptTab), should we remove it?
       return uploadFile(uploadUrl, {
         url: file.url,
-        name: file.title,
+        name: file.text,
         content_type: file.mediaType,
         submit_assignment: false
       })

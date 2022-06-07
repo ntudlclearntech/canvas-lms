@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU Affero General Public License along
 // with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import I18n from 'i18n!course_settings'
+import {useScope as useI18nScope} from '@canvas/i18n'
 import $ from 'jquery'
 import _ from 'underscore'
 import DialogBaseView from '@canvas/dialog-base-view'
@@ -25,6 +25,7 @@ import '@canvas/rails-flash-notifications'
 import '@canvas/jquery/jquery.disableWhileLoading'
 
 import filterRoles from './filterRoles'
+const I18n = useI18nScope('course_settings')
 
 export default class EditRolesView extends DialogBaseView {
   static initClass() {

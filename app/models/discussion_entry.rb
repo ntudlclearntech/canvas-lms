@@ -25,6 +25,7 @@ class DiscussionEntry < ActiveRecord::Base
   include SendToStream
   include TextHelper
   include HtmlTextHelper
+  include Api
 
   attr_readonly :discussion_topic_id, :user_id, :parent_id, :is_anonymous_author
   has_many :discussion_entry_drafts, inverse_of: :discussion_entry
@@ -53,6 +54,7 @@ class DiscussionEntry < ActiveRecord::Base
   after_save :update_discussion
   after_save :context_module_action_later
   after_create :create_participants
+  after_create :log_discussion_entry_metrics
   after_create :clear_planner_cache_for_participants
   after_create :update_topic
   validates :message, length: { maximum: maximum_text_length, allow_blank: true }
@@ -83,6 +85,10 @@ class DiscussionEntry < ActiveRecord::Base
     discussion_entry_drafts.where(user_id: user_id).delete_all
   end
 
+  def log_discussion_entry_metrics
+    InstStatsd::Statsd.increment("discussion_entry.created")
+  end
+
   def parse_and_create_mentions
     mention_data = Nokogiri::HTML.fragment(message).search("[data-mention]")
     user_ids = mention_data.map { |l| l["data-mention"] }
@@ -92,7 +98,7 @@ class DiscussionEntry < ActiveRecord::Base
   end
 
   def mentioned_users
-    User.where("EXISTS (?)", mentions.distinct.select("user_id")).to_a
+    User.where(id: mentions.distinct.select("user_id")).to_a
   end
 
   def course_broadcast_data

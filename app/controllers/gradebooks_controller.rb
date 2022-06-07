@@ -110,8 +110,7 @@ class GradebooksController < ApplicationController
       json = {
         assignment_id: submission.assignment_id
       }
-
-      if submission.user_can_read_grade?(@current_user)
+      if submission.user_can_read_grade?(@presenter.student)
         json.merge!({
                       excused: submission.excused?,
                       score: submission.score,
@@ -150,7 +149,8 @@ class GradebooksController < ApplicationController
       student_outcome_gradebook_enabled: @context.feature_enabled?(:student_outcome_gradebook),
       student_id: @presenter.student_id,
       students: @presenter.students.as_json(include_root: false),
-      outcome_proficiency: outcome_proficiency
+      outcome_proficiency: outcome_proficiency,
+      outcome_service_results_to_canvas: outcome_service_results_to_canvas_enabled?
     }
 
     # This really means "if the final grade override feature flag is enabled AND
@@ -481,7 +481,10 @@ class GradebooksController < ApplicationController
 
     js_env({
              GRADEBOOK_OPTIONS: gradebook_options,
-             cool_gradebook_id: Rails.configuration.external_tools["cool_gradebook_id"]
+             cool_gradebook_id: Rails.configuration.external_tools["cool_gradebook_id"],
+             EMOJIS_ENABLED: @context.feature_enabled?(:submission_comment_emojis),
+             EMOJI_DENY_LIST: @context.root_account.settings[:emoji_deny_list],
+             GRADEBOOK_OPTIONS: gradebook_options
            })
   end
 
@@ -592,7 +595,10 @@ class GradebooksController < ApplicationController
       version: params.fetch(:version, nil)
     }
 
-    js_env({ GRADEBOOK_OPTIONS: gradebook_options })
+    js_env({
+             GRADEBOOK_OPTIONS: gradebook_options,
+             outcome_service_results_to_canvas: outcome_service_results_to_canvas_enabled?
+           })
   end
 
   def set_learning_mastery_env
@@ -614,7 +620,8 @@ class GradebooksController < ApplicationController
                settings: gradebook_settings(@context.global_id),
                settings_update_url: api_v1_course_gradebook_settings_update_url(@context),
                IMPROVED_LMGB: root_account.feature_enabled?(:improved_lmgb)
-             }
+             },
+             outcome_service_results_to_canvas: outcome_service_results_to_canvas_enabled?
            })
   end
 
@@ -875,6 +882,8 @@ class GradebooksController < ApplicationController
         @outer_frame = true
         log_asset_access(["speed_grader", @context], "grades", "other")
         env = {
+          EMOJIS_ENABLED: @context.feature_enabled?(:submission_comment_emojis),
+          EMOJI_DENY_LIST: @context.root_account.settings[:emoji_deny_list],
           MANAGE_GRADES: @context.grants_right?(@current_user, session, :manage_grades),
           READ_AS_ADMIN: @context.grants_right?(@current_user, session, :read_as_admin),
           CONTEXT_ACTION_SOURCE: :speed_grader,
@@ -1124,25 +1133,11 @@ class GradebooksController < ApplicationController
   # @argument only_past_due [Boolean]
   #   If true, only operate on submissions whose due date has passed.
   #
-  # @argument assignment_group_id [Integer]
-  #   If supplied, only operate on submissions belonging to assignments within
-  #   the specified assignment group.
+  # @argument assignment_ids [Required, Array]
+  #   An array of assignment ids to apply score to ungraded submissions.
   #
-  # @argument grading_period_id [Integer]
-  #   If supplied, only operate on submissions belonging to the specified
-  #   grading period.
-  #
-  # @argument course_section_id [Integer]
-  #   If supplied, only operate on submissions belonging to students within the
-  #   specified course section.
-  #
-  # @argument student_group_id [Integer]
-  #   If supplied, only operate on submissions belonging to students within the
-  #   specified student group.
-  #
-  # @argument module_id [Integer]
-  #   If supplied, only operate on submissions belonging to assignments within
-  #   the specified module.
+  # @argument student_ids [Required, Array]
+  #   An array of student ids to apply score to ungraded submissions.
   #
   # @example_request
   #
@@ -1150,7 +1145,8 @@ class GradebooksController < ApplicationController
   #   "percent": "50.0",
   #   "mark_as_missing": true,
   #   "only_past_due": true,
-  #   "assignment_group_id": "10"
+  #   "assignment_ids": ["1", "2", "3"],
+  #   "student_ids": ["11", "22"]
   # }
   #
   # @returns Progress
@@ -1177,19 +1173,14 @@ class GradebooksController < ApplicationController
       percent: percent_value,
       excused: excused,
       mark_as_missing: Canvas::Plugin.value_to_boolean(params[:mark_as_missing]),
-      only_apply_to_past_due: Canvas::Plugin.value_to_boolean(params[:only_apply_to_past_due])
+      only_apply_to_past_due: Canvas::Plugin.value_to_boolean(params[:only_past_due])
     )
-    options.assignment_group = @context.assignment_groups.active.find(params[:assignment_group_id]) if params[:assignment_group_id].present?
-    options.context_module = @context.context_modules.not_deleted.find(params[:module_id]) if params[:module_id].present?
-    options.course_section = @context.course_sections.active.find(params[:course_section_id]) if params[:course_section_id].present?
-    options.student_group = @context.active_groups.find(params[:group_id]) if params[:group_id].present?
 
-    if params[:grading_period_id].present?
-      grading_period = GradingPeriod.for(@context).find(params[:grading_period_id])
-      return render json: { error: :cannot_apply_to_closed_grading_period }, status: :bad_request if grading_period.closed?
+    return render json: { error: :no_student_ids_provided }, status: :bad_request if params[:student_ids].blank?
+    return render json: { error: :no_assignment_ids_provided }, status: :bad_request if params[:assignment_ids].blank?
 
-      options.grading_period = grading_period
-    end
+    options.assignment_ids = params[:assignment_ids]
+    options.student_ids = params[:student_ids]
 
     progress = ::Gradebook::ApplyScoreToUngradedSubmissions.queue_apply_score(
       course: @context,
@@ -1547,5 +1538,9 @@ class GradebooksController < ApplicationController
 
   def allow_apply_score_to_ungraded?
     @context.account.feature_enabled?(:apply_score_to_ungraded)
+  end
+
+  def outcome_service_results_to_canvas_enabled?
+    @context.feature_enabled?(:outcome_service_results_to_canvas)
   end
 end

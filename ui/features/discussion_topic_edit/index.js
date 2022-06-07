@@ -31,8 +31,10 @@ import LockManager from '@canvas/blueprint-courses/react/components/LockManager/
 import SectionsAutocomplete from './react/SectionsAutocomplete'
 import {Alert} from '@instructure/ui-alerts'
 import {View} from '@instructure/ui-view'
-import I18n from 'i18n!discussions'
+import {useScope as useI18nScope} from '@canvas/i18n'
 import {AnonymousPostSelector} from './react/AnonymousPostSelector/AnonymousPostSelector'
+
+const I18n = useI18nScope('discussions')
 
 const isAnnouncement =
   ENV.DISCUSSION_TOPIC.ATTRIBUTES != null
@@ -114,7 +116,9 @@ ready(() => {
         model: dueDateList,
         views: {},
         dueDatesReadonly: !!lockedItems.due_dates,
-        availabilityDatesReadonly: !!lockedItems.availability_dates
+        availabilityDatesReadonly: !!lockedItems.availability_dates,
+        inPacedCourse: model.get('in_paced_course'),
+        courseId: assignment.courseID()
       })
     },
     lockedItems: model.id ? lockedItems : {}, // if no id, creating a new discussion

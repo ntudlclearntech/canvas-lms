@@ -206,6 +206,10 @@ module ImprovedOutcomeManagementPage
     rating_delete_buttons[index.nil? ? rating_delete_buttons.length - 1 : index]
   end
 
+  def confirm_delete_individual_rating_button
+    fj("button:contains('Confirm')")
+  end
+
   def calculation_int_input
     f("input[data-testid='calculation-int-input']")
   end
@@ -327,9 +331,7 @@ module ImprovedOutcomeManagementPage
     drilldown_outcome_groups.find { |group| group.text.split("\n")[0] == text }
   end
 
-  def enable_improved_outcomes_management_with_individual_ratings(account)
-    account.enable_feature!(:improved_outcomes_management)
-    account.enable_feature!(:individual_outcome_rating_and_calculation)
+  def disable_account_level_mastery_scales(account)
     account.disable_feature!(:account_level_mastery_scales)
   end
 
@@ -349,5 +351,6 @@ module ImprovedOutcomeManagementPage
 
   def delete_nth_individual_outcome_rating(index = nil)
     nth_individual_rating_delete_button(index).click
+    confirm_delete_individual_rating_button.click
   end
 end

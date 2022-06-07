@@ -16,7 +16,7 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import React from 'react'
+import React, {useContext} from 'react'
 import PropTypes from 'prop-types'
 import {IconButton} from '@instructure/ui-buttons'
 import {Flex} from '@instructure/ui-flex'
@@ -26,9 +26,14 @@ import {Menu} from '@instructure/ui-menu'
 import {Responsive} from '@instructure/ui-responsive'
 import {responsiveQuerySizes} from '../../../util/utils'
 import {Tooltip} from '@instructure/ui-tooltip'
-import I18n from 'i18n!conversations_2'
+import {useScope as useI18nScope} from '@canvas/i18n'
+import {ConversationContext} from '../../../util/constants'
+
+const I18n = useI18nScope('conversations_2')
 
 export const MessageDetailHeader = ({...props}) => {
+  const {isSubmissionCommentsType} = useContext(ConversationContext)
+
   return (
     <Responsive
       match="media"
@@ -48,6 +53,7 @@ export const MessageDetailHeader = ({...props}) => {
       render={responsiveProps => (
         <Flex padding="small">
           <Flex.Item shouldGrow shouldShrink>
+            <span tabIndex="-1" ref={ref => props.focusRef(ref)} />
             <Heading
               level={responsiveProps.level}
               as={responsiveProps.as}
@@ -70,33 +76,37 @@ export const MessageDetailHeader = ({...props}) => {
               </IconButton>
             </Tooltip>
           </Flex.Item>
-          <Flex.Item>
-            <Menu
-              placement="bottom"
-              trigger={
-                <Tooltip renderTip={I18n.t('More options')} on={['hover', 'focus']}>
-                  <IconButton
-                    margin="0 x-small 0 0"
-                    screenReaderLabel={I18n.t('More options')}
-                    withBackground={false}
-                    withBorder={false}
-                    data-testid="more-options"
-                  >
-                    <IconMoreLine />
-                  </IconButton>
-                </Tooltip>
-              }
-            >
-              <Menu.Item value="reply-all" onSelect={() => props.onReplyAll()}>
-                {I18n.t('Reply All')}
-              </Menu.Item>
-              <Menu.Item value="forward">{I18n.t('Forward')}</Menu.Item>
-              <Menu.Item value="star">{I18n.t('Star')}</Menu.Item>
-              <Menu.Item value="delete" onSelect={props.onDelete}>
-                {I18n.t('Delete')}
-              </Menu.Item>
-            </Menu>
-          </Flex.Item>
+          {!isSubmissionCommentsType && (
+            <Flex.Item>
+              <Menu
+                placement="bottom"
+                trigger={
+                  <Tooltip renderTip={I18n.t('More options')} on={['hover', 'focus']}>
+                    <IconButton
+                      margin="0 x-small 0 0"
+                      screenReaderLabel={I18n.t('More options')}
+                      withBackground={false}
+                      withBorder={false}
+                      data-testid="more-options"
+                    >
+                      <IconMoreLine />
+                    </IconButton>
+                  </Tooltip>
+                }
+              >
+                <Menu.Item value="reply-all" onSelect={() => props.onReplyAll()}>
+                  {I18n.t('Reply All')}
+                </Menu.Item>
+                <Menu.Item value="forward" onSelect={props.onForward}>
+                  {I18n.t('Forward')}
+                </Menu.Item>
+                <Menu.Item value="star">{I18n.t('Star')}</Menu.Item>
+                <Menu.Item value="delete" onSelect={props.onDelete}>
+                  {I18n.t('Delete')}
+                </Menu.Item>
+              </Menu>
+            </Flex.Item>
+          )}
           <Flex.Item />
         </Flex>
       )}
@@ -108,9 +118,12 @@ MessageDetailHeader.propTypes = {
   text: PropTypes.string,
   onReply: PropTypes.func,
   onReplyAll: PropTypes.func,
-  onDelete: PropTypes.func
+  onDelete: PropTypes.func,
+  focusRef: PropTypes.any,
+  onForward: PropTypes.func
 }
 
 MessageDetailHeader.defaultProps = {
-  text: null
+  text: null,
+  focusRef: () => {}
 }

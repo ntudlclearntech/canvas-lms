@@ -17,7 +17,7 @@
  */
 
 import ready from '@instructure/ready'
-import I18n from 'i18n!roster_publicjs'
+import {useScope as useI18nScope} from '@canvas/i18n'
 import {Model} from '@canvas/backbone'
 import Role from './backbone/models/Role'
 import RoleSelectView from './backbone/views/RoleSelectView'
@@ -36,6 +36,7 @@ import $ from 'jquery'
 import '@canvas/context-cards/react/StudentContextCardTrigger'
 
 import filterRoles from './backbone/views/filterRoles'
+const I18n = useI18nScope('roster_publicjs')
 
 const fetchOptions = {
   include: [

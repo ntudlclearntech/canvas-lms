@@ -18,11 +18,11 @@
 
 import {ComposeInputWrapper} from '../../components/ComposeInputWrapper/ComposeInputWrapper'
 import {CourseSelect} from '../../components/CourseSelect/CourseSelect'
-import I18n from 'i18n!conversations_2'
+import {useScope as useI18nScope} from '@canvas/i18n'
 import {IndividualMessageCheckbox} from '../../components/IndividualMessageCheckbox/IndividualMessageCheckbox'
 import {FacultyJournalCheckBox} from '../../components/FacultyJournalCheckbox/FacultyJournalCheckbox'
 import PropTypes from 'prop-types'
-import React from 'react'
+import React, {useMemo, useEffect} from 'react'
 import {reduceDuplicateCourses} from '../../../util/courses_helper'
 import {SubjectInput} from '../../components/SubjectInput/SubjectInput'
 
@@ -31,6 +31,8 @@ import {MediaAttachment} from '../../components/MediaAttachment/MediaAttachment'
 import {PresentationContent} from '@instructure/ui-a11y-content'
 import {Text} from '@instructure/ui-text'
 import {AddressBookContainer} from '../AddressBookContainer/AddressBookContainer'
+
+const I18n = useI18nScope('conversations_2')
 
 const HeaderInputs = props => {
   let moreCourses
@@ -41,10 +43,59 @@ const HeaderInputs = props => {
     )
   }
 
-  const canAddUserNote =
-    ENV.CONVERSATIONS.NOTES_ENABLED &&
-    (ENV.CONVERSATIONS.CAN_ADD_NOTES_FOR_ACCOUNT ||
-      Object.values(ENV.CONVERSATIONS.CAN_ADD_NOTES_FOR_COURSES).some(course => !!course))
+  const canAllRecipientsHaveNotes = (recipients, selectedCourseID) => {
+    if (!recipients.length) return false
+
+    for (const recipient of recipients) {
+      if (recipient.hasOwnProperty('commonCoursesInfo')) {
+        let recipientCourseRoles = []
+
+        if (recipient.commonCoursesInfo) {
+          const selectedCourseEnrollments = recipient.commonCoursesInfo.filter(
+            courseEnrollment => courseEnrollment.courseID === selectedCourseID
+          )
+
+          recipientCourseRoles = selectedCourseEnrollments.map(
+            courseEnrollment => courseEnrollment.courseRole
+          )
+        }
+
+        if (!recipientCourseRoles.includes('StudentEnrollment')) {
+          return false
+        }
+        // TODO when VICE-2535 gets finished, add all all students option as a possible note recipient
+      } else if (!recipient.id.includes('group')) {
+        return false
+      }
+    }
+    return true
+  }
+
+  const canAddUserNote = useMemo(() => {
+    let canAddFacultyNote = false
+    const selectedCourseID = props.activeCourseFilter?.contextID
+      ? props.activeCourseFilter?.contextID.split('_')[1]
+      : ''
+
+    if (
+      props.activeCourseFilter &&
+      ENV.CONVERSATIONS.NOTES_ENABLED &&
+      (ENV.CONVERSATIONS.CAN_ADD_NOTES_FOR_ACCOUNT ||
+        ENV.CONVERSATIONS.CAN_ADD_NOTES_FOR_COURSES[selectedCourseID])
+    ) {
+      canAddFacultyNote = canAllRecipientsHaveNotes(props.selectedRecipients, selectedCourseID)
+    }
+
+    return canAddFacultyNote
+  }, [props.activeCourseFilter, props.selectedRecipients])
+
+  // If a the Faculty Journal entry checkbox becomes disabled, set userNote state to false
+  useEffect(() => {
+    if (!canAddUserNote) {
+      props.setUserNote(false)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canAddUserNote])
 
   return (
     <Flex direction="column" width="100%" height="100%" padding="small">
@@ -68,6 +119,7 @@ const HeaderInputs = props => {
                   groups: props.courses?.favoriteGroupsConnection.nodes
                 }}
                 onCourseFilterSelect={props.onContextSelect}
+                activeCourseFilterID={props.activeCourseFilter?.contextID}
               />
             )
           }
@@ -88,6 +140,9 @@ const HeaderInputs = props => {
                 onSelectedIdsChange={ids => {
                   props.onSelectedIdsChange(ids)
                 }}
+                activeCourseFilter={props.activeCourseFilter}
+                hasSelectAllFilterOption
+                selectedRecipients={props.selectedRecipients}
               />
             }
             shouldGrow
@@ -160,7 +215,10 @@ HeaderInputs.propTypes = {
   sendIndividualMessages: PropTypes.bool,
   subject: PropTypes.string,
   mediaAttachmentTitle: PropTypes.string,
+  activeCourseFilter: PropTypes.object,
   onRemoveMediaComment: PropTypes.func,
+  selectedRecipients: PropTypes.array,
+  setUserNote: PropTypes.func,
   /**
    * Bool to control open/closed state of the AddressBookContainer menu for testing
    */

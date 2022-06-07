@@ -71,6 +71,8 @@ describe('CourseSelect', () => {
 
   it('opens the select and allows selecting an option', () => {
     const props = createProps()
+    const mockCourseFilterSet = jest.fn()
+    props.onCourseFilterSelect = mockCourseFilterSet
     const {getByTestId, getByText} = render(
       <AlertManagerContext.Provider value={{setOnFailure: jest.fn(), setOnSuccess: jest.fn()}}>
         <CourseSelect {...props} />
@@ -79,7 +81,7 @@ describe('CourseSelect', () => {
     const select = getByTestId('course-select')
     fireEvent.click(select)
     fireEvent.click(getByText('Potions'))
-    expect(select.value).toBe('Potions')
+    expect(mockCourseFilterSet.mock.calls[0][0].contextID).toBe('course_3')
   })
 
   it('filters the options when typing', () => {
@@ -126,7 +128,7 @@ describe('CourseSelect', () => {
       expect(select.value).toBe('')
       // assert filter id is updated to null for network request
       expect(filterMock.mock.calls.length).toBe(1)
-      expect(filterMock.mock.calls[0][0]).toBe(null)
+      expect(filterMock.mock.calls[0][0].contextID).toBe(null)
     })
   })
 })

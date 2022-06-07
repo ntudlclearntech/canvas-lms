@@ -105,8 +105,7 @@ const defaultProps = {
   pagesPath: '/courses/30/pages',
   hasWikiPages: true,
   hasSyllabusBody: true,
-  parentSupportEnabled: false,
-  observedUsersList: MOCK_OBSERVED_USERS_LIST,
+  observedUsersList: [{id: currentUser.id, name: currentUser.display_name}],
   selfEnrollment: {
     option: null,
     url: null
@@ -115,7 +114,8 @@ const defaultProps = {
   assignmentsMissing: {},
   assignmentsCompletedForToday: {},
   currentUserRoles: ['user', 'student', 'teacher'],
-  isMasterCourse: false
+  isMasterCourse: false,
+  showImmersiveReader: false
 }
 const FETCH_IMPORTANT_INFO_URL = encodeURI('/api/v1/courses/30?include[]=syllabus_body')
 const FETCH_APPS_URL = '/api/v1/external_tools/visible_course_nav_tools?context_codes[]=course_30'
@@ -135,6 +135,7 @@ const OBSERVER_ASSIGNMENT_GROUPS_URL = encodeURI(
 )
 const ENROLLMENTS_URL = '/api/v1/courses/30/enrollments?user_id=1'
 const OBSERVER_ENROLLMENTS_URL = '/api/v1/courses/30/enrollments?user_id=1&include=observed_users'
+const ANNOUNEMENTS_URL_REGEX = /\/api\/v1\/announcements\.*/
 
 const GROUPS_URL = encodeURI(
   '/api/v1/courses/30/groups?include[]=users&include[]=group_category&include[]=permissions&include_inactive_users=true'
@@ -185,6 +186,7 @@ beforeEach(() => {
   fetchMock.get(GRADING_PERIODS_URL, JSON.stringify(MOCK_GRADING_PERIODS_EMPTY))
   fetchMock.get(ASSIGNMENT_GROUPS_URL, JSON.stringify(MOCK_ASSIGNMENT_GROUPS))
   fetchMock.get(ENROLLMENTS_URL, JSON.stringify(MOCK_ENROLLMENTS))
+  fetchMock.get(ANNOUNEMENTS_URL_REGEX, JSON.stringify([]))
   fakeXhrServer.respondWith('GET', GROUPS_URL, [
     200,
     {'Content-Type': 'application/json'},
@@ -789,7 +791,9 @@ describe('K-5 Subject Course', () => {
     })
 
     it('shows picker when user is an observer', () => {
-      const {getByRole} = render(<K5Course {...defaultProps} parentSupportEnabled />)
+      const {getByRole} = render(
+        <K5Course {...defaultProps} observedUsersList={MOCK_OBSERVED_USERS_LIST} />
+      )
       const select = getByRole('combobox', {name: 'Select a student to view'})
       expect(select).toBeInTheDocument()
       expect(select.value).toBe('Zelda')
@@ -797,7 +801,11 @@ describe('K-5 Subject Course', () => {
 
     it('shows the observee grades on the Grades Tab', async () => {
       const {getByRole, getByText} = render(
-        <K5Course {...defaultProps} parentSupportEnabled defaultTab={TAB_IDS.GRADES} />
+        <K5Course
+          {...defaultProps}
+          observedUsersList={MOCK_OBSERVED_USERS_LIST}
+          defaultTab={TAB_IDS.GRADES}
+        />
       )
       const select = getByRole('combobox', {name: 'Select a student to view'})
       act(() => select.click())

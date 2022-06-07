@@ -16,7 +16,7 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import React, {useState} from 'react'
+import React, {useState, useCallback} from 'react'
 import formatMessage from '../../../../../../format-message'
 import {actions, modes} from '../../../reducers/imageSection'
 
@@ -47,7 +47,13 @@ function renderImageName({imageName}) {
   )
 }
 
-function renderImageActionButtons({mode, collectionOpen}, setOpenCropModal, dispatch) {
+function renderImageActionButtons(
+  {mode, collectionOpen},
+  setOpenCropModal,
+  dispatch,
+  setFocus,
+  ref
+) {
   return (
     <>
       {mode === modes.courseImages.type && !collectionOpen && (
@@ -62,10 +68,12 @@ function renderImageActionButtons({mode, collectionOpen}, setOpenCropModal, disp
         </IconButton>
       )}
       <IconButton
+        ref={ref}
         screenReaderLabel={formatMessage('Clear image')}
-        onClick={() => {
-          dispatch(actions.RESET_ALL)
-        }}
+        onClick={() => dispatch(actions.RESET_ALL)}
+        onFocus={() => setFocus(true)}
+        onBlur={() => setFocus(false)}
+        data-testid="clear-image"
       >
         <IconTrashLine />
       </IconButton>
@@ -73,7 +81,15 @@ function renderImageActionButtons({mode, collectionOpen}, setOpenCropModal, disp
   )
 }
 
-export const ImageOptions = ({state, dispatch}) => {
+export const ImageOptions = ({state, dispatch, rcsConfig}) => {
+  const [isImageActionFocused, setIsImageActionFocused] = useState(false)
+  const imageActionRef = useCallback(
+    el => {
+      if (el && isImageActionFocused) el.focus()
+    },
+    [isImageActionFocused]
+  )
+
   const {image} = state
   const [openCropModal, setOpenCropModal] = useState(false)
   return (
@@ -82,14 +98,32 @@ export const ImageOptions = ({state, dispatch}) => {
       <Flex.Item>{renderImageName(state)}</Flex.Item>
       <Flex.Item margin="0 0 0 auto">
         {image ? (
-          renderImageActionButtons(state, setOpenCropModal, dispatch)
+          renderImageActionButtons(
+            state,
+            setOpenCropModal,
+            dispatch,
+            setIsImageActionFocused,
+            imageActionRef
+          )
         ) : (
-          <ModeSelect dispatch={dispatch} />
+          <ModeSelect
+            dispatch={dispatch}
+            ref={imageActionRef}
+            onFocus={() => setIsImageActionFocused(true)}
+            onBlur={() => setIsImageActionFocused(false)}
+            rcsConfig={rcsConfig}
+          />
         )}
         {openCropModal && (
           <ImageCropperModal
             open={openCropModal}
             onClose={() => setOpenCropModal(false)}
+            onSubmit={generatedImage =>
+              dispatch({
+                type: actions.SET_IMAGE.type,
+                payload: generatedImage
+              })
+            }
             image={image}
           />
         )}
@@ -105,5 +139,6 @@ ImageOptions.propTypes = {
     mode: PropTypes.string.isRequired,
     loading: PropTypes.bool.isRequired
   }).isRequired,
-  dispatch: PropTypes.func.isRequired
+  dispatch: PropTypes.func.isRequired,
+  rcsConfig: PropTypes.object.isRequired
 }

@@ -16,7 +16,7 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import React, {useReducer, useEffect, Suspense} from 'react'
+import React, {useReducer, useEffect, Suspense, useRef, useCallback} from 'react'
 
 import formatMessage from '../../../../../../format-message'
 import reducer, {actions, initialState, modes} from '../../../reducers/imageSection'
@@ -31,11 +31,21 @@ import Course from './Course'
 import {ImageOptions} from './ImageOptions'
 import {ColorInput} from '../../../../shared/ColorInput'
 import {convertFileToBase64} from '../../../svg/utils'
+import {transformForShape} from '../../../svg/image'
 
 const getColorSection = () => document.querySelector('#buttons-tray-color-section')
 
-export const ImageSection = ({settings, onChange, editing, editor}) => {
+export const ImageSection = ({settings, onChange, editing, editor, rcsConfig}) => {
   const [state, dispatch] = useReducer(reducer, initialState)
+  const bottomRef = useRef()
+
+  const scrollToBottom = useCallback(() => {
+    if (!bottomRef.current?.scrollIntoView) return
+    if (state.scrolled) return
+
+    bottomRef.current.scrollIntoView({behavior: 'smooth'})
+    dispatch({...actions.SET_SCROLLED, payload: true})
+  })
 
   const Upload = React.lazy(() => import('./Upload'))
   const SingleColor = React.lazy(() => import('./SingleColor'))
@@ -54,41 +64,43 @@ export const ImageSection = ({settings, onChange, editing, editor}) => {
   }
 
   useEffect(() => {
+    const transform = transformForShape(settings.shape, settings.size)
+
     // Set Q1 crop defaults
     // TODO: Set these properties based on cropper
     onChange({
       type: svgActions.SET_X,
-      payload: '50%'
+      payload: transform.x
     })
 
     onChange({
       type: svgActions.SET_Y,
-      payload: '50%'
+      payload: transform.y
     })
 
     onChange({
       type: svgActions.SET_WIDTH,
-      payload: 75
+      payload: transform.width
     })
 
     onChange({
       type: svgActions.SET_HEIGHT,
-      payload: 75
+      payload: transform.height
     })
 
     onChange({
       type: svgActions.SET_TRANSLATE_X,
-      payload: -37.5 // Width / 2
+      payload: transform.translateX
     })
 
     onChange({
       type: svgActions.SET_TRANSLATE_Y,
-      payload: -37.5 // Height / 2
+      payload: transform.translateY
     })
-  }, [])
+  }, [onChange, settings.shape, settings.size])
 
   useEffect(() => {
-    if (editing) {
+    if (editing && !!settings.encodedImage) {
       dispatch({
         type: actions.SET_IMAGE.type,
         payload: settings.encodedImage
@@ -97,7 +109,7 @@ export const ImageSection = ({settings, onChange, editing, editor}) => {
   }, [editing, settings.encodedImage])
 
   useEffect(() => {
-    if (editing) {
+    if (editing && !!settings.encodedImageName) {
       dispatch({
         type: actions.SET_IMAGE_NAME.type,
         payload: settings.encodedImageName
@@ -158,7 +170,7 @@ export const ImageSection = ({settings, onChange, editing, editor}) => {
               <Text weight="bold">{formatMessage('Current Image')}</Text>
             </Flex.Item>
             <Flex.Item>
-              <ImageOptions state={state} dispatch={dispatch} />
+              <ImageOptions state={state} dispatch={dispatch} rcsConfig={rcsConfig} />
             </Flex.Item>
           </Flex>
         </Flex.Item>
@@ -173,7 +185,12 @@ export const ImageSection = ({settings, onChange, editing, editor}) => {
         >
           {modeIsAllowed && state.collectionOpen && (
             <Flex.Item padding="small">
-              <ImageSelector dispatch={dispatch} editor={editor} data={state} />
+              <ImageSelector
+                dispatch={dispatch}
+                editor={editor}
+                data={state}
+                onMount={scrollToBottom}
+              />
             </Flex.Item>
           )}
         </Suspense>
@@ -181,7 +198,7 @@ export const ImageSection = ({settings, onChange, editing, editor}) => {
           <Flex.Item padding="small">
             <ColorInput
               color={state.iconFillColor}
-              label={formatMessage('Icon Color')}
+              label={formatMessage('Single Color Image Color')}
               name="single-color-image-fill"
               onChange={color => dispatch({type: actions.SET_ICON_FILL_COLOR.type, payload: color})}
               popoverMountNode={getColorSection}
@@ -189,6 +206,7 @@ export const ImageSection = ({settings, onChange, editing, editor}) => {
           </Flex.Item>
         )}
       </Flex>
+      <span ref={bottomRef}></span>
     </Group>
   )
 }

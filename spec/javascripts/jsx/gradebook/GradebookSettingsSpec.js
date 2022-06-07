@@ -551,7 +551,8 @@ QUnit.module('Gradebook "Enter Grades as" Setting', suiteHooks => {
 
 QUnit.module('Gradebook#handleViewOptionsUpdated', hooks => {
   let gradebook
-  let container
+  let container1
+  let container2
 
   hooks.beforeEach(() => {
     const performanceControls = new PerformanceControls(performance_controls)
@@ -561,7 +562,8 @@ QUnit.module('Gradebook#handleViewOptionsUpdated', hooks => {
 
     // We need to actually mount and render the Gradebook component here to
     // ensure that grid colors (which use setState) are properly updated
-    container = document.body.appendChild(document.createElement('div'))
+    container1 = document.body.appendChild(document.createElement('div'))
+    container2 = document.body.appendChild(document.createElement('div'))
     const component = React.createElement(Gradebook, {
       ...defaultGradebookProps,
       allow_view_ungraded_as_zero: true,
@@ -577,7 +579,7 @@ QUnit.module('Gradebook#handleViewOptionsUpdated', hooks => {
       performanceControls,
       dispatch
     })
-    ReactDOM.render(component, container)
+    ReactDOM.render(component, container2)
 
     gradebook.gotAllAssignmentGroups([
       {
@@ -614,7 +616,7 @@ QUnit.module('Gradebook#handleViewOptionsUpdated', hooks => {
     sinon.stub(GradebookApi, 'updateTeacherNotesColumn').resolves()
 
     sinon.stub(FlashAlert, 'showFlashError')
-    setFixtureHtml(container)
+    setFixtureHtml(container1)
   })
 
   hooks.afterEach(() => {
@@ -625,8 +627,8 @@ QUnit.module('Gradebook#handleViewOptionsUpdated', hooks => {
     GradebookApi.saveUserSettings.restore()
     GradebookApi.createTeacherNotesColumn.restore()
 
-    ReactDOM.unmountComponentAtNode(container)
-    container.remove()
+    ReactDOM.unmountComponentAtNode(container2)
+    container1.remove()
   })
 
   const teacherNotesColumn = () =>
@@ -771,6 +773,7 @@ QUnit.module('Gradebook#handleViewOptionsUpdated', hooks => {
 
     QUnit.module('when updating items stored in user settings', () => {
       const updateParams = (overrides = {}) => ({
+        hideAssignmentGroupTotals: false,
         showUnpublishedAssignments: false,
         showSeparateFirstLastNames: false,
         statusColors: gradebook.state.gridColors,
@@ -823,6 +826,31 @@ QUnit.module('Gradebook#handleViewOptionsUpdated', hooks => {
             )
           } catch {
             deepEqual(gradebook.gridData.columns.frozen, ['student'])
+          }
+        })
+      })
+
+      QUnit.module('updating hideAssignmentGroupTotals', () => {
+        test('hides Assignment Group Total columns when hideAssignmentGroupTotals is set to true', async () => {
+          await gradebook.handleViewOptionsUpdated(updateParams({hideAssignmentGroupTotals: true}))
+          notOk(gradebook.gridData.columns.scrollable.includes('assignment_group_2201'))
+        })
+
+        test('shows Assignment Group Total columns when hideAssignmentGroupTotals is set to false', async () => {
+          await gradebook.handleViewOptionsUpdated(updateParams({hideAssignmentGroupTotals: false}))
+          ok(gradebook.gridData.columns.scrollable.includes('assignment_group_2201'))
+        })
+
+        test('does not hide Assignment Group Total columns if the request fails', async () => {
+          QUnit.expect(1)
+          GradebookApi.saveUserSettings.rejects(new Error('no way'))
+
+          try {
+            await gradebook.handleViewOptionsUpdated(
+              updateParams({hideAssignmentGroupTotals: true})
+            )
+          } catch {
+            ok(gradebook.gridData.columns.scrollable.includes('assignment_group_2201'))
           }
         })
       })
@@ -1027,6 +1055,61 @@ QUnit.module('Gradebook#toggleShowSeparateFirstLastNames', hooks => {
 
     deepEqual(gradebook.saveSettings.firstCall.args[0], {
       showSeparateFirstLastNames: true
+    })
+  })
+})
+
+QUnit.module('Gradebook#toggleHideAssignmentGroupTotals', hooks => {
+  let gradebook
+
+  hooks.beforeEach(() => {
+    setFixtureHtml($fixtures)
+    gradebook = createGradebook({
+      grid: {
+        getColumns: () => [],
+        updateCell: sinon.stub()
+      }
+    })
+
+    sandbox.stub(gradebook, 'saveSettings').callsFake(() => Promise.resolve())
+  })
+
+  test('toggles hideAssignmentGroupTotals to true when false', () => {
+    gradebook.gridDisplaySettings.hideAssignmentGroupTotals = false
+    sandbox.stub(gradebook, 'updateColumnsAndRenderViewOptionsMenu')
+    gradebook.toggleHideAssignmentGroupTotals()
+
+    strictEqual(gradebook.gridDisplaySettings.hideAssignmentGroupTotals, true)
+  })
+
+  test('toggles hideAssignmentGroupTotals to false when true', () => {
+    gradebook.gridDisplaySettings.hideAssignmentGroupTotals = true
+    sandbox.stub(gradebook, 'updateColumnsAndRenderViewOptionsMenu')
+    gradebook.toggleHideAssignmentGroupTotals()
+
+    strictEqual(gradebook.gridDisplaySettings.hideAssignmentGroupTotals, false)
+  })
+
+  test('calls updateColumnsAndRenderViewOptionsMenu after toggling', () => {
+    gradebook.gridDisplaySettings.hideAssignmentGroupTotals = true
+    const stubFn = sandbox
+      .stub(gradebook, 'updateColumnsAndRenderViewOptionsMenu')
+      .callsFake(() => {
+        strictEqual(gradebook.gridDisplaySettings.hideAssignmentGroupTotals, false)
+      })
+    gradebook.toggleHideAssignmentGroupTotals()
+
+    strictEqual(stubFn.callCount, 1)
+  })
+
+  test('calls saveSettings with the new value of the setting', () => {
+    gradebook.gridDisplaySettings.hideAssignmentGroupTotals = false
+    sandbox.stub(gradebook, 'updateColumnsAndRenderViewOptionsMenu')
+
+    gradebook.toggleHideAssignmentGroupTotals()
+
+    deepEqual(gradebook.saveSettings.firstCall.args[0], {
+      hideAssignmentGroupTotals: true
     })
   })
 })

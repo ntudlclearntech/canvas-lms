@@ -28,11 +28,11 @@ import splitAssetString from '@canvas/util/splitAssetString'
 import mathml from 'mathml'
 import preventDefault from 'prevent-default'
 import loadBundle from 'bundles-generated'
+import {isolate} from '@canvas/sentry'
 
 // these are all things that either define global $.whatever or $.fn.blah
 // methods or set something up that other code expects to exist at runtime.
 // so they have to be ran before any other app code runs.
-import 'translations/_core_en'
 import '@canvas/jquery/jquery.ajaxJSON'
 import '@canvas/forms/jquery/jquery.instructure_forms'
 import './boot/initializers/ajax_errors'
@@ -49,6 +49,7 @@ if (!ENV.LOCALE && ENV.LOCALES instanceof Array) ENV.LOCALE = ENV.LOCALES[0]
 const readinessTargets = [
   ['asyncInitializers', false],
   ['deferredBundles', false],
+  ['localeFiles', false],
   ['localePolyfills', false]
 ]
 const advanceReadiness = target => {
@@ -61,6 +62,7 @@ const advanceReadiness = target => {
   }
 
   entry[1] = true
+  window.dispatchEvent(new CustomEvent('canvasReadyStateChange', { detail: target }))
 
   if (readinessTargets.every(x => x[1])) {
     window.canvasReadyState = 'complete'
@@ -74,6 +76,11 @@ function afterDocumentReady() {
     advanceReadiness('deferredBundles')
   })
 
+  isolate(loadNewUserTutorials)()
+  isolate(setupMathML)()
+}
+
+function setupMathML() {
   // LS-1662: there are math equations on the page that
   // we don't see, so remain invisible and aren't
   // typeset my MathJax. Let's trick Canvas into knowing
@@ -132,14 +139,7 @@ function afterDocumentReady() {
   })
 }
 
-// This is because most pages use this and by having it all in it's own chunk it makes webpack
-// split out a ton of stuff (like @instructure/ui-view) into multiple chunks because its chunking
-// algorithm decides that because that chunk would either be too small or it would cause more than
-// our maxAsyncRequests it should concat it into mutlple parents.
-require.include('./features/navigation_header')
-
 if (!window.bundles) window.bundles = []
-window.bundles.push = loadBundle
 
 // If you add to this be sure there is support for it in the intl-polyfills package!
 const intlSubsystemsInUse = ['DateTimeFormat', 'RelativeTimeFormat', 'NumberFormat']
@@ -160,6 +160,9 @@ function noNativeSupport(sys) {
 }
 
 async function maybePolyfillLocaleThenGo() {
+  await import(`../public/javascripts/translations/${ENV.LOCALE}`)
+  advanceReadiness('localeFiles')
+
   // If any Intl subsystem has no native support for the current locale, start
   // trying to polyfill that locale from @formatjs. Note that this (possibly slow)
   // process only executes at all if polyfilling was detected to be necessary.
@@ -179,10 +182,13 @@ async function maybePolyfillLocaleThenGo() {
     }
     /* eslint-enable no-console */
   }
+
   // After possible polyfilling has completed, now we can start evaluating any
   // queueud JS bundles, arrange for tasks to run after the document is fully ready,
   // and advance the readiness state.
   advanceReadiness('localePolyfills')
+
+  window.bundles.push = loadBundle
   window.bundles.forEach(loadBundle)
   ready(afterDocumentReady)
 }
@@ -192,39 +198,54 @@ maybePolyfillLocaleThenGo().catch(e =>
   console.error(`Front-end bundles did not successfully start! (${e.message})`)
 )
 
-if (ENV.csp)
+if (ENV.csp) {
   // eslint-disable-next-line promise/catch-or-return
-  import('./boot/initializers/setupCSP').then(({default: setupCSP}) => setupCSP(window.document))
-if (ENV.INCOMPLETE_REGISTRATION) import('./boot/initializers/warnOnIncompleteRegistration')
-if (ENV.badge_counts) import('./boot/initializers/showBadgeCounts')
+  import('./boot/initializers/setupCSP').then(({default: setupCSP}) =>
+    setupCSP(window.document)
+  )
+}
 
-$('html').removeClass('scripts-not-loaded')
+if (ENV.INCOMPLETE_REGISTRATION) {
+  isolate(() => { import('./boot/initializers/warnOnIncompleteRegistration') })()
+}
 
-$('.help_dialog_trigger').click(event => {
-  event.preventDefault()
-  // eslint-disable-next-line promise/catch-or-return
-  import('./boot/initializers/enableHelpDialog').then(({default: helpDialog}) => helpDialog.open())
-})
+if (ENV.badge_counts) {
+  isolate(() => { import('./boot/initializers/showBadgeCounts') })()
+}
 
-// Backbone routes
-$('body').on(
-  'click',
-  '[data-pushstate]',
-  preventDefault(function () {
-    Backbone.history.navigate($(this).attr('href'), true)
+isolate(doRandomThingsToDOM)()
+
+function doRandomThingsToDOM() {
+  $('html').removeClass('scripts-not-loaded')
+
+  $('.help_dialog_trigger').click(event => {
+    event.preventDefault()
+    // eslint-disable-next-line promise/catch-or-return
+    import('./boot/initializers/enableHelpDialog').then(({default: helpDialog}) => helpDialog.open())
   })
-)
 
-if (
-  window.ENV.NEW_USER_TUTORIALS &&
-  window.ENV.NEW_USER_TUTORIALS.is_enabled &&
-  window.ENV.context_asset_string &&
-  splitAssetString(window.ENV.context_asset_string)[0] === 'courses'
-) {
-  // eslint-disable-next-line promise/catch-or-return
-  import('./features/new_user_tutorial/index').then(({default: initializeNewUserTutorials}) => {
-    initializeNewUserTutorials()
-  })
+  // Backbone routes
+  $('body').on(
+    'click',
+    '[data-pushstate]',
+    preventDefault(function () {
+      Backbone.history.navigate($(this).attr('href'), true)
+    })
+  )
+}
+
+function loadNewUserTutorials() {
+  if (
+    window.ENV.NEW_USER_TUTORIALS &&
+    window.ENV.NEW_USER_TUTORIALS.is_enabled &&
+    window.ENV.context_asset_string &&
+    splitAssetString(window.ENV.context_asset_string)[0] === 'courses'
+  ) {
+    // eslint-disable-next-line promise/catch-or-return
+    import('./features/new_user_tutorial/index').then(({default: initializeNewUserTutorials}) => {
+      initializeNewUserTutorials()
+    })
+  }
 }
 
 ;(window.requestIdleCallback || window.setTimeout)(() => {

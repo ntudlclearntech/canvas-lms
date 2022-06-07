@@ -37,7 +37,7 @@ vendor/bundle/
 vendor/*/.git
 Dockerfile
 *.Dockerfile
-# Gemfile.lock
+Gemfile.lock
 mkmf.log
 
 .dive-ci

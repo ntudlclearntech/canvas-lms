@@ -19,7 +19,8 @@
 import {Alert} from '@instructure/ui-alerts'
 import {Assignment} from '@canvas/assignments/graphql/student/Assignment'
 import axios from '@canvas/axios'
-import LazyLoad from '@canvas/lazy-load'
+import LazyLoad, {lazy} from '@canvas/lazy-load'
+
 import {bool, func, string} from 'prop-types'
 import {EXTERNAL_TOOLS_QUERY} from '@canvas/assignments/graphql/student/Queries'
 import {ExternalTool} from '@canvas/assignments/graphql/student/ExternalTool'
@@ -33,7 +34,7 @@ import {
   IconUploadLine,
   IconTextLine
 } from '@instructure/ui-icons'
-import I18n from 'i18n!assignments_2_attempt_tab'
+import {useScope as useI18nScope} from '@canvas/i18n'
 import LoadingIndicator from '@canvas/loading-indicator'
 import LockedAssignment from './LockedAssignment'
 import React, {Component} from 'react'
@@ -46,13 +47,15 @@ import {useQuery} from 'react-apollo'
 import {View} from '@instructure/ui-view'
 import theme from '@instructure/canvas-theme'
 
-const ExternalToolSubmission = React.lazy(() => import('./AttemptType/ExternalToolSubmission'))
-const FilePreview = React.lazy(() => import('./AttemptType/FilePreview'))
-const FileUpload = React.lazy(() => import('./AttemptType/FileUpload'))
-const MediaAttempt = React.lazy(() => import('./AttemptType/MediaAttempt'))
-const TextEntry = React.lazy(() => import('./AttemptType/TextEntry'))
-const UrlEntry = React.lazy(() => import('./AttemptType/UrlEntry'))
-const StudentAnnotationAttempt = React.lazy(() => import('./AttemptType/StudentAnnotationAttempt'))
+const I18n = useI18nScope('assignments_2_attempt_tab')
+
+const ExternalToolSubmission = lazy(() => import('./AttemptType/ExternalToolSubmission'))
+const FilePreview = lazy(() => import('./AttemptType/FilePreview'))
+const FileUpload = lazy(() => import('./AttemptType/FileUpload'))
+const MediaAttempt = lazy(() => import('./AttemptType/MediaAttempt'))
+const TextEntry = lazy(() => import('./AttemptType/TextEntry'))
+const UrlEntry = lazy(() => import('./AttemptType/UrlEntry'))
+const StudentAnnotationAttempt = lazy(() => import('./AttemptType/StudentAnnotationAttempt'))
 
 const iconsByType = {
   media_recording: IconAttachMediaLine,
@@ -185,7 +188,8 @@ export default class AttemptTab extends Component {
     this.setState(
       {
         filesToUpload: files.map((file, i) => {
-          const name = file.name || file.title || file.url
+          // "text" is filename in LTI Content Item
+          const name = file.name || file.text || file.url
           const _id = `${i}-${file.url || file.name}`
 
           // As we receive progress events for this upload, we'll update the
@@ -247,11 +251,12 @@ export default class AttemptTab extends Component {
 
       let promise
       if (file.url) {
+        // LTI content item
         promise = uploadFile(
           uploadUrl,
           {
             url: file.url,
-            name: file.title,
+            name: file.text,
             content_type: file.mediaType,
             submit_assignment: false
           },

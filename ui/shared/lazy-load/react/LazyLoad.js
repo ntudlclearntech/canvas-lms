@@ -22,10 +22,40 @@ import errorShipUrl from '@canvas/images/ErrorShip.svg'
 import GenericErrorPage from '@canvas/generic-error-page'
 import LoadingIndicator from '@canvas/loading-indicator'
 
+export function retry(fn, retriesLeft = 3, interval = 1000) {
+  return new Promise((resolve, reject) => {
+    fn()
+      .then(resolve)
+      .catch(error => {
+        setTimeout(() => {
+          if (retriesLeft === 1) {
+            reject(error)
+            return
+          }
+
+          return retry(fn, retriesLeft - 1, interval).then(resolve, reject)
+        }, interval)
+      })
+  })
+}
+
+export function lazy(fn) {
+  return React.lazy(() => retry(fn))
+}
+
 export default function LazyLoad({children, errorCategory}) {
   return (
     <ErrorBoundary
-      errorComponent={<GenericErrorPage imageUrl={errorShipUrl} errorCategory={errorCategory} />}
+      errorComponent={({error}) => {
+        return (
+          <GenericErrorPage
+            imageUrl={errorShipUrl}
+            errorSubject={error.message}
+            errorCategory={errorCategory}
+            stack={error.stack}
+          />
+        )
+      }}
     >
       <Suspense fallback={<LoadingIndicator />}>{children}</Suspense>
     </ErrorBoundary>

@@ -104,6 +104,10 @@ describe DiscussionEntry do
       course_with_teacher(active_all: true)
     end
 
+    before do
+      allow(InstStatsd::Statsd).to receive(:increment)
+    end
+
     let(:student) { student_in_course(active_all: true).user }
     let(:mentioned_student) { student_in_course(active_all: true).user }
 
@@ -112,6 +116,8 @@ describe DiscussionEntry do
       allow(entry).to receive(:message).and_return("<p>hello <span class='mceNonEditable mention' data-mention=#{mentioned_student.id}>@#{mentioned_student.short_name}</span> what's up dude</p>")
       expect { entry.save! }.to change { entry.mentions.count }.from(0).to(1)
       expect(entry.mentions.take.user_id).to eq mentioned_student.id
+      expect(entry.mentioned_users.count).to eq 1
+      expect(InstStatsd::Statsd).to have_received(:increment).with("discussion_entry.created").at_least(:once)
     end
 
     describe "edits to an entry" do
@@ -147,7 +153,7 @@ describe DiscussionEntry do
       @non_posting_student = @student
       student_in_course(active_all: true)
 
-      @notification_mention = "New Discussion Mention"
+      @notification_mention = "Discussion Mention"
       n = Notification.create(name: @notification_mention, category: "TestImmediately")
       NotificationPolicy.create(notification: n, communication_channel: @student.communication_channel, frequency: "immediately")
 
