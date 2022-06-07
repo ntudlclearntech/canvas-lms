@@ -18,7 +18,7 @@
 
 import React, {useState, useEffect} from 'react'
 import PropTypes from 'prop-types'
-import I18n from 'i18n!MasteryScale'
+import {useScope as useI18nScope} from '@canvas/i18n'
 import numberHelper from '@canvas/i18n/numberHelper'
 import {Button} from '@instructure/ui-buttons'
 import {FormFieldGroup} from '@instructure/ui-form-field'
@@ -34,6 +34,8 @@ import {showFlashAlert} from '@canvas/alerts/react/FlashAlert'
 import CalculationMethodContent from '@canvas/grade-summary/backbone/models/CalculationMethodContent'
 import ConfirmMasteryModal from '../ConfirmMasteryModal'
 import useCanvasContext from '@canvas/outcomes/react/hooks/useCanvasContext'
+
+const I18n = useI18nScope('MasteryScale')
 
 export const defaultProficiencyCalculation = {
   calculationMethod: 'decaying_average',
@@ -53,7 +55,8 @@ const CalculationIntInput = ({
   updateCalculationInt,
   calculationMethod,
   calculationInt,
-  individualOutcomeDisplay
+  individualOutcomeDisplay,
+  calcIntInputRef
 }) => {
   const handleChange = (_event, data) => {
     if (data === '') {
@@ -101,6 +104,7 @@ const CalculationIntInput = ({
             textAlign="center"
             width="3rem"
             data-testid="calculation-int-input"
+            inputRef={calcIntInputRef}
           />
         </View>
         <View as="div" padding="none none none x-small">
@@ -187,7 +191,8 @@ const Form = ({
   currentMethod,
   updateCalculationMethod,
   setCalculationInt,
-  individualOutcomeForm
+  individualOutcomeForm,
+  calcIntInputRef
 }) => (
   <FormFieldGroup
     description={
@@ -219,6 +224,7 @@ const Form = ({
         calculationMethod={currentMethod}
         updateCalculationInt={setCalculationInt}
         individualOutcomeDisplay={individualOutcomeForm}
+        calcIntInputRef={calcIntInputRef}
       />
     )}
   </FormFieldGroup>
@@ -264,7 +270,8 @@ const ProficiencyCalculation = ({
   onNotifyPendingChanges,
   masteryPoints,
   individualOutcome,
-  setError
+  setError,
+  calcIntInputRef
 }) => {
   const {contextType} = useCanvasContext()
   const {calculationMethod: initialMethodKey, calculationInt: initialInt} = method
@@ -377,6 +384,7 @@ const ProficiencyCalculation = ({
               updateCalculationMethod={updateCalculationMethod}
               setCalculationInt={updateCalculationInt}
               individualOutcomeForm={individualOutcomeEdit}
+              calcIntInputRef={calcIntInputRef}
             />
           ) : (
             <Display
@@ -404,7 +412,7 @@ const ProficiencyCalculation = ({
       {canManage && !individualOutcome && (
         <div className="save">
           <Button
-            variant="primary"
+            color="primary"
             interaction={allowSave ? 'enabled' : 'disabled'}
             onClick={() => {
               if (validInt(currentMethod, calculationInt)) {
@@ -438,13 +446,15 @@ ProficiencyCalculation.propTypes = {
   updateError: PropTypes.string,
   masteryPoints: PropTypes.number,
   individualOutcome: PropTypes.oneOf(['display', 'edit']),
-  setError: PropTypes.func
+  setError: PropTypes.func,
+  calcIntInputRef: PropTypes.func
 }
 
 ProficiencyCalculation.defaultProps = {
   method: defaultProficiencyCalculation,
   updateError: null,
-  update: () => {}
+  update: () => {},
+  calcIntInputRef: () => {}
 }
 
 export default ProficiencyCalculation

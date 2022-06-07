@@ -17,7 +17,7 @@
  */
 import React, {useState, useEffect, useMemo, useRef, useCallback} from 'react'
 import ReactDOM from 'react-dom'
-import I18n from 'i18n!OutcomeManagement'
+import {useScope as useI18nScope} from '@canvas/i18n'
 import WithBreakpoints, {breakpointsShape} from 'with-breakpoints'
 import {Tabs} from '@instructure/ui-tabs'
 import MasteryScale from './MasteryScale/index'
@@ -30,6 +30,8 @@ import {
   showOutcomesImporter,
   showOutcomesImporterIfInProgress
 } from '@canvas/outcomes/react/OutcomesImporter'
+
+const I18n = useI18nScope('OutcomeManagement')
 
 const unmount = mount => ReactDOM.unmountComponentAtNode(mount)
 
@@ -202,7 +204,9 @@ export const OutcomeManagementWithoutGraphql = ({breakpoints}) => {
         </Tabs.Panel>
         {accountLevelMasteryScales && (
           <Tabs.Panel renderTitle={I18n.t('Mastery')} isSelected={selectedIndex === 1} id="scale">
-            <MasteryScale onNotifyPendingChanges={setHasUnsavedChanges} />
+            <div style={{paddingTop: '24px'}}>
+              <MasteryScale onNotifyPendingChanges={setHasUnsavedChanges} />
+            </div>
           </Tabs.Panel>
         )}
         {accountLevelMasteryScales && (

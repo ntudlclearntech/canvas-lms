@@ -21,17 +21,19 @@ import {COURSES_QUERY} from '../../graphql/Queries'
 import {UPDATE_CONVERSATION_PARTICIPANTS} from '../../graphql/Mutations'
 import {CourseSelect, ALL_COURSES_ID} from '../components/CourseSelect/CourseSelect'
 import {Flex} from '@instructure/ui-flex'
-import I18n from 'i18n!conversations_2'
+import {useScope as useI18nScope} from '@canvas/i18n'
 import {MailboxSelectionDropdown} from '../components/MailboxSelectionDropdown/MailboxSelectionDropdown'
 import {MessageActionButtons} from '../components/MessageActionButtons/MessageActionButtons'
 import PropTypes from 'prop-types'
 import {useQuery, useMutation} from 'react-apollo'
-import React, {useContext} from 'react'
+import React, {useContext, useEffect} from 'react'
 import {reduceDuplicateCourses} from '../../util/courses_helper'
 import {View} from '@instructure/ui-view'
 import {AddressBookContainer} from './AddressBookContainer/AddressBookContainer'
 import {Responsive} from '@instructure/ui-responsive'
 import {responsiveQuerySizes} from '../../util/utils'
+
+const I18n = useI18nScope('conversations_2')
 
 const MessageListActionContainer = props => {
   const LIMIT_TAG_COUNT = 1
@@ -42,9 +44,7 @@ const MessageListActionContainer = props => {
     const selectedStates =
       props.selectedConversations
         .map(cp =>
-          cp.conversationParticipantsConnection?.nodes?.find(
-            participant => participant.user._id === ENV.current_user?.id
-          )
+          cp.participants?.find(participant => participant.user._id === ENV.current_user?.id)
         )
         .map(node => node?.workflowState) || []
     return selectedStates
@@ -158,10 +158,10 @@ const MessageListActionContainer = props => {
 
   const firstConversation =
     props.selectedConversations.length > 0 ? props.selectedConversations[0] : {}
-  const myConversationParticipant =
-    firstConversation?.conversationParticipantsConnection?.nodes.find(
-      node => node.user._id === ENV.current_user_id
-    )
+
+  const myConversationParticipant = firstConversation?.participants?.find(
+    node => node.user._id === ENV.current_user_id
+  )
   const firstConversationIsStarred = myConversationParticipant?.label === 'starred'
 
   const [starConversationParticipants] = useMutation(UPDATE_CONVERSATION_PARTICIPANTS, {
@@ -197,6 +197,42 @@ const MessageListActionContainer = props => {
     variables: {userID}
   })
 
+  const moreCourses = reduceDuplicateCourses(
+    data?.legacyNode?.enrollments,
+    data?.legacyNode?.favoriteCoursesConnection?.nodes
+  )
+
+  const courseSelectorOptions = {
+    allCourses: [
+      {
+        _id: ALL_COURSES_ID,
+        contextName: I18n.t('All Courses'),
+        assetString: 'all_courses'
+      }
+    ],
+    favoriteCourses: data?.legacyNode?.favoriteCoursesConnection?.nodes,
+    moreCourses,
+    concludedCourses: [],
+    groups: data?.legacyNode?.favoriteGroupsConnection?.nodes
+  }
+
+  const doesCourseFilterOptionExist = (id, courseOptions) => {
+    return !!Object.values(courseOptions)
+      .flat()
+      .find(({assetString}) => id === assetString)
+  }
+
+  useEffect(() => {
+    if (
+      !loading &&
+      !doesCourseFilterOptionExist(props.activeCourseFilter, courseSelectorOptions) &&
+      props.activeCourseFilter !== undefined
+    ) {
+      props.onCourseFilterSelect(null)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [props.activeCourseFilter])
+
   if (loading) {
     return <span />
   }
@@ -204,11 +240,6 @@ const MessageListActionContainer = props => {
   if (error) {
     setOnFailure(I18n.t('Unable to load courses menu.'))
   }
-
-  const moreCourses = reduceDuplicateCourses(
-    data?.legacyNode?.enrollments,
-    data?.legacyNode?.favoriteCoursesConnection?.nodes
-  )
 
   const handleArchive = () => {
     const archiveConfirmMsg = I18n.t(
@@ -345,20 +376,11 @@ const MessageListActionContainer = props => {
             >
               <CourseSelect
                 mainPage
-                options={{
-                  allCourses: [
-                    {
-                      _id: ALL_COURSES_ID,
-                      contextName: I18n.t('All Courses'),
-                      assetString: 'all_courses'
-                    }
-                  ],
-                  favoriteCourses: data?.legacyNode?.favoriteCoursesConnection?.nodes,
-                  moreCourses,
-                  concludedCourses: [],
-                  groups: data?.legacyNode?.favoriteGroupsConnection?.nodes
+                options={courseSelectorOptions}
+                activeCourseFilterID={props.activeCourseFilter}
+                onCourseFilterSelect={contextObject => {
+                  props.onCourseFilterSelect(contextObject.contextID)
                 }}
-                onCourseFilterSelect={props.onCourseFilterSelect}
               />
             </Flex.Item>
             <Flex.Item
@@ -388,7 +410,6 @@ const MessageListActionContainer = props => {
               padding={responsiveProps.messageActionButtons.padding}
             >
               <MessageActionButtons
-                isSubmissionComment={props.activeMailbox === 'submission_comments'}
                 archive={props.displayUnarchiveButton ? undefined : handleArchive}
                 unarchive={props.displayUnarchiveButton ? handleUnarchive : undefined}
                 archiveDisabled={props.archiveDisabled || props.activeMailbox === 'sent'}
@@ -434,7 +455,8 @@ MessageListActionContainer.propTypes = {
   onConversationRemove: PropTypes.func,
   displayUnarchiveButton: PropTypes.bool,
   conversationsQueryOptions: PropTypes.object,
-  onDelete: PropTypes.func
+  onDelete: PropTypes.func,
+  activeCourseFilter: PropTypes.string
 }
 
 MessageListActionContainer.defaultProps = {

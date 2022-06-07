@@ -33,7 +33,7 @@ describe('ObserverOptions', () => {
     currentUser: {
       id: userId,
       display_name: 'Zelda',
-      avatar_image_url: 'http://avatar'
+      avatarUrl: 'http://avatar'
     },
     handleChangeObservedUser: jest.fn(),
     canAddObservee: false,
@@ -45,13 +45,22 @@ describe('ObserverOptions', () => {
   })
 
   it('displays students in the select', () => {
+    const props = getProps()
     const {getByRole, getByText} = render(<ObserverOptions {...getProps()} />)
     const select = getByRole('combobox', {name: 'Select a student to view'})
     expect(select).toBeInTheDocument()
     expect(select.value).toBe('Zelda')
     act(() => select.click())
-    expect(getByText('Student 2')).toBeInTheDocument()
-    expect(getByText('Student 4')).toBeInTheDocument()
+
+    const student2 = props.observedUsersList[2]
+    expect(getByText(student2.name)).toBeInTheDocument()
+    expect(
+      getByText(student2.name).parentElement.querySelector(`[src="${student2.avatar_url}"]`)
+    ).toBeInTheDocument()
+
+    const student4 = props.observedUsersList[1]
+    expect(getByText(student4.name)).toBeInTheDocument()
+    expect(getByText('S4')).toBeInTheDocument()
   })
 
   it('allows searching the select', async () => {
@@ -128,5 +137,20 @@ describe('ObserverOptions', () => {
     act(() => select.click())
     act(() => getByText('Add Student').click())
     expect(getByText('Pair with student')).toBeInTheDocument()
+  })
+
+  it('highlights only the currently selected student', () => {
+    const {getByRole} = render(<ObserverOptions {...getProps()} />)
+    const select = getByRole('combobox', {name: 'Select a student to view'})
+    act(() => select.click())
+    expect(getByRole('option', {name: 'Zelda', selected: true})).toBeInTheDocument()
+    expect(getByRole('option', {name: 'Student 2', selected: false})).toBeInTheDocument()
+    const student4 = getByRole('option', {name: 'Student 4', selected: false})
+    expect(student4).toBeInTheDocument()
+    act(() => student4.click())
+    act(() => select.click())
+    expect(getByRole('option', {name: 'Student 4', selected: true})).toBeInTheDocument()
+    expect(getByRole('option', {name: 'Zelda', selected: false})).toBeInTheDocument()
+    expect(getByRole('option', {name: 'Student 2', selected: false})).toBeInTheDocument()
   })
 })

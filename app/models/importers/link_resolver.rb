@@ -77,7 +77,6 @@ module Importers
         # this part is a little trickier
         # tl;dr we've replaced the entire node with the placeholder
         # see LinkParser for details
-
         rel_path = link[:rel_path]
         node = Nokogiri::HTML5.fragment(link[:old_value]).children.first
         new_url = resolve_media_comment_data(node, rel_path)
@@ -105,8 +104,17 @@ module Importers
         file_id = context.attachments.where(migration_id: link[:migration_id]).limit(1).pluck(:id).first
         if file_id
           rest = link[:rest].presence || "/preview"
-          link[:new_value] = "#{context_path}/files/#{file_id}#{rest}"
-          link[:new_value] = "/media_objects_iframe?mediahref=#{link[:new_value]}" if link[:in_media_iframe]
+
+          # Button and Icon files should not have the course
+          # context prepended to the URL. This prevents
+          # redirects to non cross-origin friendly urls
+          # during a file fetch
+          if rest.include?("icon_maker_icon=1")
+            link[:new_value] = "/files/#{file_id}#{rest}"
+          else
+            link[:new_value] = "#{context_path}/files/#{file_id}#{rest}"
+            link[:new_value] = "/media_objects_iframe?mediahref=#{link[:new_value]}" if link[:in_media_iframe]
+          end
         end
       else
         raise "unrecognized link_type in unresolved link"
@@ -144,7 +152,8 @@ module Importers
         mig_id ||= @migration.attachment_path_id_lookup_lower[alt_rel_path.downcase]
       end
 
-      mig_id && context.attachments.where(migration_id: mig_id).first
+      # This md5 comparison is here to handle faulty cartridges with the migration_id equivalent of an empty string
+      mig_id && mig_id != "gd41d8cd98f00b204e9800998ecf8427e" && context.attachments.where(migration_id: mig_id).first
     end
 
     def resolve_relative_file_url(rel_path)

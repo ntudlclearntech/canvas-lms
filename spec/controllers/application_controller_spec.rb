@@ -28,6 +28,7 @@ RSpec.describe ApplicationController do
   context "group 1" do
     before do
       request_double = double(
+        cookies_same_site_protection: proc { false },
         host_with_port: "www.example.com",
         host: "www.example.com",
         url: "http://www.example.com",
@@ -220,6 +221,50 @@ RSpec.describe ApplicationController do
         end
       end
 
+      context "session_timezone url param is given" do
+        before do
+          allow(controller).to receive(:params).and_return({ session_timezone: "America/New_York" })
+        end
+
+        it "sets the timezone from the url" do
+          Time.use_zone("Mountain Time (US & Canada)") do
+            controller.instance_variable_set(:@context, double(time_zone: Time.zone, asset_string: "", class_name: nil))
+            controller.js_env({})
+            expect(controller.js_env[:TIMEZONE]).to eq "America/New_York"
+          end
+        end
+
+        it "sets the contextual timezone from the url" do
+          Time.use_zone("Mountain Time (US & Canada)") do
+            controller.instance_variable_set(:@context, double(time_zone: Time.zone, asset_string: "", class_name: nil))
+            controller.js_env({})
+            expect(controller.js_env[:CONTEXT_TIMEZONE]).to eq "America/New_York"
+          end
+        end
+
+        context "session_timezone is not valid" do
+          before do
+            allow(controller).to receive(:params).and_return({ session_timezone: "ChawnZone" })
+          end
+
+          it "sets the contextual timezone from the context" do
+            Time.use_zone("Mountain Time (US & Canada)") do
+              controller.instance_variable_set(:@context, double(time_zone: Time.zone, asset_string: "", class_name: nil))
+              controller.js_env({})
+              expect(controller.js_env[:CONTEXT_TIMEZONE]).to eq "America/Denver"
+            end
+          end
+
+          it "sets the timezone from the context" do
+            Time.use_zone("Mountain Time (US & Canada)") do
+              controller.instance_variable_set(:@context, double(time_zone: Time.zone, asset_string: "", class_name: nil))
+              controller.js_env({})
+              expect(controller.js_env[:TIMEZONE]).to eq "America/Denver"
+            end
+          end
+        end
+      end
+
       it "allows multiple items" do
         controller.js_env A: "a", B: "b"
         expect(controller.js_env[:A]).to eq "a"
@@ -262,36 +307,6 @@ RSpec.describe ApplicationController do
 
           it "populates js_env with elementary theme setting" do
             expect(controller.js_env[:FEATURES]).to include(:canvas_k6_theme)
-          end
-        end
-
-        context "responsive_awareness" do
-          before do
-            controller.instance_variable_set(:@domain_root_account, Account.default)
-          end
-
-          it "is false if the feature flag is off" do
-            expect(controller.js_env[:FEATURES][:responsive_awareness]).to be_falsey
-          end
-
-          it "is true if the feature flag is on" do
-            Account.default.enable_feature!(:responsive_awareness)
-            expect(controller.js_env[:FEATURES][:responsive_awareness]).to be_truthy
-          end
-        end
-
-        context "responsive_misc" do
-          before do
-            controller.instance_variable_set(:@domain_root_account, Account.default)
-          end
-
-          it "is false if the feature flag is off" do
-            expect(controller.js_env[:FEATURES][:responsive_misc]).to be_falsey
-          end
-
-          it "is true if the feature flag is on" do
-            Account.default.enable_feature!(:responsive_misc)
-            expect(controller.js_env[:FEATURES][:responsive_misc]).to be_truthy
           end
         end
 
@@ -764,9 +779,6 @@ RSpec.describe ApplicationController do
         end
 
         it "logs error reports to the domain_root_accounts shard" do
-          report = ErrorReport.new
-          allow(ErrorReport).to receive(:log_exception).and_return(report)
-          allow(ErrorReport).to receive(:find).and_return(report)
           allow(Canvas::Errors::Info).to receive(:useful_http_env_stuff_from_request).and_return({})
 
           req = double
@@ -782,9 +794,12 @@ RSpec.describe ApplicationController do
 
           controller.instance_variable_set(:@domain_root_account, @account)
 
-          expect(@shard2).to receive(:activate)
-
           controller.send(:rescue_action_in_public, Exception.new)
+
+          expect(ErrorReport.count).to eq 0
+          @shard2.activate do
+            expect(ErrorReport.count).to eq 1
+          end
         end
       end
     end
@@ -829,7 +844,7 @@ RSpec.describe ApplicationController do
         it "redirects to edit for a quiz_lti assignment" do
           tag = create_tag(content_type: "Assignment")
           allow(tag).to receive(:quiz_lti).and_return true
-          expect(controller).to receive(:named_context_url).with(Account.default, :edit_context_assignment_url, 44, { module_item_id: 42 }).and_return("nil")
+          expect(controller).to receive(:named_context_url).with(Account.default, :edit_context_assignment_url, 44, { module_item_id: 42, quiz_lti: true }).and_return("nil")
           allow(controller).to receive(:redirect_to)
           controller.send(:content_tag_redirect, Account.default, tag, nil)
         end
@@ -1390,30 +1405,155 @@ RSpec.describe ApplicationController do
             allow(content_tag).to receive(:id).and_return(42)
           end
 
-          it "uses selection_width and selection_height if provided" do
-            controller.send(:content_tag_redirect, course, content_tag, nil)
+          context "when ContentTag provides selection_width or selection_height" do
+            before do
+              content_tag.update(link_settings: { selection_width: 543, selection_height: 321 })
+            end
 
-            expect(assigns[:lti_launch].tool_dimensions[:selection_width]).to eq "500px"
-            expect(assigns[:lti_launch].tool_dimensions[:selection_height]).to eq "300px"
+            it "uses selection_width and selection_height from the ContentTag if provided" do
+              controller.send(:content_tag_redirect, course, content_tag, nil)
+
+              expect(assigns[:lti_launch].tool_dimensions[:selection_width]).to eq "543px"
+              expect(assigns[:lti_launch].tool_dimensions[:selection_height]).to eq "321px"
+            end
+
+            it "uses selection_width from tool.settings[\"selection_width\"] if the ContentTag's is nil" do
+              content_tag.update(link_settings: { selection_width: nil, selection_height: 321 })
+              controller.send(:content_tag_redirect, course, content_tag, nil)
+
+              expect(assigns[:lti_launch].tool_dimensions[:selection_width]).to eq "500px"
+              expect(assigns[:lti_launch].tool_dimensions[:selection_height]).to eq "321px"
+            end
+
+            it "uses selection_width from tool.settings[\"selection_width\"] if the ContentTag's is \"\"" do
+              content_tag.update(link_settings: { selection_width: "", selection_height: 321 })
+              controller.send(:content_tag_redirect, course, content_tag, nil)
+
+              expect(assigns[:lti_launch].tool_dimensions[:selection_width]).to eq "500px"
+              expect(assigns[:lti_launch].tool_dimensions[:selection_height]).to eq "321px"
+            end
+
+            it "uses selection_height from tool.settings[\"selection_height\"] if the ContentTag`s is nil" do
+              content_tag.update(link_settings: { selection_width: 543, selection_height: nil })
+              controller.send(:content_tag_redirect, course, content_tag, nil)
+
+              expect(assigns[:lti_launch].tool_dimensions[:selection_width]).to eq "543px"
+              expect(assigns[:lti_launch].tool_dimensions[:selection_height]).to eq "300px"
+            end
+
+            it "uses selection_height from tool.settings[\"selection_height\"] if the ContentTag`s is \"\"" do
+              content_tag.update(link_settings: { selection_width: 543, selection_height: "" })
+              controller.send(:content_tag_redirect, course, content_tag, nil)
+
+              expect(assigns[:lti_launch].tool_dimensions[:selection_width]).to eq "543px"
+              expect(assigns[:lti_launch].tool_dimensions[:selection_height]).to eq "300px"
+            end
           end
 
-          it "uses selection_width and selection_height from the ContentTag if provided" do
-            content_tag.update(link_settings: { selection_width: 543, selection_height: 321 })
-            controller.send(:content_tag_redirect, course, content_tag, nil)
+          context "when ContentTag doesn't have link_settings and tool.settings provides selection_width or selection_height" do
+            # ContextExternalTool#normalize_sizes! converts settings[:selection_width] and settings[:selection_height] to integer
 
-            expect(assigns[:lti_launch].tool_dimensions[:selection_width]).to eq "543px"
-            expect(assigns[:lti_launch].tool_dimensions[:selection_height]).to eq "321px"
+            it "uses selection_width and selection_height from the tool.settings if provided" do
+              controller.send(:content_tag_redirect, course, content_tag, nil)
+
+              expect(assigns[:lti_launch].tool_dimensions[:selection_width]).to eq "500px"
+              expect(assigns[:lti_launch].tool_dimensions[:selection_height]).to eq "300px"
+            end
+
+            it "uses 100% for selection_width when is not provided by tool.settings" do
+              tool.update(settings: { selection_height: 300 })
+              controller.send(:content_tag_redirect, course, content_tag, nil)
+
+              expect(assigns[:lti_launch].tool_dimensions[:selection_width]).to eq "100%"
+              expect(assigns[:lti_launch].tool_dimensions[:selection_height]).to eq "300px"
+            end
+
+            it "uses 100% for selection_width when tool.settings[\"selection_width\"] is nil" do
+              tool.update(settings: { selection_width: nil, selection_height: 300 })
+              controller.send(:content_tag_redirect, course, content_tag, nil)
+
+              expect(assigns[:lti_launch].tool_dimensions[:selection_width]).to eq "100%"
+              expect(assigns[:lti_launch].tool_dimensions[:selection_height]).to eq "300px"
+            end
+
+            it "uses 100% for selection_width when tool.settings[\"selection_width\"] is 0" do
+              tool.update(settings: { selection_width: 0, selection_height: 300 })
+              controller.send(:content_tag_redirect, course, content_tag, nil)
+
+              expect(assigns[:lti_launch].tool_dimensions[:selection_width]).to eq "100%"
+              expect(assigns[:lti_launch].tool_dimensions[:selection_height]).to eq "300px"
+            end
+
+            it "uses 100% for selection_width when tool.settings[\"selection_width\"] is \"\"" do
+              tool.update(settings: { selection_width: "", selection_height: 300 })
+              controller.send(:content_tag_redirect, course, content_tag, nil)
+
+              expect(assigns[:lti_launch].tool_dimensions[:selection_width]).to eq "100%"
+              expect(assigns[:lti_launch].tool_dimensions[:selection_height]).to eq "300px"
+            end
+
+            it "uses 100% for selection_height when is not provided" do
+              tool.update(settings: { selection_width: 500 })
+              controller.send(:content_tag_redirect, course, content_tag, nil)
+
+              expect(assigns[:lti_launch].tool_dimensions[:selection_width]).to eq "500px"
+              expect(assigns[:lti_launch].tool_dimensions[:selection_height]).to eq "100%"
+            end
+
+            it "uses 100% for selection_height when tool.settings[\"selection_height\"] is nil" do
+              tool.update(settings: { selection_width: 500, selection_height: nil })
+              controller.send(:content_tag_redirect, course, content_tag, nil)
+
+              expect(assigns[:lti_launch].tool_dimensions[:selection_width]).to eq "500px"
+              expect(assigns[:lti_launch].tool_dimensions[:selection_height]).to eq "100%"
+            end
+
+            it "uses 100% for selection_height when tool.settings[\"selection_height\"] is 0" do
+              tool.update(settings: { selection_width: 500, selection_height: 0 })
+              controller.send(:content_tag_redirect, course, content_tag, nil)
+
+              expect(assigns[:lti_launch].tool_dimensions[:selection_width]).to eq "500px"
+              expect(assigns[:lti_launch].tool_dimensions[:selection_height]).to eq "100%"
+            end
+
+            it "uses 100% for selection_height when tool.settings[\"selection_height\"] is \"\"" do
+              tool.update(settings: { selection_width: 500, selection_height: "" })
+              controller.send(:content_tag_redirect, course, content_tag, nil)
+
+              expect(assigns[:lti_launch].tool_dimensions[:selection_width]).to eq "500px"
+              expect(assigns[:lti_launch].tool_dimensions[:selection_height]).to eq "100%"
+            end
           end
 
-          it "appends px to tool dimensions only when needed" do
-            tool.settings = {}
-            tool.save!
-            content_tag = ContentTag.create(content: tool, url: tool.url)
+          context do
+            it "appends px to tool dimensions when receives numeric values" do
+              tool.update(settings: { selection_width: 50, selection_height: 90 })
+              controller.send(:content_tag_redirect, course, content_tag, nil)
 
-            controller.send(:content_tag_redirect, course, content_tag, nil)
+              expect(assigns[:lti_launch].tool_dimensions[:selection_width]).to eq "50px"
+              expect(assigns[:lti_launch].tool_dimensions[:selection_height]).to eq "90px"
+            end
 
-            expect(assigns[:lti_launch].tool_dimensions[:selection_width]).to eq "100%"
-            expect(assigns[:lti_launch].tool_dimensions[:selection_height]).to eq "100%"
+            it "does not appends px to tool dimensions when dimensions already have px or %" do
+              content_tag.update(link_settings: { selection_width: "543px", selection_height: "90%" })
+              controller.send(:content_tag_redirect, course, content_tag, nil)
+
+              expect(assigns[:lti_launch].tool_dimensions[:selection_width]).to eq "543px"
+              expect(assigns[:lti_launch].tool_dimensions[:selection_height]).to eq "90%"
+            end
+
+            it "does not appends px to tool dimensions when ContentTag and tool.settings don't provide the dimensions" do
+              # in this case, it will use the default values: { selection_width: "100%", selection_height: "100%" }
+              # see ApplicationController#tool_dimensions
+              tool.settings = {}
+              tool.save!
+              content_tag = ContentTag.create(content: tool, url: tool.url)
+
+              controller.send(:content_tag_redirect, course, content_tag, nil)
+
+              expect(assigns[:lti_launch].tool_dimensions[:selection_width]).to eq "100%"
+              expect(assigns[:lti_launch].tool_dimensions[:selection_height]).to eq "100%"
+            end
           end
         end
       end
@@ -1534,7 +1674,7 @@ RSpec.describe ApplicationController do
     describe "verify_authenticity_token" do
       before do
         # default setup is a protected non-GET non-API session-authenticated request with bogus tokens
-        cookies = ActionDispatch::Cookies::CookieJar.new(nil)
+        cookies = ActionDispatch::Cookies::CookieJar.new(controller.request)
         controller.allow_forgery_protection = true
         allow(controller.request).to receive(:cookie_jar).and_return(cookies)
         allow(controller.request).to receive(:get?).and_return(false)
@@ -2225,9 +2365,11 @@ RSpec.describe ApplicationController do
 
   describe "k5_user? helper" do
     before :once do
-      course_with_teacher active_all: true
+      @k5_account = Account.create!(parent_account_id: Account.default)
+      course_with_teacher(active_all: true, account: @k5_account)
+      @teacher1 = @teacher
       @student1 = student_in_course(context: @course).user
-      toggle_k5_setting(@course.account)
+      toggle_k5_setting(@k5_account)
     end
 
     before do
@@ -2275,7 +2417,7 @@ RSpec.describe ApplicationController do
     end
 
     it "returns true if enrolled in a subaccount of a k5 account" do
-      sub = Account.create!(parent_account_id: @course.account)
+      sub = Account.create!(parent_account_id: @k5_account)
       course_factory(account: sub)
       student_in_course(active_all: true)
       @controller.instance_variable_set(:@current_user, @student)
@@ -2288,10 +2430,7 @@ RSpec.describe ApplicationController do
     end
 
     it "returns false if not associated with a k5 account" do
-      @course.account.settings[:enable_as_k5_account] = { value: false }
-      @course.account.save!
-      @course.root_account.settings[:k5_accounts] = []
-      @course.root_account.save!
+      toggle_k5_setting(@k5_account, false)
       expect(@controller.send(:k5_user?)).to be_falsey
     end
 
@@ -2304,7 +2443,7 @@ RSpec.describe ApplicationController do
     end
 
     it "returns true for an admin without enrollments" do
-      account_admin_user(account: @account)
+      account_admin_user(account: @k5_account)
       user_session(@admin)
       @controller.instance_variable_set(:@current_user, @admin)
       expect(@controller.send(:k5_user?)).to eq true
@@ -2315,7 +2454,7 @@ RSpec.describe ApplicationController do
       @teacher.save!
       user_session(@teacher)
       @controller.instance_variable_set(:@current_user, @teacher)
-      expect(@controller.send(:k5_user?, false)).to be_truthy
+      expect(@controller.send(:k5_user?, { check_disabled: false })).to be_truthy
     end
 
     it "returns true even if a student has opted-out of the k5 dashboard" do
@@ -2327,6 +2466,31 @@ RSpec.describe ApplicationController do
     it "returns false if no current user" do
       @controller.instance_variable_set(:@current_user, nil)
       expect(@controller.send(:k5_user?)).to be_falsey
+    end
+
+    it "returns correct value for another user if provided" do
+      course_with_student(active_all: true) # not in @k5_account subaccount
+      expect(@controller.send(:k5_user?, { user: @user })).to be_falsey
+      @controller.instance_variable_set(:@current_user, @user)
+      expect(@controller.send(:k5_user?, { user: @student1 })).to be_truthy
+    end
+
+    it "returns false for a k5 observer observing a non-k5 student" do
+      @student = course_with_student(active_all: true).user
+      @course.enroll_user(@teacher1, "ObserverEnrollment", enrollment_state: :active, associated_user_id: @student)
+      user_session(@teacher1)
+      @controller.instance_variable_set(:@current_user, @teacher1)
+      @controller.instance_variable_set(:@selected_observed_user, @student)
+      expect(@controller.send(:k5_user?)).to be_falsey
+    end
+
+    it "only considers provided courses if course_ids is passed" do
+      @k5_course = @course
+      @classic_course = course_factory(active_all: true)
+      @classic_course.enroll_student(@student1, enrollment_state: :active)
+      expect(@controller.send(:k5_user?, { user: @student1, course_ids: [@classic_course.id] })).to be_falsey
+      expect(@controller.send(:k5_user?, { user: @student1, course_ids: [@k5_course.id] })).to be_truthy
+      expect(@controller.send(:k5_user?, { user: @student1, course_ids: [@k5_course.id, @classic_course.id] })).to be_truthy
     end
 
     context "with sharding" do
@@ -2355,7 +2519,7 @@ RSpec.describe ApplicationController do
       end
 
       it "returns true for a user with k5 enrollments on a subaccount of another shard" do
-        toggle_k5_setting(@course.account, false)
+        toggle_k5_setting(@k5_account, false)
         @shard2.activate do
           subaccount = Account.default.sub_accounts.create!
           toggle_k5_setting(subaccount)
@@ -2370,7 +2534,7 @@ RSpec.describe ApplicationController do
       it "returns true for an admin with an AccountUser on another shard" do
         admin = User.create!
         @shard2.activate do
-          account_admin_user(user: admin)
+          account_admin_user(user: admin, account: @k5_account)
           user_session(admin)
           @controller.instance_variable_set(:@current_user, admin)
           expect(@controller.send(:k5_user?)).to eq true
@@ -2378,10 +2542,21 @@ RSpec.describe ApplicationController do
       end
 
       it "returns false for users on multiple shards with no k5 enrollments" do
-        toggle_k5_setting(@course.account, false)
+        toggle_k5_setting(@k5_account, false)
         @shard2.activate do
           expect(@controller.send(:k5_user?)).to be_falsey
         end
+      end
+
+      it "handles course_ids with course ids from multiple shards properly" do
+        @k5_course = @course
+        @shard2.activate do
+          @classic_course = course_factory(active_all: true, account: Account.create!)
+        end
+        @classic_course.enroll_student(@student1, enrollment_state: :active)
+        expect(@controller.send(:k5_user?, { user: @student1, course_ids: [@classic_course.id] })).to be_falsey
+        expect(@controller.send(:k5_user?, { user: @student1, course_ids: [@k5_course.id] })).to be_truthy
+        expect(@controller.send(:k5_user?, { user: @student1, course_ids: [@k5_course.id, @classic_course.id] })).to be_truthy
       end
     end
   end
@@ -2573,6 +2748,45 @@ describe CoursesController do
     it "sets the db_cluster tag correctly" do
       expect(Sentry).to receive(:set_tags).with({ db_cluster: Account.default.shard.database_server.id })
       get "index"
+    end
+  end
+
+  describe "set_normalized_route" do
+    it "does nothing by default" do
+      get "index"
+      expect(controller.instance_variable_get(:@normalized_route)).to be_nil
+    end
+
+    context "when Sentry is enabled on the frontend" do
+      before do
+        ConfigFile.stub("sentry", { dsn: "dummy-dsn", frontend_dsn: "dummy-frontend-dsn" })
+      end
+
+      after do
+        ConfigFile.unstub
+        SentryExtensions::Settings.reset_settings
+      end
+
+      context "given a standard route" do
+        it "correctly sets the value" do
+          get "index"
+          expect(controller.js_env[:SENTRY_FRONTEND][:normalized_route]).to eq("/courses")
+        end
+      end
+
+      context "given a route with a single path parameter" do
+        it "correctly sets the value" do
+          get "show", params: { id: 1 }
+          expect(controller.js_env[:SENTRY_FRONTEND][:normalized_route]).to eq("/courses/{id}")
+        end
+      end
+
+      context "given a route with multiple path parameters" do
+        it "correctly sets the value" do
+          get "settings", params: { course_id: 1 }
+          expect(controller.js_env[:SENTRY_FRONTEND][:normalized_route]).to eq("/courses/{course_id}/settings/{full_path}")
+        end
+      end
     end
   end
 

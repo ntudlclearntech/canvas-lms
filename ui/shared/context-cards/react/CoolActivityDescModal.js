@@ -1,11 +1,14 @@
 import React from 'react'
-import I18n from 'i18n!cool_activity_desc_modal'
+// import I18n from 'i18n!cool_activity_desc_modal'
 import { Text } from '@instructure/ui-text'
 import { Heading } from '@instructure/ui-heading'
 import { Button, CloseButton } from '@instructure/ui-buttons'
 import { IconStarLightSolid, IconStarSolid } from '@instructure/ui-icons'
 import { Modal } from '@instructure/ui-modal'
 import { View } from '@instructure/ui-view'
+import { useScope as useI18nScope } from '@canvas/i18n'
+
+const I18n = useI18nScope('i18n!cool_activity_desc_modal')
 
 export default class CoolActivityDescModal extends React.Component {
   render() {

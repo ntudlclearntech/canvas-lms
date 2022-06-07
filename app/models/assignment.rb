@@ -170,8 +170,8 @@ class Assignment < ActiveRecord::Base
   end
 
   accepts_nested_attributes_for :external_tool_tag, update_only: true, reject_if: proc { |attrs|
-    # only accept the url, content_type, content_id, and new_tab params, the other accessible
-    # params don't apply to an content tag being used as an external_tool_tag
+    # only accept the url, link_settings, content_type, content_id and new_tab params
+    # the other accessible params don't apply to an content tag being used as an external_tool_tag
     content = case attrs["content_type"]
               when "Lti::MessageHandler", "lti/message_handler"
                 Lti::MessageHandler.find(attrs["content_id"].to_i)
@@ -180,7 +180,7 @@ class Assignment < ActiveRecord::Base
               end
     attrs[:content] = content if content
     attrs[:external_data] = JSON.parse(attrs[:external_data]) if attrs["external_data"].present? && attrs[:external_data].is_a?(String)
-    attrs.slice!(:url, :new_tab, :content, :external_data)
+    attrs.slice!(:url, :new_tab, :content, :external_data, :link_settings)
     false
   }
   before_validation do |assignment|
@@ -476,6 +476,7 @@ class Assignment < ActiveRecord::Base
     grading_type
     due_at
     description
+    duplicate_of_id
     lock_at
     unlock_at
     assignment_group_id
@@ -514,6 +515,8 @@ class Assignment < ActiveRecord::Base
     grader_comments_visible_to_graders
     grader_names_visible_to_final_grader
     grader_count
+    important_dates
+    muted
   ].freeze
 
   def external_tool?
@@ -1039,7 +1042,7 @@ class Assignment < ActiveRecord::Base
       topic.message = description
       save_submittable(topic)
       self.discussion_topic = topic
-    elsif context.feature_enabled?(:conditional_release) &&
+    elsif context.conditional_release? &&
           self.submission_types == "wiki_page" && @saved_by != :wiki_page
       page = wiki_page || context.wiki_pages.build(user: @updating_user)
       save_submittable(page)
@@ -1719,7 +1722,7 @@ class Assignment < ActiveRecord::Base
   def each_submission_type
     if block_given?
       submittable_types = %i[discussion_topic quiz]
-      submittable_types << :wiki_page if context.try(:feature_enabled?, :conditional_release)
+      submittable_types << :wiki_page if context.try(:conditional_release?)
       submittable_types.each do |asg_type|
         submittable = send(asg_type)
         yield submittable, Assignment.get_submission_type(asg_type), asg_type
@@ -3684,7 +3687,7 @@ class Assignment < ActiveRecord::Base
     !!effective_post_policy&.post_manually?
   end
 
-  def post_submissions(progress: nil, submission_ids: nil, skip_updating_timestamp: false, posting_params: nil)
+  def post_submissions(progress: nil, submission_ids: nil, skip_updating_timestamp: false, posting_params: nil, skip_muted_changed: false)
     submissions = if submission_ids.nil?
                     self.submissions.active
                   else
@@ -3712,7 +3715,7 @@ class Assignment < ActiveRecord::Base
       end
     end
 
-    submissions.in_workflow_state("graded").each(&:assignment_muted_changed)
+    submissions.in_workflow_state("graded").each(&:assignment_muted_changed) unless skip_muted_changed
 
     show_stream_items(submissions: submissions)
     course.recompute_student_scores(submissions.pluck(:user_id))
@@ -3722,7 +3725,7 @@ class Assignment < ActiveRecord::Base
     broadcast_submissions_posted(posting_params) if posting_params.present?
   end
 
-  def hide_submissions(progress: nil, submission_ids: nil, skip_updating_timestamp: false)
+  def hide_submissions(progress: nil, submission_ids: nil, skip_updating_timestamp: false, skip_muted_changed: false)
     submissions = if submission_ids.nil?
                     self.submissions.active
                   else
@@ -3734,7 +3737,7 @@ class Assignment < ActiveRecord::Base
 
     User.clear_cache_keys(user_ids, :submissions)
     submissions.update_all(posted_at: nil, updated_at: Time.zone.now) unless skip_updating_timestamp
-    submissions.in_workflow_state("graded").each(&:assignment_muted_changed)
+    submissions.in_workflow_state("graded").each(&:assignment_muted_changed) unless skip_muted_changed
     hide_stream_items(submissions: submissions)
     course.recompute_student_scores(submissions.pluck(:user_id))
     update_muted_status!
@@ -3802,6 +3805,15 @@ class Assignment < ActiveRecord::Base
       submission_types =~ /online|external_tool/
     else
       submission_types_array.include?(submission_type)
+    end
+  end
+
+  def anonymous_student_identities
+    @anonymous_student_identities ||= all_submissions.active.order(Arel.sql('anonymous_id COLLATE "C" ASC')).order("md5(id::text) ASC").each_with_object({}).with_index(1) do |(identity, identities), student_number|
+      identities[identity["user_id"]] = {
+        name: I18n.t("Student %{student_number}", { student_number: student_number }),
+        position: student_number
+      }
     end
   end
 

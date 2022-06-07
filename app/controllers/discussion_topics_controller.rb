@@ -355,6 +355,7 @@ class DiscussionTopicsController < ApplicationController
       scope = scope.active.where("delayed_post_at IS NULL OR delayed_post_at<?", Time.now.utc)
     end
 
+    @topics = []
     if @context.is_a?(Group) || request.format.json?
       @topics = Api.paginate(scope, self, topic_pagination_url)
       if params[:exclude_context_module_locked_topics]
@@ -419,7 +420,7 @@ class DiscussionTopicsController < ApplicationController
             create: @context.discussion_topics.temp_record.grants_right?(@current_user, session, :create),
             moderate: user_can_moderate,
             change_settings: user_can_edit_course_settings?,
-            manage_content: @context.grants_right?(@current_user, session, :manage_content),
+            manage_content: @context.grants_any_right?(@current_user, session, :manage_content, :manage_course_content_edit),
             publish: user_can_moderate,
             read_as_admin: @context.grants_right?(@current_user, session, :read_as_admin),
           },
@@ -457,6 +458,12 @@ class DiscussionTopicsController < ApplicationController
 
         render html: "", layout: true
       end
+
+      InstStatsd::Statsd.increment("discussion_topic.index.visit")
+      InstStatsd::Statsd.count("discussion_topic.index.visit.pinned", @topics&.select { |dt| dt.pinned }&.count)
+      InstStatsd::Statsd.count("discussion_topic.index.visit.discussions", @topics&.length)
+      InstStatsd::Statsd.count("discussion_topic.index.visit.closed_for_comments", @topics&.select { |dt| dt.locked }&.count)
+
       format.json do
         log_api_asset_access(["topics", @context], "topics", "other")
         if @context.grants_right?(@current_user, session, :moderate_forum)
@@ -601,7 +608,8 @@ class DiscussionTopicsController < ApplicationController
     if post_to_sis && @topic.new_record?
       js_hash[:POST_TO_SIS_DEFAULT] = @context.account.sis_default_grade_export[:value]
     end
-    js_hash[:STUDENT_PLANNER_ENABLED] = @context.grants_any_right?(@current_user, session, :manage_content)
+    js_hash[:STUDENT_PLANNER_ENABLED] =
+      @context.grants_any_right?(@current_user, session, :manage_content, *RoleOverride::GRANULAR_MANAGE_COURSE_CONTENT_PERMISSIONS)
 
     if @topic.is_section_specific && @context.is_a?(Course)
       selected_section_ids = @topic.discussion_topic_section_visibilities.pluck(:course_section_id)
@@ -641,6 +649,7 @@ class DiscussionTopicsController < ApplicationController
     if context.is_a?(Course)
       js_hash[:allow_self_signup] = true # for group creation
       js_hash[:group_user_type] = "student"
+      append_default_due_time_js_env(@context, js_hash)
     end
     js_env(js_hash)
 
@@ -762,9 +771,15 @@ class DiscussionTopicsController < ApplicationController
                  Base64.encode64("#{@current_user.uuid}vyfW=;[p-0?:{P_\=HUpgraqe;njalkhpvoiulkimmaqewg")
              })
 
+      unless @locked
+        InstStatsd::Statsd.increment("discussion_topic.visit.redesign")
+        InstStatsd::Statsd.count("discussion_topic.visit.entries.redesign", @topic.discussion_entries.count)
+        InstStatsd::Statsd.count("discussion_topic.visit.pages.redesign", (@topic.discussion_entries.count / 20).ceil)
+      end
+
       js_bundle :discussion_topics_post
       css_bundle :discussions_index, :learning_outcomes
-      render html: "", layout: true
+      render html: "", layout: params[:embed] == "true" ? "mobile_embed" : true
       return
     end
 
@@ -893,6 +908,12 @@ class DiscussionTopicsController < ApplicationController
             conditional_release_js_env(@topic.assignment, includes: [:rule])
             js_bundle :discussion_topic
             css_bundle :tinymce, :discussions, :learning_outcomes
+
+            unless @locked
+              InstStatsd::Statsd.increment("discussion_topic.visit.legacy")
+              InstStatsd::Statsd.count("discussion_topic.visit.entries.legacy", @topic.discussion_entries.count)
+              InstStatsd::Statsd.count("discussion_topic.visit.pages.legacy", (@topic.discussion_entries.count / 50).ceil)
+            end
 
             render stream: can_stream_template?
           end
@@ -1384,6 +1405,47 @@ class DiscussionTopicsController < ApplicationController
 
         include_usage_rights = @context.root_account.feature_enabled?(:usage_rights_discussion_topics) &&
                                @context.try(:usage_rights_required?)
+
+        if is_new
+          InstStatsd::Statsd.increment("discussion_topic.created")
+
+          if params[:podcast_enabled] == "1"
+            InstStatsd::Statsd.increment("discussion_topic.created.podcast_feed_enabled")
+          end
+
+          if params[:allow_rating] == "1"
+            InstStatsd::Statsd.increment("discussion_topic.created.allow_liking_enabled")
+          end
+
+          if params[:attachment]
+            InstStatsd::Statsd.increment("discussion_topic.created.attachment")
+          end
+
+          if !params[:delayed_post_at]&.empty? || !params[:lock_at]&.empty?
+            InstStatsd::Statsd.increment("discussion_topic.created.scheduled")
+          end
+
+          if params[:anonymous_state] == "partial_anonymity"
+            InstStatsd::Statsd.increment("discussion_topic.created.partial_anonymity")
+          end
+
+          if params[:anonymous_state] == "full_anonymity"
+            InstStatsd::Statsd.increment("discussion_topic.created.full_anonymity")
+          end
+
+          if params[:assignment]
+            InstStatsd::Statsd.increment("discussion_topic.created.graded")
+          end
+
+          if @context.is_a?(Group)
+            InstStatsd::Statsd.increment("discussion_topic.created.group")
+          end
+
+          if request.params[:assignment] && request.params[:assignment][:assignment_overrides] && request.params[:assignment][:assignment_overrides].length > 1
+            InstStatsd::Statsd.increment("discussion_topic.created.multiple_due_dates")
+          end
+        end
+
         if @context.is_a?(Course)
           render json: discussion_topic_api_json(@topic,
                                                  @context,
@@ -1429,7 +1491,7 @@ class DiscussionTopicsController < ApplicationController
     end
     return unless params[:todo_date]
 
-    if !authorized_action(@topic.context, @current_user, :manage_content)
+    if !authorized_action(@topic.context, @current_user, [:manage_content, :manage_course_content_add])
       @errors[:todo_date] = t(:error_todo_date_unauthorized,
                               "You do not have permission to add this topic to the student to-do list.")
     elsif (@topic.assignment || params[:assignment]) && !remove_assign
@@ -1655,7 +1717,8 @@ class DiscussionTopicsController < ApplicationController
       if @topic.podcast_enabled
         content_for_head helpers.auto_discovery_link_tag(:rss,
                                                          feeds_topic_format_path(@topic.id, rss_context.feed_code, :rss),
-                                                         { title: t(:discussion_podcast_feed_title, "Discussion Podcast Feed") })
+                                                         { title: t(:discussion_podcast_feed_title, "Discussion Podcast Feed"),
+                                                           id: "Discussion Podcast Feed" })
       end
     end
   end

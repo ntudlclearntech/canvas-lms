@@ -17,7 +17,7 @@
  */
 import React, {useCallback, useEffect, useState} from 'react'
 import {connect, Provider} from 'react-redux'
-import I18n from 'i18n!k5_dashboard'
+import {useScope as useI18nScope} from '@canvas/i18n'
 import PropTypes from 'prop-types'
 
 import {responsiviser, store} from '@instructure/canvas-planner'
@@ -31,7 +31,7 @@ import {
   IconCalendarReservedLine
 } from '@instructure/ui-icons'
 import {ApplyTheme} from '@instructure/ui-themeable'
-import {Button, IconButton} from '@instructure/ui-buttons'
+import {IconButton} from '@instructure/ui-buttons'
 import {Flex} from '@instructure/ui-flex'
 import {Heading} from '@instructure/ui-heading'
 import {Menu} from '@instructure/ui-menu'
@@ -44,7 +44,7 @@ import GradesPage from './GradesPage'
 import HomeroomPage from './HomeroomPage'
 import TodosPage from './TodosPage'
 import K5DashboardContext from '@canvas/k5/react/K5DashboardContext'
-import loadCardDashboard, {resetDashboardCards} from '@canvas/dashboard-card'
+import {CardDashboardLoader} from '@canvas/dashboard-card'
 import {mapStateToProps} from '@canvas/k5/redux/redux-helpers'
 import SchedulePage from '@canvas/k5/react/SchedulePage'
 import ResourcesPage from '@canvas/k5/react/ResourcesPage'
@@ -61,6 +61,9 @@ import {showFlashError} from '@canvas/alerts/react/FlashAlert'
 import ImportantDates from './ImportantDates'
 import ObserverOptions, {ObservedUsersListShape} from '@canvas/observer-picker'
 import {savedObservedId} from '@canvas/observer-picker/ObserverGetObservee'
+import {fetchShowK5Dashboard} from '@canvas/observer-picker/react/utils'
+
+const I18n = useI18nScope('k5_dashboard')
 
 const DASHBOARD_TABS = [
   {
@@ -94,9 +97,13 @@ const K5DashboardOptionsMenu = ({onDisableK5Dashboard}) => {
   return (
     <Menu
       trigger={
-        <Button variant="icon" icon={IconMoreLine} data-testid="k5-dashboard-options">
-          <ScreenReaderContent>{I18n.t('Dashboard Options')}</ScreenReaderContent>
-        </Button>
+        <IconButton
+          renderIcon={IconMoreLine}
+          withBackground={false}
+          withBorder={false}
+          data-testid="k5-dashboard-options"
+          screenReaderLabel={I18n.t('Dashboard Options')}
+        />
       }
     >
       <Menu.Group
@@ -138,11 +145,11 @@ export const K5Dashboard = ({
   hideGradesTabForStudents = false,
   selectedContextCodes,
   selectedContextsLimit,
-  parentSupportEnabled,
   observedUsersList,
   canAddObservee,
   openTodosInNewTab,
-  loadingOpportunities
+  loadingOpportunities,
+  observerPickerEnabled
 }) => {
   const initialObservedId = observedUsersList.find(o => o.id === savedObservedId(currentUser.id))
     ? savedObservedId(currentUser.id)
@@ -158,6 +165,7 @@ export const K5Dashboard = ({
   const [tabsRef, setTabsRef] = useState(null)
   const [trayOpen, setTrayOpen] = useState(false)
   const [observedUserId, setObservedUserId] = useState(initialObservedId)
+  const [cardDashboardLoader, setCardDashboardLoader] = useState(null)
   const plannerInitialized = usePlanner({
     plannerEnabled,
     isPlannerActive: () => activeTab.current === TAB_IDS.SCHEDULE,
@@ -167,7 +175,7 @@ export const K5Dashboard = ({
   })
   const canDisableElementaryDashboard = currentUserRoles.some(r => ['admin', 'teacher'].includes(r))
   const useImportantDatesTray = responsiveSize !== 'large'
-  const observerMode = parentSupportEnabled && currentUserRoles.includes('observer')
+  const observerMode = currentUserRoles.includes('observer')
 
   // If the view width increases while the tray is open, change the state to close the tray
   if (trayOpen && !useImportantDatesTray) {
@@ -187,18 +195,36 @@ export const K5Dashboard = ({
     }
   }
 
+  const updateDashboardForObserverCallback = id => {
+    setCardDashboardLoader(null)
+    setCardsSettled(false)
+    setObservedUserId(id)
+  }
+
   const handleChangeObservedUser = id => {
     if (id !== observedUserId) {
-      resetDashboardCards()
-      setCardsSettled(false)
-      setObservedUserId(id)
+      if (observerPickerEnabled) {
+        fetchShowK5Dashboard(id)
+          .then(isK5User => {
+            if (isK5User) {
+              updateDashboardForObserverCallback(id)
+            } else {
+              window.location.reload()
+            }
+          })
+          .catch(err => showFlashError(I18n.t('Unable to switch students'))(err))
+      } else {
+        updateDashboardForObserverCallback(id)
+      }
     }
   }
 
   useEffect(() => {
     // don't call on the initial load when we know we're in observer mode but don't have the ID yet
     if (!observerMode || (observerMode && observedUserId)) {
-      loadCardDashboard(loadCardDashboardCallBack, observerMode ? observedUserId : undefined)
+      const dcl = new CardDashboardLoader()
+      dcl.loadCardDashboard(loadCardDashboardCallBack, observerMode ? observedUserId : undefined)
+      setCardDashboardLoader(dcl)
     }
   }, [observedUserId, observerMode])
 
@@ -349,7 +375,6 @@ export const K5Dashboard = ({
               visible={currentTab === TAB_IDS.SCHEDULE}
               singleCourse={false}
               observedUserId={observedUserId}
-              contextCodes={cardsSettled ? cards?.map(c => c.assetString) : undefined}
             />
             <GradesPage
               visible={currentTab === TAB_IDS.GRADES}
@@ -418,10 +443,10 @@ K5Dashboard.propTypes = {
   hideGradesTabForStudents: PropTypes.bool,
   selectedContextCodes: PropTypes.arrayOf(PropTypes.string),
   selectedContextsLimit: PropTypes.number.isRequired,
-  parentSupportEnabled: PropTypes.bool.isRequired,
   observedUsersList: ObservedUsersListShape.isRequired,
   canAddObservee: PropTypes.bool.isRequired,
-  openTodosInNewTab: PropTypes.bool.isRequired
+  openTodosInNewTab: PropTypes.bool.isRequired,
+  observerPickerEnabled: PropTypes.bool.isRequired
 }
 
 const WrappedK5Dashboard = connect(mapStateToProps)(responsiviser()(K5Dashboard))

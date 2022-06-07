@@ -34,7 +34,7 @@ def setupNode() {
   checkout scm
 
   distribution.stashBuildScripts()
-  if (!configuration.isChangeMerged() && env.ENABLE_CRYSTALBALL == '1') {
+  if (!configuration.isChangeMerged() && env.GERRIT_REFSPEC != "refs/heads/master" && env.ENABLE_CRYSTALBALL == '1') {
     copyArtifacts filter: 'tmp/crystalball_spec_list.txt', projectName: "${env.UPSTREAM}", selector: upstream()
     copyArtifacts filter: 'tmp/crystalball_map_version.txt', projectName: "${env.UPSTREAM}", selector: upstream()
   }
@@ -50,7 +50,7 @@ def exampleCount(testList) {
   sh(script: "docker-compose exec -T canvas bundle exec rspec --dry-run \
                                     --require './spec/formatters/example_count_formatter.rb' \
                                     --format ExampleCountRecorder \
-                                    --out spec_count.txt ${testList.join(' ')}", label: 'Get Test Count')
+                                    --out spec_count.txt --pattern ${testList.join(',')}", label: 'Get Test Count')
   return sh(script: 'docker-compose exec -T canvas cat spec_count.txt', returnStdout: true).trim().toInteger()
 }
 
@@ -74,11 +74,19 @@ def computeTestCount() {
   def rspecPartition = (env.RSPEC_PROCESSES.toInteger() * 190) // 190 tests per process
   def specs = readFile(file: 'tmp/crystalball_spec_list.txt')
   def mapVersion = readFile(file: 'tmp/crystalball_map_version.txt')
-  def specUnique = specs.replaceAll(/\[.*?\]/, '').tokenize(',').unique()
+  def specUnique = specs.tokenize(',').unique()
   def totalPrediction = specUnique.join('\n')
   env.CRYSTALBALL_SPEC = specUnique.join(' ')
 
   summaryMessage = "Map: $mapVersion\n"
+
+  if (configuration.getBoolean('skip-crystalball', 'false')) {
+    summaryMessage += "Skip Crystalball Detected! - Running everything!"
+    crystalballColor = 'danger'
+    env.CRYSTALBALL_SPEC = '.'
+    return
+  }
+
   // Crystalball predictor returned empty text file
   if (specUnique.size() == 0) {
     summaryMessage += "Configuration Changes Detected! - Running everything!"
@@ -160,9 +168,7 @@ pipeline {
     RSPECQ_UPDATE_TIMINGS = "${env.GERRIT_EVENT_TYPE == 'change-merged' ? '1' : '0'}"
     ENABLE_AXE_SELENIUM = "${env.ENABLE_AXE_SELENIUM}"
     POSTGRES_PASSWORD = 'sekret'
-    SELENIUM_VERSION = '3.141.59-20210929'
     RSPECQ_REDIS_URL = redisUrl()
-    CANVAS_ZEITWERK = '1'
   }
 
   stages {
@@ -175,7 +181,7 @@ pipeline {
           def postRunnerHandler = [
             onStageEnded: { stageName, stageConfig, result ->
               node('master') {
-                if (!configuration.isChangeMerged() && env.ENABLE_CRYSTALBALL == '1') {
+                if (!configuration.isChangeMerged() && env.GERRIT_REFSPEC != "refs/heads/master" && env.ENABLE_CRYSTALBALL == '1') {
                   sendCrystalballSlack(summaryMessage, crystalballColor, stageConfig.status())
                 }
                 buildSummaryReport.saveRunManifest()
@@ -185,7 +191,7 @@ pipeline {
 
           def postBuildHandler = [
             onNodeReleasing: {
-              if (!configuration.isChangeMerged() && env.ENABLE_CRYSTALBALL == '1') {
+              if (!configuration.isChangeMerged() && env.GERRIT_REFSPEC != "refs/heads/master" && env.ENABLE_CRYSTALBALL == '1') {
                 sendCrystalballMetrics()
               }
             }
@@ -203,7 +209,7 @@ pipeline {
                 setupNode()
               }
 
-              if (!configuration.isChangeMerged() && env.ENABLE_CRYSTALBALL == '1') {
+              if (!configuration.isChangeMerged() && env.GERRIT_REFSPEC != "refs/heads/master" && env.ENABLE_CRYSTALBALL == '1') {
                 stage('Compute Build Distribution') {
                   computeTestCount()
                 }
@@ -238,7 +244,7 @@ pipeline {
                     .envVars(['CI_NODE_INDEX=0',
                         "CRYSTAL_BALL_SPECS=${env.CRYSTALBALL_SPEC}",
                         "BUILD_NAME=${env.JOB_NAME}_build${env.BUILD_NUMBER}"])
-                    .hooks(postStageHandler + [onNodeAcquired: { rspecStage.setupNode() }, onNodeReleasing: { rspecStage.tearDownNode('rspec') }])
+                    .hooks(postStageHandler + [onNodeReleasing: { rspecStage.tearDownNode('rspec') }])
                     .timeout(30)
                     .queue(rspecqStages) { rspecStage.runRspecqSuite() }
 

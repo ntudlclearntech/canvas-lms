@@ -19,7 +19,7 @@
 import React, {useState, useRef, useEffect} from 'react'
 import uuid from 'uuid'
 // @ts-ignore
-import I18n from 'i18n!gradebook'
+import {useScope as useI18nScope} from '@canvas/i18n'
 import {View} from '@instructure/ui-view'
 import {Button, IconButton} from '@instructure/ui-buttons'
 import {Tooltip} from '@instructure/ui-tooltip'
@@ -44,6 +44,9 @@ import type {
   Section,
   StudentGroupCategoryMap
 } from '../gradebook.d'
+import filterConditionTypes from '../constants/filterConditionTypes'
+
+const I18n = useI18nScope('gradebook')
 
 const {Item} = Flex as any
 
@@ -110,6 +113,10 @@ export default function FilterNavFilter({
     })
   }
   const onChangeCondition = condition => {
+    const otherConditions = filter.conditions.filter(c => c.id !== condition.id)
+    if (otherConditions.find(c => c.type === condition.type)) {
+      throw new Error('condition type already exists')
+    }
     onChange({
       ...filter,
       conditions: filter.conditions
@@ -205,15 +212,17 @@ export default function FilterNavFilter({
       ))}
       <Flex justifyItems="space-between">
         <Item>
-          <Button
-            color="primary"
-            onClick={onAddCondition}
-            renderIcon={IconAddLine}
-            size="small"
-            withBackground={false}
-          >
-            {I18n.t('Add Condition')}
-          </Button>
+          {filter.conditions.length < filterConditionTypes.length && (
+            <Button
+              color="primary"
+              onClick={onAddCondition}
+              renderIcon={IconAddLine}
+              size="small"
+              withBackground={false}
+            >
+              {I18n.t('Add Condition')}
+            </Button>
+          )}
         </Item>
 
         <Item>
@@ -221,7 +230,7 @@ export default function FilterNavFilter({
             <Item>
               <Checkbox
                 checked={filter.is_applied}
-                label={I18n.t('Apply filter')}
+                label={filter.id ? I18n.t('Apply filter') : I18n.t('Apply conditions')}
                 labelPlacement="start"
                 onChange={toggleApply}
                 size="small"

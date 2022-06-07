@@ -17,9 +17,17 @@
  */
 
 import React from 'react'
-import {fireEvent, render, screen} from '@testing-library/react'
+import {fireEvent, render, screen, waitFor, act} from '@testing-library/react'
 import {ImageOptions} from '../ImageOptions'
 import {actions} from '../../../../reducers/imageSection'
+
+jest.mock('../../ImageCropper/imageCropUtils', () => ({
+  createCroppedImageSvg: jest.fn(() =>
+    Promise.resolve({
+      outerHTML: null
+    })
+  )
+}))
 
 describe('ImageOptions', () => {
   const dispatchFn = jest.fn()
@@ -33,6 +41,12 @@ describe('ImageOptions', () => {
     },
     dispatch: dispatchFn
   }
+
+  beforeAll(() => {
+    global.fetch = jest.fn().mockResolvedValue({
+      blob: () => Promise.resolve(new Blob(['somedata'], {type: 'image/svg+xml'}))
+    })
+  })
 
   const subject = overrides => render(<ImageOptions {...{...defaultProps, ...overrides}} />)
 
@@ -52,6 +66,42 @@ describe('ImageOptions', () => {
     it('renders a "None Selected" message', () => {
       const {getByText} = subject()
       expect(getByText('None Selected')).toBeInTheDocument()
+    })
+  })
+
+  describe('focus management', () => {
+    const state = {
+      image: null,
+      imageName: 'banana.jpg',
+      mode: 'Course',
+      collectionOpen: false,
+      loading: false
+    }
+
+    it('focuses Clear button when an image is selected', async () => {
+      const {getByTestId, rerender} = render(<ImageOptions state={state} />)
+
+      const addImage = await getByTestId('add-image')
+      act(() => addImage.focus())
+
+      state.image = 'data:image/png;base64,asdfasdfjksdf=='
+
+      rerender(<ImageOptions state={state} />)
+
+      await waitFor(() => expect(getByTestId('clear-image')).toHaveFocus())
+    })
+
+    it('focuses Add Image button when an image is cleared', async () => {
+      state.image = 'data:image/png;base64,asdfasdfjksdf=='
+      const {getByTestId, rerender} = render(<ImageOptions state={state} />)
+
+      const clearImage = getByTestId('clear-image')
+      act(() => clearImage.focus())
+
+      state.image = null
+      rerender(<ImageOptions state={state} />)
+
+      await waitFor(() => expect(getByTestId('add-image')).toHaveFocus())
     })
   })
 
@@ -110,6 +160,22 @@ describe('ImageOptions', () => {
 
         expect(screen.getByText('Crop Image')).toBeInTheDocument()
       })
+
+      it('opens crop modal and sets state', async () => {
+        fireEvent.click(getByText(/crop image/i))
+
+        await waitFor(() => {
+          expect(document.querySelector('[data-cid="Modal"] [type="submit"]')).toBeInTheDocument()
+        })
+
+        fireEvent.click(document.querySelector('[data-cid="Modal"] [type="submit"]'))
+        await waitFor(() => {
+          expect(dispatchFn).toHaveBeenCalledWith({
+            type: 'SetImage',
+            payload: 'data:image/svg+xml;base64,bnVsbA=='
+          })
+        })
+      })
     })
 
     describe('clear button', () => {
@@ -127,9 +193,7 @@ describe('ImageOptions', () => {
 
   describe('when the "Upload Image" mode is selected', () => {
     beforeEach(() => {
-      ENV.FEATURES.buttons_and_icons_cropper = true
-
-      const component = subject()
+      const component = subject({rcsConfig: {features: {buttons_and_icons_cropper: true}}})
 
       fireEvent.click(component.getByText('Add Image'))
       fireEvent.click(component.getByText('Upload Image'))
@@ -142,9 +206,7 @@ describe('ImageOptions', () => {
 
   describe('when the "Course Images" mode is selected', () => {
     beforeEach(() => {
-      ENV.FEATURES.buttons_and_icons_cropper = true
-
-      const component = subject()
+      const component = subject({rcsConfig: {features: {buttons_and_icons_cropper: true}}})
 
       fireEvent.click(component.getByText('Add Image'))
       fireEvent.click(component.getByText('Course Images'))

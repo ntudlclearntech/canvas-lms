@@ -20,7 +20,7 @@
 // xsslint jqueryObject.property sortable placeholder
 // xsslint safeString.property question_text
 import regradeTemplate from '../jst/regrade.handlebars'
-import I18n from 'i18n!quizzes_public'
+import {useScope as useI18nScope} from '@canvas/i18n'
 import _ from 'underscore'
 import $ from 'jquery'
 import calcCmd from './calcCmd'
@@ -60,6 +60,8 @@ import 'jquery-scroll-to-visible/jquery.scrollTo'
 import 'jqueryui/sortable'
 import 'jqueryui/tabs'
 import AssignmentExternalTools from '@canvas/assignments/react/AssignmentExternalTools'
+
+const I18n = useI18nScope('quizzes_public')
 
 let dueDateList, overrideView, quizModel, sectionList, correctAnswerVisibility, scoreValidation
 
@@ -118,7 +120,9 @@ const renderDueDates = lockedItems => {
       model: dueDateList,
       views: {},
       dueDatesReadonly: lockedItems.due_dates,
-      availabilityDatesReadonly: lockedItems.availability_dates
+      availabilityDatesReadonly: lockedItems.availability_dates,
+      inPacedCourse: ENV.QUIZ.in_paced_course,
+      courseId: ENV.COURSE_ID
     })
     overrideView.render()
   }
@@ -2807,7 +2811,6 @@ $(document).ready(function () {
     toggler.toggle()
   })
 
-  // $(document).delegate('a.comment_focus', 'click', function (event) {
   $(document).delegate('div.answer_comments, a.comment_focus', 'click', function (event) {
     event.preventDefault()
     const $link = $(this)

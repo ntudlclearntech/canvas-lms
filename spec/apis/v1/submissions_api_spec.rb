@@ -1003,6 +1003,7 @@ describe "Submissions API", type: :request do
                           "submitted_at" => "1970-01-01T01:00:00Z",
                           "preview_url" => "http://www.example.com/courses/#{@course.id}/assignments/#{a1.id}/submissions/#{student1.id}?preview=1&version=1",
                           "grade_matches_current_submission" => true,
+                          "redo_request" => false,
                           "attempt" => 1,
                           "url" => nil,
                           "submission_type" => "online_text_entry",
@@ -1187,6 +1188,7 @@ describe "Submissions API", type: :request do
          "submitted_at" => "1970-01-01T03:00:00Z",
          "cached_due_date" => nil,
          "preview_url" => "http://www.example.com/courses/#{@course.id}/assignments/#{a1.id}/submissions/#{student1.id}?preview=1&version=3",
+         "redo_request" => false,
          "grade_matches_current_submission" => true,
          "extra_attempts" => nil,
          "attachments" =>
@@ -1232,6 +1234,7 @@ describe "Submissions API", type: :request do
             "submission_type" => "online_text_entry",
             "user_id" => student1.id,
             "preview_url" => "http://www.example.com/courses/#{@course.id}/assignments/#{a1.id}/submissions/#{student1.id}?preview=1&version=1",
+            "redo_request" => false,
             "grade_matches_current_submission" => true,
             "score" => nil,
             "entered_score" => nil,
@@ -1266,6 +1269,7 @@ describe "Submissions API", type: :request do
             "user_id" => student1.id,
             "preview_url" => "http://www.example.com/courses/#{@course.id}/assignments/#{a1.id}/submissions/#{student1.id}?preview=1&version=2",
             "grade_matches_current_submission" => true,
+            "redo_request" => false,
             "score" => nil,
             "entered_score" => nil,
             "workflow_state" => "submitted",
@@ -1323,6 +1327,7 @@ describe "Submissions API", type: :request do
             "user_id" => student1.id,
             "preview_url" => "http://www.example.com/courses/#{@course.id}/assignments/#{a1.id}/submissions/#{student1.id}?preview=1&version=3",
             "grade_matches_current_submission" => true,
+            "redo_request" => false,
             "score" => 13.5,
             "entered_score" => 13.5,
             "workflow_state" => "graded",
@@ -1431,6 +1436,7 @@ describe "Submissions API", type: :request do
                 "mime_class" => sub2a1.mime_class,
                 "media_entry_id" => sub2a1.media_entry_id },
             ],
+            "redo_request" => false,
             "score" => 9.0,
             "entered_score" => 9.0,
             "workflow_state" => "graded",
@@ -1467,6 +1473,7 @@ describe "Submissions API", type: :request do
             "modified_at" => sub2a1.modified_at.as_json,
             "mime_class" => sub2a1.mime_class,
             "media_entry_id" => sub2a1.media_entry_id },],
+         "redo_request" => false,
          "submission_comments" => [],
          "score" => 9.0,
          "entered_score" => 9.0,
@@ -5082,6 +5089,16 @@ describe "Submissions API", type: :request do
       @a1 = @course.assignments.create!({ title: "assignment1", grading_type: "percent", points_possible: 10 })
     end
 
+    it "returns an error when grade_data is omitted" do
+      json = api_call(:post,
+                      "/api/v1/courses/#{@course.id}/assignments/#{@a1.id}/submissions/update_grades",
+                      { controller: "submissions_api", action: "bulk_update",
+                        format: "json", course_id: @course.id.to_s,
+                        assignment_id: @a1.id.to_s }, {}, {}, { expected_status: 400 })
+
+      expect(json["error"]).to eq("'grade_data' parameter required")
+    end
+
     it "queues bulk update through courses" do
       grade_data = {
         grade_data: {
@@ -5408,8 +5425,9 @@ describe "Submissions API", type: :request do
       # This is a workaround until mobile supports new anonymous grading
       params = @params.merge(allow_new_anonymous_id: true)
       json = api_call_as_user(@ta, :get, @path, params)
+      anon_names = json.sort_by { |sub| sub["anonymous_id"] }.map { |el| el["display_name"] }
       expect(json.map { |el| el["id"] }).to match_array([nil, nil])
-      expect(json.map { |el| el["display_name"] }).to match_array([nil, nil])
+      expect(anon_names).to match_array(["Student 1", "Student 2"])
       expect(json.map { |el| el["html_url"] }).to match_array([nil, nil])
     end
 

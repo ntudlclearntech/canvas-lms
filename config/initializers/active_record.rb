@@ -95,6 +95,10 @@ class ActiveRecord::Base
     "#{self.class.reflection_type_name}_#{id}"
   end
 
+  def self.global_id?(id)
+    !!id && id.to_i > Shard::IDS_PER_SHARD
+  end
+
   def self.maximum_text_length
     @maximum_text_length ||= 64.kilobytes - 1
   end
@@ -606,7 +610,7 @@ class ActiveRecord::Base
   end
 
   def self.current_xlog_location
-    Shard.current(send(CANVAS_RAILS6_0 ? :shard_category : :connection_classes)).database_server.unguard do
+    Shard.current(send(Rails.version < "6.1" ? :shard_category : :connection_classes)).database_server.unguard do
       GuardRail.activate(:primary) do
         if Rails.env.test? ? in_transaction_in_test? : connection.open_transactions > 0
           raise "don't run current_xlog_location in a transaction"
@@ -704,6 +708,18 @@ class ActiveRecord::Base
     end
     changes_applied
   end
+
+  if Rails.version >= "6.1"
+    def self.override_db_configs(override)
+      configurations.configs_for.each do |config|
+        config.instance_variable_set(:@configuration_hash, config.configuration_hash.merge(override).freeze)
+      end
+      clear_all_connections!
+
+      # Just return something that isn't an ar connection object so consoles don't explode
+      override
+    end
+  end
 end
 
 module UsefulFindInBatches
@@ -716,7 +732,7 @@ module UsefulFindInBatches
     else
       enum_for(:find_each, start: start, finish: finish, order: order, **kwargs) do
         relation = self
-        if CANVAS_RAILS6_0
+        if Rails.version < "6.1"
           apply_limits(relation, start, finish).size
         else
           apply_limits(relation, start, finish, order).size
@@ -730,7 +746,7 @@ module UsefulFindInBatches
     relation = self
     unless block_given?
       return to_enum(:find_in_batches, start: start, finish: finish, order: order, batch_size: batch_size, **kwargs) do
-        total = if CANVAS_RAILS6_0
+        total = if Rails.version < "6.1"
                   apply_limits(relation, start, finish).size
                 else
                   apply_limits(relation, start, finish, order).size
@@ -760,7 +776,7 @@ module UsefulFindInBatches
     if strategy == :id
       raise ArgumentError, "GROUP BY is incompatible with :id batches strategy" unless group_values.empty?
 
-      if CANVAS_RAILS6_0
+      if Rails.version < "6.1"
         return activate { |r| r.call_super(:in_batches, UsefulFindInBatches, start: start, finish: finish, **kwargs, &block) }
       else
         return activate { |r| r.call_super(:in_batches, UsefulFindInBatches, start: start, finish: finish, order: order, **kwargs, &block) }
@@ -809,7 +825,7 @@ module UsefulFindInBatches
 
   def in_batches_with_cursor(of: 1000, start: nil, finish: nil, order: :asc, load: false)
     klass.transaction do
-      relation = if CANVAS_RAILS6_0
+      relation = if Rails.version < "6.1"
                    apply_limits(clone, start, finish)
                  else
                    apply_limits(clone, start, finish, order)
@@ -853,7 +869,7 @@ module UsefulFindInBatches
     limited_query = limit(0).to_sql
 
     relation = self
-    relation_for_copy = if CANVAS_RAILS6_0
+    relation_for_copy = if Rails.version < "6.1"
                           apply_limits(relation, start, finish)
                         else
                           apply_limits(relation, start, finish, order)
@@ -951,7 +967,7 @@ module UsefulFindInBatches
   # and yields the objects in batches in the same order as the scope specified
   # so the DB connection can be fully recycled during each block.
   def in_batches_with_pluck_ids(of: 1000, start: nil, finish: nil, order: :asc, load: false)
-    relation = if CANVAS_RAILS6_0
+    relation = if Rails.version < "6.1"
                  apply_limits(self, start, finish)
                else
                  apply_limits(self, start, finish, order)
@@ -983,7 +999,7 @@ module UsefulFindInBatches
              group, or order)."
       end
 
-      relation = if CANVAS_RAILS6_0
+      relation = if Rails.version < "6.1"
                    apply_limits(self, start, finish)
                  else
                    apply_limits(self, start, finish, order)
@@ -1128,7 +1144,7 @@ module UsefulBatchEnumerator
     @relation.send(:_substitute_values, updates).any? do |(attr, update)|
       found_match = false
       predicates.any? do |pred|
-        next unless pred.is_a?(Arel::Nodes::Binary)
+        next unless pred.is_a?(Arel::Nodes::Binary) || (Rails.version >= "6.1" && pred.is_a?(Arel::Nodes::HomogeneousIn))
         next unless pred.left == attr
 
         found_match = true
@@ -1154,6 +1170,13 @@ module UsefulBatchEnumerator
           pred.right.exclude?(update)
         elsif pred.instance_of?(Arel::Nodes::NotIn) && pred.right.is_a?(Array)
           pred.right.include?(update)
+        elsif Rails.version >= "6.1" && pred.instance_of?(Arel::Nodes::HomogeneousIn)
+          case pred.type
+          when :in
+            pred.right.map(&:value).exclude?(update.value.value)
+          when :notin
+            pred.right.map(&:value).include?(update.value.value)
+          end
         end
       end && found_match
     end
@@ -1177,6 +1200,7 @@ end
 module LockForNoKeyUpdate
   def lock(lock_type = true)
     lock_type = "FOR NO KEY UPDATE" if lock_type == :no_key_update
+    lock_type = "FOR NO KEY UPDATE SKIP LOCKED" if lock_type == :no_key_update_skip_locked
     super(lock_type)
   end
 end
@@ -1206,8 +1230,8 @@ ActiveRecord::Relation.class_eval do
     scope
   end
 
-  def update_all_locked_in_order(updates)
-    locked_scope = lock(:no_key_update).order(primary_key.to_sym)
+  def update_all_locked_in_order(lock_type: :no_key_update, **updates)
+    locked_scope = lock(lock_type).order(primary_key.to_sym)
     if Setting.get("update_all_locked_in_order_subquery", "true") == "true"
       unscoped.where(primary_key => locked_scope).update_all(updates)
     else
@@ -1221,6 +1245,16 @@ ActiveRecord::Relation.class_eval do
   def touch_all
     activate do |relation|
       relation.update_all_locked_in_order(updated_at: Time.now.utc)
+    end
+  end
+
+  def touch_all_skip_locked
+    if Setting.get("touch_all_skip_locked_enabled", "true") == "true"
+      activate do |relation|
+        relation.update_all_locked_in_order(updated_at: Time.now.utc, lock_type: :no_key_update_skip_locked)
+      end
+    else
+      touch_all
     end
   end
 
@@ -1243,8 +1277,6 @@ ActiveRecord::Relation.class_eval do
     relation
   end
 
-  # if this sql is constructed on one shard then executed on another it wont work
-  # dont use it for cross shard queries
   def union(*scopes, from: false)
     table = connection.quote_local_table_name(table_name)
     scopes.unshift(self)
@@ -1252,14 +1284,20 @@ ActiveRecord::Relation.class_eval do
     return scopes.first if scopes.length == 1
     return self if scopes.empty?
 
-    sub_query = scopes.map do |scope|
-      scope = scope.except(:select, :order).select(primary_key) unless from
-      "(#{scope.to_sql})"
-    end.join(" UNION ALL ")
-    return unscoped.where("#{table}.#{connection.quote_column_name(primary_key)} IN (#{sub_query})") unless from
+    primary_shards = scopes.map(&:primary_shard).uniq
 
-    sub_query = +"(#{sub_query}) #{from == true ? table : from}"
-    unscoped.from(sub_query)
+    raise "multiple shard values passed to union: #{primary_shards}" if primary_shards.count > 1
+
+    primary_shards.first.activate do
+      sub_query = scopes.map do |scope|
+        scope = scope.except(:select, :order).select(primary_key) unless from
+        "(#{scope.to_sql})"
+      end.join(" UNION ALL ")
+      return unscoped.where("#{table}.#{connection.quote_column_name(primary_key)} IN (#{sub_query})") unless from
+
+      sub_query = +"(#{sub_query}) #{from == true ? table : from}"
+      unscoped.from(sub_query)
+    end
   end
 
   # returns batch_size ids at a time, working through the primary key from
@@ -1330,9 +1368,9 @@ module UpdateAndDeleteWithJoins
   end
 
   def update_all(updates, *args)
-    db = Shard.current(klass.send(CANVAS_RAILS6_0 ? :shard_category : :connection_classes)).database_server
+    db = Shard.current(klass.send(Rails.version < "6.1" ? :shard_category : :connection_classes)).database_server
     if joins_values.empty?
-      if ::GuardRail.environment == db.guard_rail_environment
+      if Rails.version < "6.1" && ::GuardRail.environment == db.guard_rail_environment
         return super
       else
         Shard.current.database_server.unguard { return super }
@@ -1372,7 +1410,7 @@ module UpdateAndDeleteWithJoins
     end
     where_sql = collector.value
     sql.concat("WHERE " + where_sql)
-    if ::GuardRail.environment == db.guard_rail_environment
+    if Rails.version < "6.1" && ::GuardRail.environment == db.guard_rail_environment
       connection.update(sql, "#{name} Update")
     else
       Shard.current.database_server.unguard { connection.update(sql, "#{name} Update") }
@@ -1580,7 +1618,7 @@ module Migrator
     super.select(&:runnable?)
   end
 
-  if CANVAS_RAILS6_0
+  if Rails.version < "6.1"
     def execute_migration_in_transaction(migration, direct)
       old_in_migration, ActiveRecord::Base.in_migration = ActiveRecord::Base.in_migration, true
       if defined?(Marginalia)
@@ -1747,7 +1785,7 @@ ActiveRecord::Associations::CollectionAssociation.class_eval do
   end
 end
 
-if CANVAS_RAILS6_0
+if Rails.version < "6.1"
   module UnscopeCallbacks
     def run_callbacks(kind)
       return super if __callbacks[kind].empty?
@@ -1964,7 +2002,7 @@ ActiveRecord::Relation.prepend(DontExplicitlyNameColumnsBecauseOfIgnores)
 module PreserveShardAfterTransaction
   def after_transaction_commit(&block)
     shards = Shard.send(:active_shards)
-    shards[CANVAS_RAILS6_0 ? :delayed_jobs : Delayed::Backend::ActiveRecord::AbstractJob] = Shard.current.delayed_jobs_shard if ::ActiveRecord::Migration.open_migrations.positive?
+    shards[Rails.version < "6.1" ? :delayed_jobs : Delayed::Backend::ActiveRecord::AbstractJob] = Shard.current.delayed_jobs_shard if ::ActiveRecord::Migration.open_migrations.positive?
     super { Shard.activate(shards, &block) }
   end
 end
@@ -1977,6 +2015,10 @@ module ConnectionWithMaxRuntime
   end
 
   def runtime
+    # Sometimes connections seem to lose their created_at, so just set it to the present
+    # That way the connection still eventually expires
+    @created_at ||= Process.clock_gettime(Process::CLOCK_MONOTONIC)
+
     Process.clock_gettime(Process::CLOCK_MONOTONIC) - @created_at
   end
 end
@@ -2009,7 +2051,7 @@ ActiveRecord::ConnectionAdapters::ConnectionPool.prepend(RestoreConnectionConnec
 module MaxRuntimeConnectionPool
   def max_runtime
     # TODO: Rails 6.1 uses a PoolConfig object instead
-    if CANVAS_RAILS6_0
+    if Rails.version < "6.1"
       @spec.config[:max_runtime]
     else
       db_config.configuration_hash[:max_runtime]
@@ -2129,3 +2171,61 @@ module UserContentSerialization
   end
 end
 ActiveRecord::Base.include(UserContentSerialization)
+
+if Rails.version >= "6.1"
+  # Hopefully this can be removed with https://github.com/rails/rails/commit/6beee45c3f071c6a17149be0fabb1697609edbe8
+  # having made a released version of rails; if not bump the rails version in this comment and leave the comment to be revisited
+  # on the next rails bump
+
+  # This code is direcly copied from rails except the INST commented line, hence the rubocop disables
+  # rubocop:disable Lint/RescueException
+  # rubocop:disable Naming/RescuedExceptionsVariableName
+  require "active_record/connection_adapters/abstract/transaction"
+  module ActiveRecord
+    module ConnectionAdapters
+      class TransactionManager
+        def within_new_transaction(isolation: nil, joinable: true)
+          @connection.lock.synchronize do
+            transaction = begin_transaction(isolation: isolation, joinable: joinable)
+            ret = yield
+            completed = true
+            ret
+          rescue Exception => error
+            if transaction
+              # INST: The one functional change, since on postgres this is unnecessary, and the above-linked commit disables it
+              # transaction.state.invalidate! if error.is_a? ActiveRecord::TransactionRollbackError
+              rollback_transaction
+              after_failure_actions(transaction, error)
+            end
+
+            raise
+          ensure
+            if transaction
+              if error
+                # @connection still holds an open or invalid transaction, so we must not
+                # put it back in the pool for reuse.
+                @connection.throw_away! unless transaction.state.rolledback?
+              elsif Thread.current.status == "aborting" || (!completed && transaction.written)
+                # The transaction is still open but the block returned earlier.
+                #
+                # The block could return early because of a timeout or because the thread is aborting,
+                # so we are rolling back to make sure the timeout didn't caused the transaction to be
+                # committed incompletely.
+                rollback_transaction
+              else
+                begin
+                  commit_transaction
+                rescue Exception
+                  rollback_transaction(transaction) unless transaction.state.completed?
+                  raise
+                end
+              end
+            end
+          end
+        end
+      end
+    end
+  end
+  # rubocop:enable Lint/RescueException
+  # rubocop:enable Naming/RescuedExceptionsVariableName
+end

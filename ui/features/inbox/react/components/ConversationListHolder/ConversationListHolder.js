@@ -18,31 +18,32 @@
 
 import {AlertManagerContext} from '@canvas/alerts/react/AlertManager'
 import {Flex} from '@instructure/ui-flex'
-import I18n from 'i18n!conversations_2'
+import {useScope as useI18nScope} from '@canvas/i18n'
 import PropTypes from 'prop-types'
 import React, {useEffect, useState, useContext} from 'react'
 import InboxEmpty from '../../../svg/inbox-empty.svg'
 import {Responsive} from '@instructure/ui-responsive'
 import {responsiveQuerySizes} from '../../../util/utils'
+import {ConversationContext} from '../../../util/constants'
 import {Text} from '@instructure/ui-text'
 import {useMutation} from 'react-apollo'
 import {View} from '@instructure/ui-view'
 
-import {ConversationListItem, conversationProp} from './ConversationListItem'
+import {ConversationListItem} from './ConversationListItem'
 import {UPDATE_CONVERSATION_PARTICIPANTS} from '../../../graphql/Mutations'
+
+const I18n = useI18nScope('conversations_2')
 
 export const ConversationListHolder = ({...props}) => {
   const [selectedMessages, setSelectedMessages] = useState([])
   const [rangeClickStart, setRangeClickStart] = useState()
   const {setOnFailure, setOnSuccess} = useContext(AlertManagerContext)
+  const {setMultiselect, isSubmissionCommentsType} = useContext(ConversationContext)
 
   const provideConversationsForOnSelect = conversationIds => {
-    const matchedConversations = props.conversations
-      .filter(c => conversationIds.includes(c._id))
-      .map(c => c.conversation)
+    const matchedConversations = props.conversations?.filter(c => conversationIds.includes(c._id))
     props.onSelect(matchedConversations)
   }
-
   /*
    * When conversations change, we need to re-provide the selectedConversations (CanvasInbox).
    * That way, other components have the latest state of the selected the conversations.
@@ -66,8 +67,14 @@ export const ConversationListHolder = ({...props}) => {
     provideConversationsForOnSelect([...updatedSelectedMessage])
   }
 
+  const removeFromSelectedConversations = _id => {
+    const updatedSelectedMessage = selectedMessages.filter(id => id !== _id)
+    setSelectedMessages([...updatedSelectedMessage])
+    provideConversationsForOnSelect([...updatedSelectedMessage])
+  }
+
   // Key handler for MessageListItems
-  const handleItemSelection = (e, _id, conversation, multiple) => {
+  const handleItemSelection = (e, _id, multiple) => {
     // Prevents selecting text when shift clicking to select range
     if (e.shiftKey) {
       window.document.getSelection().removeAllRanges()
@@ -83,8 +90,20 @@ export const ConversationListHolder = ({...props}) => {
     } else {
       // Single Select
       setRangeClickStart(_id)
-      setSelectedMessages([_id])
-      provideConversationsForOnSelect([_id])
+      if (selectedMessages.includes(_id) && e.target.id.includes('Checkbox')) {
+        removeFromSelectedConversations(_id)
+        return
+      }
+
+      setMultiselect(e.target.id.includes('Checkbox'))
+
+      if (e.target.id.includes('Checkbox')) {
+        setSelectedMessages([...selectedMessages, _id])
+        provideConversationsForOnSelect([...selectedMessages, _id])
+      } else {
+        setSelectedMessages([_id])
+        provideConversationsForOnSelect([_id])
+      }
     }
   }
 
@@ -156,15 +175,18 @@ export const ConversationListHolder = ({...props}) => {
         return (
           <ConversationListItem
             id={conversation._id}
-            conversation={conversation.conversation}
-            isStarred={conversation.label === 'starred'}
+            conversation={conversation}
+            isStarred={conversation?.label === 'starred'}
             isSelected={selectedMessages.includes(conversation._id)}
-            isUnread={conversation.workflowState === 'unread'}
+            isUnread={conversation?.workflowState === 'unread'}
             onOpen={props.onOpen}
+            onRemoveFromSelectedConversations={removeFromSelectedConversations}
             onSelect={handleItemSelection}
             onStar={props.onStar}
             key={conversation._id}
-            readStateChangeConversationParticipants={readStateChangeConversationParticipants}
+            readStateChangeConversationParticipants={
+              isSubmissionCommentsType ? () => {} : readStateChangeConversationParticipants
+            }
           />
         )
       })}
@@ -199,16 +221,8 @@ export const ConversationListHolder = ({...props}) => {
   )
 }
 
-const conversationParticipantsProp = PropTypes.shape({
-  id: PropTypes.string,
-  _id: PropTypes.string,
-  workflowState: PropTypes.string,
-  conversation: conversationProp,
-  label: PropTypes.string
-})
-
 ConversationListHolder.propTypes = {
-  conversations: PropTypes.arrayOf(conversationParticipantsProp),
+  conversations: PropTypes.arrayOf(PropTypes.object),
   id: PropTypes.string,
   onOpen: PropTypes.func,
   onSelect: PropTypes.func,

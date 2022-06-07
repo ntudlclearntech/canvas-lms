@@ -1522,19 +1522,21 @@ describe Submission do
       submission.grade_change_audit(force_audit: true)
     end
 
-    it "does not insert a grade change audit record if skip_insert is true" do
+    it "does not insert a grade change audit record if grade not changed" do
       expect(Auditors::GradeChange::Stream).not_to receive(:insert)
-      submission.grade_change_audit(force_audit: true, skip_insert: true)
+      submission.grade_change_audit(force_audit: true)
     end
 
-    it "emits a grade change live event when skip_insert is false" do
-      expect(Canvas::LiveEvents).to receive(:grade_changed).once
-      submission.grade_change_audit(force_audit: true, skip_insert: false)
+    it "inserts a grade change audit record if grade changed" do
+      # once for Cassandra, once for Postgres
+      expect(Auditors::GradeChange::Stream).to receive(:insert).twice
+      submission.score = 11
+      submission.save!
     end
 
-    it "emits a grade change live event when skip_insert is true" do
+    it "emits a grade change live event when force_audit" do
       expect(Canvas::LiveEvents).to receive(:grade_changed).once
-      submission.grade_change_audit(force_audit: true, skip_insert: true)
+      submission.grade_change_audit(force_audit: true)
     end
   end
 
@@ -4898,6 +4900,20 @@ describe Submission do
       expect(pg.source_provisional_grade).to be_nil
     end
 
+    it "computes provisional grade grade if not given" do
+      @submission.find_or_create_provisional_grade!(@teacher)
+      @submission.find_or_create_provisional_grade!(
+        @teacher,
+        score: 15.0
+      )
+
+      expect(@submission.provisional_grades.length).to be 1
+
+      pg = @submission.provisional_grades.first
+
+      expect(pg.grade).to eql "15"
+    end
+
     it "does not update grade or score if not given" do
       @submission.find_or_create_provisional_grade!(@teacher, grade: "20", score: 12.0)
 
@@ -7352,10 +7368,36 @@ describe Submission do
   end
 
   describe "#update_line_item_result" do
-    it "does nothing if lti_result does not exist" do
-      submission = submission_model assignment: @assignment
-      expect(submission).to receive(:update_line_item_result)
-      submission.save!
+    let(:submission) { submission_model(assignment: @assignment) }
+
+    context "when lti_result does not exist" do
+      it "does nothing when there is no line item" do
+        expect do
+          submission.update!(score: 1.3)
+        end.to_not change { submission.lti_result }.from(nil)
+      end
+
+      context "when there is a line item" do
+        before { line_item_model(assignment: @assignment) }
+
+        it "does nothing if score has not changed" do
+          expect do
+            submission.update!(body: "hello abc")
+          end.to_not change { submission.lti_result }.from(nil)
+        end
+
+        it "creates an the lti_result with the correct score_given if the score has changed" do
+          expect do
+            submission.update!(score: 1.3)
+          end.to change { submission.lti_result&.reload&.result_score }.from(nil).to(1.3)
+        end
+
+        it "does nothing if the lti_result was updated by a tool" do
+          expect do
+            submission.update!(score: 1.3, grader_id: -123)
+          end.to_not change { submission.lti_result }.from(nil)
+        end
+      end
     end
 
     context "with lti_result" do

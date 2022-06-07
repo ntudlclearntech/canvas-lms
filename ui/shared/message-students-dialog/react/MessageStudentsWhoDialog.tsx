@@ -16,15 +16,21 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import React, {useState, useContext} from 'react'
-import I18n from 'i18n!public_message_students_who'
+import {useScope as useI18nScope} from '@canvas/i18n'
+import React, {useState, useContext, useEffect} from 'react'
 
 import {Button, CloseButton} from '@instructure/ui-buttons'
 import {Checkbox} from '@instructure/ui-checkbox'
 import {Flex} from '@instructure/ui-flex'
 import {Heading} from '@instructure/ui-heading'
-import {IconArrowOpenDownLine, IconArrowOpenUpLine} from '@instructure/ui-icons'
+import {
+  IconAddSolid,
+  IconArrowOpenDownLine,
+  IconArrowOpenUpLine,
+  IconXSolid
+} from '@instructure/ui-icons'
 import {Link} from '@instructure/ui-link'
+import LoadingIndicator from '@canvas/loading-indicator'
 import {Modal} from '@instructure/ui-modal'
 import {NumberInput} from '@instructure/ui-number-input'
 import {ScreenReaderContent} from '@instructure/ui-a11y-content'
@@ -34,6 +40,12 @@ import {Tag} from '@instructure/ui-tag'
 import {Text} from '@instructure/ui-text'
 import {TextArea} from '@instructure/ui-text-area'
 import {TextInput} from '@instructure/ui-text-input'
+import {View} from '@instructure/ui-view'
+
+import _ from 'lodash'
+import {OBSERVER_ENROLLMENTS_QUERY} from '../graphql/Queries'
+
+import {useQuery} from 'react-apollo'
 
 import {AlertManagerContext} from '@canvas/alerts/react/AlertManager'
 import {
@@ -44,6 +56,8 @@ import {
   removeAttachmentFn
 } from '@canvas/message-attachments'
 
+const I18n = useI18nScope('public_message_students_who')
+
 // Doing this to avoid TS2339 errors-- remove once we're on InstUI 8
 const {Item} = Flex as any
 const {Header: ModalHeader, Body: ModalBody, Footer: ModalFooter} = Modal as any
@@ -52,15 +66,22 @@ const {Body: TableBody, Cell, ColHeader, Head: TableHead, Row} = Table as any
 
 export type Student = {
   id: string
+  grade?: string
   name: string
+  redoRequest?: boolean
+  score?: number
   sortableName: string
+  submittedAt?: Date
 }
 
 export type Assignment = {
+  allowedAttempts: number
+  courseId: string
+  dueDate: Date | null
   gradingType: string
   id: string
   name: string
-  nonDigitalSubmission: boolean
+  submissionTypes: string[]
 }
 
 export type Props = {
@@ -81,10 +102,18 @@ type FilterCriterion = {
 const isScored = (assignment: Assignment) =>
   ['points', 'percent', 'letter_grade', 'gpa_scale'].includes(assignment.gradingType)
 
+const isReassignable = (assignment: Assignment) =>
+  (assignment.allowedAttempts == -1 || assignment.allowedAttempts > 1) &&
+  assignment.dueDate != null &&
+  !assignment.submissionTypes.includes(
+    'on_paper' || 'external_tool' || 'none' || 'discussion_topic' || 'online_quiz'
+  )
+
 const filterCriteria: FilterCriterion[] = [
   {
     requiresCutoff: false,
-    shouldShow: assignment => !assignment.nonDigitalSubmission,
+    shouldShow: assignment =>
+      !['on_paper', 'none', 'not_graded', ''].includes(assignment.submissionTypes[0]),
     title: I18n.t('Have not yet submitted'),
     value: 'unsubmitted'
   },
@@ -114,11 +143,77 @@ const filterCriteria: FilterCriterion[] = [
   },
   {
     requiresCutoff: false,
-    shouldShow: () => true,
+    shouldShow: isReassignable,
     title: I18n.t('Reassigned'),
     value: 'reassigned'
   }
 ]
+
+// Interim Tag-like component representing a selectable student or observer
+// until whatever we're using gets finalized
+// Still needed: some sort of onClick handler so we can select and deselect
+const FakeTag = ({text, selected = false}) => {
+  const contents = selected ? (
+    <>
+      <View margin="0 small 0 0">
+        <Text color="primary">{text}</Text>
+      </View>
+      <IconXSolid />
+    </>
+  ) : (
+    <>
+      <View margin="0 small 0 0">
+        <Text color="secondary">{text}</Text>
+      </View>
+      <IconAddSolid color="brand" />
+    </>
+  )
+
+  return <Tag text={contents} />
+}
+
+function observerCount(students, observers) {
+  return students.reduce((acc, student) => acc + (observers[student.id]?.length || 0), 0)
+}
+
+function filterStudents(criterion, students, cutoff) {
+  const newfilteredStudents: Student[] = []
+  for (const student of students) {
+    switch (criterion?.value) {
+      case 'unsubmitted':
+        if (!student.submittedAt) {
+          newfilteredStudents.push(student)
+        }
+        break
+      case 'ungraded':
+        if (!student.grade) {
+          newfilteredStudents.push(student)
+        }
+        break
+      case 'scored_more_than':
+        if (parseInt(student.score) > cutoff) {
+          newfilteredStudents.push(student)
+        }
+        break
+      case 'scored_less_than':
+        if (parseInt(student.score) < cutoff) {
+          newfilteredStudents.push(student)
+        }
+        break
+      case 'marked_incomplete':
+        if (student.grade == 'incomplete') {
+          newfilteredStudents.push(student)
+        }
+        break
+      case 'reassigned':
+        if (student.redoRequest) {
+          newfilteredStudents.push(student)
+        }
+        break
+    }
+  }
+  return newfilteredStudents
+}
 
 const MessageStudentsWhoDialog: React.FC<Props> = ({
   assignment,
@@ -128,31 +223,68 @@ const MessageStudentsWhoDialog: React.FC<Props> = ({
   messageAttachmentUploadFolderId
 }) => {
   const {setOnFailure, setOnSuccess} = useContext(AlertManagerContext)
-
   const [open, setOpen] = useState(true)
   const [sending, setSending] = useState(false)
 
   const close = () => setOpen(false)
 
+  const {loading, data} = useQuery(OBSERVER_ENROLLMENTS_QUERY, {
+    variables: {
+      courseId: assignment.courseId,
+      studentIds: students.map(student => student.id)
+    }
+  })
+
+  const observerEnrollments = data?.course?.enrollmentsConnection?.nodes || []
+  const observersByStudentID = observerEnrollments.reduce((results, enrollment) => {
+    const observeeId = enrollment.associatedUser._id
+    results[observeeId] = results[observeeId] || []
+    const existingObservers = results[observeeId]
+
+    if (!existingObservers.some(user => user._id === enrollment.user._id)) {
+      results[observeeId].push(enrollment.user)
+    }
+
+    return results
+  }, {})
+
   const availableCriteria = filterCriteria.filter(criterion => criterion.shouldShow(assignment))
   const [showTable, setShowTable] = useState(false)
   const [selectedCriterion, setSelectedCriterion] = useState(availableCriteria[0])
   const [cutoff, setCutoff] = useState(0.0)
-
+  const [attachments, setAttachments] = useState([])
+  const [pendingUploads, setPendingUploads] = useState([])
   const sortedStudents = [...students].sort((a, b) => a.sortableName.localeCompare(b.sortableName))
+  const [filteredStudents, setFilteredStudents] = useState(
+    filterStudents(availableCriteria[0], sortedStudents, cutoff)
+  )
+  const [observersDisplayed, setObserversDisplayed] = useState(0.0)
+
+  useEffect(() => {
+    if (!loading && data) {
+      setObserversDisplayed(
+        observerCount(
+          filterStudents(selectedCriterion, sortedStudents, cutoff),
+          observersByStudentID
+        )
+      )
+    }
+  }, [loading, data, selectedCriterion, sortedStudents, cutoff, observersByStudentID])
+
+  if (loading) {
+    return <LoadingIndicator />
+  }
 
   const handleCriterionSelected = (_e, {value}) => {
     const newCriterion = filterCriteria.find(criterion => criterion.value === value)
     if (newCriterion != null) {
       setSelectedCriterion(newCriterion)
+      setFilteredStudents(filterStudents(newCriterion, sortedStudents, cutoff))
+      setObserversDisplayed(
+        observerCount(filterStudents(newCriterion, sortedStudents, cutoff), observersByStudentID)
+      )
     }
   }
-
-  // TODO: get observers from GraphQL eventually
-  const observers = []
-
-  const [attachments, setAttachments] = useState([])
-  const [pendingUploads, setPendingUploads] = useState([])
 
   const handleSendButton = () => {
     if (pendingUploads.length) {
@@ -219,6 +351,9 @@ const MessageStudentsWhoDialog: React.FC<Props> = ({
                   value={cutoff}
                   onChange={(_e, value) => {
                     setCutoff(value)
+                    if (value !== '') {
+                      setFilteredStudents(filterStudents(selectedCriterion, sortedStudents, value))
+                    }
                   }}
                   showArrows={false}
                   renderLabel={
@@ -236,9 +371,10 @@ const MessageStudentsWhoDialog: React.FC<Props> = ({
             </Item>
             <Item margin="0 0 0 medium">
               <Checkbox
+                defaultChecked
                 label={
                   <Text weight="bold">
-                    {I18n.t('%{studentCount} Students', {studentCount: students.length})}
+                    {I18n.t('%{studentCount} Students', {studentCount: filteredStudents.length})}
                   </Text>
                 }
               />
@@ -247,7 +383,9 @@ const MessageStudentsWhoDialog: React.FC<Props> = ({
               <Checkbox
                 label={
                   <Text weight="bold">
-                    {I18n.t('%{observerCount} Observers', {observerCount: observers.length})}
+                    {I18n.t('%{observerCount} Observers', {
+                      observerCount: observersDisplayed
+                    })}
                   </Text>
                 }
               />
@@ -257,6 +395,7 @@ const MessageStudentsWhoDialog: React.FC<Props> = ({
                 onClick={() => setShowTable(!showTable)}
                 renderIcon={showTable ? <IconArrowOpenUpLine /> : <IconArrowOpenDownLine />}
                 iconPlacement="end"
+                data-testid="show_all_recipients"
               >
                 {showTable ? I18n.t('Hide all recipients') : I18n.t('Show all recipients')}
               </Link>
@@ -271,12 +410,23 @@ const MessageStudentsWhoDialog: React.FC<Props> = ({
                 </Row>
               </TableHead>
               <TableBody>
-                {sortedStudents.map(student => (
+                {filteredStudents.map(student => (
                   <Row key={student.id}>
                     <Cell>
-                      <Tag text={student.name} />
+                      <FakeTag text={student.name} selected />
                     </Cell>
-                    <Cell>{/* observers will go here */}</Cell>
+                    <Cell>
+                      <Flex direction="row" margin="0 0 0 small" wrap="wrap">
+                        {_.sortBy(
+                          observersByStudentID[student.id] || [],
+                          observer => observer.sortableName
+                        ).map(observer => (
+                          <Item key={observer._id}>
+                            <FakeTag text={observer.name} />
+                          </Item>
+                        ))}
+                      </Flex>
+                    </Cell>
                   </Row>
                 ))}
               </TableBody>

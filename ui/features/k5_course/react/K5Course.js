@@ -18,7 +18,7 @@
 
 import React, {forwardRef, useEffect, useLayoutEffect, useRef, useState} from 'react'
 import {connect, Provider} from 'react-redux'
-import I18n from 'i18n!k5_course'
+import {useScope as useI18nScope} from '@canvas/i18n'
 import PropTypes from 'prop-types'
 
 import {store} from '@instructure/canvas-planner'
@@ -73,6 +73,8 @@ import GroupsPage from '@canvas/k5/react/GroupsPage'
 import Modal from '@canvas/instui-bindings/react/InstuiModal'
 import {showFlashError} from '@canvas/alerts/react/FlashAlert'
 import {savedObservedId} from '@canvas/observer-picker/ObserverGetObservee'
+
+const I18n = useI18nScope('k5_course')
 
 const HERO_ASPECT_RATIO = 5
 const HERO_STICKY_HEIGHT_PX = 64
@@ -462,15 +464,15 @@ export function K5Course({
   pagesPath,
   hasWikiPages,
   hasSyllabusBody,
-  parentSupportEnabled,
   observedUsersList,
   selfEnrollment,
   tabContentOnly,
-  isMasterCourse
+  isMasterCourse,
+  showImmersiveReader
 }) {
   const initialObservedId = observedUsersList.find(o => o.id === savedObservedId(currentUser.id))
     ? savedObservedId(currentUser.id)
-    : undefined
+    : null
 
   const renderTabs = toRenderTabs(tabs, hasSyllabusBody)
   const {activeTab, currentTab, handleTabChange} = useTabState(defaultTab, renderTabs)
@@ -497,8 +499,7 @@ export function K5Course({
   const tabsPaddingRef = useRef(null)
   const [modulesExist, setModulesExist] = useState(true)
   const [windowSize, setWindowSize] = useState(() => getWindowSize())
-  const showObserverOptions =
-    parentSupportEnabled && shouldShowObserverOptions(observedUsersList, currentUser)
+  const showObserverOptions = shouldShowObserverOptions(observedUsersList, currentUser)
   const showingMobileNav = windowSize.width < MOBILE_NAV_BREAKPOINT_PX
   useEffect(() => {
     modulesRef.current = document.getElementById('k5-modules-container')
@@ -627,7 +628,6 @@ export function K5Course({
           showStudentView={showStudentView}
           studentViewPath={`${studentViewPath + window.location.hash}`}
           courseContext={name}
-          parentSupportEnabled={parentSupportEnabled}
           observedUsersList={observedUsersList}
           currentUser={currentUser}
           handleChangeObservedUser={setObservedUserId}
@@ -652,6 +652,7 @@ export function K5Course({
               content={courseOverview.body}
               url={`/courses/${id}/pages/${courseOverview.url}/edit`}
               canEdit={courseOverview.canEdit}
+              showImmersiveReader={showImmersiveReader}
             />
           ) : (
             <EmptyHome
@@ -740,11 +741,11 @@ K5Course.propTypes = {
   pagesPath: PropTypes.string.isRequired,
   hasWikiPages: PropTypes.bool.isRequired,
   hasSyllabusBody: PropTypes.bool.isRequired,
-  parentSupportEnabled: PropTypes.bool.isRequired,
   observedUsersList: ObservedUsersListShape.isRequired,
   selfEnrollment: PropTypes.object,
   tabContentOnly: PropTypes.bool,
-  isMasterCourse: PropTypes.bool.isRequired
+  isMasterCourse: PropTypes.bool.isRequired,
+  showImmersiveReader: PropTypes.bool.isRequired
 }
 
 const WrappedK5Course = connect(mapStateToProps)(K5Course)

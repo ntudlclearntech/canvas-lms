@@ -32,6 +32,7 @@ const SUBJECT_ALLOW_LIST = [
   'lti.enableScrollEvents',
   'lti.fetchWindowSize',
   'lti.frameResize',
+  'lti.hideRightSideWrapper',
   'lti.removeUnloadMessage',
   'lti.resourceImported',
   'lti.screenReaderAlert',
@@ -40,6 +41,8 @@ const SUBJECT_ALLOW_LIST = [
   'lti.showAlert',
   'lti.showModuleNavigation',
   'org.imsglobal.lti.capabilities',
+  'org.imsglobal.lti.get_data',
+  'org.imsglobal.lti.put_data',
   'requestFullWindowLaunch',
   'toggleCourseNavigationMenu'
 ]

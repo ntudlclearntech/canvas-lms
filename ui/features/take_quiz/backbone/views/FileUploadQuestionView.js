@@ -22,7 +22,10 @@ import uploadedOrRemovedTemplate from '../../jst/fileUploadedOrRemoved.handlebar
 import uploadedError from '../../jst/fileUploadedError.handlebars'
 import '@canvas/forms/jquery/jquery.instructure_forms'
 import '@canvas/jquery/jquery.disableWhileLoading'
-import I18n from 'i18n!quizzes_file_upload_question_view'
+// import I18n from 'i18n!quizzes_file_upload_question_view'
+import {useScope as useI18nScope} from '@canvas/i18n'
+
+const I18n = useI18nScope('i18n!quizzes_file_upload_question_view')
 
 export default class FileUploadQuestion extends View {
   static initClass() {

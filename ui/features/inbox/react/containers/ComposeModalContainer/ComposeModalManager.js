@@ -26,11 +26,13 @@ import {
   COURSES_QUERY,
   REPLY_CONVERSATION_QUERY
 } from '../../../graphql/Queries'
-import I18n from 'i18n!conversations_2'
+import {useScope as useI18nScope} from '@canvas/i18n'
 import ModalSpinner from './ModalSpinner'
 import PropTypes from 'prop-types'
 import React, {useContext, useState} from 'react'
 import {useMutation, useQuery} from 'react-apollo'
+
+const I18n = useI18nScope('conversations_2')
 
 const ComposeModalManager = props => {
   const {setOnFailure, setOnSuccess} = useContext(AlertManagerContext)
@@ -46,14 +48,14 @@ const ComposeModalManager = props => {
   const getParticipants = () => {
     const lastAuthorId = props.conversationMessage
       ? props.conversationMessage?.author._id.toString()
-      : props.conversation?.conversationMessagesConnection.nodes[0].author._id.toString()
+      : props.conversation?.messages[0].author._id.toString()
 
     if (props.isReply && lastAuthorId !== ENV.current_user_id.toString()) {
       return [lastAuthorId]
     } else {
       const recipients = props.conversationMessage
         ? props.conversationMessage?.recipients
-        : props.conversation?.conversationMessagesConnection?.nodes[0]?.recipients
+        : props.conversation?.messages[0]?.recipients
       return recipients?.map(r => r._id.toString())
     }
   }
@@ -225,6 +227,8 @@ const ComposeModalManager = props => {
       pastConversation={replyConversationQuery?.data?.legacyNode}
       sendingMessage={sendingMessage}
       setSendingMessage={setSendingMessage}
+      onSelectedIdsChange={props.onSelectedIdsChange}
+      selectedIds={props.selectedIds}
     />
   )
 }
@@ -237,7 +241,9 @@ ComposeModalManager.propTypes = {
   isForward: PropTypes.bool,
   onDismiss: PropTypes.func,
   open: PropTypes.bool,
-  conversationsQueryOption: PropTypes.object
+  conversationsQueryOption: PropTypes.object,
+  onSelectedIdsChange: PropTypes.func,
+  selectedIds: PropTypes.array
 }
 
 export default ComposeModalManager

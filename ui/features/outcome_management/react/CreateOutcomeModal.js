@@ -19,7 +19,7 @@
 
 import React, {useState, useEffect} from 'react'
 import PropTypes from 'prop-types'
-import I18n from 'i18n!OutcomeManagement'
+import {useScope as useI18nScope} from '@canvas/i18n'
 import {TextInput} from '@instructure/ui-text-input'
 import {TextArea} from '@instructure/ui-text-area'
 import {Button} from '@instructure/ui-buttons'
@@ -48,17 +48,15 @@ import useRatings, {
   defaultRatings,
   defaultMasteryPoints
 } from '@canvas/outcomes/react/hooks/useRatings'
+import useOutcomeFormValidate from '@canvas/outcomes/react/hooks/useOutcomeFormValidate'
 import {processRatingsAndMastery} from '@canvas/outcomes/react/helpers/ratingsHelpers'
 import Ratings from './Management/Ratings'
 
+const I18n = useI18nScope('OutcomeManagement')
+
 const CreateOutcomeModal = ({isOpen, onCloseHandler, onSuccess, starterGroupId}) => {
-  const {
-    contextType,
-    contextId,
-    friendlyDescriptionFF,
-    isMobileView,
-    individualOutcomeRatingAndCalculationFF
-  } = useCanvasContext()
+  const {contextType, contextId, friendlyDescriptionFF, isMobileView, accountLevelMasteryScalesFF} =
+    useCanvasContext()
   const [title, titleChangeHandler] = useInput()
   const [displayName, displayNameChangeHandler] = useInput()
   const [friendlyDescription, friendlyDescriptionChangeHandler] = useInput()
@@ -75,11 +73,23 @@ const CreateOutcomeModal = ({isOpen, onCloseHandler, onSuccess, starterGroupId})
     masteryPoints,
     setRatings,
     setMasteryPoints,
-    hasError: proficiencyRatingsError
+    ratingsError,
+    masteryPointsError,
+    clearRatingsFocus,
+    focusOnRatingsError
   } = useRatings({
     initialRatings: defaultRatings,
     initialMasteryPoints: defaultMasteryPoints
   })
+  const {
+    validateForm,
+    focusOnError,
+    setTitleRef,
+    setDisplayNameRef,
+    setFriendlyDescriptionRef,
+    setMasteryPointsRef,
+    setCalcIntRef
+  } = useOutcomeFormValidate({focusOnRatingsError, clearRatingsFocus})
 
   const [selectedGroup, setSelectedGroup] = useState(null)
   const [selectedGroupAncestorIds, setSelectedGroupAncestorIds] = useState([])
@@ -118,14 +128,17 @@ const CreateOutcomeModal = ({isOpen, onCloseHandler, onSuccess, starterGroupId})
     })
   }
 
-  const formValid =
-    !invalidTitle &&
-    !invalidDisplayName &&
-    selectedGroup &&
-    friendlyDescriptionMessages.length === 0 &&
-    (individualOutcomeRatingAndCalculationFF
-      ? !proficiencyCalculationError && !proficiencyRatingsError
-      : true)
+  const onCreateHandler = () =>
+    validateForm({
+      proficiencyCalculationError,
+      masteryPointsError,
+      ratingsError,
+      friendlyDescriptionError: friendlyDescriptionMessages.length > 0,
+      displayNameError: invalidDisplayName,
+      titleError: invalidTitle
+    }) && selectedGroup
+      ? onCreateOutcomeHandler()
+      : focusOnError()
 
   const updateProficiencyCalculation = (calculationMethodKey, calculationInt) =>
     setProficiencyCalculation({calculationMethod: calculationMethodKey, calculationInt})
@@ -139,7 +152,7 @@ const CreateOutcomeModal = ({isOpen, onCloseHandler, onSuccess, starterGroupId})
           displayName,
           description
         }
-        if (individualOutcomeRatingAndCalculationFF) {
+        if (!accountLevelMasteryScalesFF) {
           input.calculationMethod = proficiencyCalculation.calculationMethod
           input.calculationInt = proficiencyCalculation.calculationInt
           const {masteryPoints: inputMasteryPoints, ratings: inputRatings} =
@@ -201,6 +214,7 @@ const CreateOutcomeModal = ({isOpen, onCloseHandler, onSuccess, starterGroupId})
       messages={invalidTitle && showTitleError ? [{text: invalidTitle, type: 'error'}] : []}
       renderLabel={I18n.t('Name')}
       onChange={changeTitle}
+      inputRef={setTitleRef}
     />
   )
 
@@ -213,6 +227,7 @@ const CreateOutcomeModal = ({isOpen, onCloseHandler, onSuccess, starterGroupId})
       messages={invalidDisplayName ? [{text: invalidDisplayName, type: 'error'}] : []}
       renderLabel={I18n.t('Friendly Name')}
       onChange={displayNameChangeHandler}
+      inputRef={setDisplayNameRef}
     />
   )
 
@@ -262,10 +277,11 @@ const CreateOutcomeModal = ({isOpen, onCloseHandler, onSuccess, starterGroupId})
                 label={I18n.t('Friendly description (for parent/student display)')}
                 onChange={friendlyDescriptionChangeHandler}
                 messages={friendlyDescriptionMessages}
+                textareaRef={setFriendlyDescriptionRef}
               />
             </View>
           )}
-          {individualOutcomeRatingAndCalculationFF && (
+          {!accountLevelMasteryScalesFF && (
             <View as="div" padding="small 0 0">
               <Ratings
                 ratings={ratings}
@@ -273,15 +289,21 @@ const CreateOutcomeModal = ({isOpen, onCloseHandler, onSuccess, starterGroupId})
                 masteryPoints={masteryPoints}
                 onChangeMasteryPoints={setMasteryPoints}
                 canManage
+                masteryInputRef={setMasteryPointsRef}
               />
               <View as="div" minHeight="14rem">
-                <hr style={{margin: '1rem 0 0'}} />
+                <hr
+                  style={{margin: '1rem 0 0'}}
+                  aria-hidden="true"
+                  data-testid="outcome-create-modal-horizontal-divider"
+                />
                 <ProficiencyCalculation
                   update={updateProficiencyCalculation}
                   setError={setProficiencyCalculationError}
                   masteryPoints={masteryPoints.value}
                   individualOutcome="edit"
                   canManage
+                  calcIntInputRef={setCalcIntRef}
                 />
               </View>
             </View>
@@ -308,8 +330,8 @@ const CreateOutcomeModal = ({isOpen, onCloseHandler, onSuccess, starterGroupId})
             type="button"
             color="primary"
             margin="0 x-small 0 0"
-            interaction={formValid ? 'enabled' : 'disabled'}
-            onClick={onCreateOutcomeHandler}
+            interaction="enabled"
+            onClick={onCreateHandler}
           >
             {I18n.t('Create')}
           </Button>

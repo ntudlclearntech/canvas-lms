@@ -26,6 +26,11 @@ import sinon from 'sinon'
 import $ from 'jquery'
 import {DashboardHeader} from 'ui/features/dashboard/react/DashboardHeader'
 import {resetPlanner} from '@instructure/canvas-planner'
+import fetchMock from 'fetch-mock'
+import {
+  SHOW_K5_DASHBOARD_ROUTE,
+  showK5DashboardResponse
+} from '@canvas/observer-picker/react/__tests__/fixtures'
 
 const container = document.getElementById('fixtures')
 
@@ -240,9 +245,9 @@ QUnit.module('Dashboard Header', hooks => {
     dashboardHeader.changeDashboard('cards')
 
     moxios.wait(() => {
-      const request = moxios.requests.mostRecent()
-      equal(request.url, '/dashboard/view')
-      equal(request.config.data, '{"dashboard_view":"cards"}')
+      const requests = moxios.requests
+      equal(requests.at(1).url, '/dashboard/view')
+      equal(requests.at(1).config.data, '{"dashboard_view":"cards"}')
       done()
     })
     ok(plannerStub.notCalled)
@@ -335,10 +340,21 @@ QUnit.module('Dashboard Header', hooks => {
         {id: '17', name: 'bob', avatar_url: undefined},
         {id: '19', name: 'mary', avatar_url: undefined}
       ]
+
+      fetchMock.get(SHOW_K5_DASHBOARD_ROUTE, JSON.stringify(showK5DashboardResponse(false)))
     })
 
-    test('it should show the observer options Select', () => {
+    hooks2.afterEach(() => {
+      fetchMock.restore()
+    })
+
+    test('it should show the observer options Select on planner dashboard', () => {
       ReactDOM.render(<FakeDashboard planner_enabled dashboard_view="planner" />, container)
+      ok(document.querySelector('[data-testid="observed-student-dropdown"]'))
+    })
+
+    test('it should show the observer options Select on recent activity dashboard', () => {
+      ReactDOM.render(<FakeDashboard planner_enabled dashboard_view="activity" />, container)
       ok(document.querySelector('[data-testid="observed-student-dropdown"]'))
     })
   })
