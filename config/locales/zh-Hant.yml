@@ -23951,7 +23951,7 @@ zh-Hant:
   settings_5aa0fd0c: 設定
   settings_changed_exceptions_e5247936: 已更改設定的例外情況：
   settings_for_assignment_name_c19565e1: "作業 %{name} 的設定"
-  settings_for_e2322172: 的設定
+  settings_for_e2322172: "您可針對您的帳號 (適用於所有課程)、或是為各別課程進行通知頻率設定。"
   settings_for_env_dcae6f02: "%{env} 的設定"
   settings_for_name_7731a33d: "%{name} 的設定"
   settings_for_tab_label_3bff4468: "%{tab_label} 的設定"
