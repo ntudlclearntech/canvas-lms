@@ -194,7 +194,9 @@
           {{/if}}
           {{#if canModerate}}
           {{#unless homeroomCourse}}
-            <!-- 潘客摘要是podcast feed功能，但點入為亂碼，建議隱藏
+            {{!--
+            // Podcast feed 點入為亂碼，建議隱藏此功能。
+            // https://gitlab.dlc.ntu.edu.tw/ntu-cool/canvas-lms/-/issues/154
             <div><label class="checkbox short-label" for="podcast_enabled">
               {{checkbox "podcast_enabled"
               checked=podcast_url
@@ -202,7 +204,7 @@
               aria-controls="podcast_has_student_posts_container"}}
               {{#t "enable_podcast_feed"}}Enable podcast feed{{/t}}
             </label></div>
-            -->
+            --}}
 
           {{#if contextIsCourse}}
           <div><label id="podcast_has_student_posts_container" style="{{hiddenUnless podcast_url}}"
