@@ -164,7 +164,7 @@
                 </label>
               </div>
             <% end %>
-            <% qos_unlock_quiz_title = @quiz.survey? ? t('buttons.unlock_survey', "Unlock") : t('buttons.unlock_quiz', "Unlock") %>
+            <% qos_unlock_quiz_title = @quiz.survey? ? t('buttons.unlock', "Unlock") : t('buttons.unlock', "Unlock") %>
             <a href="#" id="let_students_take_this_quiz_button" class='btn' role="button">
               <i class="icon-unlock"></i> <%= qos_unlock_quiz_title %>
             </a>
@@ -172,7 +172,7 @@
             <%= form_for @quiz, as: :quiz, method: :put, :url => context_url(@context, :context_quiz_url, @quiz.id), :html => { :id => 'quiz_lock_form', :style => "display:none;" } do |f| %>
               <%= hidden_field_tag 'quiz[locked]', true %>
             <% end %>
-            <% qos_lock_quiz_title = @quiz.survey? ? t('buttons.lock_survey', "Lock") : t('buttons.lock_quiz', "Lock") %>
+            <% qos_lock_quiz_title = @quiz.survey? ? t('buttons.lock', "Lock") : t('buttons.lock', "Lock") %>
             <a href="#" id="lock_this_quiz_now_link" class='btn' role="button">
               <i class="icon-lock"></i> <%= qos_lock_quiz_title %>
             </a>

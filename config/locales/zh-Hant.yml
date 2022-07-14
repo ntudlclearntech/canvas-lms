@@ -22082,8 +22082,10 @@ zh-Hant:
           loading_in_lockdown: "在 Respondus LockDown 瀏覽器中載入測驗"
       show: 
         buttons: 
+          lock: 鎖定
           lock_quiz: 鎖定
           lock_survey: 鎖定
+          unlock: 開放
           unlock_quiz: 開放
           unlock_survey: 開放
         course_concluded_notice: 由於課程已結束，不再提供此測驗。
@@ -26003,6 +26005,7 @@ zh-Hant:
   terms_of_service_bedefcaf: 服務條款
   terms_of_service_f183ff7f: 服務條款
   test_cluster_only_70e61c19: 僅限測試群組
+  test_i18n_a22405ce: 測試 i18n
   testing_state_effd4a82: 正在測試狀態
   text_7f4593da: 文字
   text_df773ce4: 文字
