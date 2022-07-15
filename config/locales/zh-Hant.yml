@@ -26005,7 +26005,6 @@ zh-Hant:
   terms_of_service_bedefcaf: 服務條款
   terms_of_service_f183ff7f: 服務條款
   test_cluster_only_70e61c19: 僅限測試群組
-  test_i18n_a22405ce: 測試 i18n
   testing_state_effd4a82: 正在測試狀態
   text_7f4593da: 文字
   text_df773ce4: 文字
@@ -28937,6 +28936,7 @@ zh-Hant:
   view_this_message_in_conversations_5a16bc9f: 在交談中檢視此訊息
   view_this_message_in_ntu_cool_e897e8c5: 在 NTU COOL 中檢視此訊息
   this_mail_is_automatically_sent_by_ntu_cool_please_d26821b6: 請注意：此郵件是系統自動傳送，請勿直接回覆！
+  some_contents_may_not_display_properly_please_logi_a2e32874: 部分內容可能無法顯示，請登入NTU COOL查看完整訊息
   view_timestamps_in_time_zone_9b699a8b: 檢視時區中的時間戳記
   view_toolname_placements_4a5724d1: "檢視 %{toolName} 配置"
   view_ungraded_as_0_1a9631a1: "將未評分視為 0 分檢視"
