@@ -1,6 +1,6 @@
 {
   "name": "@instructure/canvas-rce",
-  "version": "5.3.0",
+  "version": "5.4.0",
   "description": "A component wrapping canvas's common tinymce usage",
   "main": "lib/index.js",
   "module": "es/index.js",
@@ -40,7 +40,7 @@
     "fmt:check": "prettier -l '**/*.js'",
     "fmt:fix": "prettier --write '**/*.js'",
     "clean": "rm -rf lib && rm -rf es && rm -rf coverage && yarn demo:clean",
-    "generate-svgs": "yarn build:all && scripts/generateSvgs.js"
+    "generate-svgs": "yarn build:cjs && scripts/generateSvgs.js && prettier --write src/rce/plugins/instructure_equation/MathIcon/svgs.js"
   },
   "author": "Instructure, Inc",
   "license": "AGPL-3.0",
@@ -86,6 +86,7 @@
     "@instructure/ui-media-player": "7",
     "@instructure/ui-modal": "7",
     "@instructure/ui-motion": "7",
+    "@instructure/ui-number-input": "^7",
     "@instructure/ui-overlays": "7",
     "@instructure/ui-pagination": "7",
     "@instructure/ui-popover": "7",

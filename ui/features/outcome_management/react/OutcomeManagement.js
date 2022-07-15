@@ -15,6 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License along
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+
 import React, {useState, useEffect, useMemo, useRef, useCallback} from 'react'
 import ReactDOM from 'react-dom'
 import {useScope as useI18nScope} from '@canvas/i18n'
@@ -26,6 +27,7 @@ import {ApolloProvider, createClient} from '@canvas/apollo'
 import OutcomesContext, {getContext} from '@canvas/outcomes/react/contexts/OutcomesContext'
 import ManagementHeader from './ManagementHeader'
 import OutcomeManagementPanel from './Management/index'
+import AlignmentSummary from './Alignments/index'
 import {
   showOutcomesImporter,
   showOutcomesImporterIfInProgress
@@ -53,7 +55,6 @@ export const OutcomePanel = () => {
 
 export const OutcomeManagementWithoutGraphql = ({breakpoints}) => {
   const improvedManagement = ENV?.IMPROVED_OUTCOMES_MANAGEMENT
-  const accountLevelMasteryScales = ENV?.ACCOUNT_LEVEL_MASTERY_SCALES
   const [importRef, setImportRef] = useState(null)
   const [importNumber, setImportNumber] = useState(0)
   const [isImporting, setIsImporting] = useState(false)
@@ -63,6 +64,13 @@ export const OutcomeManagementWithoutGraphql = ({breakpoints}) => {
     const tabs = {'#mastery_scale': 1, '#mastery_calculation': 2}
     return window.location.hash in tabs ? tabs[window.location.hash] : 0
   })
+  const isMobileView = !breakpoints?.tablet
+  const contextValues = getContext(isMobileView)
+  const {accountLevelMasteryScalesFF, outcomeAlignmentSummaryFF, canManage, contextType} =
+    contextValues.env
+  const shouldDisplayAlignmentsTab =
+    improvedManagement && outcomeAlignmentSummaryFF && canManage && contextType === 'Course'
+  const alignmentTabIndex = accountLevelMasteryScalesFF ? 3 : 1
 
   const onSetImportRef = useCallback(node => {
     setImportRef(node)
@@ -164,8 +172,6 @@ export const OutcomeManagementWithoutGraphql = ({breakpoints}) => {
     setCreatedOutcomeGroupIds(selectedGroupAncestorIds)
   }
 
-  const isMobileView = !breakpoints?.tablet
-
   const onAddOutcomes = addedOutcomes => {
     if (addedOutcomes) {
       setImportNumber(prevState => prevState + 1)
@@ -173,7 +179,7 @@ export const OutcomeManagementWithoutGraphql = ({breakpoints}) => {
   }
 
   return (
-    <OutcomesContext.Provider value={getContext(isMobileView)}>
+    <OutcomesContext.Provider value={contextValues}>
       {improvedManagement && (
         <ManagementHeader
           handleAddOutcomes={onAddOutcomes}
@@ -202,20 +208,29 @@ export const OutcomeManagementWithoutGraphql = ({breakpoints}) => {
             <OutcomePanel />
           )}
         </Tabs.Panel>
-        {accountLevelMasteryScales && (
+        {accountLevelMasteryScalesFF && (
           <Tabs.Panel renderTitle={I18n.t('Mastery')} isSelected={selectedIndex === 1} id="scale">
             <div style={{paddingTop: '24px'}}>
               <MasteryScale onNotifyPendingChanges={setHasUnsavedChanges} />
             </div>
           </Tabs.Panel>
         )}
-        {accountLevelMasteryScales && (
+        {accountLevelMasteryScalesFF && (
           <Tabs.Panel
             renderTitle={I18n.t('Calculation')}
             isSelected={selectedIndex === 2}
             id="calculation"
           >
             <MasteryCalculation onNotifyPendingChanges={setHasUnsavedChanges} />
+          </Tabs.Panel>
+        )}
+        {shouldDisplayAlignmentsTab && (
+          <Tabs.Panel
+            renderTitle={I18n.t('Alignments')}
+            isSelected={selectedIndex === alignmentTabIndex}
+            id="alignments"
+          >
+            <AlignmentSummary />
           </Tabs.Panel>
         )}
       </Tabs>

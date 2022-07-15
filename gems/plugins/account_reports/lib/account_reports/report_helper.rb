@@ -235,7 +235,7 @@ module AccountReports::ReportHelper
       p.account = root_account if p.account_id == root_account.id
     end
     preloads = Account.reflections["role_links"] ? { account: :role_links } : :account
-    ActiveRecord::Associations::Preloader.new.preload(pseudonyms, preloads)
+    ActiveRecord::Associations.preload(pseudonyms, preloads)
     pseudonyms.group_by(&:user_id)
   end
 
@@ -358,6 +358,8 @@ module AccountReports::ReportHelper
     @account_report.update(total_lines: total_runners)
 
     args = { priority: Delayed::LOW_PRIORITY, n_strand: ["account_report_runner", root_account.global_id] }
+    # allow retries if account report runner fails
+    args[:max_attempts] = 2 if root_account.feature_enabled?(:custom_report_experimental)
     @account_report.account_report_runners.find_each do |runner|
       delay(**args).run_account_report_runner(runner, headers, files: files)
     end
@@ -404,10 +406,14 @@ module AccountReports::ReportHelper
 
   def activate_report_db(replica: :report, &block)
     # if there is no report db configured, use the secondary.
-    if Shard.current.database_server.config[:report]
-      GuardRail.activate(replica, &block)
-    else
-      GuardRail.activate(:secondary, &block)
+    # Rails 6.1 - Shard.current.database_server.roles will be set.
+    # It is not set in older versions of Rails.
+    Shard.current.database_server.tap do |ds|
+      if (ds.respond_to?(:roles) && ds.roles.include?(replica)) || ds.config[replica]
+        GuardRail.activate(replica, &block)
+      else
+        GuardRail.activate(:secondary, &block)
+      end
     end
   end
 

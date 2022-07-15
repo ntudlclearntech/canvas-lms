@@ -159,7 +159,8 @@ describe FilesController do
         allow(HostUrl).to receive(:file_host_with_shard).and_return(["files-test.host", Shard.default])
         get "http://test.host/users/#{@me.id}/files/#{@att.id}/download?download_frd=1&verifier=#{@att.uuid}"
         expect(response).to be_redirect
-        get response["Location"]
+        follow_redirect!
+        follow_redirect!
         expect(response.headers["Content-Disposition"]).to match(/attachment/)
       end
     end
@@ -303,6 +304,8 @@ describe FilesController do
     # and verify the module progress was recorded
     remove_user_session
     get location
+    expect(response).to be_redirect
+    follow_redirect!
     # could be success or redirect, depending on S3 config
     expect([200, 302]).to be_include(response.status)
     expect(@module.evaluate_for(@user).state).to eql(:completed)

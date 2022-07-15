@@ -870,6 +870,19 @@ QUnit.module('GradebookGrid AssignmentColumnHeaderRenderer', suiteHooks => {
       render()
       strictEqual(component.props.showMessageStudentsWithObserversDialog, false)
     })
+
+    test('sends message when handleSendMessageStudentsWho is executed', () => {
+      const recipientsIds = [1, 2, 3, 4]
+      const subject = 'foo'
+      const body = 'bar'
+      const contextCode = '1'
+
+      buildGradebook()
+      sinon.stub(gradebook, 'sendMessageStudentsWho')
+      render()
+      component.props.onSendMessageStudentsWho(recipientsIds, subject, body, contextCode)
+      strictEqual(gradebook.sendMessageStudentsWho.callCount, 1)
+    })
   })
 
   QUnit.module('#destroy()', () => {

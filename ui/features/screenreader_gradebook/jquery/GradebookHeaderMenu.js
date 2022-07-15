@@ -180,8 +180,9 @@ export default class GradebookHeaderMenu {
     return dialog.show()
   }
 
-  // TODO(EVAL): This needs to be implemented in EVAL-2064.
-  handleSendMessageStudentsWho = () => {}
+  handleSendMessageStudentsWho = args => {
+    this.gradebook.sendMessageStudentsWho(args)
+  }
 
   messageStudentsWho(
     opts = {
@@ -190,12 +191,13 @@ export default class GradebookHeaderMenu {
         this.gradebook.students,
         this.assignment
       ),
-      onSend: this.handleSendMessageStudentsWho
+      onSend: this.handleSendMessageStudentsWho,
+      userId: this.gradebook.options.currentUserId
     }
   ) {
     let {students} = opts
     const {assignment} = opts
-    const {onSend} = opts
+    const {onSend, userId} = opts
     students = _.filter(students, student => {
       return !student.is_inactive
     })
@@ -228,7 +230,8 @@ export default class GradebookHeaderMenu {
           ReactDOM.unmountComponentAtNode(mountPoint)
         },
         onSend,
-        students
+        students,
+        userId
       }
       ReactDOM.render(
         <ApolloProvider client={createClient()}>

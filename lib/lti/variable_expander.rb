@@ -127,12 +127,20 @@ module Lti
     def expand_variables!(var_hash)
       var_hash.update(var_hash) do |_, v|
         expansion, args = self.class.find_expansion(v)
-        if expansion
-          expansion.expand(self, *args)
-        elsif v.respond_to?(:to_s) && v.to_s =~ SUBSTRING_REGEX
-          expand_substring_variables(v)
+        output = if expansion
+                   expansion.expand(self, *args)
+                 elsif v.respond_to?(:to_s) && v.to_s =~ SUBSTRING_REGEX
+                   expand_substring_variables(v)
+                 else
+                   v
+                 end
+
+        if @root_account&.feature_enabled?(:variable_substitution_numeric_to_string) &&
+           @tool.is_a?(ContextExternalTool) && @tool.use_1_3? &&
+           output.is_a?(Numeric)
+          output&.to_s
         else
-          v
+          output
         end
       end
     end
@@ -1392,6 +1400,21 @@ module Lti
                        -> { @assignment.due_at.utc.iso8601 },
                        -> { @assignment && @assignment.due_at.present? }
 
+    # Returns a comma-separated list of all due dates of
+    # the assignment that was launched. If the assignment is
+    # assigned to anyone without a due date, an empty string
+    # will be present in the list (hence the ",," in the example)
+    #
+    # Only available when launched as an assignment.
+    #
+    # @example
+    #   ```
+    #   2018-02-19:00:00Z,,2018-02-20:00:00Z
+    #   ```
+    register_expansion "Canvas.assignment.allDueAts.iso8601", [],
+                       -> { unique_submission_dates.map { |d| d.present? ? d.utc.iso8601 : "" }.join(",") },
+                       -> { @assignment }
+
     # Returns true if the assignment that was launched is published.
     # Only available when launched as an assignment.
     # @example
@@ -1629,6 +1652,10 @@ module Lti
                        }
 
     private
+
+    def unique_submission_dates
+      @assignment.submissions.pluck(:cached_due_date).uniq
+    end
 
     def sis_pseudonym
       context = @enrollment || @context

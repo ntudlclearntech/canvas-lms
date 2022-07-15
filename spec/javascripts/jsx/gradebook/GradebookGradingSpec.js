@@ -26,6 +26,7 @@ import {
 import SubmissionStateMap from '@canvas/grading/SubmissionStateMap'
 import CourseGradeCalculator from '@canvas/grading/CourseGradeCalculator'
 import {createCourseGradesWithGradingPeriods as createGrades} from './GradeCalculatorSpecHelper'
+import GradebookApi from 'ui/features/gradebook/react/default_gradebook/apis/GradebookApi'
 import * as FlashAlert from '@canvas/alerts/react/FlashAlert'
 
 const $fixtures = document.getElementById('fixtures')
@@ -1264,5 +1265,144 @@ QUnit.module('Gradebook#toggleViewUngradedAsZero', hooks => {
     gradebook.toggleViewUngradedAsZero()
 
     strictEqual(gradebook.updateAllTotalColumns.callCount, 1)
+  })
+})
+
+QUnit.module('Gradebook#sendMessageStudentsWho', hooks => {
+  let gradebook
+  let apiRequestStub
+
+  const recipientsIds = [1, 2, 3, 4]
+  const subject = 'subject'
+  const body = 'body'
+
+  hooks.beforeEach(() => {
+    gradebook = createGradebook({
+      context_id: '1234',
+      show_message_students_with_observers_dialog: true
+    })
+
+    gradebook.gridData.rows = [
+      {id: '3', sortable_name: 'Z'},
+      {id: '4', sortable_name: 'A'},
+      {id: '1', sortable_name: 'C'}
+    ]
+
+    gradebook.gridData.columns.scrollable = [
+      'assignment_3',
+      'custom_col_8',
+      'assignment_2',
+      'assignment_group_1',
+      'assignment_7',
+      'total_grade'
+    ]
+
+    const assignments = [
+      {id: '3', assignment_group_id: '10'},
+      {id: '2', assignment_group_id: '10'},
+      {id: '7'}
+    ]
+    gradebook.gotAllAssignmentGroups([{id: '10', position: 1, name: 'Assignments', assignments}])
+
+    sandbox.stub(FlashAlert, 'showFlashSuccess')
+    sandbox.stub(FlashAlert, 'showFlashError')
+
+    apiRequestStub = sinon.stub(GradebookApi, 'sendMessageStudentsWho').resolves()
+  })
+
+  hooks.afterEach(() => {
+    apiRequestStub.restore()
+    FlashAlert.showFlashSuccess.restore()
+    FlashAlert.showFlashError.restore()
+  })
+
+  test('sends the messages via Gradebook.sendMessageStudentsWho', async () => {
+    await gradebook.sendMessageStudentsWho({
+      recipientsIds,
+      subject,
+      body
+    })
+
+    strictEqual(apiRequestStub.callCount, 1)
+  })
+
+  test('includes recipientsIds as the first parameter', async () => {
+    await gradebook.sendMessageStudentsWho({
+      recipientsIds,
+      subject,
+      body
+    })
+
+    strictEqual(apiRequestStub.firstCall.args[0], recipientsIds)
+  })
+
+  test('includes subject as the second parameter', async () => {
+    await gradebook.sendMessageStudentsWho({
+      recipientsIds,
+      subject,
+      body
+    })
+
+    strictEqual(apiRequestStub.firstCall.args[1], subject)
+  })
+
+  test('includes body as the third parameter', async () => {
+    await gradebook.sendMessageStudentsWho({
+      recipientsIds,
+      subject,
+      body
+    })
+
+    strictEqual(apiRequestStub.firstCall.args[2], body)
+  })
+
+  test('if provided, includes mediaFile as the fifth parameter', async () => {
+    const mediaFile = {id: '1959', type: 'video'}
+    await gradebook.sendMessageStudentsWho({
+      body,
+      mediaFile,
+      recipientsIds,
+      subject
+    })
+
+    deepEqual(apiRequestStub.firstCall.args[4], mediaFile)
+  })
+
+  test('if provided, includes attachmentIds as the sixth parameter', async () => {
+    const attachmentIds = ['4', '82']
+    await gradebook.sendMessageStudentsWho({
+      attachmentIds,
+      body,
+      recipientsIds,
+      subject
+    })
+
+    deepEqual(apiRequestStub.firstCall.args[5], attachmentIds)
+  })
+
+  test('shows a success flash alert when the process succeeds', async () => {
+    const message = 'Message sent successfully'
+    await gradebook.sendMessageStudentsWho({
+      recipientsIds,
+      subject,
+      body
+    })
+    strictEqual(FlashAlert.showFlashSuccess.firstCall.args[0], message)
+  })
+
+  test('shows an error flash alert when the process fails', async () => {
+    let errorThrown = false
+    apiRequestStub.rejects(new Error(':-/'))
+    try {
+      await gradebook.sendMessageStudentsWho({
+        recipientsIds,
+        subject,
+        body
+      })
+    } catch (_error) {
+      errorThrown = true
+    }
+    strictEqual(errorThrown, true)
+    strictEqual(FlashAlert.showFlashError.callCount, 1)
   })
 })

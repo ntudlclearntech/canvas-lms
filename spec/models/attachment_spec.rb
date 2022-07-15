@@ -32,7 +32,7 @@ describe Attachment do
       subject { attachment_model category: category }
 
       context "with a valid category" do
-        let(:category) { Attachment::BUTTONS_AND_ICONS }
+        let(:category) { Attachment::ICON_MAKER_ICONS }
 
         it "does not raise a validation error" do
           expect { subject }.not_to raise_error
@@ -369,6 +369,23 @@ describe Attachment do
         canvadocable.submit_to_canvadocs 1
         expect(captured).to be_truthy
       end
+
+      it "downgrades Canvadocs heavy load errors to WARN" do
+        canvadocable = canvadocable_attachment_model content_type: "application/pdf"
+        cd_double = double
+        allow(canvadocable).to receive(:canvadoc).and_return(cd_double)
+        expect(canvadocable.canvadoc).not_to be_nil
+        expect(canvadocable.canvadoc).to receive(:upload).and_raise(Canvadocs::HeavyLoadError)
+        captured = false
+        allow(Canvas::Errors).to receive(:capture) do |e, _error_data, error_level|
+          if e.is_a?(Canvadocs::HeavyLoadError)
+            captured = true
+            expect(error_level).to eq(:warn)
+          end
+        end
+        canvadocable.submit_to_canvadocs 1
+        expect(captured).to be_truthy
+      end
     end
   end
 
@@ -408,27 +425,27 @@ describe Attachment do
     describe "uncategorized" do
       subject { Attachment.uncategorized }
 
-      let!(:button_and_icon) { attachment_model(category: Attachment::BUTTONS_AND_ICONS) }
+      let!(:icon_maker) { attachment_model(category: Attachment::ICON_MAKER_ICONS) }
       let!(:uncategorized) { attachment_model }
 
       it { is_expected.to include uncategorized }
-      it { is_expected.not_to include button_and_icon }
+      it { is_expected.not_to include icon_maker }
     end
 
     describe "for_category" do
       subject { Attachment.for_category(category) }
 
-      let_once(:button_and_icon) { attachment_model(category: Attachment::BUTTONS_AND_ICONS) }
+      let_once(:icon_maker) { attachment_model(category: Attachment::ICON_MAKER_ICONS) }
       let_once(:uncategorized) { attachment_model }
 
-      let(:category) { Attachment::BUTTONS_AND_ICONS }
+      let(:category) { Attachment::ICON_MAKER_ICONS }
 
       before do
-        button_and_icon
+        icon_maker
         uncategorized
       end
 
-      it { is_expected.to include button_and_icon }
+      it { is_expected.to include icon_maker }
       it { is_expected.not_to include uncategorized }
     end
 
@@ -685,6 +702,37 @@ describe Attachment do
       purgatory = Purgatory.where(attachment_id: [a.id, a2.id])
       expect(purgatory.count).to eq 1
       expect(purgatory.take.attachment_id).to eq a.id
+    end
+
+    it "destroys all associated submission_draft_attachments on destroy" do
+      a = attachment_model(uploaded_data: default_uploaded_data)
+      submission = submission_model
+      submission_draft = SubmissionDraft.create!(
+        submission: submission,
+        submission_attempt: submission.attempt
+      )
+      SubmissionDraftAttachment.create!(
+        submission_draft: submission_draft,
+        attachment: a
+      )
+      a.destroy
+      expect(a.submission_draft_attachments.count).to eq 0
+    end
+
+    it "does not destroy any submission_draft_attachments associated to other attachments on destroy" do
+      a = attachment_model(uploaded_data: default_uploaded_data)
+      a2 = attachment_model(uploaded_data: default_uploaded_data)
+      submission = submission_model
+      submission_draft = SubmissionDraft.create!(
+        submission: submission,
+        submission_attempt: submission.attempt
+      )
+      SubmissionDraftAttachment.create!(
+        submission_draft: submission_draft,
+        attachment: a2
+      )
+      a.destroy
+      expect(a2.submission_draft_attachments.count).to eq 1
     end
 
     context "inst-fs" do
@@ -1166,6 +1214,40 @@ describe Attachment do
       @a2.destroy
       tag2.reload
       expect(tag2).to be_deleted
+    end
+
+    it "destroys all associated submission_draft_attachments when overwriting" do
+      @a1.update_attribute(:display_name, "a2")
+      submission = submission_model
+      submission_draft = SubmissionDraft.create!(
+        submission: submission,
+        submission_attempt: submission.attempt
+      )
+      SubmissionDraftAttachment.create!(
+        submission_draft: submission_draft,
+        attachment: @a1
+      )
+
+      @a2.handle_duplicates(:overwrite)
+      @a1.reload
+      expect(@a1.submission_draft_attachments.count).to eq 0
+    end
+
+    it "does not destroy any submission_draft_attachments associated to other attachments when overwriting" do
+      @a1.update_attribute(:display_name, "a2")
+      submission = submission_model
+      submission_draft = SubmissionDraft.create!(
+        submission: submission,
+        submission_attempt: submission.attempt
+      )
+      SubmissionDraftAttachment.create!(
+        submission_draft: submission_draft,
+        attachment: @a2
+      )
+
+      @a2.handle_duplicates(:overwrite)
+      @a1.reload
+      expect(@a2.submission_draft_attachments.count).to eq 1
     end
 
     it "finds replacement file by id if name changes" do
@@ -2503,31 +2585,31 @@ describe Attachment do
       end
 
       it "updates the word count for a PDF" do
-        attachment_model(filename: "test.pdf", uploaded_data: fixture_file_upload("files/example.pdf", "application/pdf"))
+        attachment_model(filename: "test.pdf", uploaded_data: fixture_file_upload("example.pdf", "application/pdf"))
         @attachment.update_word_count
         expect(@attachment.word_count).to eq 3320
       end
 
       it "updates the word count for a DOCX file" do
-        attachment_model(filename: "test.docx", uploaded_data: fixture_file_upload("files/test.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"))
+        attachment_model(filename: "test.docx", uploaded_data: fixture_file_upload("test.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"))
         @attachment.update_word_count
         expect(@attachment.word_count).to eq 5
       end
 
       it "updates the word count for an RTF file" do
-        attachment_model(filename: "test.rtf", uploaded_data: fixture_file_upload("files/test.rtf", "application/rtf"))
+        attachment_model(filename: "test.rtf", uploaded_data: fixture_file_upload("test.rtf", "application/rtf"))
         @attachment.update_word_count
         expect(@attachment.word_count).to eq 5
       end
 
       it "updates the word count for a text file" do
-        attachment_model(filename: "test.txt", uploaded_data: fixture_file_upload("files/amazing_file.txt", "text/plain"))
+        attachment_model(filename: "test.txt", uploaded_data: fixture_file_upload("amazing_file.txt", "text/plain"))
         @attachment.update_word_count
         expect(@attachment.word_count).to eq 5
       end
 
       it "sets 0 if the file is not supported" do
-        attachment_model(filename: "test.png", uploaded_data: fixture_file_upload("files/instructure.png", "image/png"))
+        attachment_model(filename: "test.png", uploaded_data: fixture_file_upload("instructure.png", "image/png"))
         @attachment.update_word_count
         expect(@attachment.word_count).to eq 0
       end

@@ -31,6 +31,7 @@ import formatMessage from '../../../../format-message'
 
 import MemoizedEquationEditorToolbar from '../EquationEditorToolbar'
 import {containsAdvancedSyntax} from './advancedOnlySyntax'
+import advancedPreference from './advancedPreference'
 
 import {css} from 'aphrodite'
 import mathml from './mathml'
@@ -65,6 +66,7 @@ export default class EquationEditorModal extends Component {
     workingFormula: ''
   }
 
+  hostPageDisablesShortcuts = null
   originalFormula = null
 
   previewElement = React.createRef()
@@ -179,6 +181,9 @@ export default class EquationEditorModal extends Component {
   }
 
   handleEntered = () => {
+    if (advancedPreference.isSet()) {
+      this.toggleAdvanced()
+    }
     this.loadExistingFormula()
   }
 
@@ -194,6 +199,7 @@ export default class EquationEditorModal extends Component {
     if (isMathJaxEvent) {
       return
     }
+    ENV.disable_keyboard_shortcuts = this.hostPageDisablesShortcuts
     this.props.onModalDismiss?.()
   }
 
@@ -204,6 +210,8 @@ export default class EquationEditorModal extends Component {
     if (output) {
       onEquationSubmit(output)
     }
+
+    ENV.disable_keyboard_shortcuts = this.hostPageDisablesShortcuts
     onModalDismiss()
   }
 
@@ -244,6 +252,11 @@ export default class EquationEditorModal extends Component {
     this.setPreviewElementContent()
   }
 
+  toggleAndUpdatePreference = () => {
+    this.toggleAdvanced()
+    advancedPreference.isSet() ? advancedPreference.clear() : advancedPreference.set()
+  }
+
   registerBasicEditorListener = () => {
     const basicEditor = document.querySelector('math-field')
     basicEditor.addEventListener('input', e => {
@@ -262,6 +275,8 @@ export default class EquationEditorModal extends Component {
 
   handleOpen = () => {
     this.originalFormula = null
+    this.hostPageDisablesShortcuts = ENV.disable_keyboard_shortcuts
+    ENV.disable_keyboard_shortcuts = true
   }
 
   handleFieldRef = node => {
@@ -294,7 +309,7 @@ export default class EquationEditorModal extends Component {
 
     const defaultToggle = (
       <Checkbox
-        onChange={this.toggleAdvanced}
+        onChange={this.toggleAndUpdatePreference}
         checked={this.state.advanced}
         label={formatMessage('Directly Edit LaTeX')}
         variant="toggle"

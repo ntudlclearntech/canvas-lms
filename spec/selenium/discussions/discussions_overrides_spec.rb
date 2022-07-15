@@ -75,6 +75,22 @@ describe "discussions overrides" do
         expect(rows[0].text).to eq "Dec 17, 2016 10am New Section Dec 14, 2016 10am Dec 18, 2016 10am"
         expect(rows[1].text).to eq "Dec 16, 2016 10am Everyone Else No Start Date No End Date"
       end
+
+      it "shows course pace notice in the tray in a course with pacing on" do
+        @course.enable_course_paces = true
+        @course.save!
+        get "/courses/#{@course.id}/discussion_topics/#{@discussion_topic.id}"
+        fj("button:contains('Show Due Dates (2)')").click
+        expect(f('[data-testid="CoursePacingNotice"]')).to be_displayed
+      end
+    end
+
+    it "shows course pace notice when expanding grades in a course with pacing on" do
+      @course.enable_course_paces = true
+      @course.save!
+      get "/courses/#{@course.id}/discussion_topics/#{@discussion_topic.id}"
+      fj("a:contains('Show Due Dates')").click
+      expect(f('[data-testid="CoursePacingNotice"]')).to be_displayed
     end
 
     it "toggles between due dates", priority: "2" do
@@ -90,18 +106,6 @@ describe "discussions overrides" do
       f(".toggle_due_dates").click
       wait_for_ajaximations
       expect(f(".discussion-topic-due-dates")).to be_present
-    end
-
-    it "does not show the add due date button after the last available section is selected", priority: "2" do
-      skip("Example skipped due to an issue in the assignment add button for due dates")
-      get "/courses/#{@course.id}/discussion_topics/#{@discussion_topic.id}"
-      @new_section_1 = @course.course_sections.create!(name: "Additional Section")
-      expect_new_page_load { f(".edit-btn").click }
-      f("#add_due_date").click
-      wait_for_ajaximations
-      select_last_override_section(@new_section_1.name)
-      assign_dates_for_last_override_section
-      expect(f("#add_due_date")).not_to be_present
     end
 
     it "allows to not set due dates for everyone", priority: "2" do

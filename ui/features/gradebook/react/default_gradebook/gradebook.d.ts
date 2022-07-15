@@ -25,10 +25,13 @@ export type CourseSettingsType = {
 }
 
 export type GradebookSettings = {
+  hide_assignment_group_totals: string
   show_separate_first_last_names: string
   show_unpublished_assignments: string
   show_concluded_enrollments: string
   show_inactive_enrollments: string
+  hide_assignment_group_totals: string
+  hide_total: string
 }
 
 export type GradebookOptions = {
@@ -59,7 +62,6 @@ export type GradebookOptions = {
   export_gradebook_csv_url: string
   filterNavNode: HTMLElement
   grade_calc_ignore_unposted_anonymous_enabled: boolean
-  gradebook_assignment_search_and_redesign: boolean
   gradebook_column_order_settings_url: string
   gradebook_column_order_settings: ColumnOrderSettings
   gradebook_column_size_settings_url: string
@@ -227,6 +229,7 @@ export type AssignmentGroupMap = {
 }
 
 export type Submission = {
+  attempt: number | null
   user_id: string
   assignment_id: string
   submitted_at: string
@@ -324,22 +327,25 @@ export type FilterCondition = {
   created_at: string
 }
 
+export type SubmissionFilterConditionValue =
+  | 'has-ungraded-submissions'
+  | 'has-submissions'
+  | undefined
+
 export type Filter = {
   id: string
   name: string
   conditions: FilterCondition[]
-  is_applied: boolean
   created_at: string
 }
 
 export type PartialFilter = Omit<Filter, 'id'> & {id?: string}
 
-export type AppliedFilter = Omit<Filter, 'id'> & {is_applied: true}
+// export type AppliedFilter = Omit<Filter, 'id'>
 
 export type GradebookFilterApiRequest = {
   name: string
   payload: {
-    is_applied: boolean
     conditions: FilterCondition[]
   }
 }
@@ -355,7 +361,6 @@ export type GradebookFilterApiResponseFilter = {
   name: string
   payload: {
     conditions: FilterCondition[]
-    is_applied: boolean
   }
   created_at: string
   updated_at: string

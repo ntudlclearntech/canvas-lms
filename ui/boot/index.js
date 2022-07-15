@@ -49,7 +49,7 @@ let runOnceAfterLocaleFiles = () => {
   isolate(enhanceUserContent)()
 }
 
-window.addEventListener('canvasReadyStateChange', function({ detail }) {
+window.addEventListener('canvasReadyStateChange', function ({detail}) {
   if (detail === 'localeFiles' || window.canvasReadyState === 'complete') {
     runOnceAfterLocaleFiles()
     runOnceAfterLocaleFiles = () => {}
@@ -60,40 +60,25 @@ isolate(enableDTNPI)({
   endpoint: window.ENV.DATA_COLLECTION_ENDPOINT
 })
 
-async function setupSentry() {
-  const Raven = await import('raven-js')
-  Raven.config(process.env.DEPRECATION_SENTRY_DSN, {
-    release: process.env.GIT_COMMIT
-  }).install()
-
-  try {
-    const {default: setup} = await import('./initializers/setupRavenConsoleLoggingPlugin')
-    setup(Raven, {loggerName: 'console'})
-  } catch (e) {
-    // eslint-disable-next-line no-console
-    console.error(`ERROR: could not set up Raven console logging: ${e.message}`)
-  }
-}
-
-async function setupConsoleMessageFilter() {
-  const {filterUselessConsoleMessages} = await import(
-    '@instructure/js-utils/es/filterUselessConsoleMessages'
-  )
-
-  try {
-    filterUselessConsoleMessages(console)
-  } catch (e) {
-    // eslint-disable-next-line no-console
-    console.error(`ERROR: could not set up console log filtering: ${e.message}`)
-  }
-}
-
 // In non-prod environments only, arrange for filtering of "useless" console
 // messages, and if deprecation reporting is enabled, arrange to inject and
 // set up Sentry for it.
 if (process.env.NODE_ENV !== 'production') {
+  const setupConsoleMessageFilter = async () => {
+    const {filterUselessConsoleMessages} = await import(
+      /* webpackChunkName: "[request]" */
+      '@instructure/js-utils/es/filterUselessConsoleMessages'
+    )
+
+    try {
+      filterUselessConsoleMessages(console)
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.error(`ERROR: could not set up console log filtering: ${e.message}`)
+    }
+  }
+
   setupConsoleMessageFilter()
-  if (process.env.DEPRECATION_SENTRY_DSN) setupSentry()
 }
 
 // setup the inst-ui default theme

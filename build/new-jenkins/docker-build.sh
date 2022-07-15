@@ -36,7 +36,7 @@ WORKSPACE=${WORKSPACE:-$(pwd)}
 # $WEBPACK_BUILDER_TAG: additional tag for the webpack-builder image
 #   - set to patchset unique ID for builds to reference without knowing about the hash ID
 
-export CACHE_VERSION="2022-03-24.1"
+export CACHE_VERSION="2022-05-19.1"
 
 source ./build/new-jenkins/docker-build-helpers.sh
 
@@ -64,7 +64,7 @@ WEBPACK_CACHE_DOCKERFILE_MD5=$(cat Dockerfile.jenkins.webpack-cache | md5sum)
 BASE_IMAGE_ID=$(docker images --filter=reference=starlord.inscloudgate.net/jenkins/ruby-passenger:$RUBY --format '{{.ID}}')
 
 BASE_RUNNER_BUILD_ARGS=(
-  --build-arg CANVAS_RAILS=${CANVAS_RAILS:-6.0}
+  --build-arg CANVAS_RAILS=${CANVAS_RAILS:-6.1}
   --build-arg POSTGRES_CLIENT="$POSTGRES_CLIENT"
   --build-arg RUBY="$RUBY"
 )
@@ -211,9 +211,10 @@ else
   [ "$WEBPACK_BUILDER_SELECTED_TAG" != "${WEBPACK_BUILDER_TAGS[SAVE_TAG]}" ] && tag_remote_async "WEBPACK_BUILDER_TAG_REMOTE_SAVE_PID" $WEBPACK_BUILDER_SELECTED_TAG ${WEBPACK_BUILDER_TAGS[SAVE_TAG]}
 
   [ ! -z "${CACHE_UNIQUE_SCOPE-}" ] && tag_remote_async "WEBPACK_BUILDER_TAG_REMOTE_UNIQUE_PID" $WEBPACK_BUILDER_SELECTED_TAG ${WEBPACK_BUILDER_TAGS[UNIQUE_TAG]}
+  [ ! -z "${CACHE_UNIQUE_SCOPE-}" ] && tag_remote_async "WEBPACK_CACHE_TAG_REMOTE_UNIQUE_PID" $WEBPACK_CACHE_SELECTED_TAG ${WEBPACK_CACHE_TAGS[UNIQUE_TAG]}
 fi
 
-tag_many $WEBPACK_CACHE_SELECTED_TAG local/webpack-cache ${WEBPACK_CACHE_TAGS[SAVE_TAG]}
+tag_many $WEBPACK_CACHE_SELECTED_TAG local/webpack-cache ${WEBPACK_CACHE_TAGS[SAVE_TAG]} ${WEBPACK_CACHE_TAGS[UNIQUE_TAG]-}
 
 # Build Final Image
 if [ -n "${1:-}" ]; then

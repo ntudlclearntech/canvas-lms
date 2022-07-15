@@ -53,6 +53,9 @@ class DeveloperKeysController < ApplicationController
         )
       end
     end
+  rescue => e
+    report_error(e)
+    raise e
   end
 
   def create
@@ -61,8 +64,12 @@ class DeveloperKeysController < ApplicationController
     if @key.save
       render json: developer_key_json(@key, @current_user, session, account_context)
     else
+      report_error(nil, 400)
       render json: @key.errors, status: :bad_request
     end
+  rescue => e
+    report_error(e)
+    raise e
   end
 
   def update
@@ -71,13 +78,20 @@ class DeveloperKeysController < ApplicationController
     if @key.save
       render json: developer_key_json(@key, @current_user, session, account_context)
     else
+      report_error(nil, 400)
       render json: @key.errors, status: :bad_request
     end
+  rescue => e
+    report_error(e)
+    raise e
   end
 
   def destroy
     @key.destroy
     render json: developer_key_json(@key, @current_user, session, account_context)
+  rescue => e
+    report_error(e)
+    raise e
   end
 
   protected
@@ -110,11 +124,29 @@ class DeveloperKeysController < ApplicationController
               DeveloperKey.where(account_id: @context.id)
             end
     scope = scope.eager_load(:tool_configuration) unless params[:inherited]
-    scope.nondeleted.preload(:account).order("developer_keys.id DESC")
+    scope = scope.nondeleted.preload(:account).order("developer_keys.id DESC")
+
+    # query for parent keys is most likely cross-shard,
+    # so doesn't fit into the scope cases above
+    if params[:inherited].present? && !@context.primary_settings_root_account?
+      federated_parent = @context.account_chain(include_federated_parent: true).last
+      parent_keys = DeveloperKey
+                    .shard(federated_parent.shard)
+                    .where(account: federated_parent)
+                    .nondeleted
+                    .order("developer_keys.id DESC")
+
+      return parent_keys + scope
+    end
+
+    scope
   end
 
   def set_key
     @key = DeveloperKey.nondeleted.find(params[:id])
+  rescue ActiveRecord::RecordNotFound => e
+    report_error(e)
+    raise e
   end
 
   def account_context
@@ -135,6 +167,9 @@ class DeveloperKeysController < ApplicationController
 
   def require_manage_developer_keys
     require_context_with_permission(account_context, :manage_developer_keys)
+  rescue ActiveRecord::RecordNotFound => e
+    report_error(e)
+    raise e
   end
 
   def developer_key_params
@@ -154,5 +189,10 @@ class DeveloperKeysController < ApplicationController
       :allow_includes,
       scopes: []
     )
+  end
+
+  def report_error(exception, code = nil)
+    code ||= response_code_for_rescue(exception) if exception
+    InstStatsd::Statsd.increment("canvas.developer_keys_controller.request_error", tags: { action: action_name, code: code })
   end
 end

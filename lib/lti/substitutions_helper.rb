@@ -171,8 +171,12 @@ module Lti
     def account_enrollments
       unless @current_account_enrollments
         @current_account_enrollments = []
-        if @user && @context.respond_to?(:account_chain) && !@context.account_chain.empty?
-          @current_account_enrollments = AccountUser.active.where(user_id: @user, account_id: @context.account_chain).shard(@context.shard)
+        has_federated_parent = !@root_account.primary_settings_root_account?
+        account_chain = @context.respond_to?(:account_chain) ? @context.account_chain(include_federated_parent: has_federated_parent) : []
+        if @user && !account_chain.empty?
+          @current_account_enrollments = Shard.partition_by_shard(account_chain) do |accounts_by_shard|
+            AccountUser.active.where(user_id: @user, account_id: accounts_by_shard)
+          end.flatten
         end
       end
       @current_account_enrollments
@@ -243,8 +247,10 @@ module Lti
 
     def email
       # we are using sis_email for lti2 tools, or if the 'prefer_sis_email' extension is set for LTI 1
-      e = if !lti1? || (@tool&.extension_setting(nil, :prefer_sis_email)&.downcase ||
-            @tool&.extension_setting(:tool_configuration, :prefer_sis_email)&.downcase) == "true"
+      # accept the setting as a boolean or string for backwards-compatibility
+      e = if !lti1? ||
+             @tool&.extension_setting(nil, :prefer_sis_email)&.to_s&.downcase == "true" ||
+             @tool&.extension_setting(:tool_configuration, :prefer_sis_email)&.to_s&.downcase == "true"
             sis_email
           end
       e || @user.email

@@ -33,6 +33,7 @@ describe CalendarEventsApiController, type: :request do
       context_code created_at description duplicates end_at hidden html_url
       id location_address location_name parent_event_id start_at
       title type updated_at url workflow_state context_name context_color important_dates
+      series_id rrule
     ]
     expected_slot_fields = (expected_fields + %w[appointment_group_id appointment_group_url can_manage_appointment_group available_slots participants_per_appointment reserve_url participant_type effective_context_code])
     expected_reservation_event_fields = (expected_fields + %w[appointment_group_id appointment_group_url can_manage_appointment_group effective_context_code participant_type])
@@ -1171,6 +1172,127 @@ describe CalendarEventsApiController, type: :request do
       end
     end
 
+    describe "event series" do
+      before :once do
+        Account.site_admin.enable_feature!(:calendar_series)
+      end
+
+      it "creates an event series if an rrule has been specified" do
+        start_at = Time.zone.now.utc.change(hour: 0, min: 1)
+        end_at = Time.zone.now.utc.change(hour: 23)
+        json = api_call(
+          :post,
+          "/api/v1/calendar_events",
+          { controller: "calendar_events_api", action: "create", format: "json" },
+          {
+            calendar_event: {
+              context_code: @course.asset_string,
+              title: "many me",
+              start_at: start_at.iso8601,
+              end_at: end_at.iso8601,
+              rrule: "RRULE:FREQ=WEEKLY;INTERVAL=1;COUNT=3"
+            }
+          }
+        )
+        assert_status(201)
+        expect(json.keys).to match_array expected_fields
+        expect(json["title"]).to eq "many me"
+        expect(json["series_id"]).to be_a_kind_of(Numeric)
+
+        duplicates = json["duplicates"]
+        expect(duplicates.count).to eq 2
+
+        duplicates.to_a.each_with_index do |duplicate, i|
+          start_result = Time.iso8601(duplicate["calendar_event"]["start_at"])
+          end_result = Time.iso8601(duplicate["calendar_event"]["end_at"])
+          expect(duplicate["calendar_event"]["title"]).to eql "many me"
+          expect(start_result).to eq(start_at + (i + 1).weeks)
+          expect(end_result).to eq(end_at + (i + 1).weeks)
+        end
+      end
+
+      it "fails if RRULE's COUNT creates too many events" do
+        start_at = Time.zone.now.utc.change(hour: 0, min: 1)
+        end_at = Time.zone.now.utc.change(hour: 23)
+        api_call(
+          :post,
+          "/api/v1/calendar_events",
+          { controller: "calendar_events_api", action: "create", format: "json" },
+          {
+            calendar_event: {
+              context_code: @course.asset_string,
+              title: "ohai",
+              start_at: start_at.iso8601,
+              end_at: end_at.iso8601,
+              rrule: "RRULE:FREQ=WEEKLY;INTERVAL=1;COUNT=201"
+            }
+          }
+        )
+        assert_status(400)
+      end
+
+      it "fails if RRULE's UNTIL date creates too many events" do
+        start_at = Time.zone.now.utc.change(hour: 0, min: 1)
+        end_at = Time.zone.now.utc.change(hour: 23)
+        series_end = start_at + 1.year
+        api_call(
+          :post,
+          "/api/v1/calendar_events",
+          { controller: "calendar_events_api", action: "create", format: "json" },
+          {
+            calendar_event: {
+              context_code: @course.asset_string,
+              title: "ohai",
+              start_at: start_at.iso8601,
+              end_at: end_at.iso8601,
+              rrule: "RRULE:FREQ=DAILY;INTERVAL=1;UNTIL=#{series_end.iso8601}"
+            }
+          }
+        )
+        assert_status(400)
+      end
+
+      it "doesn't die on unreasonable recurring event counts" do
+        start_at = Time.zone.now.utc.change(hour: 0, min: 1)
+        end_at = Time.zone.now.utc.change(hour: 23)
+        api_call(
+          :post,
+          "/api/v1/calendar_events",
+          { controller: "calendar_events_api", action: "create", format: "json" },
+          {
+            calendar_event: {
+              context_code: @course.asset_string,
+              title: "ohai",
+              start_at: start_at.iso8601,
+              end_at: end_at.iso8601,
+              rrule: "RRULE:FREQ=WEEKLY;INTERVAL=1;COUNT=1000000"
+            }
+          }
+        )
+        assert_status(400)
+      end
+
+      it "requires the series to have an end" do
+        start_at = Time.zone.now.utc.change(hour: 0, min: 1)
+        end_at = Time.zone.now.utc.change(hour: 23)
+        api_call(
+          :post,
+          "/api/v1/calendar_events",
+          { controller: "calendar_events_api", action: "create", format: "json" },
+          {
+            calendar_event: {
+              context_code: @course.asset_string,
+              title: "ohai",
+              start_at: start_at.iso8601,
+              end_at: end_at.iso8601,
+              rrule: "RRULE:FREQ=WEEKLY;INTERVAL=1;" # <<< no COUNT or UNTIL
+            }
+          }
+        )
+        assert_status(400)
+      end
+    end
+
     describe "moving events between calendars" do
       it "moves an event from a user to a course" do
         event = @user.calendar_events.create!(title: "event", start_at: "2012-01-08 12:00:00")
@@ -1569,6 +1691,7 @@ describe CalendarEventsApiController, type: :request do
       all_day all_day_date assignment context_code created_at
       description end_at html_url id start_at title type updated_at
       url workflow_state context_name context_color important_dates
+      submission_types
     ]
 
     it "returns assignments within the given date range" do
@@ -2937,6 +3060,18 @@ describe CalendarEventsApiController, type: :request do
       expect(response).to be_successful
       cal = Icalendar::Calendar.parse(response.body.dup)[0]
       expect(cal.events[1].description).to eq nil
+    end
+
+    it "omits DTEND for all day events" do
+      # assignments due at 23:59 are treated as all day events
+      due_at = 1.day.from_now.end_of_day
+      @course.assignments.create(title: "i am all day", due_at: due_at)
+      get "/feeds/calendars/#{@user.feed_code}.ics"
+      expect(response).to be_successful
+      cal = Icalendar::Calendar.parse(response.body.dup).first
+      all_day_event = (cal.events.select { |e| e.summary.include? "i am all day" }).first
+      expect(all_day_event.dtstart).to eq(due_at.to_date)
+      expect(all_day_event.dtend).to be_nil
     end
 
     it "renders unauthorized feed for bad code" do

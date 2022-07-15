@@ -18,6 +18,7 @@
 
 import React from 'react'
 import {fireEvent, render, waitFor} from '@testing-library/react'
+import {within} from '@testing-library/dom'
 import MessageStudentsWhoDialog, {
   Assignment,
   Props as ComponentProps,
@@ -114,6 +115,7 @@ function makeProps(overrides: object = {}): ComponentProps {
     onClose: () => {},
     onSend: () => {},
     messageAttachmentUploadFolderId: '1',
+    userId: '345',
     ...overrides
   }
 }
@@ -149,7 +151,25 @@ async function makeMocks(overrides = [], sameStudent = false) {
   ]
 }
 
-describe('MessageStudentsWhoDialog', () => {
+function allObserverNames() {
+  return ['Observer0', 'Observer1']
+}
+
+function expectToBeSelected(cell) {
+  const selectedElement = within(cell).getByTestId('item-selected')
+  const unselectedElement = within(cell).queryByTestId('item-unselected')
+  expect(selectedElement).toBeInTheDocument()
+  expect(unselectedElement).not.toBeInTheDocument()
+}
+
+function expectToBeUnselected(cell) {
+  const selectedElement = within(cell).queryByTestId('item-selected')
+  const unselectedElement = within(cell).getByTestId('item-unselected')
+  expect(selectedElement).not.toBeInTheDocument()
+  expect(unselectedElement).toBeInTheDocument()
+}
+
+describe.skip('MessageStudentsWhoDialog', () => {
   it('hides the list of students and observers initially', async () => {
     const mocks = await makeMocks()
 
@@ -207,8 +227,8 @@ describe('MessageStudentsWhoDialog', () => {
     expect(observerCells[0]).toHaveTextContent('Observers')
     expect(observerCells[1]).toHaveTextContent('Observer0')
     expect(observerCells[2]).toHaveTextContent('Observer1')
-    expect(observerCells[3]).toBeNull
-    expect(observerCells[4]).toBeNull
+    expect(observerCells[3]).toBeNull()
+    expect(observerCells[4]).toBeNull()
   })
 
   it('shows observers in the same cell sorted by the sortable name when observing the same student', async () => {
@@ -229,9 +249,9 @@ describe('MessageStudentsWhoDialog', () => {
     expect(observerCells).toHaveLength(5)
     expect(observerCells[0]).toHaveTextContent('Observers')
     expect(observerCells[1]).toHaveTextContent('Observer0Observer1')
-    expect(observerCells[2]).toBeNull
-    expect(observerCells[3]).toBeNull
-    expect(observerCells[4]).toBeNull
+    expect(observerCells[2]).toBeNull()
+    expect(observerCells[3]).toBeNull()
+    expect(observerCells[4]).toBeNull()
   })
 
   it('includes the total number of students in the checkbox label', async () => {
@@ -618,6 +638,529 @@ describe('MessageStudentsWhoDialog', () => {
       expect(observerCells[1]).toHaveTextContent('Observer0')
       expect(studentCells[2]).toHaveTextContent('Adam Jones')
       expect(observerCells[2]).toHaveTextContent('Observer1')
+    })
+  })
+
+  describe('students selection', () => {
+    beforeEach(() => {
+      students[0].submittedAt = undefined
+      students[1].submittedAt = undefined
+      students[2].submittedAt = undefined
+      students[3].submittedAt = undefined
+    })
+
+    it('selects all students by default', async () => {
+      const mocks = await makeMocks()
+      const {findByRole, getByRole} = render(
+        <MockedProvider mocks={mocks} cache={createCache()}>
+          <MessageStudentsWhoDialog {...makeProps()} />
+        </MockedProvider>
+      )
+
+      const button = await findByRole('button', {name: 'Show all recipients'})
+      fireEvent.click(button)
+
+      const studentCells = students.map(({name}) => getByRole('button', {name}))
+      studentCells.forEach(studentCell => expectToBeSelected(studentCell))
+    })
+
+    it('sets the students checkbox as checked when all students are selected', async () => {
+      const mocks = await makeMocks()
+      const {findByRole} = render(
+        <MockedProvider mocks={mocks} cache={createCache()}>
+          <MessageStudentsWhoDialog {...makeProps()} />
+        </MockedProvider>
+      )
+
+      const button = await findByRole('button', {name: 'Show all recipients'})
+      fireEvent.click(button)
+
+      const checkbox = (await findByRole('checkbox', {name: /Students/})) as HTMLInputElement
+      await waitFor(() => {
+        expect(checkbox.checked).toBe(true)
+        expect(checkbox.indeterminate).toBe(false)
+        expect(checkbox.disabled).toBe(false)
+      })
+    })
+
+    it('sets the students checkbox as unchecked when all students are unselected', async () => {
+      const mocks = await makeMocks()
+      const {findByRole, getByRole} = render(
+        <MockedProvider mocks={mocks} cache={createCache()}>
+          <MessageStudentsWhoDialog {...makeProps()} />
+        </MockedProvider>
+      )
+
+      const button = await findByRole('button', {name: 'Show all recipients'})
+      fireEvent.click(button)
+
+      const checkbox = (await findByRole('checkbox', {name: /Students/})) as HTMLInputElement
+      const studentCells = students.map(({name}) => getByRole('button', {name}))
+      studentCells.forEach(cell => fireEvent.click(cell))
+
+      await waitFor(() => {
+        expect(checkbox.checked).toBe(false)
+        expect(checkbox.indeterminate).toBe(false)
+        expect(checkbox.disabled).toBe(false)
+      })
+    })
+
+    it('sets the students checkbox as indeterminate when selected students length is between 1 and the total number of students', async () => {
+      const mocks = await makeMocks()
+
+      const {findByRole, getByRole} = render(
+        <MockedProvider mocks={mocks} cache={createCache()}>
+          <MessageStudentsWhoDialog {...makeProps()} />
+        </MockedProvider>
+      )
+
+      const button = await findByRole('button', {name: 'Show all recipients'})
+      fireEvent.click(button)
+
+      const checkbox = (await findByRole('checkbox', {name: /Students/})) as HTMLInputElement
+      const studentCells = students.map(({name}) => getByRole('button', {name}))
+
+      fireEvent.click(studentCells[0])
+
+      await waitFor(() => {
+        expect(checkbox.checked).toBe(false)
+        expect(checkbox.indeterminate).toBe(true)
+      })
+
+      fireEvent.click(studentCells[0])
+      studentCells.forEach(cell => fireEvent.click(cell))
+      fireEvent.click(studentCells[0])
+
+      await waitFor(() => {
+        expect(checkbox.checked).toBe(false)
+        expect(checkbox.indeterminate).toBe(true)
+        expect(checkbox.disabled).toBe(false)
+      })
+    })
+
+    it('sets the students checkbox as disabled when the students list is empty', async () => {
+      const mocks = await makeMocks()
+
+      const {findByRole} = render(
+        <MockedProvider mocks={mocks} cache={createCache()}>
+          <MessageStudentsWhoDialog {...makeProps({students: []})} />
+        </MockedProvider>
+      )
+
+      const button = await findByRole('button', {name: 'Show all recipients'})
+      fireEvent.click(button)
+
+      const checkbox = (await findByRole('checkbox', {name: /Students/})) as HTMLInputElement
+
+      await waitFor(() => {
+        expect(checkbox.checked).toBe(false)
+        expect(checkbox.indeterminate).toBe(false)
+        expect(checkbox.disabled).toBe(true)
+      })
+    })
+
+    it('unselects a selected student by clicking on the student cell', async () => {
+      const mocks = await makeMocks()
+
+      const {findByRole, getByRole} = render(
+        <MockedProvider mocks={mocks} cache={createCache()}>
+          <MessageStudentsWhoDialog {...makeProps()} />
+        </MockedProvider>
+      )
+
+      const button = await findByRole('button', {name: 'Show all recipients'})
+      fireEvent.click(button)
+
+      const studentCells = students.map(({name}) => getByRole('button', {name}))
+
+      fireEvent.click(studentCells[0])
+      expectToBeUnselected(studentCells[0])
+    })
+
+    it('selects an unselected student by clicking on the student cell', async () => {
+      const mocks = await makeMocks()
+
+      const {findByRole, getByRole} = render(
+        <MockedProvider mocks={mocks} cache={createCache()}>
+          <MessageStudentsWhoDialog {...makeProps()} />
+        </MockedProvider>
+      )
+
+      const button = await findByRole('button', {name: 'Show all recipients'})
+      fireEvent.click(button)
+
+      const studentCells = students.map(({name}) => getByRole('button', {name}))
+
+      fireEvent.click(studentCells[0])
+      fireEvent.click(studentCells[0])
+
+      expectToBeSelected(studentCells[0])
+    })
+  })
+
+  describe('observers selection', () => {
+    beforeEach(() => {
+      students[0].submittedAt = undefined
+      students[1].submittedAt = undefined
+      students[2].submittedAt = undefined
+      students[3].submittedAt = undefined
+    })
+
+    it('unselects all observers by default', async () => {
+      const mocks = await makeMocks()
+      const {findByRole, getByRole} = render(
+        <MockedProvider mocks={mocks} cache={createCache()}>
+          <MessageStudentsWhoDialog {...makeProps()} />
+        </MockedProvider>
+      )
+
+      const button = await findByRole('button', {name: 'Show all recipients'})
+      fireEvent.click(button)
+
+      const observerCells = allObserverNames().map(name => getByRole('button', {name}))
+      observerCells.forEach(observerCell => expectToBeUnselected(observerCell))
+    })
+
+    it('sets the observers checkbox as checked when all observers are selected', async () => {
+      const mocks = await makeMocks()
+      const {findByRole, getByRole} = render(
+        <MockedProvider mocks={mocks} cache={createCache()}>
+          <MessageStudentsWhoDialog {...makeProps()} />
+        </MockedProvider>
+      )
+
+      const button = await findByRole('button', {name: 'Show all recipients'})
+      fireEvent.click(button)
+
+      const observerCells = allObserverNames().map(name => getByRole('button', {name}))
+      observerCells.forEach(cell => fireEvent.click(cell))
+
+      const checkbox = (await findByRole('checkbox', {name: /Observers/})) as HTMLInputElement
+      await waitFor(() => {
+        expect(checkbox.checked).toBe(true)
+        expect(checkbox.indeterminate).toBe(false)
+        expect(checkbox.disabled).toBe(false)
+      })
+    })
+
+    it('sets the observers checkbox as unchecked when all observers are unselected', async () => {
+      const mocks = await makeMocks()
+      const {findByRole} = render(
+        <MockedProvider mocks={mocks} cache={createCache()}>
+          <MessageStudentsWhoDialog {...makeProps()} />
+        </MockedProvider>
+      )
+
+      const button = await findByRole('button', {name: 'Show all recipients'})
+      fireEvent.click(button)
+
+      const checkbox = (await findByRole('checkbox', {name: /Observers/})) as HTMLInputElement
+
+      await waitFor(() => {
+        expect(checkbox.checked).toBe(false)
+        expect(checkbox.indeterminate).toBe(false)
+        expect(checkbox.disabled).toBe(false)
+      })
+    })
+
+    it('sets the observers checkbox as indeterminate when selected students length is between 1 and the total number of students', async () => {
+      const mocks = await makeMocks()
+
+      const {findByRole, getByRole} = render(
+        <MockedProvider mocks={mocks} cache={createCache()}>
+          <MessageStudentsWhoDialog {...makeProps()} />
+        </MockedProvider>
+      )
+
+      const button = await findByRole('button', {name: 'Show all recipients'})
+      fireEvent.click(button)
+
+      const checkbox = (await findByRole('checkbox', {name: /Observers/})) as HTMLInputElement
+      const observerCells = allObserverNames().map(name => getByRole('button', {name}))
+
+      fireEvent.click(observerCells[0])
+
+      await waitFor(() => {
+        expect(checkbox.checked).toBe(false)
+        expect(checkbox.indeterminate).toBe(true)
+      })
+
+      fireEvent.click(observerCells[0])
+      observerCells.forEach(cell => fireEvent.click(cell))
+      fireEvent.click(observerCells[0])
+
+      await waitFor(() => {
+        expect(checkbox.checked).toBe(false)
+        expect(checkbox.indeterminate).toBe(true)
+        expect(checkbox.disabled).toBe(false)
+      })
+    })
+
+    it('sets the observers checkbox as disabled when the observer list is empty', async () => {
+      const mocks = await makeMocks()
+      const newStudent = {
+        id: '104',
+        name: 'Charlie Brown',
+        grade: undefined,
+        redoRequest: false,
+        sortableName: 'Charlie, Brown',
+        score: undefined,
+        submittedAt: undefined
+      }
+      const {findByRole} = render(
+        <MockedProvider mocks={mocks} cache={createCache()}>
+          <MessageStudentsWhoDialog {...makeProps({students: [newStudent]})} />
+        </MockedProvider>
+      )
+
+      const button = await findByRole('button', {name: 'Show all recipients'})
+      fireEvent.click(button)
+
+      const checkbox = (await findByRole('checkbox', {name: /Observers/})) as HTMLInputElement
+
+      await waitFor(() => {
+        expect(checkbox.checked).toBe(false)
+        expect(checkbox.indeterminate).toBe(false)
+        expect(checkbox.disabled).toBe(true)
+      })
+    })
+
+    it('unselects a selected observer by clicking on the observer cell', async () => {
+      const mocks = await makeMocks()
+
+      const {findByRole, getByRole} = render(
+        <MockedProvider mocks={mocks} cache={createCache()}>
+          <MessageStudentsWhoDialog {...makeProps()} />
+        </MockedProvider>
+      )
+
+      const button = await findByRole('button', {name: 'Show all recipients'})
+      fireEvent.click(button)
+
+      const observerCells = allObserverNames().map(name => getByRole('button', {name}))
+
+      expectToBeUnselected(observerCells[0])
+    })
+
+    it('selects an unselected observer by clicking on the observer cell', async () => {
+      const mocks = await makeMocks()
+
+      const {findByRole, getByRole} = render(
+        <MockedProvider mocks={mocks} cache={createCache()}>
+          <MessageStudentsWhoDialog {...makeProps()} />
+        </MockedProvider>
+      )
+
+      const button = await findByRole('button', {name: 'Show all recipients'})
+      fireEvent.click(button)
+
+      const observerCells = allObserverNames().map(name => getByRole('button', {name}))
+
+      fireEvent.click(observerCells[0])
+      expectToBeSelected(observerCells[0])
+    })
+  })
+
+  describe('send message button', () => {
+    it('is disabled when the message body is empty', async () => {
+      const mocks = await makeMocks()
+
+      const {findByRole, getByTestId} = render(
+        <MockedProvider mocks={mocks} cache={createCache()}>
+          <MessageStudentsWhoDialog {...makeProps()} />
+        </MockedProvider>
+      )
+
+      const recipientsButton = await findByRole('button', {name: 'Show all recipients'})
+      fireEvent.click(recipientsButton)
+
+      const messageTextArea = getByTestId('message-input')
+      fireEvent.change(messageTextArea, {target: {value: ''}})
+
+      const sendButton = await findByRole('button', {name: 'Send'})
+      expect(sendButton.disabled).toBe(true)
+    })
+
+    it('is disabled when the message body has only whitespaces', async () => {
+      const mocks = await makeMocks()
+
+      const {findByRole, getByTestId} = render(
+        <MockedProvider mocks={mocks} cache={createCache()}>
+          <MessageStudentsWhoDialog {...makeProps()} />
+        </MockedProvider>
+      )
+
+      const recipientsButton = await findByRole('button', {name: 'Show all recipients'})
+      fireEvent.click(recipientsButton)
+
+      const messageTextArea = getByTestId('message-input')
+      fireEvent.change(messageTextArea, {target: {value: '   '}})
+
+      const sendButton = await findByRole('button', {name: 'Send'})
+      expect(sendButton.disabled).toBe(true)
+    })
+
+    it('is disabled when there are no students/observers selected', async () => {
+      const mocks = await makeMocks()
+
+      const {findByRole} = render(
+        <MockedProvider mocks={mocks} cache={createCache()}>
+          <MessageStudentsWhoDialog {...makeProps()} />
+        </MockedProvider>
+      )
+
+      const recipientsButton = await findByRole('button', {name: 'Show all recipients'})
+      const checkbox = (await findByRole('checkbox', {name: /Students/})) as HTMLInputElement
+
+      fireEvent.click(recipientsButton)
+      fireEvent.click(checkbox)
+
+      const sendButton = await findByRole('button', {name: 'Send'})
+      expect(sendButton.disabled).toBe(true)
+    })
+
+    it('is enabled when the message body is not empty and there is at least one student/observer selected', async () => {
+      const mocks = await makeMocks()
+
+      const {findByRole, getByTestId} = render(
+        <MockedProvider mocks={mocks} cache={createCache()}>
+          <MessageStudentsWhoDialog {...makeProps()} />
+        </MockedProvider>
+      )
+
+      const recipientsButton = await findByRole('button', {name: 'Show all recipients'})
+      fireEvent.click(recipientsButton)
+
+      const messageTextArea = getByTestId('message-input')
+      fireEvent.change(messageTextArea, {target: {value: 'FOO BAR'}})
+
+      const sendButton = await findByRole('button', {name: 'Send'})
+      expect(sendButton.disabled).toBe(false)
+    })
+  })
+
+  describe('onSend', () => {
+    let onClose: jest.Mock<any, any>
+    let onSend: jest.Mock<any, any>
+
+    beforeEach(() => {
+      onClose = jest.fn()
+      onSend = jest.fn()
+    })
+
+    it('is called with the specified subject', async () => {
+      const mocks = await makeMocks()
+
+      const {findByRole, getByTestId} = render(
+        <MockedProvider mocks={mocks} cache={createCache()}>
+          <MessageStudentsWhoDialog {...makeProps({onClose, onSend})} />
+        </MockedProvider>
+      )
+
+      const recipientsButton = await findByRole('button', {name: 'Show all recipients'})
+      fireEvent.click(recipientsButton)
+
+      const subjectInput = getByTestId('subject-input')
+      fireEvent.change(subjectInput, {target: {value: 'SUBJECT'}})
+
+      const messageTextArea = getByTestId('message-input')
+      fireEvent.change(messageTextArea, {target: {value: 'BODY'}})
+
+      const sendButton = await findByRole('button', {name: 'Send'})
+      fireEvent.click(sendButton)
+
+      expect(onSend).toHaveBeenCalledWith(expect.objectContaining({subject: 'SUBJECT'}))
+      expect(onClose).toHaveBeenCalled()
+    })
+
+    it('is called with the specified body', async () => {
+      const mocks = await makeMocks()
+
+      const {findByRole, getByTestId} = render(
+        <MockedProvider mocks={mocks} cache={createCache()}>
+          <MessageStudentsWhoDialog {...makeProps({onClose, onSend})} />
+        </MockedProvider>
+      )
+
+      const recipientsButton = await findByRole('button', {name: 'Show all recipients'})
+      fireEvent.click(recipientsButton)
+
+      const subjectInput = getByTestId('subject-input')
+      fireEvent.change(subjectInput, {target: {value: 'SUBJECT'}})
+
+      const messageTextArea = getByTestId('message-input')
+      fireEvent.change(messageTextArea, {target: {value: 'BODY'}})
+
+      const sendButton = await findByRole('button', {name: 'Send'})
+      fireEvent.click(sendButton)
+
+      expect(onSend).toHaveBeenCalledWith(expect.objectContaining({body: 'BODY'}))
+      expect(onClose).toHaveBeenCalled()
+    })
+
+    it('is called with the selected students', async () => {
+      const mocks = await makeMocks()
+
+      const {findByRole, getByRole, getByTestId} = render(
+        <MockedProvider mocks={mocks} cache={createCache()}>
+          <MessageStudentsWhoDialog {...makeProps({onClose, onSend})} />
+        </MockedProvider>
+      )
+
+      const recipientsButton = await findByRole('button', {name: 'Show all recipients'})
+      fireEvent.click(recipientsButton)
+
+      const studentCells = students.map(({name}) => getByRole('button', {name}))
+      fireEvent.click(studentCells[0])
+
+      const subjectInput = getByTestId('subject-input')
+      fireEvent.change(subjectInput, {target: {value: 'SUBJECT'}})
+
+      const messageTextArea = getByTestId('message-input')
+      fireEvent.change(messageTextArea, {target: {value: 'BODY'}})
+
+      const sendButton = await findByRole('button', {name: 'Send'})
+      fireEvent.click(sendButton)
+
+      expect(onSend).toHaveBeenCalledWith(
+        expect.objectContaining({recipientsIds: ['101', '102', '103']})
+      )
+      expect(onClose).toHaveBeenCalled()
+    })
+
+    it('is called with the selected observers', async () => {
+      const mocks = await makeMocks()
+
+      const {findByRole, getByRole, getByTestId} = render(
+        <MockedProvider mocks={mocks} cache={createCache()}>
+          <MessageStudentsWhoDialog {...makeProps({onClose, onSend})} />
+        </MockedProvider>
+      )
+
+      const recipientsButton = await findByRole('button', {name: 'Show all recipients'})
+      fireEvent.click(recipientsButton)
+
+      const checkbox = (await findByRole('checkbox', {name: /Students/})) as HTMLInputElement
+      fireEvent.click(checkbox)
+
+      const observerCells = allObserverNames().map(name => getByRole('button', {name}))
+      fireEvent.click(observerCells[0])
+      fireEvent.click(observerCells[1])
+
+      const subjectInput = getByTestId('subject-input')
+      fireEvent.change(subjectInput, {target: {value: 'SUBJECT'}})
+
+      const messageTextArea = getByTestId('message-input')
+      fireEvent.change(messageTextArea, {target: {value: 'BODY'}})
+
+      const sendButton = await findByRole('button', {name: 'Send'})
+      fireEvent.click(sendButton)
+
+      const observerIds = mocks[0].result.data.course.enrollmentsConnection.nodes.map(
+        node => node.user._id
+      )
+      expect(onSend).toHaveBeenCalledWith(expect.objectContaining({recipientsIds: observerIds}))
+      expect(onClose).toHaveBeenCalled()
     })
   })
 })

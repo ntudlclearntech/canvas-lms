@@ -17,16 +17,29 @@
  */
 
 import React from 'react'
-import {act} from '@testing-library/react'
+import {act, getByText} from '@testing-library/react'
+import moment from 'moment'
 
 import {PACE_MODULE_1, PRIMARY_PACE} from '../../../__tests__/fixtures'
 import {renderConnected} from '../../../__tests__/utils'
 
 import {Module} from '../module'
+import {ModuleWithDueDates, CoursePaceItemWithDate} from '../../../types'
+
+const dueDates = ['2022-03-18T00:00:00-06:00', '2022-03-22T00:00:00-06:00']
+const module1: ModuleWithDueDates = {...(PACE_MODULE_1 as unknown as ModuleWithDueDates)}
+module1.itemsWithDates = module1.items.map(
+  (item, index) =>
+    ({
+      ...item,
+      type: 'assignment' as const,
+      date: moment(dueDates[index])
+    } as CoursePaceItemWithDate)
+)
 
 const defaultProps = {
   index: 1,
-  module: PACE_MODULE_1,
+  module: module1,
   coursePace: PRIMARY_PACE,
   responsiveSize: 'large' as const,
   showProjections: true,
@@ -70,10 +83,10 @@ describe('Module', () => {
     expect(queryByRole('button', {name: '1. How 2 B A H4CK32'})).toBeInTheDocument()
     expect(queryByRole('columnheader')).not.toBeInTheDocument()
     expect(
-      queryByRole('cell', {name: 'Assignments : Basic encryption/decryption 100 pts'})
+      queryByRole('cell', {name: 'Item : Basic encryption/decryption 100 pts'})
     ).toBeInTheDocument()
     expect(queryAllByTestId('pp-duration-cell')[0]).toBeInTheDocument()
-    expect(queryByRole('cell', {name: 'Due Date : Fri, Sep 3, 2021'})).toBeInTheDocument()
+    expect(queryByRole('cell', {name: 'Due Date : Tue, Mar 22, 2022'})).toBeInTheDocument()
     expect(queryAllByRole('cell', {name: 'Status : Published'})[0]).toBeInTheDocument()
   })
 
@@ -93,5 +106,26 @@ describe('Module', () => {
         name: 'Changing course pacing days may modify due dates.'
       })
     ).toBeInTheDocument()
+  })
+
+  it('In stacked format, blackout dates do not include the status entry', () => {
+    const module2 = {
+      ...module1,
+      items: [...module1.items],
+      itemsWithDates: [...module1.itemsWithDates]
+    }
+    module2.itemsWithDates.splice(1, 0, {
+      type: 'blackout_date' as const,
+      date: moment('2022-03-20T00:00:00-06:00'),
+      event_title: 'black me out',
+      start_date: moment('2022-03-21T00:00:00-06:00'),
+      end_date: moment('2022-03-22T00:00:00-06:00')
+    })
+
+    const {queryAllByRole} = renderConnected(
+      <Module {...defaultProps} module={module2} responsiveSize="small" showProjections />
+    )
+    expect(queryAllByRole('row').length).toEqual(3)
+    expect(queryAllByRole('cell', {name: /Status/}).length).toEqual(2)
   })
 })

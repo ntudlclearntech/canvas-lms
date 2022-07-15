@@ -42,6 +42,7 @@ class GradebookSettingsController < ApplicationController
           context_module_id
           grading_period_id
           assignment_group_id
+          submissions
         ],
         filter_rows_by: [
           :section_id,
@@ -51,6 +52,7 @@ class GradebookSettingsController < ApplicationController
       },
       :enter_grades_as,
       :hide_assignment_group_totals,
+      :hide_total,
       :show_concluded_enrollments,
       :show_inactive_enrollments,
       :show_unpublished_assignments,
@@ -61,7 +63,7 @@ class GradebookSettingsController < ApplicationController
       :sort_rows_by_setting_key,
       :sort_rows_by_direction,
       :view_ungraded_as_zero,
-      { colors: %i[late missing resubmitted dropped excused] }
+      { colors: %i[late missing resubmitted dropped excused extended] }
     )
     gradebook_settings_params[:enter_grades_as] = params[:gradebook_settings][:enter_grades_as]
     gradebook_settings_params.permit!

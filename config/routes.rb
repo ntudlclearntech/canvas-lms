@@ -118,7 +118,7 @@ CanvasRails::Application.routes.draw do
         get :quota
         post :reorder
       end
-      get ":file_path" => "files#show_relative", :as => :relative_path, :file_path => /.+/ # needs to stay below react_files route
+      get "*file_path" => "files#show_relative", :as => :relative_path, :file_path => /.+/ # needs to stay below react_files route
     end
   end
 
@@ -127,7 +127,7 @@ CanvasRails::Application.routes.draw do
   end
 
   concern :relative_files do
-    get "file_contents/:file_path" => "files#show_relative", :as => :relative_file_path, :file_path => /.+/
+    get "file_contents/*file_path" => "files#show_relative", :as => :relative_file_path, :file_path => /.+/
   end
 
   concern :folders do
@@ -153,7 +153,7 @@ CanvasRails::Application.routes.draw do
 
   concern :discussions do
     resources :discussion_topics, only: %i[index new show edit destroy]
-    get "discussion_topics/:id/:extras" => "discussion_topics#show", :as => :map, :extras => /.+/
+    get "discussion_topics/:id/*extras" => "discussion_topics#show", :as => :map, :extras => /.+/
     resources :discussion_entries
   end
 
@@ -333,6 +333,7 @@ CanvasRails::Application.routes.draw do
 
       get "lti/resource/:resource_link_id", controller: "lti/message",
                                             action: "resource", as: :resource_link_id
+      post "deep_linking_response", controller: "lti/ims/deep_linking", action: :deep_linking_response
     end
 
     resources :grading_standards, only: %i[index create update destroy]
@@ -948,7 +949,10 @@ CanvasRails::Application.routes.draw do
 
   # Routes for course exports
   get "xsd/:version.xsd" => "content_exports#xml_schema"
-  resources :jobs, only: [:index, :show] do
+
+  get "/jobs", to: "jobs_v2#redirect", as: "jobs"
+
+  resources :jobs_v1, controller: :jobs, only: [:index, :show] do
     collection do
       post "batch_update"
     end
@@ -956,7 +960,7 @@ CanvasRails::Application.routes.draw do
 
   resources :jobs_v2, only: [:index]
 
-  get "equation_images/:id" => "equation_images#show", :as => :equation_images, :id => /.+/
+  get "equation_images/*id" => "equation_images#show", :as => :equation_images, :id => /.+/
 
   # assignments at the top level (without a context) -- we have some specs that
   # assert these routes exist, but just 404 unless it is a download from local
@@ -1028,7 +1032,7 @@ CanvasRails::Application.routes.draw do
       post "courses/:course_id/folders", controller: :folders, action: :create
       get "courses/:course_id/folders/by_path/*full_path", controller: :folders, action: :resolve_path
       get "courses/:course_id/folders/by_path", controller: :folders, action: :resolve_path
-      get "courses/:course_id/folders/buttons_and_icons", controller: :folders, action: :buttons_and_icons_folder
+      get "courses/:course_id/folders/icon_maker", controller: :folders, action: :icon_maker_folder
       get "courses/:course_id/folders/media", controller: :folders, action: :media_folder
       get "courses/:course_id/folders/:id", controller: :folders, action: :show, as: "course_folder"
       get "media_objects", controller: "media_objects", action: :index, as: :media_objects
@@ -1476,7 +1480,7 @@ CanvasRails::Application.routes.draw do
 
       get "users/:id/graded_submissions", controller: "users", action: "user_graded_submissions", as: :user_submissions
 
-      get "users/:id/show_k5_dashboard", controller: "users", action: "show_k5_dashboard"
+      get "show_k5_dashboard", controller: "users", action: "show_k5_dashboard"
 
       post "users/:id/clear_cache", action: :clear_cache, as: "clear_cache"
 
@@ -1805,26 +1809,26 @@ CanvasRails::Application.routes.draw do
       get "groups/:group_id/front_page", action: :show_front_page
       put "courses/:course_id/front_page", action: :update_front_page
       put "groups/:group_id/front_page", action: :update_front_page
-      post "courses/:course_id/pages/:url/duplicate", action: :duplicate
+      post "courses/:course_id/pages/:url_or_id/duplicate", action: :duplicate
 
       get "courses/:course_id/pages", action: :index, as: "course_wiki_pages"
       get "groups/:group_id/pages", action: :index, as: "group_wiki_pages"
-      get "courses/:course_id/pages/:url", action: :show, as: "course_wiki_page"
-      get "groups/:group_id/pages/:url", action: :show, as: "group_wiki_page"
-      get "courses/:course_id/pages/:url/revisions", action: :revisions, as: "course_wiki_page_revisions"
-      get "groups/:group_id/pages/:url/revisions", action: :revisions, as: "group_wiki_page_revisions"
-      get "courses/:course_id/pages/:url/revisions/latest", action: :show_revision
-      get "groups/:group_id/pages/:url/revisions/latest", action: :show_revision
-      get "courses/:course_id/pages/:url/revisions/:revision_id", action: :show_revision
-      get "groups/:group_id/pages/:url/revisions/:revision_id", action: :show_revision
-      post "courses/:course_id/pages/:url/revisions/:revision_id", action: :revert
-      post "groups/:group_id/pages/:url/revisions/:revision_id", action: :revert
+      get "courses/:course_id/pages/:url_or_id", action: :show, as: "course_wiki_page"
+      get "groups/:group_id/pages/:url_or_id", action: :show, as: "group_wiki_page"
+      get "courses/:course_id/pages/:url_or_id/revisions", action: :revisions, as: "course_wiki_page_revisions"
+      get "groups/:group_id/pages/:url_or_id/revisions", action: :revisions, as: "group_wiki_page_revisions"
+      get "courses/:course_id/pages/:url_or_id/revisions/latest", action: :show_revision
+      get "groups/:group_id/pages/:url_or_id/revisions/latest", action: :show_revision
+      get "courses/:course_id/pages/:url_or_id/revisions/:revision_id", action: :show_revision
+      get "groups/:group_id/pages/:url_or_id/revisions/:revision_id", action: :show_revision
+      post "courses/:course_id/pages/:url_or_id/revisions/:revision_id", action: :revert
+      post "groups/:group_id/pages/:url_or_id/revisions/:revision_id", action: :revert
       post "courses/:course_id/pages", action: :create
       post "groups/:group_id/pages", action: :create
-      put "courses/:course_id/pages/:url", action: :update
-      put "groups/:group_id/pages/:url", action: :update
-      delete "courses/:course_id/pages/:url", action: :destroy
-      delete "groups/:group_id/pages/:url", action: :destroy
+      put "courses/:course_id/pages/:url_or_id", action: :update
+      put "groups/:group_id/pages/:url_or_id", action: :update
+      delete "courses/:course_id/pages/:url_or_id", action: :destroy
+      delete "groups/:group_id/pages/:url_or_id", action: :destroy
     end
 
     scope(controller: :context_modules_api) do
@@ -2440,6 +2444,8 @@ CanvasRails::Application.routes.draw do
       get "jobs2/:bucket/by_:group", action: :grouped_info, as: :jobs_grouped_info
       get "jobs2/:bucket", action: :list, as: :jobs_list, constraints: { bucket: /running|queued|future|failed/ }
       get "jobs2/:id", action: :lookup, constraints: { id: /\d+/ }
+      post "jobs2/:id/requeue", action: :requeue
+      put "jobs2/manage", action: :manage
     end
   end
 

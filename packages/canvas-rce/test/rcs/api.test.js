@@ -21,6 +21,7 @@ import sinon from 'sinon'
 import RceApiSource, {headerFor, originFromHost} from '../../src/rcs/api'
 import fetchMock from 'fetch-mock'
 import * as fileUrl from '../../src/common/fileUrl'
+import {ICON_MAKER_ICONS} from '../../src/rce/plugins/instructure_icon_maker/svg/constants'
 
 describe('sources/api', () => {
   const endpoint = 'wikiPages'
@@ -395,7 +396,7 @@ describe('sources/api', () => {
     })
   })
 
-  describe('fetchButtonsAndIconsFolder', () => {
+  describe('fetchIconMakerFolder', () => {
     let folders
 
     beforeEach(() => {
@@ -410,14 +411,14 @@ describe('sources/api', () => {
 
     it('calls fetchPage with the proper params', () => {
       return apiSource
-        .fetchButtonsAndIconsFolder({
+        .fetchIconMakerFolder({
           contextType: 'course',
           contextId: '22'
         })
         .then(() => {
           sinon.assert.calledWith(
             apiSource.fetchPage,
-            '/api/folders/buttons_and_icons?contextType=course&contextId=22'
+            '/api/folders/icon_maker?contextType=course&contextId=22'
           )
         })
     })
@@ -471,10 +472,10 @@ describe('sources/api', () => {
       fetchMock.mock(uri, '{}')
 
       return apiSource
-        .preflightUpload(fileProps, {category: 'icon_maker_icons'}, apiProps)
+        .preflightUpload(fileProps, {category: ICON_MAKER_ICONS}, apiProps)
         .then(() => {
           const body = JSON.parse(fetchMock.lastOptions(uri).body)
-          assert.equal(body.category, 'icon_maker_icons')
+          assert.equal(body.category, ICON_MAKER_ICONS)
         })
     })
 

@@ -32,7 +32,12 @@ import {Responsive} from '@instructure/ui-responsive'
 import {responsiveQuerySizes} from '../../../util/utils'
 import {uploadFiles} from '@canvas/upload-file'
 import UploadMedia from '@instructure/canvas-media'
-import {MediaCaptureStrings, SelectStrings, UploadMediaStrings} from '../../../util/constants'
+import {
+  UploadMediaStrings,
+  MediaCaptureStrings,
+  SelectStrings
+} from '@canvas/upload-media-translations'
+import {ConversationContext} from '../../../util/constants'
 
 const I18n = useI18nScope('conversations_2')
 
@@ -43,13 +48,17 @@ const ComposeModalContainer = props => {
   const [attachmentsToUpload, setAttachmentsToUpload] = useState([])
   const [subject, setSubject] = useState('')
   const [body, setBody] = useState('')
+  const [addressBookInputValue, setAddressBookInputValue] = useState('')
   const [bodyMessages, setBodyMessages] = useState([])
+  const [addressBookMessages, setAddressBookMessages] = useState([])
   const [sendIndividualMessages, setSendIndividualMessages] = useState(false)
   const [userNote, setUserNote] = useState(false)
   const [selectedContext, setSelectedContext] = useState()
+  const [courseMessages, setCourseMessages] = useState([])
   const [mediaUploadOpen, setMediaUploadOpen] = useState(false)
   const [uploadingMediaFile, setUploadingMediaFile] = useState(false)
   const [mediaUploadFile, setMediaUploadFile] = useState(null)
+  const {isSubmissionCommentsType} = useContext(ConversationContext)
 
   const onMediaUploadComplete = (err, data) => {
     if (err) {
@@ -133,20 +142,59 @@ const ComposeModalContainer = props => {
   }
 
   const onContextSelect = context => {
+    if (context && context?.contextID) {
+      setCourseMessages([])
+    }
+
     setSelectedContext({contextID: context.contextID, contextName: context.contextName})
   }
 
   const validMessageFields = () => {
-    // TODO: validate recipients
+    let isValid = true
     if (!body) {
       setBodyMessages([{text: I18n.t('Message body is required'), type: 'error'}])
-      return false
+      isValid = false
     }
-    return true
+
+    if (!isSubmissionCommentsType && !props.isReply) {
+      if (addressBookInputValue !== '') {
+        setAddressBookMessages([{text: I18n.t('Invalid recipient'), type: 'error'}])
+        isValid = false
+      } else if (props.selectedIds.length === 0) {
+        setAddressBookMessages([{text: I18n.t('You must choose a recipient'), type: 'error'}])
+        isValid = false
+      }
+    }
+
+    if (!isSubmissionCommentsType && !props.isReply && !props.isForward) {
+      if (
+        !ENV.CONVERSATIONS.CAN_MESSAGE_ACCOUNT_CONTEXT &&
+        (!selectedContext || !selectedContext?.contextID)
+      ) {
+        setCourseMessages([{text: I18n.t('Please select a course'), type: 'error'}])
+        isValid = false
+      }
+    }
+
+    return isValid
+  }
+
+  const onSelectedIdsChange = selectedIds => {
+    if (selectedIds.length > 0 && addressBookMessages.length > 0) {
+      setAddressBookMessages([])
+    }
+
+    props.onSelectedIdsChange(selectedIds)
   }
 
   const sendMessage = async () => {
-    if (props.isReply) {
+    if (isSubmissionCommentsType) {
+      await props.createSubmissionComment({
+        variables: {
+          body
+        }
+      })
+    } else if (props.isReply) {
       await props.addConversationMessage({
         variables: {
           attachmentIds: attachments.map(a => a.id),
@@ -188,8 +236,6 @@ const ComposeModalContainer = props => {
         }
       })
     }
-
-    props.onDismiss()
   }
 
   const resetState = () => {
@@ -197,7 +243,9 @@ const ComposeModalContainer = props => {
     setAttachmentsToUpload([])
     setBody(null)
     setBodyMessages([])
+    setAddressBookMessages([])
     setSelectedContext(null)
+    setCourseMessages([])
     props.onSelectedIdsChange([])
     props.setSendingMessage(false)
     setSubject(null)
@@ -230,7 +278,10 @@ const ComposeModalContainer = props => {
             onExited={resetState}
             data-testid={responsiveProps.dataTestId}
           >
-            <ModalHeader onDismiss={props.onDismiss} />
+            <ModalHeader
+              onDismiss={props.onDismiss}
+              headerTitle={props?.submissionCommentsHeader}
+            />
             <ModalBody
               attachments={[...attachments, ...attachmentsToUpload]}
               bodyMessages={bodyMessages}
@@ -238,28 +289,35 @@ const ComposeModalContainer = props => {
               pastMessages={props.pastConversation?.conversationMessagesConnection.nodes}
               removeAttachment={removeAttachment}
               replaceAttachment={replaceAttachment}
+              modalError={props.modalError}
             >
-              <HeaderInputs
-                activeCourseFilter={selectedContext}
-                setUserNote={setUserNote}
-                contextName={props.pastConversation?.contextName}
-                courses={props.courses}
-                selectedRecipients={props.selectedIds}
-                isReply={props.isReply}
-                isForward={props.isForward}
-                onContextSelect={onContextSelect}
-                onSelectedIdsChange={props.onSelectedIdsChange}
-                onUserNoteChange={onUserNoteChange}
-                onSendIndividualMessagesChange={onSendIndividualMessagesChange}
-                onSubjectChange={onSubjectChange}
-                userNote={userNote}
-                sendIndividualMessages={sendIndividualMessages}
-                subject={
-                  props.isReply || props.isForward ? props.pastConversation?.subject : subject
-                }
-                mediaAttachmentTitle={mediaUploadFile?.uploadedFile.name}
-                onRemoveMediaComment={onRemoveMedia}
-              />
+              {isSubmissionCommentsType ? null : (
+                <HeaderInputs
+                  activeCourseFilter={selectedContext}
+                  setUserNote={setUserNote}
+                  contextName={props.pastConversation?.contextName}
+                  courses={props.courses}
+                  selectedRecipients={props.selectedIds}
+                  isReply={props.isReply}
+                  isForward={props.isForward}
+                  onContextSelect={onContextSelect}
+                  onSelectedIdsChange={onSelectedIdsChange}
+                  onUserNoteChange={onUserNoteChange}
+                  onSendIndividualMessagesChange={onSendIndividualMessagesChange}
+                  onSubjectChange={onSubjectChange}
+                  onAddressBookInputValueChange={setAddressBookInputValue}
+                  userNote={userNote}
+                  sendIndividualMessages={sendIndividualMessages}
+                  subject={
+                    props.isReply || props.isForward ? props.pastConversation?.subject : subject
+                  }
+                  mediaAttachmentTitle={mediaUploadFile?.uploadedFile.name}
+                  onRemoveMediaComment={onRemoveMedia}
+                  addressBookMessages={addressBookMessages}
+                  courseMessages={courseMessages}
+                  data-testid="compose-modal-inputs"
+                />
+              )}
             </ModalBody>
             <Modal.Footer>
               <ComposeActionButtons
@@ -289,11 +347,7 @@ const ComposeModalContainer = props => {
         onDismiss={() => setMediaUploadOpen(false)}
         open={mediaUploadOpen}
         tabs={{embed: false, record: true, upload: true}}
-        uploadMediaTranslations={{
-          UploadMediaStrings: UploadMediaStrings(),
-          MediaCaptureStrings: MediaCaptureStrings(),
-          SelectStrings: SelectStrings()
-        }}
+        uploadMediaTranslations={{UploadMediaStrings, MediaCaptureStrings, SelectStrings}}
         liveRegion={() => document.getElementById('flash_screenreader_holder')}
         languages={Object.keys(closedCaptionLanguages).map(key => {
           return {id: key, label: closedCaptionLanguages[key]}
@@ -322,6 +376,7 @@ export default ComposeModalContainer
 
 ComposeModalContainer.propTypes = {
   addConversationMessage: PropTypes.func,
+  createSubmissionComment: PropTypes.func,
   courses: PropTypes.object,
   createConversation: PropTypes.func,
   isReply: PropTypes.bool,
@@ -332,5 +387,7 @@ ComposeModalContainer.propTypes = {
   sendingMessage: PropTypes.bool,
   setSendingMessage: PropTypes.func,
   onSelectedIdsChange: PropTypes.func,
-  selectedIds: PropTypes.array
+  selectedIds: PropTypes.array,
+  submissionCommentsHeader: PropTypes.string,
+  modalError: PropTypes.string
 }

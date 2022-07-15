@@ -489,6 +489,103 @@ describe CourseSection, "moving to new course" do
         expect(@other_section.grants_right?(@ta, :read)).to be_truthy
       end
     end
+
+    context ":manage_calendar" do
+      before :once do
+        @course1 = course_factory(active_all: true)
+        @section1 = @course1.default_section
+        @section2 = @course1.course_sections.create!
+        @user = user_factory(active_all: true)
+      end
+
+      it "returns true for teachers, designers, and tas by default" do
+        @course1.enroll_teacher(@user, enrollment_state: :active)
+        expect(@section1.grants_right?(@user, :manage_calendar)).to be_truthy
+        expect(@section2.grants_right?(@user, :manage_calendar)).to be_truthy
+        @user.enrollments.destroy_all
+
+        @course1.enroll_designer(@user, enrollment_state: :active)
+        expect(@section1.grants_right?(@user, :manage_calendar)).to be_truthy
+        expect(@section2.grants_right?(@user, :manage_calendar)).to be_truthy
+        @user.enrollments.destroy_all
+
+        @course1.enroll_ta(@user, enrollment_state: :active)
+        expect(@section1.grants_right?(@user, :manage_calendar)).to be_truthy
+        expect(@section2.grants_right?(@user, :manage_calendar)).to be_truthy
+      end
+
+      it "returns false for students and observers by default" do
+        @course1.enroll_student(@user, enrollment_state: :active)
+        expect(@section1.grants_right?(@user, :manage_calendar)).to be_falsey
+        expect(@section2.grants_right?(@user, :manage_calendar)).to be_falsey
+        @user.enrollments.destroy_all
+
+        @course1.enroll_user(@user, "ObserverEnrollment", enrollment_state: :active)
+        expect(@section1.grants_right?(@user, :manage_calendar)).to be_falsey
+        expect(@section2.grants_right?(@user, :manage_calendar)).to be_falsey
+      end
+
+      it "returns false for teacher if RoleOverride disables :manage_calendar" do
+        RoleOverride.create!(context: Account.default, permission: "manage_calendar", role: teacher_role, enabled: false)
+        @course1.enroll_teacher(@user, enrollment_state: :active)
+        expect(@section1.grants_right?(@user, :manage_calendar)).to be_falsey
+        expect(@section2.grants_right?(@user, :manage_calendar)).to be_falsey
+      end
+
+      it "returns true if user has any role where :manage_calendar is enabled" do
+        RoleOverride.create!(context: Account.default, permission: "manage_calendar", role: ta_role, enabled: false)
+        @course1.enroll_teacher(@user, enrollment_state: :active)
+        @course1.enroll_ta(@user, enrollment_state: :active)
+        expect(@section1.grants_right?(@user, :manage_calendar)).to be_truthy
+        expect(@section2.grants_right?(@user, :manage_calendar)).to be_truthy
+      end
+
+      it "returns appropriate permission for custom role" do
+        limited_teacher_role = custom_teacher_role("Limited teacher", account: Account.default)
+        RoleOverride.create!(context: Account.default, permission: "manage_calendar", role: limited_teacher_role, enabled: false)
+        @course1.enroll_teacher(@user, role: limited_teacher_role, enrollment_state: :active)
+        expect(@section1.grants_right?(@user, :manage_calendar)).to be_falsey
+        expect(@section2.grants_right?(@user, :manage_calendar)).to be_falsey
+      end
+
+      it "returns true for all sections if enrolled in one and not section_limited" do
+        @course1.enroll_teacher(@user, enrollment_state: :active, section: @section2)
+        expect(@section1.grants_right?(@user, :manage_calendar)).to be_truthy
+        expect(@section2.grants_right?(@user, :manage_calendar)).to be_truthy
+      end
+
+      it "returns false for limited section if only enrolled in one and section_limited" do
+        @course1.enroll_teacher(@user, enrollment_state: :active, section: @section2)
+        @user.enrollments.update_all(limit_privileges_to_course_section: true)
+        expect(@section1.grants_right?(@user, :manage_calendar)).to be_falsey
+        expect(@section2.grants_right?(@user, :manage_calendar)).to be_truthy
+      end
+
+      it "returns false for a teacher in another course" do
+        course2 = course_factory(active_all: true)
+        course2.enroll_teacher(@user, enrollment_state: :active)
+        expect(@section1.grants_right?(@user, :manage_calendar)).to be_falsey
+        expect(@section2.grants_right?(@user, :manage_calendar)).to be_falsey
+      end
+
+      it "returns false if teacher enrollment is concluded" do
+        @course1.enroll_teacher(@user, enrollment_state: :completed)
+        expect(@section1.grants_right?(@user, :manage_calendar)).to be_falsey
+        expect(@section2.grants_right?(@user, :manage_calendar)).to be_falsey
+      end
+
+      it "returns true for an admin whose account membership grants :manage_calendar" do
+        account_admin_user(account: @course1.account, user: @user)
+        expect(@section1.grants_right?(@user, :manage_calendar)).to be_truthy
+        expect(@section2.grants_right?(@user, :manage_calendar)).to be_truthy
+      end
+
+      it "returns false for an admin whose account membership does not grant :manage_calendar" do
+        account_admin_user_with_role_changes(account: @course1.account, user: @user, role_changes: { manage_calendar: false })
+        expect(@section1.grants_right?(@user, :manage_calendar)).to be_falsey
+        expect(@section2.grants_right?(@user, :manage_calendar)).to be_falsey
+      end
+    end
   end
 
   context "enrollment state invalidation" do
@@ -542,5 +639,47 @@ describe CourseSection, "moving to new course" do
     course = course_model(account_id: Account.default)
     section = course.course_sections.create!
     expect(section.account).to eq(Account.default)
+  end
+
+  describe "republish_course_pace_if_needed" do
+    before :once do
+      course_factory(active_all: true)
+      @section = @course.course_sections.create!
+      @section_course_pace = @course.course_paces.create!(course_section_id: @section.id)
+      @section_course_pace.publish
+    end
+
+    it "does nothing if course paces aren't turned on" do
+      @section.update(start_at: 1.day.from_now)
+      expect(Delayed::Job.where(singleton: "course_pace_publish:#{@section_course_pace.id}")).not_to exist
+    end
+
+    context "with course paces enabled" do
+      before :once do
+        @course.enable_course_paces = true
+        @course.save!
+      end
+
+      it "doesn't queue an update if the course pace isn't published" do
+        @section_course_pace.update workflow_state: "unpublished"
+        @section.update(start_at: 1.day.from_now)
+        expect(Delayed::Job.where(singleton: "course_pace_publish:#{@section_course_pace.id}")).not_to exist
+      end
+
+      it "publishes a section course pace (alone) if it exists" do
+        course_pace = @course.course_paces.create!
+        course_pace.publish
+        @section.start_at = 2.days.from_now
+        @section.save!
+        expect(Delayed::Job.where(singleton: "course_pace_publish:#{@section_course_pace.id}")).to exist
+        expect(Delayed::Job.where(singleton: "course_pace_publish:#{course_pace.id}")).not_to exist
+      end
+
+      it "doesn't queue an update for irrelevant changes" do
+        @section.name = "Test Name"
+        @section.save!
+        expect(Delayed::Job.where(singleton: "course_pace_publish:#{@section_course_pace.id}")).not_to exist
+      end
+    end
   end
 end

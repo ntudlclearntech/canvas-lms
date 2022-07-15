@@ -17,6 +17,7 @@
  */
 
 import store from '../index'
+import type {InitialRowFilterSettings, InitialColumnFilterSettings} from '../filtersState'
 import fetchMock from 'fetch-mock'
 import type {GradebookFilterApiResponse} from '../../gradebook.d'
 
@@ -30,8 +31,7 @@ const mockResponse: GradebookFilterApiResponse[] = [
       user_id: '1',
       name: 'filter 1',
       payload: {
-        conditions: [],
-        is_applied: true
+        conditions: []
       },
       created_at: '2020-01-01T00:00:00Z',
       updated_at: '2020-01-01T00:00:00Z'
@@ -44,8 +44,7 @@ const mockResponse: GradebookFilterApiResponse[] = [
       user_id: '1',
       name: 'filter 2',
       payload: {
-        conditions: [],
-        is_applied: false
+        conditions: []
       },
       created_at: '2020-01-01T00:00:00Z',
       updated_at: '2020-01-01T00:00:00Z'
@@ -71,7 +70,6 @@ describe('filterState', () => {
         id: '321',
         name: 'filter 1',
         conditions: [],
-        is_applied: true,
         created_at: '2020-01-01T00:00:00Z'
       }
     ])
@@ -79,31 +77,25 @@ describe('filterState', () => {
 
   it('saves staged filter', async () => {
     store.setState({
-      stagedFilter: {
-        name: 'filter 1',
-        conditions: [
-          {
-            id: '123',
-            type: 'student-group',
-            value: '1',
-            created_at: '2022-01-01T00:00:00Z'
-          }
-        ],
-        created_at: '2022-01-01T00:00:00Z',
-        is_applied: true
-      }
+      stagedFilterConditions: [
+        {
+          id: '123',
+          type: 'student-group',
+          value: '1',
+          created_at: '2022-01-01T00:00:00Z'
+        }
+      ]
     })
     const url = `/api/v1/courses/${courseId}/gradebook_filters`
     fetchMock.post(url, mockResponse[0])
-    await store.getState().saveStagedFilter()
+    await store.getState().saveStagedFilter('filter 1')
     expect(fetchMock.called(url, 'POST')).toBe(true)
-    expect(store.getState().stagedFilter).toBeNull()
+    expect(store.getState().stagedFilterConditions.length).toStrictEqual(0)
     expect(store.getState().filters).toMatchObject([
       {
         id: '321',
         name: 'filter 1',
         conditions: [],
-        is_applied: true,
         created_at: '2020-01-01T00:00:00Z'
       }
     ])
@@ -116,7 +108,6 @@ describe('filterState', () => {
           id: '321',
           name: 'filter 1',
           conditions: [],
-          is_applied: true,
           created_at: '2020-01-01T00:00:00Z'
         }
       ]
@@ -132,7 +123,6 @@ describe('filterState', () => {
       id: '321',
       name: 'filter 1 (renamed)',
       conditions: [],
-      is_applied: true,
       created_at: '2020-01-01T00:00:00Z'
     })
     expect(fetchMock.called(url, 'PUT')).toBe(true)
@@ -141,7 +131,6 @@ describe('filterState', () => {
         id: '321',
         name: 'filter 1 (renamed)',
         conditions: [],
-        is_applied: true,
         created_at: '2020-01-01T00:00:00Z'
       }
     ])
@@ -154,7 +143,6 @@ describe('filterState', () => {
           id: '321',
           name: 'filter 1',
           conditions: [],
-          is_applied: true,
           created_at: '2020-01-01T00:00:00Z'
         }
       ]
@@ -165,7 +153,6 @@ describe('filterState', () => {
       id: '321',
       name: 'filter 1 (renamed)',
       conditions: [],
-      is_applied: true,
       created_at: '2020-01-01T00:00:00Z'
     })
     expect(fetchMock.called(url, 'DELETE')).toBe(true)
@@ -175,189 +162,195 @@ describe('filterState', () => {
   it('does not derive staged filter from empty gradebook settings', async () => {
     const url = `/api/v1/courses/${courseId}/gradebook_filters`
     fetchMock.post(url, mockResponse[0])
-    const initialRowFilterSettings = {
+    const initialRowFilterSettings: InitialRowFilterSettings = {
       section_id: null,
       student_group_id: null
     }
-    const initialColumnFilterSettings = {
+    const initialColumnFilterSettings: InitialColumnFilterSettings = {
       assignment_group_id: null,
       context_module_id: null,
-      grading_period_id: null
+      grading_period_id: null,
+      submissions: null
     }
     store.getState().initializeStagedFilter(initialRowFilterSettings, initialColumnFilterSettings)
-    expect(store.getState().stagedFilter).toBeNull()
+    expect(store.getState().stagedFilterConditions.length).toStrictEqual(0)
   })
 
   it('derive staged section filter from gradebook settings', async () => {
     const url = `/api/v1/courses/${courseId}/gradebook_filters`
     fetchMock.post(url, mockResponse[0])
-    const initialRowFilterSettings = {
+    const initialRowFilterSettings: InitialRowFilterSettings = {
       section_id: '1',
       student_group_id: null
     }
-    const initialColumnFilterSettings = {
+    const initialColumnFilterSettings: InitialColumnFilterSettings = {
       assignment_group_id: null,
       context_module_id: null,
-      grading_period_id: null
+      grading_period_id: null,
+      submissions: null
     }
     store.getState().initializeStagedFilter(initialRowFilterSettings, initialColumnFilterSettings)
-    expect(store.getState().stagedFilter).not.toBeNull()
-    expect(store.getState().stagedFilter).toMatchObject({
-      name: '',
-      conditions: [
-        {
-          id: expect.any(String),
-          type: 'section',
-          value: '1'
-        }
-      ],
-      is_applied: true,
-      created_at: expect.any(String)
-    })
+    expect(store.getState().stagedFilterConditions).not.toBeNull()
+    expect(store.getState().stagedFilterConditions).toMatchObject([
+      {
+        id: expect.any(String),
+        type: 'section',
+        value: '1'
+      }
+    ])
   })
 
   it('derive staged student group filter from gradebook settings', async () => {
     const url = `/api/v1/courses/${courseId}/gradebook_filters`
     fetchMock.post(url, mockResponse[0])
-    const initialRowFilterSettings = {
+    const initialRowFilterSettings: InitialRowFilterSettings = {
       section_id: null,
       student_group_id: '1'
     }
-    const initialColumnFilterSettings = {
+    const initialColumnFilterSettings: InitialColumnFilterSettings = {
       assignment_group_id: null,
       context_module_id: null,
-      grading_period_id: null
+      grading_period_id: null,
+      submissions: null
     }
     store.getState().initializeStagedFilter(initialRowFilterSettings, initialColumnFilterSettings)
-    expect(store.getState().stagedFilter).not.toBeNull()
-    expect(store.getState().stagedFilter).toMatchObject({
-      name: '',
-      conditions: [
-        {
-          id: expect.any(String),
-          type: 'student-group',
-          value: '1'
-        }
-      ],
-      is_applied: true,
-      created_at: expect.any(String)
-    })
+    expect(store.getState().stagedFilterConditions).not.toBeNull()
+    expect(store.getState().stagedFilterConditions).toMatchObject([
+      {
+        id: expect.any(String),
+        type: 'student-group',
+        value: '1'
+      }
+    ])
   })
 
   it('derive staged assignment group filter from gradebook settings', async () => {
     const url = `/api/v1/courses/${courseId}/gradebook_filters`
     fetchMock.post(url, mockResponse[0])
-    const initialRowFilterSettings = {
+    const initialRowFilterSettings: InitialRowFilterSettings = {
       section_id: null,
       student_group_id: null
     }
-    const initialColumnFilterSettings = {
+    const initialColumnFilterSettings: InitialColumnFilterSettings = {
       assignment_group_id: '1',
       context_module_id: null,
-      grading_period_id: null
+      grading_period_id: null,
+      submissions: null
     }
     store.getState().initializeStagedFilter(initialRowFilterSettings, initialColumnFilterSettings)
-    expect(store.getState().stagedFilter).not.toBeNull()
-    expect(store.getState().stagedFilter).toMatchObject({
-      name: '',
-      conditions: [
-        {
-          id: expect.any(String),
-          type: 'assignment-group',
-          value: '1'
-        }
-      ],
-      is_applied: true,
-      created_at: expect.any(String)
-    })
+    expect(store.getState().stagedFilterConditions).not.toBeNull()
+    expect(store.getState().stagedFilterConditions).toMatchObject([
+      {
+        id: expect.any(String),
+        type: 'assignment-group',
+        value: '1'
+      }
+    ])
+  })
+
+  it('derive staged submission filter from gradebook settings', async () => {
+    const url = `/api/v1/courses/${courseId}/gradebook_filters`
+    fetchMock.post(url, mockResponse[0])
+    const initialRowFilterSettings: InitialRowFilterSettings = {
+      section_id: null,
+      student_group_id: null
+    }
+    const initialColumnFilterSettings: InitialColumnFilterSettings = {
+      assignment_group_id: null,
+      context_module_id: null,
+      grading_period_id: null,
+      submissions: 'has-submissions'
+    }
+    store.getState().initializeStagedFilter(initialRowFilterSettings, initialColumnFilterSettings)
+    expect(store.getState().stagedFilterConditions).not.toBeNull()
+    expect(store.getState().stagedFilterConditions).toMatchObject([
+      {
+        id: expect.any(String),
+        type: 'submissions',
+        value: 'has-submissions'
+      }
+    ])
   })
 
   it(`does not derive staged assignment group filter from '0'`, async () => {
     const url = `/api/v1/courses/${courseId}/gradebook_filters`
     fetchMock.post(url, mockResponse[0])
-    const initialRowFilterSettings = {
+    const initialRowFilterSettings: InitialRowFilterSettings = {
       section_id: null,
       student_group_id: null
     }
-    const initialColumnFilterSettings = {
+    const initialColumnFilterSettings: InitialColumnFilterSettings = {
       assignment_group_id: '0',
       context_module_id: null,
-      grading_period_id: null
+      grading_period_id: null,
+      submissions: null
     }
     store.getState().initializeStagedFilter(initialRowFilterSettings, initialColumnFilterSettings)
-    expect(store.getState().stagedFilter).toBeNull()
+    expect(store.getState().stagedFilterConditions.length).toStrictEqual(0)
   })
 
   it('derive staged grading period filter from gradebook settings', async () => {
     const url = `/api/v1/courses/${courseId}/gradebook_filters`
     fetchMock.post(url, mockResponse[0])
-    const initialRowFilterSettings = {
+    const initialRowFilterSettings: InitialRowFilterSettings = {
       section_id: null,
       student_group_id: null
     }
-    const initialColumnFilterSettings = {
+    const initialColumnFilterSettings: InitialColumnFilterSettings = {
       assignment_group_id: null,
       context_module_id: null,
-      grading_period_id: '1'
+      grading_period_id: '1',
+      submissions: null
     }
     store.getState().initializeStagedFilter(initialRowFilterSettings, initialColumnFilterSettings)
-    expect(store.getState().stagedFilter).not.toBeNull()
-    expect(store.getState().stagedFilter).toMatchObject({
-      name: '',
-      conditions: [
-        {
-          id: expect.any(String),
-          type: 'grading-period',
-          value: '1'
-        }
-      ],
-      is_applied: true,
-      created_at: expect.any(String)
-    })
+    expect(store.getState().stagedFilterConditions).not.toBeNull()
+    expect(store.getState().stagedFilterConditions).toMatchObject([
+      {
+        id: expect.any(String),
+        type: 'grading-period',
+        value: '1'
+      }
+    ])
   })
 
   it('derive staged module filter from gradebook settings', async () => {
     const url = `/api/v1/courses/${courseId}/gradebook_filters`
     fetchMock.post(url, mockResponse[0])
-    const initialRowFilterSettings = {
+    const initialRowFilterSettings: InitialRowFilterSettings = {
       section_id: null,
       student_group_id: null
     }
-    const initialColumnFilterSettings = {
+    const initialColumnFilterSettings: InitialColumnFilterSettings = {
       assignment_group_id: null,
       context_module_id: '1',
-      grading_period_id: null
+      grading_period_id: null,
+      submissions: null
     }
     store.getState().initializeStagedFilter(initialRowFilterSettings, initialColumnFilterSettings)
-    expect(store.getState().stagedFilter).not.toBeNull()
-    expect(store.getState().stagedFilter).toMatchObject({
-      name: '',
-      conditions: [
-        {
-          id: expect.any(String),
-          type: 'module',
-          value: '1'
-        }
-      ],
-      is_applied: true,
-      created_at: expect.any(String)
-    })
+    expect(store.getState().stagedFilterConditions).toMatchObject([
+      {
+        id: expect.any(String),
+        type: 'module',
+        value: '1'
+      }
+    ])
   })
 
   it(`does not derive staged module filter from '0'`, async () => {
     const url = `/api/v1/courses/${courseId}/gradebook_filters`
     fetchMock.post(url, mockResponse[0])
-    const initialRowFilterSettings = {
+    const initialRowFilterSettings: InitialRowFilterSettings = {
       section_id: null,
       student_group_id: null
     }
-    const initialColumnFilterSettings = {
+    const initialColumnFilterSettings: InitialColumnFilterSettings = {
       assignment_group_id: null,
       context_module_id: '0',
-      grading_period_id: null
+      grading_period_id: null,
+      submissions: null
     }
     store.getState().initializeStagedFilter(initialRowFilterSettings, initialColumnFilterSettings)
-    expect(store.getState().stagedFilter).toBeNull()
+    expect(store.getState().stagedFilterConditions.length).toStrictEqual(0)
   })
 
   it('disallows multiple filters from being applied', async () => {
@@ -367,14 +360,12 @@ describe('filterState', () => {
           id: '321',
           name: 'filter 1',
           conditions: [],
-          is_applied: false,
           created_at: '2020-01-01T00:00:00Z'
         },
         {
           id: '432',
           name: 'filter 2',
           conditions: [],
-          is_applied: true,
           created_at: '2020-01-02T00:00:00Z'
         }
       ]
@@ -388,21 +379,18 @@ describe('filterState', () => {
       id: '321',
       name: 'filter 1',
       conditions: [],
-      is_applied: true,
       created_at: '2020-01-01T00:00:00Z'
     })
     expect(store.getState().filters[0]).toMatchObject({
       id: '321',
       name: 'filter 1',
       conditions: [],
-      is_applied: true,
       created_at: '2020-01-01T00:00:00Z'
     })
     expect(store.getState().filters[1]).toMatchObject({
       id: '432',
       name: 'filter 2',
       conditions: [],
-      is_applied: false,
       created_at: '2020-01-02T00:00:00Z'
     })
   })

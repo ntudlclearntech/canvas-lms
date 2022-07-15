@@ -20,6 +20,9 @@
 
 require "atom"
 require "crocodoc"
+require "fileutils"
+require "securerandom"
+require "rchardet"
 
 # See the uploads controller and views for examples on how to use this model.
 class Attachment < ActiveRecord::Base
@@ -56,9 +59,9 @@ class Attachment < ActiveRecord::Base
   FILE_SIZE_LIMIT = 50 * 1024 * 1024
   #########################################
 
-  BUTTONS_AND_ICONS = "icon_maker_icons"
+  ICON_MAKER_ICONS = "icon_maker_icons"
   UNCATEGORIZED = "uncategorized"
-  VALID_CATEGORIES = [BUTTONS_AND_ICONS, UNCATEGORIZED].freeze
+  VALID_CATEGORIES = [ICON_MAKER_ICONS, UNCATEGORIZED].freeze
 
   include HasContentTags
   include ContextModuleItem
@@ -270,6 +273,67 @@ class Attachment < ActiveRecord::Base
   READ_FILE_CHUNK_SIZE = 4096
   def self.read_file_chunk_size
     READ_FILE_CHUNK_SIZE
+  end
+
+  def self.convert_attachment_encoding?(file_path, file_encoding)
+    error_count = 0
+    file = File.open(file_path)
+    chunk = file.read(read_file_chunk_size)
+    encoding_converter = Encoding::Converter.new(file_encoding, Encoding::UTF_8)
+
+    converted_file = File.basename(file_path, File.extname(file_path)) + "_" + SecureRandom.hex + "." + File.extname(file_path)
+    converted_file_path = File.join(File.dirname(file_path), converted_file)
+    converted_file = File.new(converted_file_path, "w:UTF-8")
+    while chunk
+      begin
+        converted_chunk = encoding_converter.convert(chunk.dup)
+        raise EncodingError unless converted_chunk.valid_encoding?
+
+        converted_file.write(converted_chunk)
+      rescue EncodingError
+        error_count += 1
+        if !file.eof? && error_count <= 4
+          # we may have split a utf-8 character in the chunk - try to resolve it, but only to a point
+          chunk << file.read(1)
+          next
+        else
+          file.close
+          converted_file.close
+
+          File.unlink(converted_file_path)
+
+          raise
+        end
+      end
+
+      error_count = 0
+      chunk = file.read(read_file_chunk_size)
+    end
+
+    file.close
+    converted_file.close
+
+    File.unlink(file_path)
+    FileUtils.mv(converted_file_path, file_path)
+
+    true
+  rescue EncodingError
+    false
+  end
+
+  def self.get_file_encoding?(file_path)
+    content = File.open(file_path, "rb", &:read)
+    CharDet.detect(content)
+  end
+
+  def self.convert_to_utf8?(file)
+    file_path = File.absolute_path(file.to_path)
+    file_encoding = Attachment.get_file_encoding?(file_path)
+
+    return false if file_encoding["confidence"].to_d <= 0.5.to_d
+    return true if Attachment.convert_attachment_encoding?(file_path, file_encoding["encoding"])
+
+    false
   end
 
   def self.valid_utf8?(file)
@@ -580,6 +644,10 @@ class Attachment < ActiveRecord::Base
     if word_count.nil? && !deleted? && file_state != "broken" && Account.site_admin.feature_enabled?(:word_count_in_speed_grader)
       delay(singleton: "attachment_set_word_count_#{global_id}").update_word_count
     end
+  end
+
+  def remove_attachments_from_drafts
+    submission_draft_attachments.destroy_all
   end
 
   def update_word_count
@@ -1543,6 +1611,7 @@ class Attachment < ActiveRecord::Base
     # if the attachment being deleted belongs to a user and the uuid (hash of file) matches the avatar_image_url
     # then clear the avatar_image_url value.
     context.clear_avatar_image_url_with_uuid(self.uuid) if context_type == "User" && self.uuid.present?
+    remove_attachments_from_drafts
     true
   end
 
@@ -1825,7 +1894,8 @@ class Attachment < ActiveRecord::Base
     warnable_errors = [
       Canvadocs::BadGateway,
       Canvadoc::UploadTimeout,
-      Canvadocs::ServerError
+      Canvadocs::ServerError,
+      Canvadocs::HeavyLoadError
     ]
     error_level = warnable_errors.any? { |kls| e.is_a?(kls) } ? :warn : :error
     update_attribute(:workflow_state, "errored")

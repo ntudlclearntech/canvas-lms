@@ -22,11 +22,16 @@ import sinon from 'sinon'
 import * as actions from '../../../src/sidebar/actions/upload'
 import * as filesActions from '../../../src/sidebar/actions/files'
 import * as imagesActions from '../../../src/sidebar/actions/images'
-import {buildSvg} from '../../../src/rce/plugins/instructure_buttons/svg'
-import {DEFAULT_SETTINGS} from '../../../src/rce/plugins/instructure_buttons/svg/constants'
+import {buildSvg} from '../../../src/rce/plugins/instructure_icon_maker/svg'
 import {spiedStore} from './utils'
 import Bridge from '../../../src/bridge'
 import K5Uploader from '@instructure/k5uploader'
+import {
+  DEFAULT_SETTINGS,
+  SVG_TYPE,
+  ICON_MAKER_ICONS,
+  TYPE
+} from '../../../src/rce/plugins/instructure_icon_maker/svg/constants'
 
 const fakeFileReader = {
   readAsDataURL() {
@@ -39,9 +44,9 @@ describe('Upload data actions', () => {
   const results = {id: 47}
   const file = {url: 'http://canvas.test/files/17/download', thumbnail_url: 'thumbnailurl'}
   const successSource = {
-    fetchButtonsAndIconsFolder() {
+    fetchIconMakerFolder() {
       return Promise.resolve({
-        folders: [{id: 2, name: 'Buttons and Icons', parentId: 1}]
+        folders: [{id: 2, name: 'Icon Maker', parentId: 1}]
       })
     },
 
@@ -202,7 +207,7 @@ describe('Upload data actions', () => {
     })
   })
 
-  describe('uploadToButtonsAndIconsFolder', () => {
+  describe('uploadToIconMakerFolder', () => {
     let baseState, svg, getContextOriginal
 
     beforeEach(() => {
@@ -210,7 +215,7 @@ describe('Upload data actions', () => {
       HTMLCanvasElement.prototype.getContext = () => ({})
 
       baseState = setupState({contextId: 101, contextType: 'course'})
-      svg = {name: 'button.svg', domElement: buildSvg(DEFAULT_SETTINGS)}
+      svg = {name: 'icon.svg', domElement: buildSvg(DEFAULT_SETTINGS)}
     })
 
     afterEach(() => {
@@ -231,10 +236,10 @@ describe('Upload data actions', () => {
         contextId: 101,
         contextType: 'course',
         onDuplicate: undefined,
-        category: 'icon_maker_icons'
+        category: ICON_MAKER_ICONS
       }
 
-      return store.dispatch(actions.uploadToButtonsAndIconsFolder(svg)).then(() => {
+      return store.dispatch(actions.uploadToIconMakerFolder(svg)).then(() => {
         assert.deepEqual(baseState.source.preflightUpload.firstCall.args, [
           fileMetaProps,
           canvasProps
@@ -245,7 +250,7 @@ describe('Upload data actions', () => {
     it('dispatches uploadFRD with the svg domElement', () => {
       const store = spiedStore(baseState)
 
-      return store.dispatch(actions.uploadToButtonsAndIconsFolder(svg)).then(() => {
+      return store.dispatch(actions.uploadToIconMakerFolder(svg)).then(() => {
         assert.deepEqual(baseState.source.uploadFRD.firstCall.args, [
           new File([svg.domElement.outerHTML], svg.name, {type: 'image/svg+xml'}),
           results
@@ -262,19 +267,19 @@ describe('Upload data actions', () => {
       })
 
       it('includes the specified duplicate strategy setting', async () => {
-        await store.dispatch(actions.uploadToButtonsAndIconsFolder(svg, uploadSettings))
+        await store.dispatch(actions.uploadToIconMakerFolder(svg, uploadSettings))
 
         assert.deepEqual(baseState.source.preflightUpload.lastCall.args, [
           {
             file: {
-              name: 'button.svg',
+              name: 'icon.svg',
               type: 'image/svg+xml'
             },
-            name: 'button.svg',
+            name: 'icon.svg',
             parentFolderId: 2
           },
           {
-            category: 'icon_maker_icons',
+            category: ICON_MAKER_ICONS,
             contextId: 101,
             contextType: 'course',
             host: 'http://host:port',
@@ -453,7 +458,7 @@ describe('Upload data actions', () => {
         slice: () => ({
           text: async () => fileText
         }),
-        type: 'image/svg'
+        type: SVG_TYPE
       })
 
       const fileProps = () => ({
@@ -462,30 +467,38 @@ describe('Upload data actions', () => {
 
       const subject = () => store.dispatch(actions.uploadPreflight('files', fileProps()))
 
-      describe('when the file is a button & icon svg', () => {
+      describe('when the file is an icon maker svg', () => {
         beforeEach(() => {
-          fileText = 'something something image/svg+xml-icon-maker-icons'
+          fileText = 'something something ' + TYPE
         })
 
         it('sets the category to "icon_maker_icons"', () => {
           subject().then(() => {
-            sinon.assert.calledWith(successStore.preflightUpload, {
-              category: 'icon_maker_icons'
-            })
+            sinon.assert.calledWith(
+              successSource.preflightUpload,
+              sinon.match.object,
+              sinon.match({
+                category: ICON_MAKER_ICONS
+              })
+            )
           })
         })
       })
 
-      describe('when the file is not a button & icon svg', () => {
+      describe('when the file is not an icon maker svg', () => {
         beforeEach(() => {
-          fileText = 'something something not buttons & icons'
+          fileText = 'something something not icon maker'
         })
 
         it('sets the category to undefined', () => {
           subject().then(() => {
-            sinon.assert.calledWith(successStore.preflightUpload, {
-              category: undefined
-            })
+            sinon.assert.calledWith(
+              successSource.preflightUpload,
+              sinon.match.object,
+              sinon.match({
+                category: undefined
+              })
+            )
           })
         })
       })
@@ -509,9 +522,11 @@ describe('Upload data actions', () => {
 
       it('sets the category to undefined', () => {
         subject().then(() => {
-          sinon.assert.calledWith(successStore.preflightUpload, {
-            category: undefined
-          })
+          sinon.assert.calledWith(
+            successSource.preflightUpload,
+            sinon.match.object,
+            sinon.match({category: undefined})
+          )
         })
       })
     })

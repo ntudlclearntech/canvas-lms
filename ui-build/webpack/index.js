@@ -68,20 +68,8 @@ module.exports = {
         // this number to the size of our biggest known asset and hopefully someday get
         // to where they are all under the default value of 250000 and then remove this
         // TODO: decrease back to 1200000 LS-1222
-        maxAssetSize: 1900000,
-        assetFilter: assetFilename => {
-          const thingsWeKnowAreWayTooBig = [
-            'assignment_edit',
-            'canvas-rce-async-chunk',
-            'canvas-rce-old-async-chunk',
-            'discussion_topic_edit',
-            'discussion_topics_post'
-          ]
-          return (
-            assetFilename.endsWith('.js') &&
-            !thingsWeKnowAreWayTooBig.some(t => assetFilename.includes(t))
-          )
-        }
+        // NOTE: if maxAssetSize changes, update: ~build/new-jenkins/library/vars/webpackStage.groovy
+        maxAssetSize: 1900000
       },
   optimization: {
     // concatenateModules: false, // uncomment if you want to get more accurate stuff from `yarn webpack:analyze`
@@ -138,8 +126,7 @@ module.exports = {
   devtool: skipSourcemaps
     ? false
     : process.env.NODE_ENV === 'production' ||
-      process.env.COVERAGE === '1' ||
-      process.env.SENTRY_DSN
+      process.env.COVERAGE === '1'
     ? 'source-map'
     : 'eval',
 
@@ -302,7 +289,6 @@ module.exports = {
     // debug/propType checking in prod.
     new webpack.EnvironmentPlugin({
       NODE_ENV: null,
-      DEPRECATION_SENTRY_DSN: null,
       GIT_COMMIT: null,
       ALWAYS_APPEND_UI_TESTABLE_LOCATORS: null
     }),

@@ -467,6 +467,13 @@ export const IsolatedViewContainer = props => {
                     }
                   })
                 }}
+                onInit={() => {
+                  // TinyMCE popup menus' z-index should be greater than tray.
+                  const menus = document.querySelector('.tox.tox-tinymce-aux')
+                  if (menus) {
+                    menus.style.zIndex = '10000'
+                  }
+                }}
               />
             </View>
           )}
@@ -535,26 +542,28 @@ export const IsolatedViewContainer = props => {
         }
       }}
     >
-      <Flex>
-        <Flex.Item shouldGrow shouldShrink>
-          <Heading margin="medium medium none" theme={{h2FontWeight: 700}}>
-            Thread
-          </Heading>
-        </Flex.Item>
-        <Flex.Item>
-          <CloseButton
-            placement="end"
-            offset="small"
-            screenReaderLabel="Close"
-            onClick={() => {
-              if (props.onClose) {
-                props.onClose()
-              }
-            }}
-          />
-        </Flex.Item>
-      </Flex>
-      {contentIsReady ? renderIsolatedView() : renderErrorOrLoading}
+      <span className="discussions-isolated-view-content">
+        <Flex>
+          <Flex.Item shouldGrow shouldShrink>
+            <Heading margin="medium medium none" theme={{h2FontWeight: 700}}>
+              Thread
+            </Heading>
+          </Flex.Item>
+          <Flex.Item>
+            <CloseButton
+              placement="end"
+              offset="small"
+              screenReaderLabel="Close"
+              onClick={() => {
+                if (props.onClose) {
+                  props.onClose()
+                }
+              }}
+            />
+          </Flex.Item>
+        </Flex>
+        {contentIsReady ? renderIsolatedView() : renderErrorOrLoading}
+      </span>
     </Tray>
   )
 }

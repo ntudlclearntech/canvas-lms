@@ -97,6 +97,14 @@ const HeaderInputs = props => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canAddUserNote])
 
+  const onContextSelect = context => {
+    if (context.contextID === null && context.contextName === null) {
+      props.onSelectedIdsChange([])
+    }
+
+    props.onContextSelect(context)
+  }
+
   return (
     <Flex direction="column" width="100%" height="100%" padding="small">
       <Flex.Item>
@@ -118,13 +126,27 @@ const HeaderInputs = props => {
                   concludedCourses: [],
                   groups: props.courses?.favoriteGroupsConnection.nodes
                 }}
-                onCourseFilterSelect={props.onContextSelect}
+                onCourseFilterSelect={onContextSelect}
                 activeCourseFilterID={props.activeCourseFilter?.contextID}
+                courseMessages={props.courseMessages}
               />
             )
           }
         />
       </Flex.Item>
+      {!props.isReply && !props.isForward && (
+        <Flex.Item padding="none none small none">
+          <ComposeInputWrapper
+            shouldGrow
+            input={
+              <IndividualMessageCheckbox
+                onChange={props.onSendIndividualMessagesChange}
+                checked={props.sendIndividualMessages}
+              />
+            }
+          />
+        </Flex.Item>
+      )}
       {!props.isReply && (
         <Flex.Item>
           <ComposeInputWrapper
@@ -140,9 +162,11 @@ const HeaderInputs = props => {
                 onSelectedIdsChange={ids => {
                   props.onSelectedIdsChange(ids)
                 }}
+                onInputValueChange={props.onAddressBookInputValueChange}
                 activeCourseFilter={props.activeCourseFilter}
                 hasSelectAllFilterOption
                 selectedRecipients={props.selectedRecipients}
+                addressBookMessages={props.addressBookMessages}
               />
             }
             shouldGrow
@@ -155,19 +179,6 @@ const HeaderInputs = props => {
             shouldGrow
             input={
               <FacultyJournalCheckBox onChange={props.onUserNoteChange} checked={props.userNote} />
-            }
-          />
-        </Flex.Item>
-      )}
-      {!props.isReply && !props.isForward && (
-        <Flex.Item>
-          <ComposeInputWrapper
-            shouldGrow
-            input={
-              <IndividualMessageCheckbox
-                onChange={props.onSendIndividualMessagesChange}
-                checked={props.sendIndividualMessages}
-              />
             }
           />
         </Flex.Item>
@@ -211,6 +222,7 @@ HeaderInputs.propTypes = {
   onUserNoteChange: PropTypes.func,
   onSendIndividualMessagesChange: PropTypes.func,
   onSubjectChange: PropTypes.func,
+  onAddressBookInputValueChange: PropTypes.func,
   userNote: PropTypes.bool,
   sendIndividualMessages: PropTypes.bool,
   subject: PropTypes.string,
@@ -222,7 +234,9 @@ HeaderInputs.propTypes = {
   /**
    * Bool to control open/closed state of the AddressBookContainer menu for testing
    */
-  addressBookContainerOpen: PropTypes.bool
+  addressBookContainerOpen: PropTypes.bool,
+  addressBookMessages: PropTypes.array,
+  courseMessages: PropTypes.array
 }
 
 export default HeaderInputs

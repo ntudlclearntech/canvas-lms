@@ -57,6 +57,10 @@ describe FilesController do
     @file = factory_with_protected_attributes(@user.attachments, uploaded_data: io)
   end
 
+  def user_html_file
+    @file = factory_with_protected_attributes(@user.attachments, uploaded_data: fixture_file_upload("test.html", "text/html", false))
+  end
+
   def account_js_file
     @file = factory_with_protected_attributes(@account.attachments, uploaded_data: fixture_file_upload("test.js", "text/javascript", false))
   end
@@ -357,6 +361,17 @@ describe FilesController do
       expect(response).to be_successful
 
       expect(session[:permissions_key]).not_to eq permissions_key
+    end
+
+    it "redirects without sf_verifier for inline_content files" do
+      user = user_factory(active_all: true)
+      file = user_html_file
+      verifier = Users::AccessVerifier.generate(user: user)
+
+      get "show", params: verifier.merge(id: file.id)
+      expect(response).to be_redirect
+
+      expect(response.headers["Location"]).to eq "http://test.host/files/#{file.id}"
     end
 
     it "ignores invalid sf_verifiers" do
@@ -834,7 +849,10 @@ describe FilesController do
         account_js_file
         file_verifier = Attachments::Verification.new(@file).verifier_for_user(nil)
         user_verifier = Users::AccessVerifier.generate(user: @teacher)
-        get "show_relative", params: user_verifier.merge(download: 1, inline: 1, verifier: file_verifier, account_id: @account.id, file_id: @file.id, file_path: @file.full_path)
+        other_params = { download: 1, inline: 1, verifier: file_verifier, account_id: @account.id, file_id: @file.id, file_path: @file.full_path }
+        get "show_relative", params: user_verifier.merge(other_params)
+        expect(response).to be_redirect
+        get "show_relative", params: other_params
         expect(response).to be_successful
       end
 
@@ -842,7 +860,8 @@ describe FilesController do
         course_file
         file_verifier = Attachments::Verification.new(@file).verifier_for_user(nil)
         user_verifier = Users::AccessVerifier.generate(user: @teacher)
-        get "show_relative", params: user_verifier.merge(download: 1, inline: 1, verifier: file_verifier, account_id: @account.id, file_id: @file.id, file_path: @file.full_path)
+        other_params = { download: 1, inline: 1, verifier: file_verifier, account_id: @account.id, file_id: @file.id, file_path: @file.full_path }
+        get "show_relative", params: user_verifier.merge(other_params)
         assert_unauthorized
       end
     end

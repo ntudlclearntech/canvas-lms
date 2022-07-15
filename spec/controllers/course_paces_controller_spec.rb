@@ -72,6 +72,8 @@ describe CoursePacesController, type: :controller do
     @course.save!
     @course.account.enable_feature!(:course_paces)
 
+    @another_section = @course.course_sections.create!
+
     @course_section = @course.course_sections.first
 
     @valid_params = {
@@ -122,7 +124,7 @@ describe CoursePacesController, type: :controller do
                                                                                      full_name: @student.name,
                                                                                      sortable_name: @student.sortable_name
                                                                                    }))
-      expect(js_env[:SECTIONS].length).to be(1)
+      expect(js_env[:SECTIONS].length).to be(2)
       expect(js_env[:SECTIONS][@section.id]).to match(hash_including({
                                                                        id: @section.id,
                                                                        course_id: @course.id,
@@ -130,6 +132,13 @@ describe CoursePacesController, type: :controller do
                                                                        start_at: @section.start_at,
                                                                        end_at: @section.end_at
                                                                      }))
+      expect(js_env[:SECTIONS][@another_section.id]).to match(hash_including({
+                                                                               id: @another_section.id,
+                                                                               course_id: @course.id,
+                                                                               name: @another_section.name,
+                                                                               start_at: @another_section.start_at,
+                                                                               end_at: @another_section.end_at
+                                                                             }))
       expect(js_env[:COURSE_PACE]).to match(hash_including({
                                                              id: @course_pace.id,
                                                              course_id: @course.id,
@@ -521,6 +530,22 @@ describe CoursePacesController, type: :controller do
       expect(response).to be_successful
       json_response = JSON.parse(response.body)
       expect(json_response.keys).to eq(course_pace_module_items_attributes.map { |i| i[:module_item_id].to_s })
+    end
+
+    it "prefers incoming blackout dates over what is already on the course" do
+      # course starts at 2021-09-30
+      course_pace_params = @valid_params.merge(end_date: @course_pace.start_date + 5.days)
+      post :compress_dates, params: { course_id: @course.id, course_pace: course_pace_params, blackout_dates: [
+        {
+          event_title: "blackout dates 2",
+          start_date: "2021-09-30", # thurs
+          end_date: "2021-10-01" # fri
+        }
+      ] }
+      expect(response).to be_successful
+      json_response = JSON.parse(response.body)
+      # skip the weekend, then due dates are mon and tues
+      expect(json_response.values).to eq(%w[2021-10-04 2021-10-05])
     end
   end
 end

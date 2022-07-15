@@ -511,6 +511,36 @@ describe Assignment do
         }.from(@teacher)
       end
     end
+
+    describe "mark_module_progressions_outdated" do
+      before :once do
+        @assignment = @course.assignments.create!(assignment_valid_attributes)
+        @module = @course.context_modules.create!(name: "a module")
+        @module.publish
+        tag = @module.add_item({ id: @assignment.id, type: "assignment" })
+        @module.completion_requirements = { tag.id => { type: "must_view" } }
+        @module.save!
+        @module.evaluate_for(@initial_student)
+      end
+
+      it "updates course's modules' progressions and associated users when dates are updated" do
+        progression = ContextModuleProgression.for_course(@course).for_user(@initial_student).first
+        expect(progression.current).to be_truthy
+        initial_timestamp = @initial_student.updated_at
+        @assignment.due_at = 5.days.from_now
+        @assignment.save!
+        expect(progression.reload.current).to be_falsey
+        expect(@initial_student.reload.updated_at > initial_timestamp).to be_truthy
+      end
+
+      it "does not update progressions if due date info is unchanged" do
+        progression = ContextModuleProgression.for_course(@course).for_user(@initial_student).first
+        expect(progression.current).to be_truthy
+        @assignment.title = "hello!"
+        @assignment.save!
+        expect(progression.reload.current).to be_truthy
+      end
+    end
   end
 
   describe "scope: expects_submissions" do
@@ -3053,6 +3083,30 @@ describe Assignment do
 
         it "does not return students outside the class" do
           expect(@assignment.students_with_visibility.include?(@student3)).to be_falsey
+        end
+
+        it "does not return students that were graded then deactivated in the assigned section, and are active in another section" do
+          @course.enroll_student(
+            @student1,
+            section: @section2,
+            allow_multiple_enrollments: true,
+            enrollment_state: "active"
+          )
+          @assignment.grade_student(@student1, score: 10, grader: @teacher)
+          @course.enrollments.find_by(user: @student1, course_section: @section1).deactivate
+          expect(@assignment.students_with_visibility).not_to include @student1
+        end
+
+        it "does not return students that submitted then were deactivated in the assigned section, and are active in another section" do
+          @course.enroll_student(
+            @student1,
+            section: @section2,
+            allow_multiple_enrollments: true,
+            enrollment_state: "active"
+          )
+          @assignment.submit_homework(@student1, submission_type: "online_url", url: "http://example.com")
+          @course.enrollments.find_by(user: @student1, course_section: @section1).deactivate
+          expect(@assignment.students_with_visibility).not_to include @student1
         end
       end
 
@@ -7182,6 +7236,14 @@ describe Assignment do
       a.allowed_extensions = [".DOC", " .XLS", " .TXT"]
       expect(a.allowed_extensions).to eq %w[doc xls txt]
     end
+
+    it "must not allow allowed_extensions longer than the maximum length" do
+      a = Assignment.new(assignment_valid_attributes.merge({
+                                                             course: @course,
+                                                             allowed_extensions: ["docx", "pdf"] * 20
+                                                           }))
+      expect { a.save! }.to raise_error(ActiveRecord::RecordInvalid)
+    end
   end
 
   describe "generating comments from files" do
@@ -7682,6 +7744,79 @@ describe Assignment do
     # rubocop:enable Performance/InefficientHashSearch
   end
 
+  describe "#ensure_points_possible!" do
+    subject do
+      assignment.ensure_points_possible!
+      assignment.points_possible
+    end
+
+    let(:grading_type) { "points" }
+    let(:points_possible) { nil }
+
+    let(:assignment) do
+      Assignment.create!(
+        course: @course,
+        name: "Subject",
+        points_possible: points_possible,
+        grading_type: grading_type
+      )
+    end
+
+    context "when 'points_possible' already is present" do
+      let(:points_possible) { 15.2 }
+
+      it "does not modify the points possible" do
+        expect(subject).to eq points_possible
+      end
+    end
+
+    context "when 'points_possible' is blank" do
+      shared_examples_for "pointed assignments" do
+        it { is_expected.to eq 0.0 }
+      end
+
+      shared_examples_for "exports of non-pointed assignments" do
+        it { is_expected.to be_nil }
+      end
+
+      context "and 'grading_type' is 'points'" do
+        let(:grading_type) { "points" }
+
+        it_behaves_like "pointed assignments"
+      end
+
+      context "and 'grading_type' is 'percent'" do
+        let(:grading_type) { "percent" }
+
+        it_behaves_like "pointed assignments"
+      end
+
+      context "and 'grading_type' is 'letter_grade'" do
+        let(:grading_type) { "letter_grade" }
+
+        it_behaves_like "pointed assignments"
+      end
+
+      context "and 'grading_type' is 'gpa_scale'" do
+        let(:grading_type) { "gpa_scale" }
+
+        it_behaves_like "pointed assignments"
+      end
+
+      context "and 'grading_type' is 'pass_fail'" do
+        let(:grading_type) { "pass_fail" }
+
+        it_behaves_like "exports of non-pointed assignments"
+      end
+
+      context "and 'grading_type' is 'not_graded'" do
+        let(:grading_type) { "not_graded" }
+
+        it_behaves_like "exports of non-pointed assignments"
+      end
+    end
+  end
+
   describe "#a2_enabled?" do
     before do
       allow(@course).to receive(:feature_enabled?) { false }
@@ -7724,9 +7859,26 @@ describe Assignment do
       "not_graded",
       ""
     ].each do |type|
-      it "returns true if the flag is on and the submission type is #{type}" do
+      it "returns true if the assignment_2_student flag is on and the submission type is #{type}" do
         assignment.submission_types = type
         expect(assignment).to be_a2_enabled
+      end
+    end
+
+    describe "peer reviews enabled" do
+      before do
+        allow(@course).to receive(:feature_enabled?).with(:peer_reviews_for_a2).and_return(true)
+        assignment.submission_types = "online_text_entry"
+        assignment.peer_reviews = true
+      end
+
+      it "returns true if assignment_2_student flag is on and peer_reviews_for_a2 flags is on" do
+        expect(assignment).to be_a2_enabled
+      end
+
+      it "returns false if assignment_2_student is on and peer_reviews_for_a2 flags is off" do
+        allow(@course).to receive(:feature_enabled?).with(:peer_reviews_for_a2).and_return(false)
+        expect(assignment).not_to be_a2_enabled
       end
     end
   end
@@ -9829,6 +9981,13 @@ describe Assignment do
             expect(assignment.line_items.first.resource_link.current_external_tool(assignment.context)).to eq tool
           end
 
+          context "and the points_possible is set to nil" do
+            it "sets the line_item score_maximum to 0" do
+              assignment.update!(submission_types: "none", points_possible: nil)
+              expect(assignment.reload.line_items.first.score_maximum).to eq(0)
+            end
+          end
+
           it_behaves_like "assignment to line item attribute sync check"
         end
       end
@@ -10021,6 +10180,7 @@ describe Assignment do
     let_once(:account) { Account.create!(root_account_id: nil) }
     let_once(:grading_period_group) do
       group = account.grading_period_groups.create!
+      group.enrollment_terms << course.enrollment_term
 
       now = Time.zone.now
       group.grading_periods.create!(
@@ -10047,7 +10207,10 @@ describe Assignment do
     let_once(:previously_closed_grading_period) { grading_period_group.grading_periods.first }
     let_once(:newly_closed_grading_period) { grading_period_group.grading_periods.second }
     let_once(:open_grading_period) { grading_period_group.grading_periods.third }
-    let_once(:course) { Course.create!(account: account) }
+    let_once(:course) do
+      course_with_student(active_all: true, account: account)
+      @course
+    end
 
     let(:assignment) { course.assignments.create!(post_to_sis: true) }
 
@@ -10060,12 +10223,31 @@ describe Assignment do
       end
 
       context "when an assignment is marked as due in a newly-closed grading period" do
-        it "sets post_to_sis to false for an assignment due within the newly-closed grading period" do
+        it "sets post_to_sis to false for an assignment due within the newly-closed grading period, whose course is using the grading period" do
           assignment.update!(due_at: 1.minute.after(newly_closed_grading_period.start_date))
-          expect do
-            Assignment.disable_post_to_sis_if_grading_period_closed
-            run_jobs
-          end.to change { assignment.reload.post_to_sis }.from(true).to(false)
+          aggregate_failures do
+            expect(GradingPeriod.for(course)).to include newly_closed_grading_period
+            expect do
+              Assignment.disable_post_to_sis_if_grading_period_closed
+              run_jobs
+            end.to change { assignment.reload.post_to_sis }.from(true).to(false)
+          end
+        end
+
+        it "does not set post_to_sis to false for an assignment due within the newly-closed grading period, whose course is NOT using the grading period" do
+          second_term = account.enrollment_terms.create!(name: "Term 2")
+          second_course = Course.create!(account: account, enrollment_term: second_term)
+          second_assignment = second_course.assignments.create!(
+            post_to_sis: true,
+            due_at: 1.minute.after(newly_closed_grading_period.start_date)
+          )
+          aggregate_failures do
+            expect(GradingPeriod.for(second_course)).to be_empty
+            expect do
+              Assignment.disable_post_to_sis_if_grading_period_closed
+              run_jobs
+            end.not_to change { second_assignment.reload.post_to_sis }.from(true)
+          end
         end
 
         it "sets updated_at for affected assignments" do
@@ -10092,7 +10274,7 @@ describe Assignment do
           end.not_to change { assignment.reload.post_to_sis }
         end
 
-        it "does not updated assignments due within the relevant timeframe that belong to an unaffected grading period" do
+        it "does not update assignments due within the relevant timeframe that belong to another root account" do
           alternate_root_account = Account.create!(root_account: nil)
           grading_period_group = alternate_root_account.grading_period_groups.create!
           now = Time.zone.now
@@ -10128,6 +10310,7 @@ describe Assignment do
 
         it "sets post_to_sis to false if at least one section has a due date in the closed grading period" do
           course_section = course.course_sections.create!(name: "section")
+          course.enroll_student(User.create!, active_all: true, section: course_section)
           assignment.update!(due_at: 1.week.after(newly_closed_grading_period.end_date))
           assignment.assignment_overrides.create!(
             due_at: 10.minutes.before(newly_closed_grading_period.end_date),
