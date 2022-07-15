@@ -360,7 +360,7 @@ class DiscussionTopicsController < ApplicationController
     if @context.is_a?(Group) || request.format.json?
       @topics = Api.paginate(scope, self, topic_pagination_url)
       if params[:exclude_context_module_locked_topics]
-        ActiveRecord::Associations::Preloader.new.preload(@topics, context_module_tags: :context_module)
+        ActiveRecord::Associations.preload(@topics, context_module_tags: :context_module)
         @topics = DiscussionTopic.reject_context_module_locked_topics(@topics, @current_user)
       end
 
@@ -380,7 +380,7 @@ class DiscussionTopicsController < ApplicationController
                   named_context_url(@context, :context_discussion_topics_url))
 
         if @context.is_a?(Group)
-          ActiveRecord::Associations::Preloader.new.preload(@topics, context_module_tags: :context_module)
+          ActiveRecord::Associations.preload(@topics, context_module_tags: :context_module)
           locked_topics, open_topics = @topics.partition do |topic|
             locked = topic.locked? || topic.locked_for?(@current_user)
             locked.is_a?(Hash) ? locked[:can_view] : locked
@@ -426,8 +426,8 @@ class DiscussionTopicsController < ApplicationController
             read_as_admin: @context.grants_right?(@current_user, session, :read_as_admin),
           },
           discussion_topic_menu_tools: external_tools_display_hashes(:discussion_topic_menu),
-          student_reporting_enabled: Account.site_admin.feature_enabled?(:discussions_reporting),
-          discussion_anonymity_enabled: @context.feature_enabled?(:react_discussions_post) && Account.site_admin.feature_enabled?(:discussion_anonymity),
+          student_reporting_enabled: @context.feature_enabled?(:react_discussions_post),
+          discussion_anonymity_enabled: @context.feature_enabled?(:react_discussions_post),
           discussion_topic_index_menu_tools: (if @domain_root_account&.feature_enabled?(:commons_favorites)
                                                 external_tools_display_hashes(:discussion_topic_index_menu)
                                               else
@@ -502,6 +502,14 @@ class DiscussionTopicsController < ApplicationController
     @topic = @context.send(params[:is_announcement] ? :announcements : :discussion_topics).new
     add_discussion_or_announcement_crumb
     add_crumb t :create_new_crumb, "Create new"
+
+    if @context.root_account.feature_enabled?(:discussion_create)
+      js_env({ is_announcement: params[:is_announcement] })
+      js_bundle :discussion_topic_edit_v2
+      css_bundle :discussions_index, :learning_outcomes
+      render html: "", layout: params[:embed] == "true" ? "mobile_embed" : true
+      return
+    end
     edit
   end
 
@@ -598,8 +606,6 @@ class DiscussionTopicsController < ApplicationController
         manage_files: @context.grants_any_right?(@current_user, session, *RoleOverride::GRANULAR_FILE_PERMISSIONS)
       },
       REACT_DISCUSSIONS_POST: @context.feature_enabled?(:react_discussions_post),
-      ANONYMOUS_DISCUSSIONS: Account.site_admin.feature_enabled?(:discussion_anonymity),
-      PARTIAL_ANONYMITY: Account.site_admin.feature_enabled?(:partial_anonymity),
       allow_student_anonymous_discussion_topics: @context.allow_student_anonymous_discussion_topics,
       context_is_not_group: !@context.is_a?(Group)
     }
@@ -754,12 +760,10 @@ class DiscussionTopicsController < ApplicationController
                discussion_topic_id: params[:id],
                manual_mark_as_read: @current_user&.manual_mark_as_read?,
                discussion_topic_menu_tools: external_tools_display_hashes(:discussion_topic_menu),
-               rce_mentions_in_discussions: Account.site_admin.feature_enabled?(:rce_mentions_in_discussions) && !@topic.anonymous?,
+               rce_mentions_in_discussions: @context.feature_enabled?(:react_discussions_post) && !@topic.anonymous?,
                isolated_view: Account.site_admin.feature_enabled?(:isolated_view),
                draft_discussions: Account.site_admin.feature_enabled?(:draft_discussions),
-               student_reporting_enabled: Account.site_admin.feature_enabled?(:discussions_reporting),
-               discussion_anonymity_enabled: @context.feature_enabled?(:react_discussions_post) && Account.site_admin.feature_enabled?(:discussion_anonymity),
-               inline_grading_enabled: Account.site_admin.feature_enabled?(:discussions_inline_grading),
+               discussion_anonymity_enabled: @context.feature_enabled?(:react_discussions_post),
                should_show_deeply_nested_alert: @current_user&.should_show_deeply_nested_alert?,
                # GRADED_RUBRICS_URL must be within DISCUSSION to avoid page error
                DISCUSSION: {
@@ -1267,8 +1271,7 @@ class DiscussionTopicsController < ApplicationController
   def process_discussion_topic_runner(is_new:)
     @errors = {}
 
-    anonymous_discussions_disabled = !(Account.site_admin.feature_enabled?(:discussion_anonymity) && @context.feature_enabled?(:react_discussions_post))
-    if is_new && anonymous_discussions_disabled
+    if is_new && !@context.feature_enabled?(:react_discussions_post)
       params[:anonymous_state] = nil
     end
 

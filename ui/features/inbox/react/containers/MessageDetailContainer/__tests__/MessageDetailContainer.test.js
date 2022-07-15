@@ -26,8 +26,11 @@ import {mswServer} from '../../../../../../shared/msw/mswServer'
 import React from 'react'
 import waitForApolloLoading from '../../../../util/waitForApolloLoading'
 import {responsiveQuerySizes} from '../../../../util/utils'
-import {render, fireEvent} from '@testing-library/react'
-import {ConversationContext} from '../../../../util/constants'
+import {render, fireEvent, waitFor, waitForElementToBeRemoved} from '@testing-library/react'
+import {
+  ConversationContext,
+  CONVERSATION_ID_WHERE_CAN_REPLY_IS_FALSE
+} from '../../../../util/constants'
 
 jest.mock('../../../../util/utils', () => ({
   ...jest.requireActual('../../../../util/utils'),
@@ -72,11 +75,13 @@ describe('MessageDetailContainer', () => {
     onReplyAll = jest.fn(),
     onDelete = jest.fn(),
     onForward = jest.fn(),
+    setOnSuccess = jest.fn(),
+    setCanReply = jest.fn(),
     overrideProps = {}
   } = {}) =>
     render(
       <ApolloProvider client={mswClient}>
-        <AlertManagerContext.Provider value={{setOnFailure: jest.fn(), setOnSuccess: jest.fn()}}>
+        <AlertManagerContext.Provider value={{setOnFailure: jest.fn(), setOnSuccess}}>
           <ConversationContext.Provider value={{isSubmissionCommentsType}}>
             <MessageDetailContainer
               conversation={conversation}
@@ -84,6 +89,7 @@ describe('MessageDetailContainer', () => {
               onReplyAll={onReplyAll}
               onDelete={onDelete}
               onForward={onForward}
+              setCanReply={setCanReply}
               {...overrideProps}
             />
           </ConversationContext.Provider>
@@ -97,6 +103,18 @@ describe('MessageDetailContainer', () => {
       it('should render', () => {
         const container = setup()
         expect(container).toBeTruthy()
+        expect(container.queryByTestId('submission-comment-header-line')).toBeNull()
+      })
+
+      it('should not render the reply or reply_all option in header if student lacks permission', async () => {
+        const container = setup({
+          conversation: {...Conversation.mock({_id: CONVERSATION_ID_WHERE_CAN_REPLY_IS_FALSE})}
+        })
+        await waitForApolloLoading()
+        await waitForElementToBeRemoved(() => container.queryByTestId('conversation-loader'))
+
+        expect(container.queryByTestId('message-detail-header-reply-btn')).not.toBeInTheDocument()
+        expect(container.queryByTestId('message-reply')).not.toBeInTheDocument()
       })
 
       it('should render conversation information correctly', async () => {
@@ -160,6 +178,19 @@ describe('MessageDetailContainer', () => {
           mockConversation.conversationMessagesConnection.nodes[1]._id
         )
       })
+
+      it('should mark loaded conversation as read', async () => {
+        const mockSetOnSuccess = jest.fn()
+        const container = setup({
+          setOnSuccess: mockSetOnSuccess,
+          conversation: {...Conversation.mock(), workflowState: 'unread'}
+        })
+        // wait for query to load
+        await container.findAllByTestId('message-more-options')
+
+        await waitForApolloLoading()
+        expect(mockSetOnSuccess).toHaveBeenCalled()
+      })
     })
   })
 
@@ -184,6 +215,17 @@ describe('MessageDetailContainer', () => {
 
         expect(await container.findByTestId('message-detail-header-desktop')).toBeInTheDocument()
         expect(await container.findByText('my student comment')).toBeInTheDocument()
+      })
+
+      it('should render with link in title', async () => {
+        const container = setup({
+          isSubmissionCommentsType: true,
+          conversation: mockSubmissionComment
+        })
+        expect(container).toBeTruthy()
+        await waitFor(() =>
+          expect(container.getByTestId('submission-comment-header-line')).toBeTruthy()
+        )
       })
 
       it('should not render reply option', async () => {

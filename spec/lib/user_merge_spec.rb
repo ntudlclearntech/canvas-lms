@@ -137,6 +137,159 @@ describe UserMerge do
       expect(at.user_id).to eq user1.id
     end
 
+    it "recalculates cached_due_date on unsubmitted placeholder submissions for the new user" do
+      due_date_timestamp = DateTime.now.iso8601
+      course1.enroll_user(user2, "StudentEnrollment", enrollment_state: "active")
+      assignment = course1.assignments.create!(
+        title: "some assignment",
+        grading_type: "points",
+        submission_types: "online_text_entry",
+        due_at: due_date_timestamp
+      )
+      expect(Submission.where(user_id: user2.id, assignment_id: assignment.id).take.cached_due_date)
+        .to eq due_date_timestamp
+
+      UserMerge.from(user2).into(user1)
+
+      submission = Submission.where(user_id: user1.id, assignment_id: assignment.id).take
+      expect(submission.cached_due_date).to eq due_date_timestamp
+      expect(submission.workflow_state).to eq "unsubmitted"
+    end
+
+    it "recalculates cached_due_date on submissions for assignments with overrides" do
+      due_date_timestamp = DateTime.now.iso8601
+      course1.enroll_user(user2, "StudentEnrollment", enrollment_state: "active")
+      assignment = course1.assignments.create!(
+        title: "Assignment with student due date override",
+        grading_type: "points",
+        submission_types: "online_text_entry"
+      )
+      override = assignment.assignment_overrides.create!(
+        due_at: due_date_timestamp,
+        due_at_overridden: true,
+        all_day: true,
+        unlock_at_overridden: true,
+        lock_at_overridden: true
+      )
+      override.assignment_override_students.create!(user: user2)
+      assignment.update(due_at: nil, only_visible_to_overrides: true)
+      expect(Submission.where(user_id: user2.id, assignment_id: assignment.id).take.cached_due_date)
+        .to eq due_date_timestamp
+
+      UserMerge.from(user2).into(user1)
+
+      submission = Submission.where(user_id: user1.id, assignment_id: assignment.id).take
+      expect(submission.cached_due_date).to eq due_date_timestamp
+      expect(submission.workflow_state).to eq "unsubmitted"
+    end
+
+    it "deletes from user's assignment override student when both users have them" do
+      due_date_timestamp = DateTime.now.iso8601
+      course1.enroll_user(user1, "StudentEnrollment", enrollment_state: "active")
+      course1.enroll_user(user2, "StudentEnrollment", enrollment_state: "active")
+      a1 = assignment_model(course: course1)
+      s1 = a1.find_or_create_submission(user1)
+      s1.submission_type = "online_quiz"
+      s1.save!
+      s2 = a1.find_or_create_submission(user2)
+      s2.submission_type = "online_quiz"
+      s2.save!
+      override = a1.assignment_overrides.create!(
+        due_at: due_date_timestamp,
+        due_at_overridden: true,
+        all_day: true,
+        unlock_at_overridden: true,
+        lock_at_overridden: true
+      )
+      o1 = override.assignment_override_students.create!(user: user1)
+      o2 = override.assignment_override_students.create!(user: user2)
+      a1.update(due_at: nil, only_visible_to_overrides: true)
+
+      UserMerge.from(user1).into(user2)
+
+      expect(o1.reload.workflow_state).to eq "deleted"
+      expect(o1.reload.user).to eq user1
+      expect(o2.reload.workflow_state).to eq "active"
+      expect(o2.reload.user).to eq user2
+    end
+
+    it "moves and swap assignment override student to target user" do
+      due_date_timestamp = DateTime.now.iso8601
+      course1.enroll_user(user2, "StudentEnrollment", enrollment_state: "active")
+      assignment = course1.assignments.create!(
+        title: "Assignment with student due date override",
+        grading_type: "points",
+        submission_types: "online_text_entry"
+      )
+      override = assignment.assignment_overrides.create!(
+        due_at: due_date_timestamp,
+        due_at_overridden: true,
+        all_day: true,
+        unlock_at_overridden: true,
+        lock_at_overridden: true
+      )
+      o1 = override.assignment_override_students.create!(user: user2)
+      assignment.update(due_at: nil, only_visible_to_overrides: true)
+      expect(AssignmentOverrideStudent.count).to eq 1
+
+      UserMerge.from(user2).into(user1)
+
+      expect(AssignmentOverrideStudent.count).to eq 1
+      expect(o1.reload.workflow_state).to eq "active"
+      expect(o1.reload.user).to eq user1
+    end
+
+    context "when from user and target user are enrolled in the same course" do
+      it "prefers submitted submissions by target user if assignment / submission conflict" do
+        course1.enroll_user(user1, "StudentEnrollment", enrollment_state: "creation_pending")
+        course1.enroll_user(user2, "StudentEnrollment", enrollment_state: "active")
+        assignment = course1.assignments.create!(
+          title: "upload_assignment",
+          points_possible: 10.0,
+          grading_type: "points",
+          workflow_state: "published",
+          context: course1,
+          submission_types: "online_upload"
+        )
+        attachment_model context: user1
+        submission = assignment.submit_homework user1, attachments: [@attachment]
+        UserMerge.from(user2).into(user1)
+        expect(user2.reload.submissions.length).to eql(0)
+        expect(user1.reload.submissions.length).to eql(1)
+        expect(user1.submissions.map(&:id)).to be_include(submission.id)
+      end
+
+      it "ignores scored unsubmitted submission belonging to from user" do
+        course_with_teacher_logged_in active_all: true
+        @course.enroll_user(user1, "StudentEnrollment", enrollment_state: "active")
+        @course.enroll_user(user2, "StudentEnrollment", enrollment_state: "active")
+        assignment = @course.assignments.create!(
+          title: "online_text_entry",
+          points_possible: 10.0,
+          grading_type: "points",
+          workflow_state: "published",
+          context: @course,
+          submission_types: "online_text_entry"
+        )
+        assignment2 = @course.assignments.create!(
+          title: "on_paper",
+          points_possible: 10.0,
+          grading_type: "points",
+          workflow_state: "published",
+          context: @course,
+          submission_types: "on_paper"
+        )
+        submission = assignment.submit_homework(user1, submission_type: "online_text_entry")
+        assignment2.grade_student(user2, grader: @teacher, grade: 10)
+        submission2 = Submission.where(user_id: user2, assignment_id: assignment2).graded.take
+        UserMerge.from(user2).into(user1)
+        expect(user2.reload.submissions.length).to eql(0)
+        expect(user1.reload.submissions.length).to eql(2)
+        expect(user1.submissions.map(&:id)).to be_include(submission.id)
+        expect(user1.submissions.map(&:id)).not_to be_include(submission2.id)
+      end
+    end
+
     it "moves submissions to the new user (but only if they don't already exist)" do
       a1 = assignment_model
       s1 = a1.find_or_create_submission(user1)
@@ -159,48 +312,6 @@ describe UserMerge do
       expect(user1.submissions.length).to eql(2)
       expect(user1.submissions.map(&:id)).to be_include(s1.id)
       expect(user1.submissions.map(&:id)).to be_include(s3.id)
-    end
-
-    it "recalculates cached_due_date on unsubmitted placeholder submissions for the new user" do
-      due_date_timestamp = DateTime.now.iso8601
-      course1.enroll_user(user2, "StudentEnrollment", enrollment_state: "active")
-      assignment = course1.assignments.create!(
-        title: "some assignment",
-        grading_type: "points",
-        submission_types: "online_text_entry",
-        due_at: due_date_timestamp
-      )
-      expect(Submission.where(user_id: user2.id, assignment_id: assignment.id).take.cached_due_date)
-        .to eq due_date_timestamp
-      UserMerge.from(user2).into(user1)
-      run_jobs
-      expect(Submission.where(user_id: user1.id, assignment_id: assignment.id).take.cached_due_date)
-        .to eq due_date_timestamp
-    end
-
-    it "recalculates cached_due_date on submissions for assignments with overrides" do
-      due_date_timestamp = DateTime.now.iso8601
-      course1.enroll_user(user2, "StudentEnrollment", enrollment_state: "active")
-      assignment = course1.assignments.create!(
-        title: "Assignment with student due date override",
-        grading_type: "points",
-        submission_types: "online_text_entry"
-      )
-      override = assignment.assignment_overrides.create!(
-        due_at: due_date_timestamp,
-        due_at_overridden: true,
-        all_day: true,
-        unlock_at_overridden: true,
-        lock_at_overridden: true
-      )
-      override.assignment_override_students.create!(user: user2)
-      assignment.update(due_at: nil, only_visible_to_overrides: true)
-      expect(Submission.where(user_id: user2.id, assignment_id: assignment.id).take.cached_due_date)
-        .to eq due_date_timestamp
-      UserMerge.from(user2).into(user1)
-      run_jobs
-      expect(Submission.where(user_id: user1.id, assignment_id: assignment.id).take.cached_due_date)
-        .to eq due_date_timestamp
     end
 
     it "moves unsubmitted submissions to the new user (but only if they don't already exist)" do

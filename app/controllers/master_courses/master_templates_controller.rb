@@ -521,7 +521,7 @@ class MasterCourses::MasterTemplatesController < ApplicationController
   def migrations_index
     # sort id desc
     migrations = Api.paginate(@template.master_migrations.order("id DESC"), self, api_v1_course_blueprint_migrations_url)
-    ActiveRecord::Associations::Preloader.new.preload(migrations, :user)
+    ActiveRecord::Associations.preload(migrations, :user)
     render json: migrations.map { |migration| master_migration_json(migration, @current_user, session) }
   end
 
@@ -598,7 +598,7 @@ class MasterCourses::MasterTemplatesController < ApplicationController
                         .where(migration_type: "master_course_import", child_subscription_id: @subscription)
                         .order("id DESC")
     migrations = Api.paginate(migrations, self, api_v1_course_blueprint_imports_url)
-    ActiveRecord::Associations::Preloader.new.preload(migrations, :user)
+    ActiveRecord::Associations.preload(migrations, :user)
     render json: migrations.map { |migration|
                    master_migration_json(migration.master_migration, @current_user,
                                          session, child_migration: migration,
@@ -720,7 +720,7 @@ class MasterCourses::MasterTemplatesController < ApplicationController
       tags = tag_association.where(migration_id: migration_ids).preload(:content).to_a
       restricted_ids = find_restricted_ids(tags)
       tags.each do |tag|
-        next if tag.content_type == "AssignmentGroup" # these are noise, since they're touched with each assignment
+        next if %w[AssignmentGroup ContentTag].include?(tag.content_type) # these are noise, since they're touched with each assignment
 
         changes << changed_asset_json(tag.content, action, restricted_ids.include?(tag.migration_id),
                                       tag.migration_id, exceptions)

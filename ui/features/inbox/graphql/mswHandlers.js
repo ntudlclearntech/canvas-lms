@@ -19,12 +19,14 @@
 import {Conversation} from './Conversation'
 import {ConversationMessage} from './ConversationMessage'
 import {ConversationParticipant} from './ConversationParticipant'
+import {SubmissionComment} from './SubmissionComment'
 import {Course} from './Course'
 import {Enrollment} from './Enrollment'
 import {graphql} from 'msw'
 import {Group} from './Group'
 import {User} from './User'
 import {PageInfo} from './PageInfo'
+import {CONVERSATION_ID_WHERE_CAN_REPLY_IS_FALSE} from '../util/constants'
 
 // helper function that filters out undefined values in objects before assigning
 const mswAssign = (target, ...objects) => {
@@ -46,6 +48,7 @@ export const handlers = [
         id: 'VXNlci05',
         conversationsConnection: {
           nodes: [],
+          pageInfo: PageInfo.mock({hasNextPage: false}),
           __typename: 'ConversationParticipantConnection'
         },
         __typename: 'User'
@@ -122,6 +125,44 @@ export const handlers = [
           })
         }
       ]
+
+      if (req.variables.scope === 'multipleConversations') {
+        data.legacyNode.conversationsConnection.nodes = [
+          {
+            ...ConversationParticipant.mock(
+              {_id: '256', id: 'Q29udmVyc2F0aW9uUGFydGljaXBhbnQtMjU2', workflowState: 'unread'},
+              {_id: '257', id: 'Q29udmVyc2F0aW9uUGFydGljaXBhbnQtMjU4', workflowState: 'unread'}
+            ),
+            conversation: Conversation.mock({
+              _id: '197',
+              id: 'Q29udmVyc2F0aW9uLTE5Nw==',
+              subject: 'This is an inbox conversation'
+            })
+          },
+          {
+            ...ConversationParticipant.mock(
+              {_id: '256', id: 'Q29udmVyc2F0aW9uUGFydGljaXBhbnQtMjU2', workflowState: 'unread'},
+              {_id: '257', id: 'Q29udmVyc2F0aW9uUGFydGljaXBhbnQtMjU4', workflowState: 'unread'}
+            ),
+            conversation: Conversation.mock({
+              _id: '905',
+              id: '905',
+              subject: 'This is an inbox conversation'
+            })
+          },
+          {
+            ...ConversationParticipant.mock(
+              {_id: '256', id: 'Q29udmVyc2F0aW9uUGFydGljaXBhbnQtMjU2', workflowState: 'unread'},
+              {_id: '257', id: 'Q29udmVyc2F0aW9uUGFydGljaXBhbnQtMjU4', workflowState: 'unread'}
+            ),
+            conversation: Conversation.mock({
+              _id: '906',
+              id: '906',
+              subject: 'This is an inbox conversation'
+            })
+          }
+        ]
+      }
       data.legacyNode.conversationsConnection.nodes[0].conversation.conversationMessagesConnection.nodes =
         [
           ConversationMessage.mock({
@@ -170,11 +211,13 @@ export const handlers = [
           })
         ]
     }
-
     return res(ctx.data(data))
   }),
 
   graphql.query('GetConversationMessagesQuery', (req, res, ctx) => {
+    if (req.variables.conversationID === CONVERSATION_ID_WHERE_CAN_REPLY_IS_FALSE) {
+      return res(ctx.data({legacyNode: Conversation.mock({canReply: false})}))
+    }
     return res(ctx.data({legacyNode: Conversation.mock()}))
   }),
 
@@ -204,9 +247,86 @@ export const handlers = [
               __typename: 'SubmissionComment'
             }
           ],
+          pageInfo: PageInfo.mock({hasNextPage: false}),
           __typename: 'SubmissionCommentConnection'
         },
+        user: {
+          _id: '75',
+          __typename: 'User'
+        },
         __typename: 'Submission'
+      }
+    }
+
+    return res(ctx.data(data))
+  }),
+
+  graphql.query('ViewableSubmissionsQuery', (req, res, ctx) => {
+    const data = {
+      legacyNode: {
+        _id: '9',
+        id: 'VXNlci05',
+        viewableSubmissionsConnection: {
+          nodes: [
+            {
+              _id: '9',
+              commentsConnection: {
+                nodes: [
+                  {
+                    _id: '1',
+                    id: 'U3VibWlzc2lvbkNvbW1lbnQtMQ==',
+                    submissionId: '3',
+                    createdAt: '2022-04-04T12:19:38-06:00',
+                    attempt: 0,
+                    author: User.mock(),
+                    assignment: {
+                      id: 'QXNzaWdubWVudC0x',
+                      _id: '1',
+                      name: 'test assignment',
+                      __typename: 'Assignment'
+                    },
+                    comment: 'my student comment',
+                    course: Course.mock(),
+                    read: true,
+                    __typename: 'SubmissionComment'
+                  }
+                ],
+                __typename: 'SubmissionCommentConnection'
+              },
+              __typename: 'Submission'
+            },
+            {
+              _id: '10',
+              commentsConnection: {
+                nodes: [
+                  {
+                    _id: '1',
+                    id: 'U3VibWlzc2lvbkNvbW1lbnQtMQ==',
+                    submissionId: '3',
+                    createdAt: '2022-04-04T12:19:38-06:00',
+                    attempt: 0,
+                    author: User.mock(),
+                    assignment: {
+                      id: 'QXNzaWdubWVudC0x',
+                      _id: '1',
+                      name: 'test assignment',
+                      __typename: 'Assignment'
+                    },
+                    comment: 'my student comment',
+                    course: Course.mock(),
+                    read: true,
+                    __typename: 'SubmissionComment'
+                  }
+                ],
+                __typename: 'SubmissionCommentConnection'
+              },
+              __typename: 'Submission'
+            }
+          ],
+          pageInfo: PageInfo.mock({hasNextPage: false}),
+          __typename: 'SubmissionConnection'
+        },
+        __typename: 'User'
       }
     }
 
@@ -458,16 +578,29 @@ export const handlers = [
   }),
 
   graphql.mutation('CreateConversation', (req, res, ctx) => {
-    const data = {
-      createConversation: {
-        conversations: [
-          {
-            ...ConversationParticipant.mock(),
-            conversation: Conversation.mock({subject: req.variables.subject})
-          }
-        ],
-        errors: null,
+    let data
+    if (!req.variables.recipients || !req.variables.recipients.length) {
+      data = {
+        createConversation: null,
+        errors: {
+          attribute: 'message',
+          message: 'Invalid recipients',
+          __typename: 'ValidationError'
+        },
         __typename: 'CreateConversationPayload'
+      }
+    } else {
+      data = {
+        createConversation: {
+          conversations: [
+            {
+              ...ConversationParticipant.mock(),
+              conversation: Conversation.mock({subject: req.variables.subject})
+            }
+          ],
+          errors: null,
+          __typename: 'CreateConversationPayload'
+        }
       }
     }
 
@@ -482,7 +615,17 @@ export const handlers = [
         __typename: 'AddConversationMessagePayload'
       }
     }
+    return res(ctx.data(data))
+  }),
 
+  graphql.mutation('CreateSubmissionComment', (req, res, ctx) => {
+    const data = {
+      createSubmissionComment: {
+        submissionComment: SubmissionComment.mock({comment: req.variables.body}),
+        errors: null,
+        __typename: 'CreateSubmissionCommentPayload'
+      }
+    }
     return res(ctx.data(data))
   }),
 

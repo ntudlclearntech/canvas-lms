@@ -139,12 +139,12 @@ class FilesController < ApplicationController
     api_show api_index destroy api_update api_file_status public_url api_capture reset_verifier
   ]
 
-  before_action :check_file_access_flags, only: [:show_relative, :show]
+  before_action :open_limited_cors, only: [:show]
   before_action :open_cors, only: %i[
     api_create api_create_success api_create_success_cors show_thumbnail
   ]
 
-  before_action :open_limited_cors, only: [:show]
+  before_action :check_file_access_flags, only: [:show_relative, :show]
 
   skip_before_action :verify_authenticity_token, only: :api_create
   before_action :verify_api_id, only: %i[
@@ -523,6 +523,7 @@ class FilesController < ApplicationController
       render json: { errors: [{ message: "The specified resource does not exist." }] }, status: :not_found
       return
     end
+
     params[:include] = Array(params[:include])
     if read_allowed(@attachment, @current_user, session, params)
       json = attachment_json(@attachment, @current_user, {}, { include: params[:include], omit_verifier_in_app: !value_to_boolean(params[:use_verifiers]) })
@@ -583,6 +584,10 @@ class FilesController < ApplicationController
         @skip_crumb = true unless @context
       else
         @attachment ||= attachment_or_replacement(@context, params[:id])
+      end
+
+      if @attachment.inline_content? && params[:sf_verifier]
+        return redirect_to url_for(params.to_unsafe_h.except(:sf_verifier))
       end
 
       params[:download] ||= params[:preview]
@@ -1405,6 +1410,7 @@ class FilesController < ApplicationController
 
   def open_cors
     headers["Access-Control-Allow-Origin"] = "*"
+    headers["Access-Control-Allow-Credentials"] = "true"
     headers["Access-Control-Allow-Methods"] = "POST, PUT, DELETE, GET, OPTIONS"
     headers["Access-Control-Request-Method"] = "*"
     headers["Access-Control-Allow-Headers"] = "Origin, X-Requested-With, Content-Type, Accept, Authorization, Accept-Encoding"
@@ -1412,6 +1418,7 @@ class FilesController < ApplicationController
 
   def open_limited_cors
     headers["Access-Control-Allow-Origin"] = "*"
+    headers["Access-Control-Allow-Credentials"] = "true"
     headers["Access-Control-Allow-Methods"] = "GET, HEAD"
   end
 

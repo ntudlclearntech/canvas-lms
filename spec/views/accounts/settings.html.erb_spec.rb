@@ -20,7 +20,7 @@
 
 require_relative "../views_helper"
 
-describe "accounts/settings.html.erb" do
+describe "accounts/settings" do
   before do
     assign(:account_roles, [])
     assign(:course_roles, [])
@@ -713,6 +713,45 @@ describe "accounts/settings.html.erb" do
       select = doc.at_css("#account_course_template_id")
       expect(select.css("option").map { |o| o["value"] }).to eq ["", "0", c.id.to_s]
       expect(select.css("option").map { |o| o["disabled"] }).to eq %w[disabled disabled disabled]
+    end
+  end
+
+  context "internal settings" do
+    before do
+      @admin = account_admin_user
+      @site_admin = site_admin_user
+      assign(:account_users, [])
+      assign(:root_account, Account.default)
+      assign(:associated_courses_count, 0)
+      assign(:announcements, AccountNotification.none.paginate)
+    end
+
+    context "as an account admin" do
+      before do
+        @account = Account.default
+        assign(:account, @account)
+        view_context(@account, @admin)
+        assign(:current_user, @admin)
+      end
+
+      it "does not render" do
+        render
+        expect(response).not_to have_tag "#tab-internal-settings"
+      end
+    end
+
+    context "as a siteadmin" do
+      before do
+        @account = Account.site_admin
+        assign(:account, @account)
+        view_context(@account, @site_admin)
+        assign(:current_user, @site_admin)
+      end
+
+      it "renders" do
+        render
+        expect(response).to have_tag "#tab-internal-settings"
+      end
     end
   end
 end

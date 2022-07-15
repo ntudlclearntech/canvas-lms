@@ -331,6 +331,7 @@ describe "submissions" do
     it "does not allow peer reviewers to see turnitin scores/reports", priority: "1" do
       @student1 = @user
       @assignment.submission_types = "online_upload"
+      @assignment.turnitin_enabled = true
       @assignment.save!
       _filename, fullpath, _data = get_file("testfile1.txt")
 
@@ -338,6 +339,7 @@ describe "submissions" do
       f(".submit_assignment_link").click
       f(".submission_attachment input").send_keys(fullpath)
       f("#submission_comment").send_keys("hello comment")
+      f(".turnitin_pledge").click
       expect_new_page_load { f("#submit_file_button").click }
       @submission = @assignment.reload.submissions.last
 
@@ -347,7 +349,6 @@ describe "submissions" do
 
       @assignment.peer_reviews = true
       @assignment.assign_peer_review(@student2, @student1)
-      @assignment.turnitin_enabled = true
       @assignment.due_at = 1.day.ago
       @assignment.save!
 
@@ -415,7 +416,7 @@ describe "submissions" do
       it "allows uploaded files to be used for submission", priority: "1" do
         local_storage!
 
-        add_file(fixture_file_upload("files/html-editing-test.html", "text/html"),
+        add_file(fixture_file_upload("html-editing-test.html", "text/html"),
                  @student, "html-editing-test.html")
         File.read(fixture_file_path("files/html-editing-test.html"))
         assignment = @course.assignments.create!(title: "assignment 1",

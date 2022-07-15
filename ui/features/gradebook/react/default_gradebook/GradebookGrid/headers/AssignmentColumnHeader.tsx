@@ -127,6 +127,8 @@ type Props = {
   showUnpostedMenuItem: any
   sortBySetting: any
   submissionsLoaded: boolean
+  onSendMessageStudentsWho: any
+  userId: string
 }
 
 type State = {
@@ -231,7 +233,9 @@ export default class AssignmentColumnHeader extends ColumnHeader<Props, State> {
     onMenuDismiss: func.isRequired,
     showMessageStudentsWithObserversDialog: bool.isRequired,
     showUnpostedMenuItem: bool.isRequired,
-    messageAttachmentUploadFolderId: string.isRequired
+    messageAttachmentUploadFolderId: string.isRequired,
+    onSendMessageStudentsWho: func.isRequired,
+    userId: string.isRequired
   }
 
   static defaultProps = {
@@ -310,8 +314,9 @@ export default class AssignmentColumnHeader extends ColumnHeader<Props, State> {
     this.props.enterGradesAsSetting.onSelect(values[0])
   }
 
-  // TODO(EVAL): This needs to be implemented in EVAL-2064.
-  handleSendMessageStudentsWho = () => {}
+  handleSendMessageStudentsWho = args => {
+    this.props.onSendMessageStudentsWho(args)
+  }
 
   showMessageStudentsWhoDialog = async () => {
     // @ts-ignore
@@ -338,7 +343,8 @@ export default class AssignmentColumnHeader extends ColumnHeader<Props, State> {
             this.focusAtEnd()
           },
           onSend: this.handleSendMessageStudentsWho,
-          messageAttachmentUploadFolderId: this.props.messageAttachmentUploadFolderId
+          messageAttachmentUploadFolderId: this.props.messageAttachmentUploadFolderId,
+          userId: this.props.userId
         }
         ReactDOM.render(
           <ApolloProvider client={createClient()}>

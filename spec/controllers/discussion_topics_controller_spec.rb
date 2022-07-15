@@ -298,8 +298,6 @@ describe DiscussionTopicsController do
 
     it "sets discussions reporting and anonymity when their flags are enabled" do
       Account.site_admin.enable_feature! :react_discussions_post
-      Account.site_admin.enable_feature! :discussions_reporting
-      Account.site_admin.enable_feature! :discussion_anonymity
 
       user_session(@teacher)
       get "index", params: { course_id: @course.id }
@@ -509,28 +507,15 @@ describe DiscussionTopicsController do
         user_session(user)
       end
 
-      context 'and "rce_mentions_in_discussions" enabled' do
-        before { Account.site_admin.enable_feature! :rce_mentions_in_discussions }
-
-        it 'sets "rce_mentions_in_discussions" to true in the JS ENV' do
-          subject
-          expect(assigns.dig(:js_env, :rce_mentions_in_discussions)).to be true
-        end
-
-        context "topic is anonymous" do
-          it 'sets "rce_mentions_in_discussions" to false in the JS ENV' do
-            DiscussionTopic.where(id: discussion.id).update_all(anonymous_state: "full_anonymity")
-            discussion.reload
-            subject
-            expect(assigns.dig(:js_env, :rce_mentions_in_discussions)).to be false
-          end
-        end
+      it 'sets "rce_mentions_in_discussions" to true in the JS ENV' do
+        subject
+        expect(assigns.dig(:js_env, :rce_mentions_in_discussions)).to be true
       end
 
-      context 'and "rce_mentions_in_discussions" disabled' do
-        before { Account.site_admin.disable_feature! :rce_mentions_in_discussions }
-
+      context "topic is anonymous" do
         it 'sets "rce_mentions_in_discussions" to false in the JS ENV' do
+          DiscussionTopic.where(id: discussion.id).update_all(anonymous_state: "full_anonymity")
+          discussion.reload
           subject
           expect(assigns.dig(:js_env, :rce_mentions_in_discussions)).to be false
         end
@@ -1128,6 +1113,13 @@ describe DiscussionTopicsController do
       get :new, params: { course_id: @course.id, is_announcement: true }
       expect(assigns[:js_env][:CONTEXT_ID]).to eq(@course.id)
     end
+
+    it "js_bundles includes discussion_create when ff is on" do
+      user_session(@teacher)
+      @course.root_account.enable_feature!(:discussion_create)
+      get :new, params: { course_id: @course.id }
+      expect(assigns[:js_bundles].first).to include(:discussion_topic_edit_v2)
+    end
   end
 
   describe "GET 'edit'" do
@@ -1613,7 +1605,6 @@ describe DiscussionTopicsController do
     describe "discussion anonymity" do
       it "allows full_anonymity" do
         Account.site_admin.enable_feature! :react_discussions_post
-        Account.site_admin.enable_feature! :discussion_anonymity
         user_session @teacher
         post "create", params: topic_params(@course, { anonymous_state: "full_anonymity" }), format: :json
         expect(response).to be_successful
@@ -1623,7 +1614,6 @@ describe DiscussionTopicsController do
 
       it "allows full_anonymity with course feature flag" do
         @course.enable_feature! :react_discussions_post
-        Account.site_admin.enable_feature! :discussion_anonymity
         user_session @teacher
         post "create", params: topic_params(@course, { anonymous_state: "full_anonymity" }), format: :json
         expect(response).to be_successful
@@ -1633,7 +1623,6 @@ describe DiscussionTopicsController do
 
       it "allows partial_anonymity" do
         Account.site_admin.enable_feature! :react_discussions_post
-        Account.site_admin.enable_feature! :discussion_anonymity
         user_session @teacher
         post "create", params: topic_params(@course, { anonymous_state: "partial_anonymity" }), format: :json
         expect(response).to be_successful
@@ -1643,7 +1632,6 @@ describe DiscussionTopicsController do
 
       it "nullifies anonymous_state when unaccounted for" do
         Account.site_admin.enable_feature! :react_discussions_post
-        Account.site_admin.enable_feature! :discussion_anonymity
         user_session @teacher
         post "create", params: topic_params(@course, { anonymous_state: "thisisunaccountedfor" }), format: :json
         expect(response).to be_successful
@@ -1653,7 +1641,6 @@ describe DiscussionTopicsController do
 
       it "nullifies anonymous_state when feature flag is OFF" do
         Account.site_admin.disable_feature! :react_discussions_post
-        Account.site_admin.enable_feature! :discussion_anonymity
         user_session @teacher
         post "create", params: topic_params(@course, { anonymous_state: "full_anonymity" }), format: :json
         expect(response).to be_successful
@@ -2198,7 +2185,6 @@ describe DiscussionTopicsController do
 
     it "increment discussion_topic.created.partial_anonymity" do
       Account.site_admin.enable_feature! :react_discussions_post
-      Account.site_admin.enable_feature! :discussion_anonymity
       user_session @teacher
       post "create", params: topic_params(@course, { anonymous_state: "partial_anonymity" }), format: :json
       expect(response).to be_successful
@@ -2206,8 +2192,7 @@ describe DiscussionTopicsController do
     end
 
     it "does not increment discussion_topic.created.partial_anonymity if topic can not be partially anonymous" do
-      Account.site_admin.enable_feature! :react_discussions_post
-      Account.site_admin.disable_feature! :discussion_anonymity
+      Account.site_admin.disable_feature! :react_discussions_post
       user_session @teacher
       post "create", params: topic_params(@course, { anonymous_state: "partial_anonymity" }), format: :json
       expect(response).to be_successful
@@ -2216,7 +2201,6 @@ describe DiscussionTopicsController do
 
     it "increment discussion_topic.created.full_anonymity" do
       Account.site_admin.enable_feature! :react_discussions_post
-      Account.site_admin.enable_feature! :discussion_anonymity
       user_session @teacher
       post "create", params: topic_params(@course, { anonymous_state: "full_anonymity" }), format: :json
       expect(response).to be_successful
@@ -2224,8 +2208,7 @@ describe DiscussionTopicsController do
     end
 
     it "does not increment discussion_topic.created.full_anonymity if topic can not be anonymous" do
-      Account.site_admin.enable_feature! :react_discussions_post
-      Account.site_admin.disable_feature! :discussion_anonymity
+      Account.site_admin.disable_feature! :react_discussions_post
       user_session @teacher
       post "create", params: topic_params(@course, { anonymous_state: "full_anonymity" }), format: :json
       expect(response).to be_successful

@@ -143,6 +143,11 @@ require "atom"
 #           "example": "https://en.gravatar.com/avatar/d8cb8c8cd40ddf0cd05241443a591868?s=80&r=g",
 #           "type": "string"
 #         },
+#         "avatar_state": {
+#           "description": "Optional: If avatars are enabled and caller is admin, this field can be requested and will contain the current state of the user's avatar.",
+#           "example": "approved",
+#           "type": "string"
+#         },
 #         "enrollments": {
 #           "description": "Optional: This field can be requested with certain API calls, and will return a list of the users active enrollments. See the List enrollments API for more details about the format of these records.",
 #           "type": "array",
@@ -194,7 +199,8 @@ class UsersController < ApplicationController
                                         user_dashboard toggle_hide_dashcard_color_overlays
                                         masquerade external_tool dashboard_sidebar settings activity_stream
                                         activity_stream_summary pandata_events_token dashboard_cards
-                                        user_graded_submissions show terminate_sessions dashboard_stream_items]
+                                        user_graded_submissions show terminate_sessions dashboard_stream_items
+                                        show_k5_dashboard]
   before_action :require_registered_user, only: [:delete_user_service,
                                                  :create_user_service]
   before_action :reject_student_view_student, only: %i[delete_user_service
@@ -230,7 +236,7 @@ class UsersController < ApplicationController
       @grades = grades_for_presenter(@presenter, @grading_periods)
       js_env grades_for_student_url: grades_for_student_url
 
-      ActiveRecord::Associations::Preloader.new.preload(@observed_enrollments, :course)
+      ActiveRecord::Associations.preload(@observed_enrollments, :course)
 
       @page_title = t(:page_title, "Grades")
       js_bundle :user_grades
@@ -1152,7 +1158,7 @@ class UsersController < ApplicationController
       includes = Array(params[:include])
       planner_overrides = includes.include?("planner_overrides")
       include_course = includes.include?("course")
-      ActiveRecord::Associations::Preloader.new.preload(assignments, :context) if include_course
+      ActiveRecord::Associations.preload(assignments, :context) if include_course
 
       json = assignments.map do |as|
         assmt_json = assignment_json(as, user, session, include_planner_override: planner_overrides)
@@ -1387,7 +1393,7 @@ class UsersController < ApplicationController
             require_sis: false,
             include_all_pseudonyms: true
           )
-        @user.last_login = pseudonyms.max_by(&:current_login_at).current_login_at
+        @user.last_login = pseudonyms&.filter_map(&:current_login_at)&.max
       end
 
       render json: user_json(@user, @current_user, session, includes, @domain_root_account),
@@ -1975,6 +1981,9 @@ class UsersController < ApplicationController
   #   token and instead pass the url here. Warning: For maximum compatibility,
   #   please use 128 px square images.
   #
+  # @argument user[avatar][state] [String, "none", "submitted", "approved", "locked", "reported", "re_reported"]
+  #   To set the state of user's avatar. Only valid for account administrator.
+  #
   # @argument user[title] [String]
   #   Sets a title on the user profile. (See {api:ProfileController#settings Get user profile}.)
   #   Profiles must be enabled on the root account.
@@ -2051,6 +2060,10 @@ class UsersController < ApplicationController
       elsif (url = avatar.try(:[], :url))
         user_params[:avatar_image] = { url: url }
       end
+
+      if (state = avatar.try(:[], :state))
+        user_params[:avatar_image] = { state: state }
+      end
     end
 
     if managed_attributes.empty? || !user_params.except(*managed_attributes).empty?
@@ -2066,6 +2079,7 @@ class UsersController < ApplicationController
                           @user.grants_right?(@current_user, :manage_user_details)
 
     includes = %w[locale avatar_url email time_zone]
+    includes << "avatar_state" if @user.grants_right?(@current_user, :manage_user_details)
     if (title = user_params.delete(:title))
       @user.profile.title = title
       includes << "title"
@@ -2107,7 +2121,10 @@ class UsersController < ApplicationController
 
     respond_to do |format|
       if @user.update(user_params)
-        @user.avatar_state = (old_avatar_state == :locked ? old_avatar_state : "approved") if admin_avatar_update
+        if admin_avatar_update
+          avatar_state = old_avatar_state == :locked ? old_avatar_state : "approved"
+          @user.avatar_state = user_params[:avatar_image][:state] || avatar_state
+        end
         @user.profile.save if @user.profile.changed?
         @user.save if admin_avatar_update || update_email
         # User.email= causes a reload to the user object. The saves need to
@@ -2742,31 +2759,11 @@ class UsersController < ApplicationController
     end
   end
 
-  # @API Get whether user sees Canvas for Elementary dashboard
-  #
-  # Returns +true+ if the provided user sees the Canvas for Elementary dashboard, and +false+ otherwise.
-  # If the requesting user has user preference +:elementary_dashboard_disabled+ set, then this
-  # request will return +false+. Only considers courses where the requesting user is observing the
-  # provided user when making the determination.
-  #
-  # @example_request
-  #   curl https://<canvas>/api/v1/users/self/show_k5_dashboard \
-  #     -X GET \
-  #     -H 'Authorization: Bearer <token>'
-  #
-  # @returns boolean
   def show_k5_dashboard
-    user = api_find(User, params[:id])
-    if user
-      scope = @current_user.observer_enrollments.active_or_pending_by_date.where(associated_user: user).shard(@current_user.in_region_associated_shards)
-      if user.grants_right?(@current_user, session, :read) || scope.exists?
-        # Reload @current_user to make sure we get a current value for their :elementary_dashboard_disabled preference
-        @current_user.reload
-        render json: { k5_user: k5_user?(user: user, course_ids: scope.pluck(:course_id)) }
-      else
-        render_unauthorized_action
-      end
-    end
+    # reload @current_user to make sure we get a current value for their :elementary_dashboard_disabled preference
+    @current_user.reload
+    observed_users(@current_user, session) if @current_user.roles(@domain_root_account).include?("observer")
+    render json: { show_k5_dashboard: k5_user? }
   end
 
   protected
@@ -2931,8 +2928,10 @@ class UsersController < ApplicationController
   end
 
   def api_show_includes
+    allowed_includes = ["uuid", "last_login"]
+    allowed_includes << "avatar_state" if @user.grants_right?(@current_user, :manage_user_details)
     includes = %w[locale avatar_url permissions email effective_locale]
-    includes += Array.wrap(params[:include]) & ["uuid", "last_login"]
+    includes += Array.wrap(params[:include]) & allowed_includes
     includes
   end
 

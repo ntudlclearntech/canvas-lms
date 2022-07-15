@@ -263,6 +263,47 @@ module Lti
         helper = SubstitutionsHelper.new(account, root_account, nil)
         expect(helper.account_enrollments).to eq []
       end
+
+      context "with cross-shard account in chain" do
+        let(:xshard_account) { @shard1.activate { account_model } }
+        let(:xshard_enrollment) { xshard_account.account_users.create!(user: user) }
+
+        before do
+          allow(account).to receive(:account_chain).and_return [account, root_account, xshard_account]
+          xshard_enrollment
+        end
+
+        it "queries correct shard for enrollments" do
+          expect(subject.account_enrollments).to eq [xshard_enrollment]
+        end
+
+        context "with federated parent account chain argument" do
+          before do
+            allow(account).to receive(:account_chain).with(include_federated_parent: true).and_return [account, root_account, xshard_account]
+            allow(account).to receive(:account_chain).with(include_federated_parent: false).and_return [account, root_account]
+          end
+
+          context "with non-primary_settings_root_account" do
+            before do
+              allow(root_account).to receive(:primary_settings_root_account?).and_return false
+            end
+
+            it "includes federated parent account in enrollment query" do
+              expect(subject.account_enrollments).to eq [xshard_enrollment]
+            end
+          end
+
+          context "with primary_settings_root_account" do
+            before do
+              allow(root_account).to receive(:primary_settings_root_account?).and_return true
+            end
+
+            it "does not include federated parent account in enrollment query" do
+              expect(subject.account_enrollments).to eq []
+            end
+          end
+        end
+      end
     end
 
     describe "#current_lis_roles" do
@@ -689,15 +730,32 @@ module Lti
         end
         let(:sis_email) { "sis@example.com" }
 
-        it "returns the users email" do
-          expect(substitution_helper.email).to eq user.email
+        shared_examples_for "not preferring sis email" do
+          it "returns the users email" do
+            expect(substitution_helper.email).to eq user.email
+          end
         end
 
-        it "returns the sis email if it's an LTI2 tool" do
-          tool = class_double("Lti::ToolProxy")
-          sub_helper = SubstitutionsHelper.new(course, root_account, user, tool)
-          sis_pseudonym
-          expect(sub_helper.email).to eq sis_email
+        shared_examples_for "preferring sis email" do
+          it "returns the sis_email" do
+            sis_pseudonym
+            expect(substitution_helper.email).to eq sis_email
+          end
+
+          it "returns the users email if there isn't a sis email" do
+            expect(substitution_helper.email).to eq user.email
+          end
+        end
+
+        it_behaves_like "not preferring sis email"
+
+        context "if it's an LTI2 tool" do
+          let(:substitution_helper) do
+            tool = class_double("Lti::ToolProxy")
+            SubstitutionsHelper.new(course, root_account, user, tool)
+          end
+
+          it_behaves_like "preferring sis email"
         end
 
         it "returns the email for the courses enrollment if there is one." do
@@ -725,27 +783,35 @@ module Lti
           expect(sub_helper.email).to eq "test@foo.com"
         end
 
-        context "prefer_sis_email" do
-          before do
-            tool.settings[:prefer_sis_email] = "true"
-            tool.save!
-          end
+        [
+          [:prefer_sis_email, true, true],
+          [:prefer_sis_email, "true", true],
+          [:tool_configuration, { prefer_sis_email: true }, true],
+          [:tool_configuration, { prefer_sis_email: "true" }, true]
+        ].each do |(config_key, value)|
+          context "when #{config_key} is set to #{value.inspect}" do
+            before do
+              tool.settings[config_key] = value
+              tool.save!
+            end
 
-          it "returns the sis_email" do
-            sis_pseudonym
-            expect(substitution_helper.email).to eq sis_email
+            it_behaves_like "preferring sis email"
           end
+        end
 
-          it "returns the sis_email when set via tool_configuration" do
-            tool.settings[:prefer_sis_email] = nil
-            tool.settings[:tool_configuration] = { prefer_sis_email: "true" }
-            tool.save!
-            sis_pseudonym
-            expect(substitution_helper.email).to eq sis_email
-          end
+        [
+          [:prefer_sis_email, false, false],
+          [:prefer_sis_email, "false", false],
+          [:tool_configuration, { prefer_sis_email: false }, false],
+          [:tool_configuration, { prefer_sis_email: "false" }, false]
+        ].each do |(config_key, value)|
+          context "when #{config_key} is set to #{value.inspect}" do
+            before do
+              tool.settings[config_key] = value
+              tool.save!
+            end
 
-          it "returns the users email if there isn't a sis email" do
-            expect(substitution_helper.email).to eq user.email
+            it_behaves_like "not preferring sis email"
           end
         end
       end

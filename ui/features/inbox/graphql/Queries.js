@@ -78,7 +78,12 @@ export const ADDRESS_BOOK_RECIPIENTS = gql`
 `
 
 export const CONVERSATIONS_QUERY = gql`
-  query GetConversationsQuery($userID: ID!, $filter: [String!], $scope: String = "") {
+  query GetConversationsQuery(
+    $userID: ID!
+    $filter: [String!]
+    $scope: String = ""
+    $afterConversation: String
+  ) {
     legacyNode(_id: $userID, type: User) {
       ... on User {
         _id
@@ -86,6 +91,8 @@ export const CONVERSATIONS_QUERY = gql`
         conversationsConnection(
           scope: $scope # e.g. archived
           filter: $filter # e.g. [course_1, user_1]
+          first: 20
+          after: $afterConversation
         ) {
           nodes {
             ...ConversationParticipant
@@ -98,6 +105,9 @@ export const CONVERSATIONS_QUERY = gql`
               }
             }
           }
+          pageInfo {
+            ...PageInfo
+          }
         }
       }
     }
@@ -105,16 +115,21 @@ export const CONVERSATIONS_QUERY = gql`
   ${ConversationParticipant.fragment}
   ${Conversation.fragment}
   ${ConversationMessage.fragment}
+  ${PageInfo.fragment}
 `
 
 export const CONVERSATION_MESSAGES_QUERY = gql`
-  query GetConversationMessagesQuery($conversationID: ID!) {
+  query GetConversationMessagesQuery($conversationID: ID!, $afterMessage: String) {
     legacyNode(_id: $conversationID, type: Conversation) {
       ... on Conversation {
         ...Conversation
-        conversationMessagesConnection {
+        canReply
+        conversationMessagesConnection(first: 20, after: $afterMessage) {
           nodes {
             ...ConversationMessage
+          }
+          pageInfo {
+            ...PageInfo
           }
         }
         contextName
@@ -123,6 +138,7 @@ export const CONVERSATION_MESSAGES_QUERY = gql`
   }
   ${Conversation.fragment}
   ${ConversationMessage.fragment}
+  ${PageInfo.fragment}
 `
 
 export const COURSES_QUERY = gql`
@@ -175,40 +191,66 @@ export const REPLY_CONVERSATION_QUERY = gql`
   ${ConversationMessage.fragment}
 `
 export const VIEWABLE_SUBMISSIONS_QUERY = gql`
-  query ViewableSubmissionsQuery($userID: ID!) {
+  query ViewableSubmissionsQuery(
+    $userID: ID!
+    $sort: SubmissionCommentsSortOrderType
+    $allComments: Boolean = true
+    $afterSubmission: String
+  ) {
     legacyNode(_id: $userID, type: User) {
       ... on User {
         _id
         id
-        viewableSubmissionsConnection {
+        viewableSubmissionsConnection(first: 20, after: $afterSubmission) {
           nodes {
             _id
-            commentsConnection {
+            commentsConnection(sortOrder: $sort, filter: {allComments: $allComments}) {
               nodes {
                 ...SubmissionComment
               }
             }
           }
-        }
-      }
-    }
-  }
-  ${SubmissionComment.fragment}
-`
-
-export const SUBMISSION_COMMENTS_QUERY = gql`
-  query GetSubmissionComments($submissionID: ID!) {
-    legacyNode(_id: $submissionID, type: Submission) {
-      ... on Submission {
-        _id
-        id
-        commentsConnection {
-          nodes {
-            ...SubmissionComment
+          pageInfo {
+            ...PageInfo
           }
         }
       }
     }
   }
   ${SubmissionComment.fragment}
+  ${PageInfo.fragment}
+`
+
+export const SUBMISSION_COMMENTS_QUERY = gql`
+  query GetSubmissionComments(
+    $submissionID: ID!
+    $sort: SubmissionCommentsSortOrderType
+    $allComments: Boolean = true
+    $afterComment: String
+  ) {
+    legacyNode(_id: $submissionID, type: Submission) {
+      ... on Submission {
+        _id
+        id
+        commentsConnection(
+          sortOrder: $sort
+          filter: {allComments: $allComments}
+          first: 20
+          after: $afterComment
+        ) {
+          nodes {
+            ...SubmissionComment
+          }
+          pageInfo {
+            ...PageInfo
+          }
+        }
+        user {
+          _id
+        }
+      }
+    }
+  }
+  ${SubmissionComment.fragment}
+  ${PageInfo.fragment}
 `

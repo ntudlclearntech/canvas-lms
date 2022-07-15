@@ -17,7 +17,7 @@
  */
 
 import PropTypes from 'prop-types'
-import React, {useMemo, useState} from 'react'
+import React, {useMemo, useState, useEffect} from 'react'
 import {AddressBook, USER_TYPE, CONTEXT_TYPE} from '../../components/AddressBook/AddressBook'
 import {ADDRESS_BOOK_RECIPIENTS} from '../../../graphql/Queries'
 import {useQuery} from 'react-apollo'
@@ -30,24 +30,54 @@ export const AddressBookContainer = props => {
     }
   ])
   const [inputValue, setInputValue] = useState('')
+  const [searchTerm, setSearchTerm] = useState('')
   const [isLoadingMoreData, setIsLoadingMoreData] = useState(false)
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (inputValue !== searchTerm) {
+        setSearchTerm(inputValue)
+      }
+    }, 500)
+
+    return () => clearInterval(interval)
+  }, [inputValue, searchTerm, setSearchTerm])
 
   const addressBookRecipientsQuery = useQuery(ADDRESS_BOOK_RECIPIENTS, {
     variables: {
       context: filterHistory[filterHistory.length - 1]?.context?.contextID,
-      search: inputValue,
+      search: searchTerm,
       userID
     },
     notifyOnNetworkStatusChange: true
   })
   const {loading, data} = addressBookRecipientsQuery
 
+  useEffect(() => {
+    if (
+      props.activeCourseFilter?.contextID === null &&
+      props.activeCourseFilter?.contextName === null
+    ) {
+      setInputValue('')
+      setFilterHistory([
+        {
+          context: null
+        }
+      ])
+    }
+  }, [props.activeCourseFilter])
+
+  useEffect(() => {
+    props.onInputValueChange(searchTerm)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchTerm])
+
   const fetchMoreMenuData = () => {
     setIsLoadingMoreData(true)
     addressBookRecipientsQuery.fetchMore({
       variables: {
         context: filterHistory[filterHistory.length - 1]?.context?.contextID,
-        search: inputValue,
+        search: searchTerm,
         userID,
         afterUser: data?.legacyNode?.recipients?.usersConnection?.pageInfo.endCursor,
         afterContext: data?.legacyNode?.recipients?.contextsConnection?.pageInfo.endCursor
@@ -107,14 +137,17 @@ export const AddressBookContainer = props => {
     )
   }
 
-  if (props.activeCourseFilter && !filterHistory[filterHistory.length - 1]?.context) {
-    addFilterHistory({
-      context: {
-        contextID: props.activeCourseFilter.contextID,
-        contextName: props.activeCourseFilter.contextName
-      }
-    })
-  }
+  useEffect(() => {
+    if (props.activeCourseFilter && !filterHistory[filterHistory.length - 1]?.context) {
+      addFilterHistory({
+        context: {
+          contextID: props.activeCourseFilter.contextID,
+          contextName: props.activeCourseFilter.contextName
+        }
+      })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [props.activeCourseFilter])
 
   const menuData = useMemo(() => {
     if (loading && !data) {
@@ -156,7 +189,7 @@ export const AddressBookContainer = props => {
       contextData[contextData.length - 1].isLast = true
     }
 
-    if (filterHistory[filterHistory.length - 1]?.subMenuSelection && inputValue === '') {
+    if (filterHistory[filterHistory.length - 1]?.subMenuSelection && searchTerm === '') {
       const selection = filterHistory[filterHistory.length - 1]?.subMenuSelection
       const filteredMenuData = selection.includes('Course')
         ? {contextData, userData: []}
@@ -165,7 +198,7 @@ export const AddressBookContainer = props => {
     }
 
     return {contextData, userData}
-  }, [loading, data, filterHistory, inputValue])
+  }, [loading, data, filterHistory, searchTerm])
 
   const handleSelect = (item, isContext, isBackButton, isSubmenu) => {
     if (isContext) {
@@ -208,6 +241,8 @@ export const AddressBookContainer = props => {
       open={props.open}
       hasSelectAllFilterOption={props.hasSelectAllFilterOption}
       currentFilter={filterHistory[filterHistory.length - 1]}
+      activeCourseFilter={props.activeCourseFilter}
+      addressBookMessages={props.addressBookMessages}
     />
   )
 }
@@ -217,6 +252,7 @@ AddressBookContainer.propTypes = {
    * Callback which provides an array of selected items
    */
   onSelectedIdsChange: PropTypes.func,
+  onInputValueChange: PropTypes.func,
   /**
    * An array of selected recepient objects
    */
@@ -244,11 +280,13 @@ AddressBookContainer.propTypes = {
   /**
    * bool which determines if "select all" in a context menu appears
    */
-  hasSelectAllFilterOption: PropTypes.bool
+  hasSelectAllFilterOption: PropTypes.bool,
+  addressBookMessages: PropTypes.array
 }
 
 AddressBookContainer.defaultProps = {
   onSelectedIdsChange: () => {},
+  onInputValueChange: () => {},
   hasSelectAllFilterOption: false
 }
 

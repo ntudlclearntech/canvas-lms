@@ -113,15 +113,15 @@ describe "conversations new" do
       end
 
       it "allows messages to be sent individually for account-level groups", priority: "2" do
-        @group = Account.default.groups.create(name: "the group")
-        @group.add_user(@s1)
-        @group.add_user(@s2)
-        @group.save
+        account_level_group = Account.default.groups.create(name: "account level group")
+        account_level_group.add_user(@s1)
+        account_level_group.add_user(@s2)
+        account_level_group.save
         user_logged_in({ user: @s1 })
         conversations
         f("#compose-btn").click
         wait_for_ajaximations
-        select_message_course(@group, true)
+        select_message_course(account_level_group, true)
         add_message_recipient @s2
         f("#bulk_message").click
         write_message_subject("blah")
@@ -130,15 +130,6 @@ describe "conversations new" do
         run_jobs
         conv = @s2.conversations.last.conversation
         expect(conv.subject).to eq "blah"
-      end
-
-      it "allows admins to message users from their profiles", priority: "2" do
-        user = account_admin_user
-        user_logged_in({ user: user })
-        get "/accounts/#{Account.default.id}/users"
-        fj('[data-automation="users list"] tr a:has([name="IconMessage"])').click
-        wait_for_ajaximations
-        expect(f(".ac-token")).not_to be_nil
       end
 
       it "allows selecting multiple recipients in one search", priority: "2" do
@@ -324,7 +315,7 @@ describe "conversations new" do
           fj("button:contains('Send')").click
           wait_for_ajaximations
           cm = ConversationMessage.last
-          expect(cm.conversation_message_participants.pluck(:user_id)).to eq [@s1.id, @admin.id]
+          expect(cm.conversation_message_participants.pluck(:user_id)).to match_array [@s1.id, @admin.id]
           expect(cm.body).to eq "confirm if you get this!"
 
           f("button[data-testid='compose']").click
@@ -336,7 +327,7 @@ describe "conversations new" do
       context "shows correct address book items" do
         before do
           user_session(@teacher)
-          conversations
+          get "/conversations"
 
           # Open compose modal
           f("button[data-testid='compose']").click
@@ -392,19 +383,13 @@ describe "conversations new" do
         end
       end
 
-      context "correctly sends messages to contexts" do
+      context "correctly sends messages to contexts as a teacher" do
         before do
           user_session(@teacher)
-          conversations
-
-          # Open compose modal
+          get "/conversations"
           f("button[data-testid='compose']").click
-
-          # select the only course option
           f("input[placeholder='Select Course']").click
-          f("li[role='none']").click
-
-          # Open address book
+          fj("li:contains('#{@course.name}')").click
           ff("input[aria-label='Address Book']")[1].click
         end
 
@@ -431,6 +416,20 @@ describe "conversations new" do
           wait_for_ajaximations
 
           expect(@t2.conversations.last.conversation.conversation_participants.collect(&:user_id).sort).to eq([@teacher, @t2].collect(&:id).sort)
+        end
+
+        it "correctly wipes address book after cancelling compose", priority: "1" do
+          fj("div[data-testid='address-book-item']:contains('Teachers')").click
+          wait_for_ajaximations
+
+          fj("div[data-testid='address-book-item']:contains('All in Teachers')").click
+          expect(fj("span[data-testid='address-book-tag']:contains('All in Teachers')")).to be_present
+
+          fj("button:contains('Cancel')").click
+          wait_for_ajaximations
+
+          f("button[data-testid='compose']").click
+          expect(f("body")).not_to contain_jqcss("div[data-testid='address-book-item']:contains('All in Teachers')")
         end
 
         it "correctly sends message to all students", priority: "1" do
@@ -462,6 +461,42 @@ describe "conversations new" do
 
           expect(@s2.conversations.last.conversation.conversation_participants.collect(&:user_id).sort).to eq([@teacher, @s1, @s2].collect(&:id).sort)
         end
+      end
+
+      it "lets admins send a message without context" do
+        admin_logged_in
+        get "/conversations"
+        f("button[data-testid='compose']").click
+        ff("input[aria-label='Address Book']")[1].click
+        wait_for_ajaximations
+        fj("li:contains('Students')").click
+        fj("li:contains('#{@s1.name}')").click
+        fj("li:contains('#{@s2.name}')").click
+        f("textarea[data-testid='message-body']").send_keys "sent to both of you"
+        fj("button:contains('Send')").click
+        wait_for_ajaximations
+        expect(@s1.conversations.last.conversation.conversation_participants.collect(&:user_id).sort).to eq [@s1.id, @s2.id, @admin.id]
+      end
+
+      it "allows messages to be sent individually for account-level groups", priority: "2" do
+        @group.destroy
+        account_level_group = Account.default.groups.create(name: "the account level group")
+        account_level_group.add_user(@s1)
+        account_level_group.add_user(@s2)
+        account_level_group.save
+        user_logged_in({ user: @s1 })
+        get "/conversations"
+        f("button[data-testid='compose']").click
+        f("input[placeholder='Select Course']").click
+        wait_for_ajaximations
+        fj("li:contains('#{account_level_group.name}')").click
+        force_click("input[data-testid='individual-message-checkbox']")
+        ff("input[aria-label='Address Book']")[1].click
+        fj("li:contains('All in the account level group')").click
+        f("textarea[data-testid='message-body']").send_keys "sent to everyone in the account level group"
+        fj("button:contains('Send')").click
+        wait_for_ajaximations
+        expect(@s2.conversations.last.conversation.conversation_messages.last.body).to eq "sent to everyone in the account level group"
       end
     end
   end

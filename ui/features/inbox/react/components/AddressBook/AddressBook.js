@@ -72,7 +72,9 @@ export const AddressBook = ({
   isLoadingMoreMenuData,
   inputValue,
   hasSelectAllFilterOption,
-  currentFilter
+  currentFilter,
+  activeCourseFilter,
+  addressBookMessages
 }) => {
   const textInputRef = useRef(null)
   const componentViewRef = useRef(null)
@@ -187,11 +189,6 @@ export const AddressBook = ({
     }
   }, [selectedMenuItems, limitTagCount, textInputRef])
 
-  // Provide selected IDs via callback
-  useEffect(() => {
-    onSelectedIdsChange(selectedMenuItems)
-  }, [onSelectedIdsChange, selectedMenuItems])
-
   // set initial recipients from props
   useEffect(() => {
     if (selectedRecipients?.length >= 1) {
@@ -225,6 +222,19 @@ export const AddressBook = ({
       return () => {}
     }
   }, [fetchMoreMenuData, hasMoreMenuData, menuItemCurrent])
+
+  useEffect(() => {
+    if (
+      activeCourseFilter?.contextID === null &&
+      activeCourseFilter?.contextName === null &&
+      selectedRecipients.length === 0 &&
+      selectedMenuItems.length !== 0
+    ) {
+      onSelectedIdsChange([])
+      setSelectedMenuItems([])
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeCourseFilter, selectedRecipients])
 
   // Render individual menu items
   const renderMenuItem = (menuItem, isLast) => {
@@ -460,6 +470,7 @@ export const AddressBook = ({
     }
 
     setSelectedMenuItems([...newSelectedMenuItems])
+    onSelectedIdsChange([...newSelectedMenuItems])
   }
 
   const removeTag = removeMenuItem => {
@@ -471,12 +482,13 @@ export const AddressBook = ({
       menuItem => menuItem.id !== removeMenuItem.id
     )
     setSelectedMenuItems([...newSelectedMenuItems])
+    onSelectedIdsChange([...newSelectedMenuItems])
   }
 
   return (
     <View as="div" width={width}>
       <div ref={componentViewRef}>
-        <Flex>
+        <Flex alignItems="start">
           <Flex.Item padding="none xxx-small none none" shouldGrow shouldShrink>
             <Popover
               on="click"
@@ -496,6 +508,9 @@ export const AddressBook = ({
               }}
               renderTrigger={
                 <TextInput
+                  placeholder={
+                    selectedMenuItems.length === 0 ? I18n.t('Insert or Select Names') : null
+                  }
                   renderLabel={
                     <ScreenReaderContent>{I18n.t('Address Book Input')}</ScreenReaderContent>
                   }
@@ -526,6 +541,7 @@ export const AddressBook = ({
                     setIsMenuOpen(true)
                   }}
                   data-testid="address-book-input"
+                  messages={addressBookMessages}
                 />
               }
             >
@@ -548,7 +564,8 @@ export const AddressBook = ({
                       paddingInlineStart: '0px',
                       marginBlockStart: '0px',
                       marginBlockEnd: '0px',
-                      margin: '0'
+                      margin: '0',
+                      maxWidth: '100%'
                     }}
                     data-testid="address-book-popover"
                   >
@@ -571,6 +588,7 @@ export const AddressBook = ({
                 }
               }}
               disabled={isLimitReached}
+              margin="none none none xx-small"
             >
               <IconAddressBookLine />
             </IconButton>
@@ -662,7 +680,9 @@ AddressBook.propTypes = {
   /**
    * object that contains the current context filter information
    */
-  currentFilter: PropTypes.object
+  currentFilter: PropTypes.object,
+  activeCourseFilter: PropTypes.object,
+  addressBookMessages: PropTypes.array
 }
 
 export default AddressBook

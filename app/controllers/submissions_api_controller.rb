@@ -148,7 +148,7 @@
 #           "type": "boolean"
 #         },
 #         "late_policy_status": {
-#           "description": "The status of the submission in relation to the late policy. Can be late, missing, none, or null.",
+#           "description": "The status of the submission in relation to the late policy. Can be late, missing, extended, none, or null.",
 #           "example": "missing",
 #           "type": "string"
 #         },
@@ -710,6 +710,9 @@ class SubmissionsApiController < ApplicationController
   # @argument comment[text_comment] [String]
   #   Add a textual comment to the submission.
   #
+  # @argument comment[attempt] [Integer]
+  #   The attempt number (starts at 1) to associate the comment with.
+  #
   # @argument comment[group_comment] [Boolean]
   #   Whether or not this comment should be sent to the entire group (defaults
   #   to false). Ignored if this is not a group assignment or if no text_comment
@@ -767,7 +770,8 @@ class SubmissionsApiController < ApplicationController
   #   Sets the "excused" status of an assignment.
   #
   # @argument submission[late_policy_status] [String]
-  #   Sets the late policy status to either "late", "missing", "none", or null.
+  #   Sets the late policy status to either "late", "missing", "extended", "none", or null.
+  #     NB: "extended" values can only be set in the UI when the "UI features for 'extended' Submissions" Account Feature is on
   #
   # @argument submission[seconds_late_override] [Integer]
   #   Sets the seconds late if late policy status is "late"
@@ -912,8 +916,9 @@ class SubmissionsApiController < ApplicationController
       if comment.is_a?(ActionController::Parameters)
         admin_in_context = !@context_enrollment || @context_enrollment.admin?
         comment = {
-          comment: comment[:text_comment],
+          attempt: comment[:attempt],
           author: @current_user,
+          comment: comment[:text_comment],
           hidden: @submission.hide_grade_from_student? && admin_in_context
         }.merge(
           comment.permit(:media_comment_id, :media_comment_type, :group_comment).to_unsafe_h
@@ -1044,7 +1049,8 @@ class SubmissionsApiController < ApplicationController
   #   Sets the "excused" status of an assignment.
   #
   # @argument submission[late_policy_status] [String]
-  #   Sets the late policy status to either "late", "missing", "none", or null.
+  #   Sets the late policy status to either "late", "missing", "extended", "none", or null.
+  #     NB: "extended" values can only be set in the UI when the "UI features for 'extended' Submissions" Account Feature is on
   #
   # @argument submission[seconds_late_override] [Integer]
   #   Sets the seconds late if late policy status is "late"
@@ -1485,8 +1491,8 @@ class SubmissionsApiController < ApplicationController
   def bulk_load_attachments_and_previews(submissions)
     Submission.bulk_load_versioned_attachments(submissions)
     attachments = submissions.flat_map(&:versioned_attachments)
-    ActiveRecord::Associations::Preloader.new.preload(attachments,
-                                                      [:canvadoc, :crocodoc_document])
+    ActiveRecord::Associations.preload(attachments,
+                                       [:canvadoc, :crocodoc_document])
     Version.preload_version_number(submissions)
   end
 

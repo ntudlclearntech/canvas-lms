@@ -35,7 +35,8 @@ import {Tooltip} from '@instructure/ui-tooltip'
 import {View} from '@instructure/ui-view'
 
 import AssignmentRow from './assignment_row'
-import {Module as IModule, CoursePace, ResponsiveSizes} from '../../types'
+import BlackoutDateRow from './blackout_date_row'
+import {ModuleWithDueDates, CoursePace, ResponsiveSizes} from '../../types'
 
 const I18n = useI18nScope('course_paces_module')
 
@@ -44,18 +45,21 @@ const {Body, ColHeader, Head, Row} = Table as any
 
 interface PassedProps {
   readonly index: number
-  readonly module: IModule
+  readonly module: ModuleWithDueDates
   readonly coursePace: CoursePace
   readonly responsiveSize: ResponsiveSizes
   readonly showProjections: boolean
   readonly compression: number
 }
 
-export const Module: React.FC<PassedProps> = props => {
+type ComponentProps = PassedProps
+
+export const Module: React.FC<ComponentProps> = props => {
   const [actuallyExpanded, setActuallyExpanded] = useState(props.showProjections)
   const [datesVisible, setDatesVisible] = useState(props.showProjections)
   const wasExpanded = useRef(props.showProjections)
   const isStudentPace = props.coursePace.context_type === 'Enrollment'
+  const isTableStacked = props.responsiveSize === 'small'
 
   useEffect(() => {
     if (!wasExpanded.current && props.showProjections) {
@@ -115,23 +119,42 @@ export const Module: React.FC<PassedProps> = props => {
     )
   }
 
-  const assignmentRows: JSX.Element[] = props.module.items.map(item => {
-    // Scoping the key to the state of hard_end_dates and the coursePace id ensures a full re-render of the row if either the hard_end_date
-    // status changes or the course pace changes. This is necessary because the AssignmentRow maintains the duration in local state,
+  const renderAssignmentRow = item => {
+    // Scoping the key this way guarantees a new AssignmentRow is rendered when date that impacts it changes
+    // This is necessary because the AssignmentRow maintains the duration in local state,
     // and applying updates with componentWillReceiveProps makes it buggy (because the Redux updates can be slow, causing changes to
     // get reverted as you type).
-    const key = `${item.id}|${item.module_item_id}|${props.compression}|${props.coursePace.updated_at}`
+    const key = `${props.module.moduleKey}-${item.id}|${item.module_item_id}|${props.compression}|${props.coursePace.updated_at}`
     return (
       <AssignmentRow
         key={key}
         actuallyExpanded={actuallyExpanded}
         datesVisible={datesVisible}
         coursePaceItem={item}
+        dueDate={item.date}
+        isStacked={isTableStacked}
       />
     )
-  })
+  }
 
-  const headerPadding = `${props.responsiveSize === 'small' ? 'small' : 'medium'} small small`
+  const renderBlackoutDateRow = item => {
+    const key = `blackoutdate-${props.module.moduleKey}-${item.id || item.temp_id}`
+    return <BlackoutDateRow key={key} blackoutDate={item} isStacked={isTableStacked} />
+  }
+
+  const renderRows = () => {
+    const rowData = props.module.itemsWithDates
+    return rowData.map(rd => {
+      if (rd.type === 'assignment') {
+        return renderAssignmentRow(rd)
+      } else if (rd.type === 'blackout_date') {
+        return renderBlackoutDateRow(rd)
+      }
+      return undefined // should never get here
+    })
+  }
+
+  const headerPadding = `${isTableStacked ? 'small' : 'medium'} small small`
 
   return (
     <View
@@ -168,13 +191,13 @@ export const Module: React.FC<PassedProps> = props => {
           <View as="div" borderWidth="0 small">
             <Table
               caption={`${props.index}. ${props.module.name}`}
-              layout={props.responsiveSize === 'small' ? 'stacked' : 'auto'}
+              layout={isTableStacked ? 'stacked' : 'auto'}
             >
               <Head>
                 <Row>
                   <ColHeader id={`module-${props.module.id}-assignments`} width="100%">
                     <View as="div" padding={headerPadding}>
-                      {I18n.t('Assignments')}
+                      {I18n.t('Item')}
                     </View>
                   </ColHeader>
                   <ColHeader
@@ -187,9 +210,7 @@ export const Module: React.FC<PassedProps> = props => {
                       alignItems="end"
                       justifyItems={isStudentPace ? 'center' : 'start'}
                       padding={headerPadding}
-                      margin={`0 0 0 ${
-                        isStudentPace || props.responsiveSize === 'small' ? '0' : 'xx-small'
-                      }`}
+                      margin={`0 0 0 ${isStudentPace || isTableStacked ? '0' : 'xx-small'}`}
                     >
                       <View id="days-column-title">{I18n.t('Days')}</View>
                       <Tooltip
@@ -217,7 +238,7 @@ export const Module: React.FC<PassedProps> = props => {
                   </ColHeader>
                 </Row>
               </Head>
-              <Body>{assignmentRows}</Body>
+              <Body>{renderRows()}</Body>
             </Table>
           </View>
         </ToggleDetails>

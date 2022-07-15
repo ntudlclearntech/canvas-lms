@@ -17,7 +17,10 @@
  */
 
 export async function up() {
-  import('@canvas/enhanced-user-content').then(module => {
-    module.default()
-  })
+  const {default: enhanceUserContent} = await import(
+    /* webpackChunkName: "[request]" */
+    '@canvas/enhanced-user-content'
+  )
+
+  enhanceUserContent()
 }

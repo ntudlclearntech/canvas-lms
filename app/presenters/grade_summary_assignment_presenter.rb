@@ -71,6 +71,10 @@ class GradeSummaryAssignmentPresenter
     assignment.grading_type == "gpa_scale"
   end
 
+  def points_graded?
+    assignment.grading_type == "points"
+  end
+
   def is_letter_graded_or_gpa_scaled?
     is_letter_graded? || is_gpa_scaled?
   end
@@ -85,6 +89,10 @@ class GradeSummaryAssignmentPresenter
 
   def has_no_score_display?
     hide_grade_from_student? || submission.nil?
+  end
+
+  def quiz_pending_review?
+    submission&.submission_type == "online_quiz" && submission&.workflow_state == "pending_review"
   end
 
   def original_points
@@ -140,6 +148,7 @@ class GradeSummaryAssignmentPresenter
     classes << "assignment_graded" if graded?
     classes << special_class
     classes << "excused" if excused?
+    classes << "extended" if extended?
     classes.join(" ")
   end
 
@@ -153,6 +162,10 @@ class GradeSummaryAssignmentPresenter
 
   def excused?
     submission.try(:excused?)
+  end
+
+  def extended?
+    submission.try(:extended?)
   end
 
   def deduction_present?

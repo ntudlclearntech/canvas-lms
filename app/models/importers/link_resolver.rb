@@ -86,7 +86,7 @@ module Importers
           new_url ||= missing_relative_file_url(rel_path)
           link[:missing_url] = new_url
         end
-        if node.name == "iframe"
+        if ["iframe", "source"].include?(node.name)
           node["src"] = new_url
         else
           node["href"] = new_url
@@ -105,7 +105,7 @@ module Importers
         if file_id
           rest = link[:rest].presence || "/preview"
 
-          # Button and Icon files should not have the course
+          # Icon Maker files should not have the course
           # context prepended to the URL. This prevents
           # redirects to non cross-origin friendly urls
           # during a file fetch
@@ -208,7 +208,7 @@ module Importers
       if (file = find_file_in_context(rel_path[/^[^?]+/])) # strip query string for this search
         media_id = (file.media_object&.media_id || file.media_entry_id)
         if media_id && media_id != "maybe"
-          if node.name == "iframe"
+          if ["iframe", "source"].include?(node.name)
             node["data-media-id"] = media_id
             return media_iframe_url(media_id, node["data-media-type"])
           else

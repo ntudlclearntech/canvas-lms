@@ -19,6 +19,7 @@
 import assert from 'assert'
 import sinon from 'sinon'
 import * as actions from '../../../src/sidebar/actions/images'
+import {ICON_MAKER_ICONS} from '../../../src/rce/plugins/instructure_icon_maker/svg/constants'
 
 const sortBy = {sort: 'alphabetical', order: 'asc'}
 const searchString = 'hello'
@@ -60,12 +61,12 @@ describe('Image dispatch shapes', () => {
     })
 
     describe('when the "category" is set to "icon_maker_icons', () => {
-      let buttonAndIconsResponse, opts
+      let iconMakerResponse, opts
 
-      const subject = () => actions.receiveImages(buttonAndIconsResponse)
+      const subject = () => actions.receiveImages(iconMakerResponse)
 
       beforeEach(() => {
-        buttonAndIconsResponse = {
+        iconMakerResponse = {
           response: {
             files: [
               {id: 1, download_url: 'https://canvas.instructure.com/files/1/download'},
@@ -75,12 +76,12 @@ describe('Image dispatch shapes', () => {
           },
           contextType,
           opts: {
-            category: 'icon_maker_icons'
+            category: ICON_MAKER_ICONS
           }
         }
       })
 
-      it('applies the buttons and icons attribute to each file', () => {
+      it('applies the icon maker attribute to each file', () => {
         assert.deepEqual(
           subject().payload.files.map(f => f['data-inst-icon-maker-icon']),
           [true, true, true]

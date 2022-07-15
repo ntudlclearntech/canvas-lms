@@ -41,7 +41,8 @@ export function getInitialGridDisplaySettings(settings, colors): GridDisplaySett
   const filterColumnsBy = {
     assignmentGroupId: null,
     contextModuleId: null,
-    gradingPeriodId: null
+    gradingPeriodId: null,
+    submissions: null
   }
   if (settings.filter_columns_by != null) {
     Object.assign(filterColumnsBy, camelize(settings.filter_columns_by))
@@ -59,6 +60,7 @@ export function getInitialGridDisplaySettings(settings, colors): GridDisplaySett
     filterColumnsBy,
     filterRowsBy,
     hideAssignmentGroupTotals: settings.hide_assignment_group_totals === 'true',
+    hideTotal: settings.hide_total === 'true',
     selectedPrimaryInfo,
     selectedSecondaryInfo,
     selectedViewOptionsFilters: settings.selected_view_options_filters || [],

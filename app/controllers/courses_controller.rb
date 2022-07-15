@@ -762,8 +762,7 @@ class CoursesController < ApplicationController
   #
   # @argument course[restrict_enrollments_to_course_dates] [Boolean]
   #   Set to true to restrict user enrollments to the start and end dates of the
-  #   course. This parameter is required when using the API, as this option is
-  #   not displayed in the Course Settings page. This value must be set to true
+  #   course. This value must be set to true
   #   in order to specify a course start date and/or end date.
   #
   # @argument course[term_id] [String]
@@ -826,7 +825,11 @@ class CoursesController < ApplicationController
       params_for_create[:grading_standard_id] = 0
       params_for_create[:allow_final_grade_override] = true
       if params_for_create.key?(:syllabus_body)
-        params_for_create[:syllabus_body] = process_incoming_html_content(params_for_create[:syllabus_body])
+        begin
+          params_for_create[:syllabus_body] = process_incoming_html_content(params_for_create[:syllabus_body])
+        rescue Api::Html::UnparsableContentError => e
+          return render json: { errors: { unparsable_content: e.message } }, status: :bad_request
+        end
       end
 
       if (sub_account_id = params[:course].delete(:account_id)) && sub_account_id.to_i != @account.id
@@ -2525,7 +2528,7 @@ class CoursesController < ApplicationController
                        current_user: @current_user)
         end
       if !@context.concluded? && (@enrollments = EnrollmentsFromUserList.process(list, @context, enrollment_options))
-        ActiveRecord::Associations::Preloader.new.preload(@enrollments, [:course_section, { user: [:communication_channel, :pseudonym] }])
+        ActiveRecord::Associations.preload(@enrollments, [:course_section, { user: [:communication_channel, :pseudonym] }])
         json = @enrollments.map do |e|
           { "enrollment" =>
             { "associated_user_id" => e.associated_user_id,
@@ -2753,8 +2756,7 @@ class CoursesController < ApplicationController
   #
   # @argument course[restrict_enrollments_to_course_dates] [Boolean]
   #   Set to true to restrict user enrollments to the start and end dates of the
-  #   course. This parameter is required when using the API, as this option is
-  #   not displayed in the Course Settings page. Setting this value to false will
+  #   course. Setting this value to false will
   #   remove the course end date (if it exists), as well as the course start date
   #   (if the course is unpublished).
   #
@@ -2944,7 +2946,11 @@ class CoursesController < ApplicationController
         params_for_update = params_for_update.slice(:syllabus_body)
       end
       if params_for_update.key?(:syllabus_body)
-        params_for_update[:syllabus_body] = process_incoming_html_content(params_for_update[:syllabus_body])
+        begin
+          params_for_update[:syllabus_body] = process_incoming_html_content(params_for_update[:syllabus_body])
+        rescue Api::Html::UnparsableContentError => e
+          @course.errors.add(:unparsable_content, e.message)
+        end
       end
       unless @course.grants_right?(@current_user, :manage_course_visibility)
         params_for_update.delete(:indexed)
@@ -3761,7 +3767,7 @@ class CoursesController < ApplicationController
       enrollments = enrollments.to_a
     elsif params[:enrollment_state] == "active"
       enrollments = user.participating_enrollments
-      ActiveRecord::Associations::Preloader.new.preload(enrollments, :course)
+      ActiveRecord::Associations.preload(enrollments, :course)
     else
       enrollments = user.cached_currentish_enrollments(preload_courses: true)
     end
@@ -3774,7 +3780,7 @@ class CoursesController < ApplicationController
 
     # we always output the role in the JSON, but we need it now in case we're
     # running the condition below
-    ActiveRecord::Associations::Preloader.new.preload(enrollments, :role)
+    ActiveRecord::Associations.preload(enrollments, :role)
     # these are all duplicated in the params[:state] block above in SQL. but if
     # used the cached ones, or we added include_observed, we have to re-run them
     # in pure ruby
@@ -3840,14 +3846,14 @@ class CoursesController < ApplicationController
     end
     preloads << { context_modules: :content_tags } if includes.include?("course_progress")
     preloads << :enrollment_term if includes.include?("term") || includes.include?("concluded")
-    ActiveRecord::Associations::Preloader.new.preload(courses, preloads)
+    ActiveRecord::Associations.preload(courses, preloads)
     MasterCourses::MasterTemplate.preload_is_master_course(courses)
 
     preloads = []
     preloads << :course_section if includes.include?("sections")
     preloads << { scores: :course } if includes.include?("total_scores") || includes.include?("current_grading_period_scores")
 
-    ActiveRecord::Associations::Preloader.new.preload(enrollments, preloads) unless preloads.empty?
+    ActiveRecord::Associations.preload(enrollments, preloads) unless preloads.empty?
     if includes.include?("course_progress")
       progressions = ContextModuleProgression.joins(:context_module).where(user: user, context_modules: { course: courses }).select("context_module_progressions.*, context_modules.context_id AS course_id").to_a.group_by { |cmp| cmp["course_id"] }
     end

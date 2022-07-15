@@ -230,28 +230,32 @@ const Form = ({
   </FormFieldGroup>
 )
 
-const Example = ({currentMethod, individualOutcomeExample}) => {
-  return (
-    <div>
-      <Text weight="bold">{I18n.t('Example')}</Text>
-      <Text>
+const Example = ({currentMethod, individualOutcomeExample}) => (
+  <View as="div">
+    <Text weight="bold">{I18n.t('Example')}</Text>
+    <View as="div" padding={individualOutcomeExample ? 'x-small 0 x-small' : 'small 0 x-small'}>
+      {currentMethod.exampleText}
+    </View>
+    {currentMethod?.exampleWarning && (
+      <div style={{padding: individualOutcomeExample ? '0.25rem 0 0' : '0.5rem 0 0'}}>
+        <Text weight="bold">{I18n.t('Warning')}</Text>
         <View as="div" padding={individualOutcomeExample ? 'x-small 0 x-small' : 'small 0 x-small'}>
-          {currentMethod.exampleText}
+          {currentMethod.exampleWarning}
         </View>
-        <View as="div" padding="x-small 0">
-          {I18n.t('Item Scores:')}&nbsp;
-          <Text weight="bold">{currentMethod.exampleScores}</Text>
-        </View>
-        <View as="div" padding="x-small 0">
-          {I18n.t('Final Score:')}&nbsp;
-          <Text weight="bold" data-testid="proficiency-calculation-example-final-score">
-            {currentMethod.exampleResult}
-          </Text>
-        </View>
+      </div>
+    )}
+    <View as="div" padding="x-small 0">
+      {I18n.t('Item Scores:')}&nbsp;
+      <Text weight="bold">{currentMethod.exampleScores}</Text>
+    </View>
+    <View as="div" padding="x-small 0">
+      {I18n.t('Final Score:')}&nbsp;
+      <Text weight="bold" data-testid="proficiency-calculation-example-final-score">
+        {currentMethod.exampleResult}
       </Text>
-    </div>
-  )
-}
+    </View>
+  </View>
+)
 
 const getModalText = contextType => {
   if (contextType === 'Course') {
@@ -273,7 +277,7 @@ const ProficiencyCalculation = ({
   setError,
   calcIntInputRef
 }) => {
-  const {contextType} = useCanvasContext()
+  const {contextType, outcomeAllowAverageCalculationFF} = useCanvasContext()
   const {calculationMethod: initialMethodKey, calculationInt: initialInt} = method
 
   const [calculationMethodKey, setCalculationMethodKey] = useState(initialMethodKey)
@@ -284,6 +288,8 @@ const ProficiencyCalculation = ({
 
   const individualOutcomeDisplay = individualOutcome === 'display'
   const individualOutcomeEdit = individualOutcome === 'edit'
+  const displayInvalidCalculationMethod =
+    method.calculationMethod === 'average' && !outcomeAllowAverageCalculationFF
 
   const setAllowSave = newAllowSave => {
     realSetAllowSave(newAllowSave)
@@ -304,12 +310,24 @@ const ProficiencyCalculation = ({
   // Updates state if component is in individual outcome display mode and
   // calculation method or int was changed externally (e.g. via outcome edit)
   useEffect(() => {
-    if (individualOutcomeDisplay) {
+    if (individualOutcomeDisplay && !displayInvalidCalculationMethod) {
       updateCalculationMethod(null, {id: method.calculationMethod})
       updateCalculationInt(method.calculationInt)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [method])
+
+  const [showAlert, setShowAlert] = useState(true)
+
+  useEffect(() => {
+    if (displayInvalidCalculationMethod && showAlert) {
+      showFlashAlert({
+        message: I18n.t('The selected calculation method is no longer available'),
+        type: 'error'
+      })
+      setShowAlert(false)
+    }
+  }, [displayInvalidCalculationMethod, method, showAlert])
 
   const calculationMethods = new CalculationMethodContent({
     calculation_method: calculationMethodKey,
@@ -317,7 +335,9 @@ const ProficiencyCalculation = ({
     is_individual_outcome: true,
     mastery_points: masteryPoints
   }).toJSON()
-  const currentMethod = calculationMethods[calculationMethodKey]
+  const currentMethod =
+    calculationMethods[calculationMethodKey] ||
+    calculationMethods[defaultProficiencyCalculation.calculationMethod]
 
   // Sync data/errors between internal/component and external/parent state
   const syncInternalWithExternalState = (calcMethodKey, calcInt) => {

@@ -39,7 +39,7 @@ beforeAll(() => {
     start_at: {date: '2021-09-01', date_context: 'course'}
   }
   window.ENV.FEATURES ||= {}
-  window.ENV.FEATURES.course_paces_blackout_dates = true
+  window.ENV.FEATURES.course_paces_for_sections = true
 })
 
 afterEach(() => {

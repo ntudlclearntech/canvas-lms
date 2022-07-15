@@ -38,13 +38,14 @@ export const inboxConversationsWrapper = (data, isSubmissionComments = false) =>
     data.forEach(conversation => {
       const inboxConversation = {}
       if (isSubmissionComments) {
+        const newestSubmissionComment = conversation?.commentsConnection?.nodes[0]
         inboxConversation._id = conversation?._id
         inboxConversation.subject =
-          conversation.commentsConnection.nodes[0].course.contextName +
+          newestSubmissionComment?.course.contextName +
           ' - ' +
-          conversation.commentsConnection.nodes[0].assignment.name
-        inboxConversation.lastMessageCreatedAt = conversation?.commentsConnection.nodes[0].createdAt
-        inboxConversation.lastMessageContent = conversation?.commentsConnection.nodes[0].comment
+          newestSubmissionComment?.assignment.name
+        inboxConversation.lastMessageCreatedAt = newestSubmissionComment?.createdAt
+        inboxConversation.lastMessageContent = newestSubmissionComment?.comment
         inboxConversation.participantString = getParticipantsString(
           conversation?.commentsConnection.nodes,
           isSubmissionComments
@@ -80,6 +81,8 @@ export const inboxConversationsWrapper = (data, isSubmissionComments = false) =>
 export const inboxMessagesWrapper = (data, isSubmissionComments = false) => {
   const inboxMessages = []
   let contextName = ''
+  let canReply = true
+  const submissionCommentURL = `/courses/${data?.commentsConnection?.nodes[0]?.course._id}/assignments/${data?.commentsConnection?.nodes[0]?.assignment._id}/submissions/${data?.user?._id}`
   if (data) {
     const messages = isSubmissionComments
       ? data?.commentsConnection?.nodes
@@ -108,11 +111,12 @@ export const inboxMessagesWrapper = (data, isSubmissionComments = false) => {
         inboxMessage.attachmentsConnection = message?.attachmentsConnection
         inboxMessage.mediaComment = message?.mediaComment
         contextName = data?.contextName
+        canReply = data?.canReply
       }
       inboxMessages.push(inboxMessage)
     })
   }
-  return {inboxMessages, contextName}
+  return {inboxMessages, contextName, submissionCommentURL, canReply}
 }
 
 const getSubmissionCommentsParticipantString = messages => {

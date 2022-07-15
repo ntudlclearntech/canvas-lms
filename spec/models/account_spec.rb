@@ -458,8 +458,8 @@ describe Account do
     end
 
     it "is able to specify a list of enabled services" do
-      @a.allowed_services = "twitter"
-      expect(@a.service_enabled?(:twitter)).to be_truthy
+      @a.allowed_services = "fakeService"
+      # expect(@a.service_enabled?(:twitter)).to be_truthy
       expect(@a.service_enabled?(:diigo)).to be_falsey
       expect(@a.service_enabled?(:avatars)).to be_falsey
     end
@@ -469,29 +469,22 @@ describe Account do
     end
 
     it "adds and remove services from the defaults" do
-      @a.allowed_services = "+avatars,-twitter"
+      @a.allowed_services = "+avatars,-myplugin"
       expect(@a.service_enabled?(:avatars)).to be_truthy
-      expect(@a.service_enabled?(:twitter)).to be_falsey
+      expect(@a.service_enabled?(:myplugin)).to be_falsey
     end
 
     it "allows settings services" do
       expect { @a.enable_service(:completly_bogs) }.to raise_error("Invalid Service")
 
-      @a.disable_service(:twitter)
-      expect(@a.service_enabled?(:twitter)).to be_falsey
+      @a.disable_service(:avatars)
+      expect(@a.service_enabled?(:avatars)).to be_falsey
 
-      @a.enable_service(:twitter)
-      expect(@a.service_enabled?(:twitter)).to be_truthy
+      @a.enable_service(:avatars)
+      expect(@a.service_enabled?(:avatars)).to be_truthy
     end
 
     it "uses + and - by default when setting service availability" do
-      @a.enable_service(:twitter)
-      expect(@a.service_enabled?(:twitter)).to be_truthy
-      expect(@a.allowed_services).to be_nil
-
-      @a.disable_service(:twitter)
-      expect(@a.allowed_services).to match("\\-twitter")
-
       @a.disable_service(:avatars)
       expect(@a.service_enabled?(:avatars)).to be_falsey
       expect(@a.allowed_services).not_to match("avatars")
@@ -504,13 +497,12 @@ describe Account do
     it "is able to set service availibity for previously hard-coded values" do
       @a.allowed_services = "avatars"
 
-      @a.enable_service(:twitter)
-      expect(@a.service_enabled?(:twitter)).to be_truthy
-      expect(@a.allowed_services).to match(/twitter/)
+      @a.enable_service(:avatars)
+      expect(@a.service_enabled?(:avatars)).to be_truthy
+      expect(@a.allowed_services).to match(/avatars/)
       expect(@a.allowed_services).not_to match(/[+-]/)
 
       @a.disable_service(:avatars)
-      @a.disable_service(:twitter)
       expect(@a.allowed_services).to be_nil
     end
 
@@ -2470,85 +2462,6 @@ describe Account do
       expect(act.unless_dummy).to be_nil
       act.id = 1
       expect(act.unless_dummy).to be(act)
-    end
-  end
-
-  describe "#log_changes_to_app_center_access_token" do
-    subject { account.update!(settings: after_settings) }
-
-    let!(:account) { account_model(settings: before_settings).tap(&:save!) }
-    let(:calls) { [] }
-    let(:notifier) { ->(*args) { calls << args } }
-
-    before do
-      @old_notifier = CanvasErrors.send(:registry)[:sentry_notification]
-      CanvasErrors.register!(:sentry_notification, &notifier)
-    end
-
-    after do
-      CanvasErrors.send(:registry)[:sentry_notification] = @old_notifier
-      CanvasErrors.send(:registry).compact!
-    end
-
-    shared_examples_for "a change to the token" do |was_present, now_present|
-      it "triggers a Sentry log" do
-        subject
-        expect(calls).to include([
-                                   "Account's app_center_access_token changed",
-                                   { account_id: account.global_id, was_set: was_present, now_set: now_present },
-                                   :warn
-                                 ])
-      end
-    end
-
-    shared_examples_for "no change to the token" do
-      it "does not trigger a Sentry log" do
-        subject
-        expect(calls.map(&:first)).to_not include("Account's app_center_access_token changed")
-      end
-    end
-
-    context "when it changes from empty to non-empty" do
-      let(:before_settings) { {} }
-      let(:after_settings) { { app_center_access_token: "foo" } }
-
-      it_behaves_like "a change to the token", false, true
-    end
-
-    context "when it changes from non-empty to empty" do
-      let(:before_settings) { { app_center_access_token: "foo" } }
-      let(:after_settings) { { app_center_access_token: nil } }
-
-      it_behaves_like "a change to the token", true, false
-    end
-
-    context "when it changes from non-empty to something else non-empty" do
-      let(:before_settings) { { app_center_access_token: "foo" } }
-      let(:after_settings) { { app_center_access_token: "foo2" } }
-
-      it_behaves_like "a change to the token", true, true
-    end
-
-    context "when it is empty and does not change" do
-      let(:before_settings) { { foo: "bar" } }
-      let(:after_settings) { { foo: "waz", app_center_access_token: nil } }
-
-      it_behaves_like "no change to the token"
-    end
-
-    context "when it is not empty and does not change" do
-      let(:before_settings) { { foo: "bar", app_center_access_token: "foo" } }
-      let(:after_settings) { { foo: "waz", app_center_access_token: "foo" } }
-
-      it_behaves_like "no change to the token"
-    end
-
-    context "when settings does not change" do
-      subject { account.update!(name: "foobar") }
-
-      let(:before_settings) { {} }
-
-      it_behaves_like "no change to the token"
     end
   end
 end

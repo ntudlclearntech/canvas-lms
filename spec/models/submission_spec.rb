@@ -43,11 +43,75 @@ describe Submission do
 
   it { is_expected.to validate_numericality_of(:points_deducted).is_greater_than_or_equal_to(0).allow_nil }
   it { is_expected.to validate_numericality_of(:seconds_late_override).is_greater_than_or_equal_to(0).allow_nil }
-  it { is_expected.to validate_inclusion_of(:late_policy_status).in_array(%w[none missing late]).allow_nil }
+  it { is_expected.to validate_inclusion_of(:late_policy_status).in_array(%w[none missing late extended]).allow_nil }
   it { is_expected.to validate_inclusion_of(:cached_tardiness).in_array(["missing", "late"]).allow_nil }
 
   it { is_expected.to delegate_method(:auditable?).to(:assignment).with_prefix(true) }
   it { is_expected.to delegate_method(:can_be_moderated_grader?).to(:assignment).with_prefix(true) }
+
+  describe "inferred values" do
+    subject do
+      submission.infer_values
+      submission.workflow_state
+    end
+
+    let(:student) { @student }
+    let(:assignment) { @assignment }
+
+    describe "workflow_state" do
+      context "when current state is unsubmitted and submitted_at is present" do
+        before do
+          submission.workflow_state = Submission.workflow_states.unsubmitted
+          submission.submission_type = "online_text_entry"
+          submission.submitted_at = Time.zone.now
+        end
+
+        it { is_expected.to eq Submission.workflow_states.submitted }
+      end
+
+      context "when current state is submitted and has_submission is false" do
+        before do
+          submission.workflow_state = Submission.workflow_states.submitted
+        end
+
+        it { is_expected.to eq Submission.workflow_states.unsubmitted }
+      end
+
+      context "when grade and score are present and grade matches current submission" do
+        before do
+          submission.submission_type = "online_text_entry"
+          submission.submitted_at = Time.zone.now
+          submission.grade = "5"
+          submission.score = 5
+
+          allow(submission).to receive(:grade_matches_current_submission).and_return(true)
+        end
+
+        it { is_expected.to eq Submission.workflow_states.graded }
+      end
+
+      context "when submission_type is online_quiz and latest submission is pending review" do
+        before do
+          submission.workflow_state = Submission.workflow_states.pending_review
+          submission.submission_type = "online_quiz"
+
+          allow(submission).to receive(:quiz_submission).and_return(double("QuizSubmission", "pending_review?" => true))
+        end
+
+        it { is_expected.to eq Submission.workflow_states.pending_review }
+      end
+
+      context "when workflow state is pending_review and submission was graded by quizzes" do
+        before do
+          submission.workflow_state = Submission.workflow_states.pending_review
+          submission.grader_id = -1
+          submission.cached_quiz_lti = true
+        end
+
+        it { is_expected.to eq Submission.workflow_states.pending_review }
+      end
+    end
+  end
 
   describe "#anonymous_id" do
     subject { submission.anonymous_id }
@@ -1134,6 +1198,29 @@ describe Submission do
         end
       end
 
+      context "when change late_policy_status from late to extended" do
+        before do
+          @assignment.course.update!(late_policy: @late_policy)
+          @assignment.submit_homework(@student, body: "a body")
+
+          submission.update!(
+            score: 700,
+            late_policy_status: "late",
+            seconds_late_override: 4.hours
+          )
+        end
+
+        it "removes late penalty from score" do
+          expect { submission.update!(late_policy_status: "extended") }
+            .to change { submission.score }.from(300).to(700)
+        end
+
+        it "sets points_deducted to nil" do
+          expect { submission.update!(late_policy_status: "extended") }
+            .to change { submission.points_deducted }.from(400).to(nil)
+        end
+      end
+
       context "when changing late_policy_status from none to nil" do
         before do
           @assignment.update!(due_at: 1.hour.from_now)
@@ -1455,7 +1542,7 @@ describe Submission do
       version = Version.find_by(versionable: @submission)
       version.update_attribute(:versionable_id, Submission.last.id + 1)
       expect do
-        ActiveRecord::Associations::Preloader.new.preload([version].map(&:model), :originality_reports)
+        ActiveRecord::Associations.preload([version].map(&:model), :originality_reports)
       end.not_to raise_error
     end
   end
@@ -2608,7 +2695,7 @@ describe Submission do
       end
 
       it "returns true for text entry reports" do
-        submission = assignment.submit_homework(test_student)
+        submission = assignment.submit_homework(test_student, body: "hi")
         OriginalityReport.create!(
           submission: submission,
           originality_score: 0.5,
@@ -3767,6 +3854,12 @@ describe Submission do
         expect(Submission.missing).to be_empty
       end
 
+      it "excludes submission when past due and extended" do
+        @submission.update(late_policy_status: "extended")
+
+        expect(Submission.missing).to be_empty
+      end
+
       it "excludes submission when past due and assignment does not expect a submission" do
         @submission.assignment.update(submission_types: "none")
 
@@ -3828,6 +3921,12 @@ describe Submission do
 
       it "excludes submission when late_policy_status is not nil, not missing" do
         @submission.update(late_policy_status: "foo")
+
+        expect(Submission.missing).to be_empty
+      end
+
+      it "excludes submission when late_policy_status is extended" do
+        @submission.update(late_policy_status: "extended")
 
         expect(Submission.missing).to be_empty
       end
@@ -4200,9 +4299,39 @@ describe Submission do
 
       expect(submission.versioned_originality_reports).to eq []
     end
+
+    it "works correctly on originality reports without submission times with multiple text entry or same attachment ids" do
+      reports = []
+      submissions = (1..3).map do |i|
+        sub = @assignment.submit_homework(@student, body: "body #{i}")
+        report = OriginalityReport.create!(attachment: nil, originality_score: i, submission: sub)
+        report.update_columns(submission_time: nil)
+        reports << report
+        sub
+      end
+      attachment = attachment_model(filename: "submission.doc", context: @student)
+      submissions += (1..3).map do |i|
+        sub = @assignment.submit_homework(@student, attachments: [attachment])
+        report = OriginalityReport.create!(attachment: attachment, originality_score: i, submission: sub)
+        report.update_columns(submission_time: nil)
+        reports << report
+        sub
+      end
+
+      submissions[0..2].each_with_index do |s, i|
+        expect(s.versioned_originality_reports).to match_array reports[i..2]
+      end
+      submissions[3..].each_with_index do |s, i|
+        expect(s.versioned_originality_reports).to match_array reports[(i + 3)..]
+      end
+    end
   end
 
   describe "#bulk_load_versioned_originality_reports" do
+    before :once do
+      student_in_course(active_all: true)
+    end
+
     it "bulk loads originality reports for many submissions at once" do
       originality_reports = []
       submissions = Array.new(3) do |i|
@@ -4226,7 +4355,6 @@ describe Submission do
     end
 
     it "avoids N+1s in the bulk load" do
-      student_in_course(active_all: true)
       attachment = attachment_model(filename: "submission.doc", context: @student)
       submission = @assignment.submit_homework(@student, attachments: [attachment])
       OriginalityReport.create!(attachment: attachment, originality_score: "1", submission: submission)
@@ -4237,7 +4365,6 @@ describe Submission do
     end
 
     it "ignores invalid attachment ids" do
-      student_in_course(active_all: true)
       s = @assignment.submit_homework(@student, submission_type: "online_url", url: "http://example.com")
       s.update_attribute(:attachment_ids, "99999999")
       Submission.bulk_load_versioned_originality_reports([s])
@@ -4245,7 +4372,6 @@ describe Submission do
     end
 
     it "loads only the originality reports that pertain to that version" do
-      student_in_course(active_all: true)
       originality_reports = []
       attachment = attachment_model(filename: "submission-a.doc", context: @student)
       Timecop.freeze(10.seconds.ago) do
@@ -4273,6 +4399,41 @@ describe Submission do
 
       submission.submission_history.each_with_index do |s, index|
         expect(s.versioned_originality_reports.first).to eq originality_reports[index]
+      end
+    end
+
+    it "works with unsubmitted submissions" do
+      submissions = @assignment.submissions.where(user: @student)
+      Submission.bulk_load_versioned_originality_reports(submissions)
+      submissions.each do |s|
+        expect(s.versioned_originality_reports).to eq []
+      end
+    end
+
+    it "works correctly on originality reports without submission times with multiple text entry or same attachment ids" do
+      reports = []
+      submissions = (1..3).map do |i|
+        sub = @assignment.submit_homework(@student, body: "body #{i}")
+        report = OriginalityReport.create!(attachment: nil, originality_score: i, submission: sub)
+        report.update_columns(submission_time: nil)
+        reports << report
+        sub
+      end
+      attachment = attachment_model(filename: "submission.doc", context: @student)
+      submissions += (1..3).map do |i|
+        sub = @assignment.submit_homework(@student, attachments: [attachment])
+        report = OriginalityReport.create!(attachment: attachment, originality_score: i, submission: sub)
+        report.update_columns(submission_time: nil)
+        reports << report
+        sub
+      end
+
+      Submission.bulk_load_versioned_originality_reports(submissions)
+      submissions[0..2].each_with_index do |s, i|
+        expect(s.versioned_originality_reports).to match_array reports[i..2]
+      end
+      submissions[3..].each_with_index do |s, i|
+        expect(s.versioned_originality_reports).to match_array reports[(i + 3)..]
       end
     end
   end
@@ -6973,6 +7134,10 @@ describe Submission do
       @late_quiz2_submission = @late_quiz2.submission
       Submission.where(id: @late_quiz2_submission).update_all(submitted_at: @now, cached_due_date: @now - 1.hour)
 
+      @late_quiz_extended = generate_quiz_submission(@quiz, student: User.create, finished_at: @now)
+      @late_quiz_extended_submission = @late_quiz_extended.submission
+      Submission.where(id: @late_quiz_extended_submission).update_all(submitted_at: @now, cached_due_date: @now - 1.hour, late_policy_status: "extended")
+
       @timely_quiz_marked_late = generate_quiz_submission(@quiz, student: User.create, finished_at: @now)
       @timely_quiz_marked_late_submission = @timely_quiz_marked_late.submission
       Submission.where(id: @timely_quiz_marked_late_submission).update_all(submitted_at: @now, cached_due_date: nil)
@@ -7069,6 +7234,10 @@ describe Submission do
       expect(@late_submission_ids).to include(@ongoing_timely_quiz_marked_late_submission.id)
     end
 
+    it "excludes quizzes that are late but have been marked as extended" do
+      expect(@late_submission_ids).not_to include(@late_quiz_extended_submission.id)
+    end
+
     ### Homeworks
     it "excludes unsubmitted homeworks" do
       expect(@late_submission_ids).not_to include(@unsubmitted_hw.id)
@@ -7139,6 +7308,10 @@ describe Submission do
       @late_quiz2 = generate_quiz_submission(@quiz, student: User.create, finished_at: @now)
       @late_quiz2_submission = @late_quiz2.submission
       Submission.where(id: @late_quiz2_submission).update_all(submitted_at: @now, cached_due_date: @now - 1.hour)
+
+      @late_quiz_extended = generate_quiz_submission(@quiz, student: User.create, finished_at: @now)
+      @late_quiz_extended_submission = @late_quiz_extended.submission
+      Submission.where(id: @late_quiz_extended_submission).update_all(submitted_at: @now, cached_due_date: @now - 1.hour, late_policy_status: "extended")
 
       @timely_quiz_marked_late = generate_quiz_submission(@quiz, student: User.create, finished_at: @now)
       @timely_quiz_marked_late_submission = @timely_quiz_marked_late.submission
@@ -7234,6 +7407,10 @@ describe Submission do
 
     it "excludes quizzes that have been manually marked as late but are being retaken" do
       expect(@not_late_submission_ids).not_to include(@ongoing_timely_quiz_marked_late_submission.id)
+    end
+
+    it "includes quizzes that are late but have been marked as extended" do
+      expect(@not_late_submission_ids).to include(@late_quiz_extended_submission.id)
     end
 
     ### Homeworks
@@ -8127,6 +8304,73 @@ describe Submission do
 
     it "is false for others" do
       expect(@submission.peer_reviewer?(user_factory)).to eq false
+    end
+  end
+
+  describe "send_timing_data_if_needed" do
+    it "calls Statsd when a classic quiz is manually graded" do
+      expect(InstStatsd::Statsd).to receive(:gauge).once.with("submission.manually_graded.grading_time", 600.0, 1.0, tags: { quiz_type: "classic_quiz" })
+
+      now = Time.now
+      Timecop.freeze(now) do
+        quiz_with_graded_submission([{ question_data: { :name => "question 1", :points_possible => 10, "question_type" => "essay_question" } }])
+      end
+
+      Timecop.freeze(10.minutes.from_now(now)) do
+        @quiz_submission.set_final_score(7)
+        @quiz_submission.save!
+      end
+    end
+
+    it "calls Statsd when a new quiz is manually graded" do
+      expect(InstStatsd::Statsd).to receive(:gauge).once.with("submission.manually_graded.grading_time", 300.0, 1.0, tags: { quiz_type: "new_quiz" })
+
+      now = Time.now
+      Timecop.freeze(now) do
+        quiz_with_graded_submission([{ question_data: { :name => "question 1", :points_possible => 10, "question_type" => "essay_question" } }])
+      end
+
+      allow(@quiz_submission.submission).to receive(:submission_type).and_return("basic_lti_launch")
+      allow(@quiz_submission.submission).to receive(:url).and_return("https://quiz-lti-iad-prod.instructure.com/lti/launch")
+      Timecop.freeze(5.minutes.from_now(now)) do
+        @quiz_submission.set_final_score(7)
+        @quiz_submission.save!
+      end
+    end
+
+    it "does not call Statsd when a quiz is automatically graded" do
+      expect(InstStatsd::Statsd).not_to receive(:gauge)
+
+      quiz_with_graded_submission([{ question_data: { :name => "question 1", :points_possible => 10, "question_type" => "multiple_choice_question" } }])
+    end
+
+    it "does not call Statsd when a submission is updated" do
+      expect(InstStatsd::Statsd).not_to receive(:gauge)
+
+      now = Time.now
+      Timecop.freeze(now) do
+        quiz_with_graded_submission([{ question_data: { :name => "question 1", :points_possible => 10, "question_type" => "essay_question" } }])
+      end
+
+      Timecop.freeze(10.minutes.from_now(now)) do
+        submission = @quiz.submissions.first
+        submission.excused = false
+        submission.save!
+      end
+    end
+
+    it "does not call Statsd when the time between submission and grading is less than 30 seconds" do
+      expect(InstStatsd::Statsd).not_to receive(:gauge)
+
+      now = Time.now
+      Timecop.freeze(now) do
+        quiz_with_graded_submission([{ question_data: { :name => "question 1", :points_possible => 10, "question_type" => "essay_question" } }])
+      end
+
+      Timecop.freeze(29.seconds.from_now(now)) do
+        @quiz_submission.set_final_score(7)
+        @quiz_submission.save!
+      end
     end
   end
 end

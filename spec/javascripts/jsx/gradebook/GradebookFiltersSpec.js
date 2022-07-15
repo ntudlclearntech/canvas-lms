@@ -404,71 +404,19 @@ test('removes the filter when the "view section filter" option is turned off', f
   strictEqual(this.container.children.length, 0)
 })
 
-QUnit.module(
-  'Gradebook#renderStudentSearchFilter (gradebook_assignment_search_and_redesign: false)',
-  {
-    setup() {
-      setFixtureHtml($fixtures)
-      this.gradebook = createGradebook({gradebook_assignment_search_and_redesign: false})
-      this.gradebook.setStudentsLoaded(true)
-      this.gradebook.setSubmissionsLoaded(true)
-      this.gradebook.renderStudentSearchFilter([])
-    },
+QUnit.module('Gradebook#renderStudentSearchFilter', {
+  setup() {
+    setFixtureHtml($fixtures)
+    this.gradebook = createGradebook()
+    this.gradebook.setStudentsLoaded(true)
+    this.gradebook.setSubmissionsLoaded(true)
+    this.gradebook.renderStudentSearchFilter([])
+  },
 
-    teardown() {
-      $fixtures.innerHTML = ''
-    }
+  teardown() {
+    $fixtures.innerHTML = ''
   }
-)
-
-test('binds an InputFilterView to the search filter markup', function () {
-  equal(this.gradebook.userFilter.constructor.name, 'InputFilterView')
 })
-
-test('does not create a new InputFilterView when already bound', function () {
-  const userFilter = this.gradebook.userFilter
-  this.gradebook.renderStudentSearchFilter([])
-  strictEqual(this.gradebook.userFilter, userFilter)
-})
-
-test('enables the input when students and submissions are loaded', () => {
-  const input = document.querySelector('#search-filter-container input')
-  strictEqual(input.disabled, false, 'input is not disabled')
-  strictEqual(input.getAttribute('aria-disabled'), 'false', 'input is not aria-disabled')
-})
-
-test('disables the input when students are not loaded', function () {
-  this.gradebook.setStudentsLoaded(false)
-  this.gradebook.renderStudentSearchFilter([])
-  const input = document.querySelector('#search-filter-container input')
-  strictEqual(input.disabled, true, 'input is disabled')
-  strictEqual(input.getAttribute('aria-disabled'), 'true', 'input is aria-disabled')
-})
-
-test('disables the input when submissions are not loaded', function () {
-  this.gradebook.setSubmissionsLoaded(false)
-  this.gradebook.renderStudentSearchFilter([])
-  const input = document.querySelector('#search-filter-container input')
-  strictEqual(input.disabled, true, 'input is disabled')
-  strictEqual(input.getAttribute('aria-disabled'), 'true', 'input is aria-disabled')
-})
-
-QUnit.module(
-  'Gradebook#renderStudentSearchFilter (gradebook_assignment_search_and_redesign: true)',
-  {
-    setup() {
-      setFixtureHtml($fixtures)
-      this.gradebook = createGradebook({gradebook_assignment_search_and_redesign: true})
-      this.gradebook.setStudentsLoaded(true)
-      this.gradebook.setSubmissionsLoaded(true)
-      this.gradebook.renderStudentSearchFilter([])
-    },
-
-    teardown() {
-      $fixtures.innerHTML = ''
-    }
-  }
-)
 
 test('does not render old set up/search field', function () {
   sinon.stub(this.gradebook.gridReady, 'state').returns('resolved')
@@ -961,43 +909,6 @@ test('saves settings with the new filter setting', function () {
   )
 })
 
-test('saves settings after updating the filter setting', function () {
-  this.gradebook.updateCurrentModule('1')
-
-  const settingUpdateCallId = this.gradebook.setFilterColumnsBySetting.getCall(0).callId
-  const settingSaveCallId = $.ajaxJSON.getCall(0).callId
-
-  ok(
-    settingUpdateCallId < settingSaveCallId,
-    'settings were saved on the backend after being updated on the front end'
-  )
-})
-
-test('sets assignment warnings after updating the filter setting', function () {
-  this.gradebook.updateCurrentModule('1')
-
-  const settingUpdateCallId = this.gradebook.setFilterColumnsBySetting.getCall(0).callId
-  const updateFilteredContentInfoCallId = this.gradebook.updateFilteredContentInfo.getCall(0).callId
-
-  ok(
-    settingUpdateCallId < updateFilteredContentInfoCallId,
-    'grading was reset after setting was updated'
-  )
-})
-
-test('updates columns and menus after setting assignment warnings', function () {
-  this.gradebook.updateCurrentModule('1')
-
-  const updateFilteredContentInfoCallId = this.gradebook.updateFilteredContentInfo.getCall(0).callId
-  const updateColumnsAndMenusCallId =
-    this.gradebook.updateColumnsAndRenderViewOptionsMenu.getCall(0).callId
-
-  ok(
-    updateFilteredContentInfoCallId < updateColumnsAndMenusCallId,
-    'columns and menus were updated after setting assignment warnings'
-  )
-})
-
 test('has no effect when the module has not changed', function () {
   this.gradebook.updateCurrentModule('2')
   strictEqual($.ajaxJSON.callCount, 0, 'saveSettings was not called')
@@ -1054,43 +965,6 @@ test('saves settings with the new filter setting', function () {
   strictEqual(
     $.ajaxJSON.getCall(0).args[2].gradebook_settings.filter_columns_by.assignment_group_id,
     '1'
-  )
-})
-
-test('saves settings after updating the filter setting', function () {
-  this.gradebook.updateCurrentAssignmentGroup('1')
-
-  const settingUpdateCallId = this.gradebook.setFilterColumnsBySetting.getCall(0).callId
-  const settingSaveCallId = $.ajaxJSON.getCall(0).callId
-
-  ok(
-    settingUpdateCallId < settingSaveCallId,
-    'settings were saved on the backend after being updated on the front end'
-  )
-})
-
-test('sets assignment warnings after updating the filter setting', function () {
-  this.gradebook.updateCurrentAssignmentGroup('1')
-
-  const settingUpdateCallId = this.gradebook.setFilterColumnsBySetting.getCall(0).callId
-  const updateFilteredContentInfoCallId = this.gradebook.updateFilteredContentInfo.getCall(0).callId
-
-  ok(
-    settingUpdateCallId < updateFilteredContentInfoCallId,
-    'grading was reset after setting was updated'
-  )
-})
-
-test('updates columns and menus after setting assignment warnings', function () {
-  this.gradebook.updateCurrentAssignmentGroup('1')
-
-  const updateFilteredContentInfoCallId = this.gradebook.updateFilteredContentInfo.getCall(0).callId
-  const updateColumnsAndMenusCallId =
-    this.gradebook.updateColumnsAndRenderViewOptionsMenu.getCall(0).callId
-
-  ok(
-    updateFilteredContentInfoCallId < updateColumnsAndMenusCallId,
-    'columns and menus were updated after setting assignment warnings'
   )
 })
 

@@ -143,7 +143,12 @@ const props = {
       ],
       participants: [{user: {name: 'Todd Martin'}}, {user: {name: 'Jim Thompson'}}]
     }
-  ]
+  ],
+  isLoading: false,
+  isLoadingMoreMenuData: false,
+  hasMoreMenuData: false,
+  fetchMoreMenuData: jest.fn(),
+  isError: false
 }
 
 jest.mock('../../../../util/utils', () => ({
@@ -201,11 +206,11 @@ describe('ConversationListHolder', () => {
   })
 
   it('should be able to open conversations', () => {
-    const onOpenMock = jest.fn()
-    const {getAllByText} = render(<ConversationListHolder onOpen={onOpenMock} {...props} />)
+    const onSelectMock = jest.fn()
+    const {getAllByText} = render(<ConversationListHolder onSelect={onSelectMock} {...props} />)
     const conversation = getAllByText('This is a different subject line')
     fireEvent.click(conversation[0])
-    expect(onOpenMock).toHaveBeenCalled()
+    expect(onSelectMock).toHaveBeenCalled()
   })
 
   it('should be able to select multiple conversations using cmd key', () => {
@@ -236,28 +241,6 @@ describe('ConversationListHolder', () => {
     expect(checkboxes.filter(c => c.checked === true).length).toBe(3)
   })
 
-  it('should be able to select range of conversations ASC', () => {
-    const {getAllByTestId} = render(<ConversationListHolder {...props} />)
-    const conversations = getAllByTestId('conversationListItem-Item')
-    fireEvent.click(conversations[0])
-    fireEvent.click(conversations[3], {
-      shiftKey: true
-    })
-    const checkboxes = getAllByTestId('conversationListItem-Checkbox')
-    expect(checkboxes.filter(c => c.checked === true).length).toBe(4)
-  })
-
-  it('should be able to select range of conversations DESC', () => {
-    const {getAllByTestId} = render(<ConversationListHolder {...props} />)
-    const conversations = getAllByTestId('conversationListItem-Item')
-    fireEvent.click(conversations[3])
-    fireEvent.click(conversations[1], {
-      shiftKey: true
-    })
-    const checkboxes = getAllByTestId('conversationListItem-Checkbox')
-    expect(checkboxes.filter(c => c.checked === true).length).toBe(3)
-  })
-
   it('should unselect multi select when conversation opened', () => {
     const {getAllByTestId} = render(<ConversationListHolder {...props} />)
     const conversations = getAllByTestId('conversationListItem-Item')
@@ -273,18 +256,9 @@ describe('ConversationListHolder', () => {
     expect(checkboxes.filter(c => c.checked === true).length).toBe(1)
   })
 
-  describe('Mobile tests', () => {
-    beforeEach(() => {
-      // Repsonsive Query Mock Default
-      responsiveQuerySizes.mockImplementation(() => ({
-        mobile: {minWidth: '320px'}
-      }))
-    })
-
-    it('Should display No Conversations to Show Panda SVG', async () => {
-      const {findByTestId} = render(<ConversationListHolder conversations={[]} />)
-      const noMessages = await findByTestId('conversation-list-no-messages')
-      expect(noMessages).toBeTruthy()
-    })
+  it('Should display No Conversations to Show Panda SVG', async () => {
+    const {findByTestId} = render(<ConversationListHolder conversations={[]} />)
+    const noMessages = await findByTestId('conversation-list-no-messages')
+    expect(noMessages).toBeTruthy()
   })
 })

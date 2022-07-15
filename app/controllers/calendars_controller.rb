@@ -36,7 +36,7 @@ class CalendarsController < ApplicationController
                          else
                            @current_user.get_preference(:selected_calendar_contexts)
                          end
-    @wrap_titles = @domain_root_account&.feature_enabled?(:wrap_calendar_event_titles)
+    @inline_titles = @domain_root_account&.feature_enabled?(:wrap_calendar_event_titles)
     # somewhere there's a bad link that doesn't separate parameters properly.
     # make sure we don't do a find on a non-numeric id.
     if params[:event_id] && params[:event_id] =~ Api::ID_REGEX && (event = CalendarEvent.where(id: params[:event_id]).first) && event.start_at
@@ -51,7 +51,11 @@ class CalendarsController < ApplicationController
         if ag.grants_right? @current_user, session, :create
           ag_permission = { all_sections: true }
         else
-          section_ids = context.section_visibilities_for(@current_user).pluck(:course_section_id)
+          section_ids = if Account.site_admin.feature_enabled?(:section_level_calendar_permissions)
+                          CourseSection.find(context.section_visibilities_for(@current_user).pluck(:course_section_id)).select { |cs| cs.grants_right?(@current_user, session, :manage_calendar) }.pluck(:id)
+                        else
+                          context.section_visibilities_for(@current_user).pluck(:course_section_id)
+                        end
           ag_permission = { all_sections: false, section_ids: section_ids } if section_ids.any?
         end
       end

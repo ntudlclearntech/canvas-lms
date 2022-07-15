@@ -25,7 +25,8 @@ module Auditors::ActiveRecord
       AuthenticationRecord,
       CourseRecord,
       GradeChangeRecord,
-      FeatureFlagRecord
+      FeatureFlagRecord,
+      PseudonymRecord
     ].freeze
 
     def self.precreate_tables
@@ -46,11 +47,7 @@ module Auditors::ActiveRecord
             log "*" * 80
           end
           unless Rails.env.test?
-            if Rails.version < "6.1"
-              ActiveRecord::Base.connection_pool.current_pool.disconnect!
-            else
-              ActiveRecord::Base.connection_pool.disconnect!
-            end
+            ActiveRecord::Base.connection_pool.disconnect!
           end
         end
       end

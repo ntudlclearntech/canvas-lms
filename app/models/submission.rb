@@ -70,8 +70,7 @@ class Submission < ActiveRecord::Base
                 :skip_grader_check,
                 :grade_posting_in_progress,
                 :score_unchanged
-  attr_writer :versioned_originality_reports,
-              :text_entry_originality_reports
+
   # This can be set to true to force late policy behaviour that would
   # be skipped otherwise. See #late_policy_relevant_changes? and
   # #score_late_or_none. It is reset to false in an after save so late
@@ -79,6 +78,7 @@ class Submission < ActiveRecord::Base
   # saved again.
   attr_writer :regraded
   attr_writer :audit_grade_changes
+  attr_writer :versioned_originality_reports
 
   belongs_to :attachment # this refers to the screenshot of the submission if it is a url submission
   belongs_to :assignment, inverse_of: :submissions
@@ -87,7 +87,7 @@ class Submission < ActiveRecord::Base
   belongs_to :user
   alias_method :student, :user
   belongs_to :grader, class_name: "User"
-  belongs_to :grading_period
+  belongs_to :grading_period, inverse_of: :submissions
   belongs_to :group
   belongs_to :media_object
   belongs_to :root_account, class_name: "Account"
@@ -137,7 +137,7 @@ class Submission < ActiveRecord::Base
   validates :points_deducted, numericality: { greater_than_or_equal_to: 0 }, allow_nil: true
   validates :seconds_late_override, numericality: { greater_than_or_equal_to: 0 }, allow_nil: true
   validates :extra_attempts, numericality: { greater_than_or_equal_to: 0 }, allow_nil: true
-  validates :late_policy_status, inclusion: %w[none missing late], allow_nil: true
+  validates :late_policy_status, inclusion: %w[none missing late extended], allow_nil: true
   validates :cached_tardiness, inclusion: ["missing", "late"], allow_nil: true
   validate :ensure_grader_can_grade
   validate :extra_attempts_can_only_be_set_on_online_uploads
@@ -186,7 +186,9 @@ class Submission < ActiveRecord::Base
     joins(:assignment)
       .where(<<~SQL.squish)
         /* excused submissions cannot be missing */
-        excused IS NOT TRUE AND NOT (
+        excused IS NOT TRUE
+        AND (late_policy_status IS DISTINCT FROM 'extended')
+        AND NOT (
           /* teacher said it's missing, 'nuff said. */
           /* we're doing a double 'NOT' here to avoid 'ORs' that could slow down the query */
           late_policy_status IS DISTINCT FROM 'missing' AND NOT
@@ -213,28 +215,29 @@ class Submission < ActiveRecord::Base
   }
 
   scope :late, lambda {
-    left_joins(:quiz_submission)
-      .where("
-      submissions.excused IS NOT TRUE AND (
+    left_joins(:quiz_submission).where(<<~SQL.squish)
+      submissions.excused IS NOT TRUE
+      AND (
         submissions.late_policy_status = 'late' OR
         (submissions.late_policy_status IS NULL AND submissions.submitted_at >= submissions.cached_due_date +
            CASE submissions.submission_type WHEN 'online_quiz' THEN interval '1 minute' ELSE interval '0 minutes' END
            AND (submissions.quiz_submission_id IS NULL OR quiz_submissions.workflow_state = 'complete'))
       )
-    ")
+    SQL
   }
 
   scope :not_late, lambda {
-    left_joins(:quiz_submission)
-      .where("
-      submissions.excused IS TRUE OR (
+    left_joins(:quiz_submission).where(<<~SQL.squish)
+      submissions.excused IS TRUE
+      OR (late_policy_status IS NOT DISTINCT FROM 'extended')
+      OR (
         submissions.late_policy_status is distinct from 'late' AND
         (submissions.submitted_at IS NULL OR submissions.cached_due_date IS NULL OR
           submissions.submitted_at < submissions.cached_due_date +
             CASE submissions.submission_type WHEN 'online_quiz' THEN interval '1 minute' ELSE interval '0 minutes' END
           OR quiz_submissions.workflow_state <> 'complete')
       )
-    ")
+    SQL
   }
 
   GradedAtBookmarker = BookmarkedCollection::SimpleBookmarker.new(Submission, :graded_at)
@@ -373,6 +376,7 @@ class Submission < ActiveRecord::Base
   after_save :create_audit_event!
   after_save :handle_posted_at_changed, if: :saved_change_to_posted_at?
   after_save :delete_submission_drafts!, if: :saved_change_to_attempt?
+  after_save :send_timing_data_if_needed
 
   def reset_regraded
     @regraded = false
@@ -819,22 +823,13 @@ class Submission < ActiveRecord::Base
     turnitin_data.except(:webhook_info, :provider, :last_processed_attempt).merge(data)
   end
 
-  def text_entry_originality_reports
-    @text_entry_originality_reports ||= if association(:originality_reports).loaded?
-                                          originality_reports.select { |o| o.attachment_id.blank? }
-                                        else
-                                          originality_reports.where(attachment_id: nil)
-                                        end
-  end
-
-  # Returns an array of both the versioned originality reports (those with attachments) and
-  # text_entry_originality_reports in a sorted order. The ordering goes from least preferred
-  # report to most preferred reports, assuming there are reports that share the same submission and
-  # attachment combination. Otherwise, the ordering can be safely ignored.
+  # Returns an array of the versioned originality reports in a sorted order. The ordering goes
+  # from least preferred report to most preferred reports, assuming there are reports that share
+  # the same submission and attachment combination. Otherwise, the ordering can be safely ignored.
   #
   # @return [Array<OriginalityReport>]
   def originality_reports_for_display
-    (versioned_originality_reports + text_entry_originality_reports).uniq.sort_by do |report|
+    versioned_originality_reports.uniq.sort_by do |report|
       [OriginalityReport::ORDERED_VALID_WORKFLOW_STATES.index(report.workflow_state) || -1, report.updated_at]
     end
   end
@@ -872,8 +867,7 @@ class Submission < ActiveRecord::Base
   end
 
   def has_originality_report?
-    versioned_originality_reports.present? ||
-      text_entry_originality_reports.present?
+    versioned_originality_reports.present?
   end
 
   def all_versioned_attachments
@@ -1431,6 +1425,20 @@ class Submission < ActiveRecord::Base
     end
   end
 
+  def inferred_workflow_state
+    inferred_state = workflow_state
+
+    # New Quizzes returned a partial grade, but manual review is needed from a human
+    return workflow_state if workflow_state == Submission.workflow_states.pending_review && graded_by_new_quizzes?
+
+    inferred_state = Submission.workflow_states.submitted if unsubmitted? && submitted_at
+    inferred_state = Submission.workflow_states.unsubmitted if submitted? && !has_submission?
+    inferred_state = Submission.workflow_states.graded if grade && score && grade_matches_current_submission
+    inferred_state = Submission.workflow_states.pending_review if submission_type == "online_quiz" && quiz_submission.try(:latest_submitted_attempt).try(:pending_review?)
+
+    inferred_state
+  end
+
   def infer_values
     if assignment
       if assignment.association(:context).loaded?
@@ -1442,10 +1450,7 @@ class Submission < ActiveRecord::Base
 
     self.submitted_at ||= Time.now if has_submission?
     quiz_submission.reload if quiz_submission_id
-    self.workflow_state = "submitted" if unsubmitted? && self.submitted_at
-    self.workflow_state = "unsubmitted" if submitted? && !has_submission?
-    self.workflow_state = "graded" if grade && score && grade_matches_current_submission
-    self.workflow_state = "pending_review" if submission_type == "online_quiz" && quiz_submission.try(:latest_submitted_attempt).try(:pending_review?)
+    self.workflow_state = inferred_workflow_state
     if (workflow_state_changed? && graded?) || late_policy_status_changed?
       self.graded_at = Time.now
     end
@@ -1559,7 +1564,7 @@ class Submission < ActiveRecord::Base
   def late_policy_status_manually_applied?
     cleared_late = late_policy_status_was == "late" && ["none", nil].include?(late_policy_status)
     cleared_none = late_policy_status_was == "none" && late_policy_status.nil?
-    late_policy_status == "missing" || late_policy_status == "late" || cleared_late || cleared_none
+    late_policy_status == "missing" || late_policy_status == "late" || late_policy_status == "extended" || cleared_late || cleared_none
   end
   private :late_policy_status_manually_applied?
 
@@ -1744,16 +1749,23 @@ class Submission < ActiveRecord::Base
   end
 
   def versioned_originality_reports
-    @versioned_originality_reports ||= begin
-      attachment_ids = attachment_ids_for_version
-      if attachment_ids.empty?
+    @versioned_originality_reports ||=
+      # turns out the database stores timestamps with 9 decimal places, but Ruby/Rails only serves
+      # up 6.  however, submission versions (when deserialized into a Submission model) like to
+      # show 9. and apparently to_f rounds, but iso8601 doesn't
+      # it would be better if we saved the attempt number on the originality report and matched
+      # them up that way
+      if submitted_at.nil?
         []
-      elsif association(:originality_reports).loaded?
-        originality_reports.select { |o| attachment_ids.include?(o.attachment_id) }
       else
-        originality_reports.where(attachment_id: attachment_ids)
+        originality_reports.select do |o|
+          o.submission_time&.iso8601(6) == submitted_at&.iso8601(6) ||
+            # ...and sometimes originality reports don't have submission times, so we're doing our
+            # best to guess based on attachment_id (or the lack) and creation times
+            (o.submission_time.nil? && o.created_at > submitted_at &&
+              (attachment_ids&.split(",").presence || [""]).include?(o.attachment_id.to_s))
+        end
       end
-    end
   end
 
   def versioned_attachments
@@ -1812,32 +1824,44 @@ class Submission < ActiveRecord::Base
   # submissions (avoids having O(N) originality report queries)
   # NOTE: all submissions must belong to the same shard
   def self.bulk_load_versioned_originality_reports(submissions)
-    attachment_ids_by_submission_and_index = group_attachment_ids_by_submission_and_index(submissions)
-    bulk_attachment_ids = attachment_ids_by_submission_and_index.values.flatten
+    reports = originality_reports_by_submission_id_submission_time_attachment_id(submissions)
+    submissions.each do |s|
+      s.versioned_originality_reports = [] && next unless s.submitted_at
+      reports_for_sub = reports.dig(s.id, s.submitted_at.iso8601(6)) || []
 
-    reports_by_attachment_id = if bulk_attachment_ids.empty?
-                                 {}
-                               else
-                                 OriginalityReport.where(
-                                   submission_id: submissions.map(&:id), attachment_id: bulk_attachment_ids
-                                 ).group_by(&:attachment_id)
-                               end
-
-    submissions.each_with_index do |s, index|
-      s.versioned_originality_reports =
-        reports_by_attachment_id.values_at(*attachment_ids_by_submission_and_index[[s, index]]).flatten.compact
+      # nil for originality reports with no submission time
+      reports.dig(s.id, nil)&.each do |attach_id, reports_for_attach_id|
+        # Without submission times on some originality reports, linking up via attachment id or
+        # lack of attachment id isn't particularly specific to the submission version.
+        # Students can submit the same attachment multiple times or submit only text (no attachment id)
+        # multiple times, and without a submission_time we don't have a good way of matching them
+        # (though at least in the case of using the same Canvas attachment id, it should be the same
+        # document, but no guarantees different originality reports for each version will have the
+        # same scores)
+        # In submission histories, we're just giving all of the originality reports we can't
+        # rule out, but we can at least rule out any report that was created before a new submission
+        # as belonging to that submission
+        if (s.attachment_ids&.split(",").presence || [""]).include?(attach_id.to_s)
+          reports_for_sub += reports_for_attach_id.select { |r| r.created_at > s.submitted_at }
+        end
+      end
+      s.versioned_originality_reports = reports_for_sub
     end
   end
 
-  def self.bulk_load_text_entry_originality_reports(submissions)
-    submissions = Array(submissions)
-    submission_ids = submissions.map(&:id)
-
-    reports_by_submission =
-      OriginalityReport.where(submission_id: submission_ids, attachment_id: nil).group_by(&:submission_id)
-
-    submissions.each do |s|
-      s.text_entry_originality_reports = reports_by_submission[s.id] || []
+  def self.originality_reports_by_submission_id_submission_time_attachment_id(submissions)
+    reports = OriginalityReport.where(submission_id: submissions)
+    reports.each_with_object({}) do |report, hash|
+      report_submission_time = report.submission_time&.iso8601(6)
+      hash[report.submission_id] ||= {}
+      if report_submission_time
+        hash[report.submission_id][report_submission_time] ||= []
+        hash[report.submission_id][report_submission_time] << report
+      else
+        hash[report.submission_id][nil] ||= {}
+        hash[report.submission_id][nil][report.attachment_id] ||= []
+        hash[report.submission_id][nil][report.attachment_id] << report
+      end
     end
   end
 
@@ -2395,6 +2419,14 @@ class Submission < ActiveRecord::Base
     end
     alias_method :missing, :missing?
 
+    def extended?
+      return false if excused?
+      return late_policy_status == "extended" if late_policy_status.present?
+
+      false
+    end
+    alias_method :extended, :extended?
+
     def graded?
       excused || (!!score && workflow_state == "graded")
     end
@@ -2866,6 +2898,10 @@ class Submission < ActiveRecord::Base
 
   private
 
+  def graded_by_new_quizzes?
+    cached_quiz_lti && autograded?
+  end
+
   def set_late_policy_attributes
     self.seconds_late_override = nil unless late_policy_status == "late"
 
@@ -2960,5 +2996,20 @@ class Submission < ActiveRecord::Base
       Assignment.find(assignment_id).hide_submissions(submission_ids: [id], skip_updating_timestamp: true, skip_muted_changed: true)
       assignment.reload
     end
+  end
+
+  def send_timing_data_if_needed
+    return unless saved_change_to_workflow_state? &&
+                  workflow_state == Submission.workflow_states.graded &&
+                  workflow_state_before_last_save == Submission.workflow_states.pending_review &&
+                  (submission_type == "online_quiz" || (submission_type == "basic_lti_launch" && url.include?("quiz-lti")))
+
+    time = graded_at - submitted_at
+    return if time < 30
+
+    InstStatsd::Statsd.gauge("submission.manually_graded.grading_time",
+                             time,
+                             Setting.get("submission_grading_timing_sample_rate", "1.0").to_f,
+                             tags: { quiz_type: submission_type == "online_quiz" ? "classic_quiz" : "new_quiz" })
   end
 end

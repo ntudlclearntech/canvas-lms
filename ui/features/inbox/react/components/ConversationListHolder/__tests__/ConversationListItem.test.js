@@ -125,18 +125,6 @@ describe('ConversationListItem', () => {
       expect(checkbox.checked).toBe(false)
     })
 
-    it('calls onOpen when the conversation is clicked', () => {
-      const onOpenMock = jest.fn()
-
-      const props = createProps({onOpen: onOpenMock})
-
-      const {getByText} = render(<ConversationListItem {...props} />)
-
-      const subjectLine = getByText('This is the subject line')
-      fireEvent.click(subjectLine)
-      expect(onOpenMock).toHaveBeenCalled()
-    })
-
     it('shows and hides the star button correctly', () => {
       const onStarMock = jest.fn()
 
@@ -145,13 +133,13 @@ describe('ConversationListItem', () => {
       const {queryByTestId, getByText} = render(<ConversationListItem {...props} />)
 
       // star not shown by default
-      expect(queryByTestId('visible-star')).not.toBeInTheDocument()
+      expect(queryByTestId('visible-not-starred')).not.toBeInTheDocument()
       // star shown when conversation is moused over
       const subjectLine = getByText('This is the subject line')
       fireEvent.mouseOver(subjectLine)
-      expect(queryByTestId('visible-star')).toBeInTheDocument()
+      expect(queryByTestId('visible-not-starred')).toBeInTheDocument()
 
-      fireEvent.click(queryByTestId('visible-star'))
+      fireEvent.click(queryByTestId('visible-not-starred'))
       expect(onStarMock).toHaveBeenLastCalledWith(true, props.conversation._id)
     })
 
@@ -188,38 +176,6 @@ describe('ConversationListItem', () => {
           conversationIds: ['1'],
           workflowState: 'unread'
         }
-      })
-    })
-  })
-
-  describe('responsiveness', () => {
-    describe('tablet', () => {
-      beforeEach(() => {
-        responsiveQuerySizes.mockImplementation(() => ({
-          tablet: {maxWidth: '67'}
-        }))
-      })
-
-      it('should emit correct test id for tablet', async () => {
-        const props = createProps({})
-        const container = render(<ConversationListItem {...props} />)
-        const listItem = await container.findByTestId('list-item-tablet')
-        expect(listItem).toBeTruthy()
-      })
-    })
-
-    describe('desktop', () => {
-      beforeEach(() => {
-        responsiveQuerySizes.mockImplementation(() => ({
-          desktop: {minWidth: '768'}
-        }))
-      })
-
-      it('should emit correct test id for desktop', async () => {
-        const props = createProps({})
-        const container = render(<ConversationListItem {...props} />)
-        const listItem = await container.findByTestId('list-item-desktop')
-        expect(listItem).toBeTruthy()
       })
     })
   })

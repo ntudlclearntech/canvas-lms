@@ -19,29 +19,11 @@
 import moment from 'moment-timezone'
 
 import {BlackoutDate} from '../../shared/types'
-import {
-  weekendIntegers,
-  sundayWeekdayInteger,
-  saturdayWeekdayInteger
-} from '../../shared/api/backend_serializer'
+import {weekendIntegers} from '../../shared/api/backend_serializer'
 
 /*
  * Any date manipulation should be consolidated into helper functions in this file
  */
-
-// Takes a date and shifts it to the next weekday if it lands on a weekend
-export const adjustDateOnSkipWeekends = (rawDate: string): string => {
-  const date = moment(rawDate)
-  switch (date.weekday()) {
-    case sundayWeekdayInteger:
-      date.add(1, 'day')
-      break
-    case saturdayWeekdayInteger:
-      date.subtract(1, 'day')
-      break
-  }
-  return formatDate(date)
-}
 
 // Takes a date string and formats it in iso8601 in the course pace timezone
 export const formatDate = (date: string | moment.Moment): string => {
@@ -51,6 +33,9 @@ export const formatDate = (date: string | moment.Moment): string => {
 // Calculates the days between the start and end dates.
 // Skips weekends if excludeWeekends is true, and includes
 // the end date if inclusiveEnd is true.
+// Note: before evaluating, start and end are converted to end of day
+//       to keep from being surprised, blackoutDates should also be
+//       set to end of day.
 export const daysBetween = (
   start: string | moment.Moment,
   end: string | moment.Moment,
