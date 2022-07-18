@@ -39,7 +39,7 @@ module QuizzesHelper
 
   def unpublished_quiz_warning
   content_tag(:strong, I18n.t(
-    '*This quiz is unpublished* Only teachers can see the quiz until ' +
+    'This quiz is unpublished. Only teachers can see the quiz until ' +
     'it is published.'), class: "unpublished_quiz_warning")
     # I18n.t(
     #   '*This quiz is unpublished* Only teachers can see the quiz until ' +

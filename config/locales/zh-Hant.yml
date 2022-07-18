@@ -22266,8 +22266,10 @@ zh-Hant:
           loading_in_lockdown: "在 Respondus LockDown 瀏覽器中載入測驗"
       show: 
         buttons: 
+          lock: 鎖定
           lock_quiz: 鎖定
           lock_survey: 鎖定
+          unlock: 開放
           unlock_quiz: 開放
           unlock_survey: 開放
         course_concluded_notice: 由於課程已結束，不再提供此測驗。
@@ -29163,6 +29165,7 @@ zh-Hant:
   view_this_message_in_conversations_5a16bc9f: 在交談中檢視此訊息
   view_this_message_in_ntu_cool_e897e8c5: 在 NTU COOL 中檢視此訊息
   this_mail_is_automatically_sent_by_ntu_cool_please_d26821b6: 請注意：此郵件是系統自動傳送，請勿直接回覆！
+  some_contents_may_not_display_properly_please_logi_a2e32874: 部分內容可能無法顯示，請登入NTU COOL查看完整訊息
   view_timestamps_in_time_zone_9b699a8b: 檢視時區中的時間戳記
   view_toolname_placements_4a5724d1: "檢視 %{toolName} 配置"
   view_ungraded_as_0_1a9631a1: "將未評分視為 0 分檢視"
