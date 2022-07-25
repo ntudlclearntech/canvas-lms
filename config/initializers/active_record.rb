@@ -253,7 +253,12 @@ class ActiveRecord::Base
   end
 
   def touch_context
-    return if ((@@skip_touch_context ||= false) || (@skip_touch_context ||= false))
+    @@skip_touch_context ||= false
+    @skip_touch_context ||= false
+    # temporarily logging extra details here to debug LS-3147
+    log_details = is_a? Announcement
+    Canvas::Errors.capture_exception(:touch_context, "touch_context: @@skip_touch_context=#{@@skip_touch_context}; @skip_touch_context=#{@skip_touch_context}", :info) if log_details
+    return if @@skip_touch_context || @skip_touch_context
 
     self.class.connection.after_transaction_commit do
       Canvas::Errors.capture_exception(:touch_context, "touch_context: respond_to?(:context_type)=#{respond_to?(:context_type)}; respond_to?(:context_id)=#{respond_to?(:context_id)}; context_type=#{context_type}; context_id=#{context_id}", :info) if log_details
