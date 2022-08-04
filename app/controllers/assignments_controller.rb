@@ -620,6 +620,7 @@ class AssignmentsController < ApplicationController
 
     @assignment.workflow_state = "unpublished"
     @assignment.updating_user = @current_user
+    @assignment.points_possible ||= 100
     @assignment.content_being_saved_by(@current_user)
     @assignment.assignment_group = group if group
     # if no due_at was given, set it to 11:59 pm in the creator's time zone
