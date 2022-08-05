@@ -114,6 +114,7 @@ export default class CreateAssignmentView extends DialogFormView
   generateNewAssignment: ->
     assign = new Assignment
     assign.assignmentGroupId(@assignmentGroup.id) if @assignmentGroup
+    assign.pointsPossible(100)
     assign
 
   toJSON: ->
