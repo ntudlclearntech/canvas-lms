@@ -79,7 +79,7 @@ class Assignment < ActiveRecord::Base
     anonymous_instructor_annotations
   ].freeze
 
-  DEFAULT_POINTS_POSSIBLE = 0
+  DEFAULT_POINTS_POSSIBLE = 100
 
   attr_accessor :previous_id, :copying, :user_submitted, :grade_posting_in_progress, :unposted_anonymous_submissions
   attr_reader :assignment_changed, :posting_params_for_notifications
