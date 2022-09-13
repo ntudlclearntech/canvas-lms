@@ -89,6 +89,7 @@ export const getPublishingError = (state: StoreState): string | undefined => {
 export const getOriginalEndDate = (state: StoreState): OptionalDate =>
   state.original.coursePace.end_date
 export const isStudentPace = (state: StoreState) => state.coursePace.context_type === 'Enrollment'
+export const isSectionPace = (state: StoreState) => state.coursePace.context_type === 'Section'
 export const isNewPace = (state: StoreState) => !(state.coursePace.id || isStudentPace(state)) // for now, there are no "new" student paces
 export const getIsPaceCompressed = (state: StoreState): boolean =>
   !!state.coursePace.compressed_due_dates
@@ -423,7 +424,11 @@ export const mergeAssignmentsAndBlackoutDates = (
   const dueDateKeys = Object.keys(dueDates)
   let veryLastDueDate = moment('3000-01-01T00:00:00Z')
   if (dueDateKeys.length) {
-    veryLastDueDate = moment(dueDates[dueDateKeys[dueDateKeys.length - 1]])
+    let lastDueDate = moment(dueDates[dueDateKeys[0]])
+    dueDateKeys.forEach(key => {
+      if (moment(dueDates[key]).isAfter(lastDueDate)) lastDueDate = moment(dueDates[key])
+    })
+    veryLastDueDate = lastDueDate
   }
   const paceEnd = coursePace.end_date ? moment(coursePace.end_date) : veryLastDueDate
   const boDates: Array<any> = blackoutDates

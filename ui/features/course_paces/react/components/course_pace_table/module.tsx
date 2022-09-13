@@ -25,7 +25,7 @@ import {Flex} from '@instructure/ui-flex'
 import {Heading} from '@instructure/ui-heading'
 import {
   IconMiniArrowDownLine,
-  IconMiniArrowRightLine,
+  IconMiniArrowEndLine,
   IconWarningLine,
   IconInfoLine
 } from '@instructure/ui-icons'
@@ -50,6 +50,7 @@ interface PassedProps {
   readonly responsiveSize: ResponsiveSizes
   readonly showProjections: boolean
   readonly compression: number
+  readonly blueprintLocked: boolean
 }
 
 type ComponentProps = PassedProps
@@ -86,7 +87,7 @@ export const Module: React.FC<ComponentProps> = props => {
   const renderDateColHeader = () => {
     if (!props.showProjections && !actuallyExpanded && !datesVisible) return null
     return (
-      <ColHeader width={actuallyExpanded ? 'auto' : '0'} id={`module-${props.module.id}-duration`}>
+      <ColHeader data-testid="pp-due-date-columnheader" width={actuallyExpanded ? 'auto' : '0'} id={`module-${props.module.id}-duration`}>
         <Flex
           as="div"
           aria-labelledby="due-date-column-title"
@@ -133,6 +134,7 @@ export const Module: React.FC<ComponentProps> = props => {
         coursePaceItem={item}
         dueDate={item.date}
         isStacked={isTableStacked}
+        blueprintLocked={props.blueprintLocked}
       />
     )
   }
@@ -176,7 +178,7 @@ export const Module: React.FC<ComponentProps> = props => {
       >
         <ToggleDetails
           summary={renderModuleHeader()}
-          icon={() => <IconMiniArrowRightLine />}
+          icon={() => <IconMiniArrowEndLine />}
           iconExpanded={() => <IconMiniArrowDownLine />}
           variant="filled"
           defaultExpanded
@@ -231,7 +233,7 @@ export const Module: React.FC<ComponentProps> = props => {
                     </Flex>
                   </ColHeader>
                   {renderDateColHeader()}
-                  <ColHeader id={`module-${props.module.id}-status`} textAlign="center">
+                  <ColHeader data-testid="pp-status-columnheader" id={`module-${props.module.id}-status`} textAlign="center">
                     <Flex as="div" alignItems="end" justifyItems="center" padding={headerPadding}>
                       {I18n.t('Status')}
                     </Flex>

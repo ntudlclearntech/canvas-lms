@@ -27,7 +27,12 @@ import {IconButton} from '@instructure/ui-buttons'
 import {IconArrowOpenEndSolid, IconArrowOpenStartSolid} from '@instructure/ui-icons'
 import {nanoid} from 'nanoid'
 import {log} from '@canvas/datetime-natural-parsing-instrument'
-import {DateInputInteraction, DateInputLayout} from '@instructure/ui-date-input/types'
+import {
+  DateInputInteraction,
+  DateInputLayout,
+  DateInputDisplay,
+  DateInputSize
+} from '@instructure/ui-date-input/types'
 
 const I18n = useI18nScope('app_shared_components_canvas_date_time')
 
@@ -116,7 +121,15 @@ export type CanvasDateInputProps = {
   /**
    * Specifies the input size. One of: small medium large
    */
-  size?: string
+  size?: DateInputSize
+  /**
+   * Specifies the display property of the container. One of: inline-block block
+   */
+  display?: DateInputDisplay
+  /**
+   * Passed on to `DateInput`. Text to show when input is empty.
+   */
+  placeholder?: string
 }
 
 /**
@@ -142,7 +155,9 @@ export default function CanvasDateInput({
   width,
   dateIsDisabled,
   dataTestid,
-  size
+  size,
+  display,
+  placeholder
 }: CanvasDateInputProps) {
   const todayMoment = moment().tz(timezone)
   const selectedMoment = selectedDate ? moment.tz(selectedDate, timezone) : null
@@ -406,8 +421,10 @@ export default function CanvasDateInput({
       interaction={interaction}
       layout={layout}
       width={width}
+      display={display}
       data-testid={dataTestid}
       size={size}
+      placeholder={placeholder}
     >
       {renderDays()}
     </DateInput>

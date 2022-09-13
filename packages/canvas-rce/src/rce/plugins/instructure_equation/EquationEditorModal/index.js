@@ -54,6 +54,7 @@ export default class EquationEditorModal extends Component {
 
   // used for inline latex delimited like: \( ... \) OR $$ ... $$
   static boundaryRegex = /\\\((.+?)\\\)|\$\$(.+?)\$\$/g
+
   static debounceRate = 1000
 
   static defaultProps = {
@@ -67,6 +68,7 @@ export default class EquationEditorModal extends Component {
   }
 
   hostPageDisablesShortcuts = null
+
   originalFormula = null
 
   previewElement = React.createRef()
@@ -288,10 +290,10 @@ export default class EquationEditorModal extends Component {
   // ******************* //
 
   renderFooter = () => {
-    const cancelButton = <Button onClick={this.handleModalCancel}>{formatMessage('Cancel')}</Button>
+    const cancelButton = <Button data-testid="equation-editor-modal-cancel" onClick={this.handleModalCancel}>{formatMessage('Cancel')}</Button>
 
     const doneButton = (
-      <Button margin="none none none xx-small" onClick={this.handleModalDone} variant="primary">
+      <Button data-testid="equation-editor-modal-done" margin="none none none xx-small" onClick={this.handleModalDone} variant="primary">
         {formatMessage('Done')}
       </Button>
     )
@@ -337,12 +339,21 @@ export default class EquationEditorModal extends Component {
   componentDidMount() {
     this.registerBasicEditorListener()
     this.setPreviewElementContent()
+    this.stubMacros()
   }
 
   componentDidUpdate(prevProps, prevState) {
     if (this.state.workingFormula !== prevState.workingFormula) {
       this.setPreviewElementContent()
     }
+  }
+
+  stubMacros() {
+    // Mathlive's macros exist for a different use case;
+    // we don't intend for our users to utilize them.
+    // This effectively disables all of them to prevent
+    // weird behaviors that users don't expect.
+    this.mathField?.setOptions({macros: {}})
   }
 
   render = () => {
@@ -362,6 +373,7 @@ export default class EquationEditorModal extends Component {
       >
         <Modal.Header>
           <CloseButton
+            data-testid="equation-editor-modal-close"
             placement="end"
             offset="medium"
             variant="icon"

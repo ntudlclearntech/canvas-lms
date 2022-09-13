@@ -133,9 +133,9 @@ describe('Assignment Student Content View', () => {
       expect(queryByRole('button', {name: 'Mark as done'})).not.toBeInTheDocument()
     })
 
-    it.skip('renders the rubric if the assignment has one', async () => {
-      window.ENV.ASSIGNMENT_ID = 1
-      window.ENV.COURSE_ID = 1
+    it('renders the rubric if the assignment has one', async () => {
+      window.ENV.ASSIGNMENT_ID = '1'
+      window.ENV.COURSE_ID = '1'
       props.assignment.rubric = {}
 
       const variables = {
@@ -239,6 +239,7 @@ describe('Assignment Student Content View', () => {
     // https://instructure.atlassian.net/browse/USERS-385
     // eslint-disable-next-line jest/no-disabled-tests
     it.skip('renders Comments', async () => {
+      // To be unskipped in EVAL-1679
       const mocks = await makeMocks()
       const props = await mockAssignmentAndSubmission()
       const {getByText} = render(
@@ -353,6 +354,19 @@ describe('Assignment Student Content View', () => {
       expect(queryByText('3 Attempts Allowed')).not.toBeInTheDocument()
     })
 
+    it('does not render the number of attempts if peer review mode is enabled', async () => {
+      const props = await mockAssignmentAndSubmission({
+        Assignment: {allowedAttempts: 3}
+      })
+      props.assignment.env.peerReviewModeEnabled = true
+      const {queryByText} = render(
+        <MockedProvider>
+          <StudentContent {...props} />
+        </MockedProvider>
+      )
+      expect(queryByText('3 Attempts Allowed')).not.toBeInTheDocument()
+    })
+
     it('takes into account extra attempts awarded to the student', async () => {
       const props = await mockAssignmentAndSubmission({
         Assignment: {allowedAttempts: 3},
@@ -400,8 +414,8 @@ describe('Assignment Student Content View', () => {
 
   describe('Unpublished module', () => {
     it('renders UnpublishedModule', async () => {
-      window.ENV = {belongs_to_unpublished_module: true}
       const props = await mockAssignmentAndSubmission()
+      props.assignment.env.belongsToUnpublishedModule = true
       const {getByText} = render(
         <MockedProvider>
           <StudentContent {...props} />
@@ -410,6 +424,52 @@ describe('Assignment Student Content View', () => {
       expect(
         getByText('This assignment is part of an unpublished module and is not available yet.')
       ).toBeInTheDocument()
+    })
+  })
+
+  describe('Unavailable peer review', () => {
+    it('is rendered when peerReviewModeEnabled is true and peerReviewAvailable is false', async () => {
+      const props = await mockAssignmentAndSubmission()
+      props.assignment.env.peerReviewModeEnabled = true
+      props.assignment.env.peerReviewAvailable = false
+      const {getByText} = render(
+        <MockedProvider>
+          <StudentContent {...props} />
+        </MockedProvider>
+      )
+      expect(
+        getByText('There are no submissions available to review just yet.')
+      ).toBeInTheDocument()
+      expect(getByText('Please check back soon.')).toBeInTheDocument()
+    })
+
+    it('is not rendered when peerReviewModeEnabled is true and peerReviewAvailable is true', async () => {
+      const props = await mockAssignmentAndSubmission()
+      props.assignment.env.peerReviewModeEnabled = false
+      props.assignment.env.peerReviewAvailable = true
+      const {queryByText} = render(
+        <MockedProvider>
+          <StudentContent {...props} />
+        </MockedProvider>
+      )
+      expect(
+        queryByText('There are no submissions available to review just yet.')
+      ).not.toBeInTheDocument()
+      expect(queryByText('Please check back soon.')).not.toBeInTheDocument()
+    })
+
+    it('is not rendered when peerReviewModeEnabled is false', async () => {
+      const props = await mockAssignmentAndSubmission()
+      props.assignment.env.peerReviewModeEnabled = false
+      const {queryByText} = render(
+        <MockedProvider>
+          <StudentContent {...props} />
+        </MockedProvider>
+      )
+      expect(
+        queryByText('There are no submissions available to review just yet.')
+      ).not.toBeInTheDocument()
+      expect(queryByText('Please check back soon.')).not.toBeInTheDocument()
     })
   })
 

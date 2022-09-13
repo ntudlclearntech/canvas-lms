@@ -32,6 +32,7 @@ class WebConference < ActiveRecord::Base
 
   validates :description, length: { maximum: maximum_text_length, allow_blank: true }
   validates :conference_type, :title, :context_id, :context_type, :user_id, presence: true
+  validates :title, length: { within: 0..255 }
   validate :lti_tool_valid, if: -> { conference_type == "LtiConference" }
 
   MAX_DURATION = 99_999_999
@@ -204,9 +205,11 @@ class WebConference < ActiveRecord::Base
   set_broadcast_policy do |p|
     p.dispatch :web_conference_invitation
     p.to do
-      @new_participants.select do |participant|
+      notification_recipients = @new_participants.select do |participant|
         context.membership_for_user(participant).try(:active?)
       end
+      @new_participants = []
+      notification_recipients
     end
     p.whenever { context_is_available? && @new_participants && !@new_participants.empty? }
     p.data { course_broadcast_data }

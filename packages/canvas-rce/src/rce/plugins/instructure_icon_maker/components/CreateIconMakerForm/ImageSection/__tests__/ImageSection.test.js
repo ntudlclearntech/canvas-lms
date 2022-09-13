@@ -17,13 +17,14 @@
  */
 
 import React from 'react'
-import {fireEvent, render, waitFor} from '@testing-library/react'
+import {act, fireEvent, render, waitFor} from '@testing-library/react'
 import {ImageSection} from '../ImageSection'
 import fetchMock from 'fetch-mock'
 import FakeEditor from '../../../../../shared/__tests__/FakeEditor'
 import svg from '../SingleColor/svg'
 import {Size} from '../../../../svg/constants'
 
+jest.useFakeTimers()
 jest.mock('../../../../../shared/StoreContext', () => {
   return {
     ...jest.requireActual('../../../../../shared/StoreContext'),
@@ -128,7 +129,10 @@ describe('ImageSection', () => {
     window.HTMLElement.prototype.scrollIntoView = scrollIntoView
   })
 
-  afterEach(() => jest.clearAllMocks())
+  afterEach(async () => {
+    await act(async() => { jest.runOnlyPendingTimers() })
+    jest.clearAllMocks()
+  })
 
   it('renders the image mode selector', () => {
     const {getByText} = subject()
@@ -206,9 +210,8 @@ describe('ImageSection', () => {
   })
 
   describe('calls onChange passing metadata when state prop changes', () => {
-    let getByTestId, getByText, getByTitle, container
+    let getByTestId, getByText, getByTitle, getByRole, container
 
-    const flushPromises = () => new Promise(setImmediate)
     const lastPayloadOfActionType = (mockFn, type) =>
       mockFn.mock.calls.reverse().find(call => call[0].type === type)[0].payload
 
@@ -220,6 +223,7 @@ describe('ImageSection', () => {
       getByTestId = rendered.getByTestId
       getByText = rendered.getByText
       getByTitle = rendered.getByTitle
+      getByRole = rendered.getByRole
       container = rendered.container
     })
 
@@ -256,7 +260,7 @@ describe('ImageSection', () => {
       it('when select mode', async () => {
         fireEvent.click(getByText('Add Image'))
         fireEvent.click(getByText('Course Images'))
-        await flushPromises()
+        await act(async() => { jest.runOnlyPendingTimers() })
         const payload = lastPayloadOfActionType(defaultProps.onChange, 'SetImageSettings')
         expect(payload.mode).toEqual('Course')
       })
@@ -264,9 +268,9 @@ describe('ImageSection', () => {
       it('when select image', async () => {
         fireEvent.click(getByText('Add Image'))
         fireEvent.click(getByText('Course Images'))
-        await flushPromises()
+        await act(async() => { jest.runOnlyPendingTimers() })
         fireEvent.click(getByTitle('Click to embed image_one.png'))
-        await flushPromises()
+        await act(async() => { jest.runOnlyPendingTimers() })
         const payload = lastPayloadOfActionType(defaultProps.onChange, 'SetImageSettings')
         expect(payload.image).toEqual('data:image/png;base64,asdfasdfjksdf==')
         expect(payload.imageName).toEqual('grid.png')
@@ -276,9 +280,9 @@ describe('ImageSection', () => {
         fireEvent.click(getByText('Add Image'))
         fireEvent.click(getByText('Course Images'))
         fireEvent.click(getByTitle('Click to embed image_one.png'))
-        await flushPromises()
-        fireEvent.click(getByText(/crop image/i))
-        await flushPromises()
+        await act(async() => { jest.runOnlyPendingTimers() })
+        fireEvent.click(getByRole('button', {name: /crop image/i}))
+        await act(async() => { jest.runOnlyPendingTimers() })
         // Zooms in just to change cropper settings
         fireEvent.click(
           document.querySelector(
@@ -286,13 +290,15 @@ describe('ImageSection', () => {
           )
         )
         fireEvent.click(document.querySelector('[data-cid="Modal"] [type="submit"]'))
-        await flushPromises()
+        await act(async() => { jest.runOnlyPendingTimers() })
         const payload = lastPayloadOfActionType(defaultProps.onChange, 'SetImageSettings')
         expect(payload.cropperSettings).toEqual({
           image: 'data:image/png;base64,asdfasdfjksdf==',
           shape: 'square',
           rotation: 0,
-          scaleRatio: 1.1
+          scaleRatio: 1.1,
+          translateX: 0,
+          translateY: 0
         })
       })
     })
@@ -302,7 +308,7 @@ describe('ImageSection', () => {
       fireEvent.click(getByText('Multi Color Image'))
       await waitFor(() => expect(getByTestId('multicolor-svg-list')).toBeInTheDocument())
       fireEvent.click(getByTestId('icon-maker-art'))
-      await flushPromises()
+      await act(async() => { jest.runOnlyPendingTimers() })
       const payload = lastPayloadOfActionType(defaultProps.onChange, 'SetImageSettings')
       expect(payload.imageName).toEqual('Art Icon')
     })
@@ -312,14 +318,14 @@ describe('ImageSection', () => {
       fireEvent.click(getByText('Single Color Image'))
       await waitFor(() => expect(getByTestId('singlecolor-svg-list')).toBeInTheDocument())
       fireEvent.click(getByTestId('icon-maker-art'))
-      await flushPromises()
+      await act(async() => { jest.runOnlyPendingTimers() })
       await waitFor(() => {
         expect(container.querySelector('[name="single-color-image-fill"]')).toBeInTheDocument()
       })
       fireEvent.change(container.querySelector('[name="single-color-image-fill"]'), {
         target: {value: '#00FF00'}
       })
-      await flushPromises()
+      await act(async() => { jest.runOnlyPendingTimers() })
       const payload = lastPayloadOfActionType(defaultProps.onChange, 'SetImageSettings')
       expect(payload.iconFillColor).toEqual('#00FF00')
     })
@@ -384,7 +390,7 @@ describe('ImageSection', () => {
 
     describe('and an image is clicked', () => {
       let originalFileReader
-      const flushPromises = () => new Promise(setImmediate)
+      const flushPromises = () => new Promise(setTimeout)
 
       beforeEach(() => {
         fetchMock.mock('http://canvas.docker/files/722/download?download_frd=1', {})
@@ -413,7 +419,7 @@ describe('ImageSection', () => {
       })
 
       it('dispatches an action to update parent state image', async () => {
-        await flushPromises()
+        await act(async() => { jest.runOnlyPendingTimers() })
         expect(defaultProps.onChange).toHaveBeenCalledWith({
           type: 'SetEncodedImage',
           payload: 'data:image/png;base64,asdfasdfjksdf=='
@@ -421,7 +427,7 @@ describe('ImageSection', () => {
       })
 
       it('dispatches an action to update parent state image type', async () => {
-        await flushPromises()
+        await act(async() => { jest.runOnlyPendingTimers() })
         expect(defaultProps.onChange).toHaveBeenCalledWith({
           type: 'SetEncodedImageType',
           payload: 'Course'
@@ -429,7 +435,7 @@ describe('ImageSection', () => {
       })
 
       it('dispatches an action to update parent state image name', async () => {
-        await flushPromises()
+        await act(async() => { jest.runOnlyPendingTimers() })
         expect(defaultProps.onChange).toHaveBeenCalledWith({
           type: 'SetEncodedImageName',
           payload: 'grid.png'
@@ -513,6 +519,7 @@ describe('ImageSection', () => {
             target: {value: '#00FF00'}
           })
         })
+        await act(async() => { jest.runOnlyPendingTimers() })
         await waitFor(() => {
           expect(spyFn).toHaveBeenCalledWith('#00FF00')
           expect(getByTestId('selected-image-preview')).toHaveStyle(
@@ -614,6 +621,7 @@ describe('ImageSection', () => {
           }}
         />
       )
+      await act(async() => { jest.runOnlyPendingTimers() })
       expect(rendered.container.querySelector('[name="single-color-image-fill"]')).toHaveValue(
         '#00FF00'
       )

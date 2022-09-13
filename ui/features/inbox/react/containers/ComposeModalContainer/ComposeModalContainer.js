@@ -152,16 +152,18 @@ const ComposeModalContainer = props => {
   const validMessageFields = () => {
     let isValid = true
     if (!body) {
-      setBodyMessages([{text: I18n.t('Message body is required'), type: 'error'}])
+      setBodyMessages([{text: I18n.t('Please insert a message body.'), type: 'error'}])
       isValid = false
     }
 
-    if (!isSubmissionCommentsType && !props.isReply) {
+    if (!isSubmissionCommentsType) {
       if (addressBookInputValue !== '') {
-        setAddressBookMessages([{text: I18n.t('Invalid recipient'), type: 'error'}])
+        setAddressBookMessages([
+          {text: I18n.t('No matches found. Please insert a valid recipient.'), type: 'error'}
+        ])
         isValid = false
       } else if (props.selectedIds.length === 0) {
-        setAddressBookMessages([{text: I18n.t('You must choose a recipient'), type: 'error'}])
+        setAddressBookMessages([{text: I18n.t('Please select a recipient.'), type: 'error'}])
         isValid = false
       }
     }
@@ -225,12 +227,13 @@ const ComposeModalContainer = props => {
       await props.createConversation({
         variables: {
           attachmentIds: attachments.map(a => a.id),
+          bulkMessage: sendIndividualMessages,
           body,
           userNote,
-          contextCode: selectedContext?.contextID,
+          contextCode: selectedContext?.contextID || ENV?.CONVERSATIONS?.ACCOUNT_CONTEXT_CODE,
           recipients: props.selectedIds.map(rec => rec?._id || rec.id),
           subject,
-          groupConversation: !sendIndividualMessages,
+          groupConversation: true,
           mediaCommentId: mediaUploadFile?.mediaObject?.media_object?.media_id,
           mediaCommentType: mediaUploadFile?.mediaObject?.media_object?.media_type
         }
@@ -316,6 +319,7 @@ const ComposeModalContainer = props => {
                   addressBookMessages={addressBookMessages}
                   courseMessages={courseMessages}
                   data-testid="compose-modal-inputs"
+                  isPrivateConversation={props.isPrivateConversation}
                 />
               )}
             </ModalBody>
@@ -389,5 +393,6 @@ ComposeModalContainer.propTypes = {
   onSelectedIdsChange: PropTypes.func,
   selectedIds: PropTypes.array,
   submissionCommentsHeader: PropTypes.string,
-  modalError: PropTypes.string
+  modalError: PropTypes.string,
+  isPrivateConversation: PropTypes.bool
 }

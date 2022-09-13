@@ -619,10 +619,44 @@ describe AssignmentsController do
       expect(assigns[:js_env][:SUBMISSION_ID]).to be_nil
     end
 
-    it "shows direct share options" do
-      user_session(@teacher)
-      get "show", params: { course_id: @course.id, id: @assignment.id }
-      expect(assigns[:can_direct_share]).to eq true
+    context "direct share options" do
+      it "shows direct share options when the user can use it" do
+        user_session(@teacher)
+        get "show", params: { course_id: @course.id, id: @assignment.id }
+        expect(assigns[:can_direct_share]).to eq true
+      end
+
+      describe "with manage_content permission disabled" do
+        before do
+          RoleOverride.create!(context: @course.account, permission: "manage_content", role: teacher_role, enabled: false)
+        end
+
+        it "does not show direct share options if the course is active" do
+          user_session(@teacher)
+          get "show", params: { course_id: @course.id, id: @assignment.id }
+          expect(assigns[:can_direct_share]).to eq false
+        end
+
+        describe "when the course is concluded" do
+          before do
+            @course.complete!
+          end
+
+          it "shows direct share options when the user can use it" do
+            user_session(@teacher)
+
+            get "show", params: { course_id: @course.id, id: @assignment.id }
+            expect(assigns[:can_direct_share]).to eq true
+          end
+
+          it "does not show direct share options when the user can't use it" do
+            user_session(@student)
+
+            get "show", params: { course_id: @course.id, id: @assignment.id }
+            expect(assigns[:can_direct_share]).to eq false
+          end
+        end
+      end
     end
 
     context "when the assignment is an external tool" do
@@ -886,6 +920,147 @@ describe AssignmentsController do
 
           get "show", params: { course_id: @course.id, id: @assignment.id }
           expect(assigns[:js_env][:belongs_to_unpublished_module]).to eq(true)
+        end
+
+        context "peer reviews" do
+          before do
+            @assignment.update_attribute(:peer_reviews, true)
+            @reviewee = User.create!(name: "John Connor")
+            @course.enroll_user(@reviewee, "StudentEnrollment", enrollment_state: "active")
+            @assignment.assign_peer_review(@student, @reviewee)
+
+            @student_submission = @assignment.submission_for_student(@student)
+            @reviewee_submission =  @assignment.submission_for_student(@reviewee)
+
+            @reviewee_submission_id = CanvasSchema.id_from_object(
+              @reviewee_submission,
+              CanvasSchema.resolve_type(nil, @reviewee_submission, nil),
+              nil
+            )
+            @student_submission_id = CanvasSchema.id_from_object(
+              @student_submission,
+              CanvasSchema.resolve_type(nil, @student_submission, nil),
+              nil
+            )
+
+            @course.enable_feature!(:peer_reviews_for_a2)
+            @course.enable_feature!(:assignments_2_student)
+          end
+
+          it "sets SUBMISSION_ID coresponding to the reviewee when reviewee_id param is present" do
+            user_session(@student)
+
+            get "show", params: { course_id: @course.id, id: @assignment.id, reviewee_id: @reviewee.id }
+            expect(assigns[:js_env][:SUBMISSION_ID]).to eq @reviewee_submission_id
+          end
+
+          it "sets SUBMISSION_ID coresponding to the reviewee when anonymous_asset_id param is present" do
+            user_session(@student)
+
+            get "show", params: { course_id: @course.id, id: @assignment.id, anonymous_asset_id: @reviewee_submission.anonymous_id }
+            expect(assigns[:js_env][:SUBMISSION_ID]).to eq @reviewee_submission_id
+          end
+
+          it "sets SUBMISSION_ID to NULL when the reviewee_id is not valid" do
+            user_session(@student)
+
+            get "show", params: { course_id: @course.id, id: @assignment.id, reviewee_id: 9999 }
+            expect(assigns[:js_env][:SUBMISSION_ID]).to eq nil
+          end
+
+          it "sets SUBMISSION_ID to NULL when the anonymous_asset_id is not valid" do
+            user_session(@student)
+
+            get "show", params: { course_id: @course.id, id: @assignment.id, anonymous_asset_id: 9999 }
+            expect(assigns[:js_env][:SUBMISSION_ID]).to eq nil
+          end
+
+          it "sets the student SUBMISSION_ID when peer_reviews_for_a2 FF is off and reviewee_id param is present" do
+            @course.disable_feature!(:peer_reviews_for_a2)
+
+            user_session(@student)
+            get "show", params: { course_id: @course.id, id: @assignment.id, reviewee_id: @reviewee.id }
+            expect(assigns[:js_env][:SUBMISSION_ID]).to eq @student_submission.id
+          end
+
+          it "sets the student SUBMISSION_ID when peer_reviews_for_a2 FF is off and anonymous_asset_id param is present" do
+            @course.disable_feature!(:peer_reviews_for_a2)
+
+            user_session(@student)
+            get "show", params: { course_id: @course.id, id: @assignment.id, anonymous_asset_id: @reviewee_submission.anonymous_id }
+            expect(assigns[:js_env][:SUBMISSION_ID]).to eq @student_submission.id
+          end
+
+          it "sets the peer_review_mode_enabled to true when peer_reviews_for_a2 FF is ON and reviewee_id is present" do
+            user_session(@student)
+            get "show", params: { course_id: @course.id, id: @assignment.id, reviewee_id: @reviewee.id }
+            expect(assigns[:js_env][:peer_review_mode_enabled]).to eq true
+          end
+
+          it "sets the peer_review_mode_enabled to true when peer_reviews_for_a2 FF is ON and anonymous_asset_id is present" do
+            user_session(@student)
+            get "show", params: { course_id: @course.id, id: @assignment.id, anonymous_asset_id: @reviewee_submission.anonymous_id }
+            expect(assigns[:js_env][:peer_review_mode_enabled]).to eq true
+          end
+
+          it "sets the peer_review_mode_enabled to false when peer_reviews_for_a2 FF is ON with no presence of reviewee_id and anonymous_asset_id" do
+            user_session(@student)
+            get "show", params: { course_id: @course.id, id: @assignment.id }
+            expect(assigns[:js_env][:peer_review_mode_enabled]).to eq false
+          end
+
+          it "sets peer_review_available to false when reviewee_id is present and one of the submissions have not been submitted" do
+            @assignment.submit_homework(@student, submission_type: "online_url", url: "http://www.google.com")
+
+            user_session(@student)
+            get "show", params: { course_id: @course.id, id: @assignment.id, reviewee_id: @reviewee.id }
+            expect(assigns[:js_env][:peer_review_available]).to eq false
+          end
+
+          it "sets peer_review_available to false when anonymous_asset_id is present and one of the submissions have not been submitted" do
+            @assignment.submit_homework(@student, submission_type: "online_url", url: "http://www.google.com")
+
+            user_session(@student)
+            get "show", params: { course_id: @course.id, id: @assignment.id, anonymous_asset_id: @reviewee_submission.anonymous_id }
+            expect(assigns[:js_env][:peer_review_available]).to eq false
+          end
+
+          it "sets peer_review_available to true when reviewee_id is present and both submissions have been submitted" do
+            @assignment.submit_homework(@student, submission_type: "online_url", url: "http://www.google.com")
+            @assignment.submit_homework(@reviewee, submission_type: "online_url", url: "http://www.google.com")
+
+            user_session(@student)
+            get "show", params: { course_id: @course.id, id: @assignment.id, reviewee_id: @reviewee.id }
+            expect(assigns[:js_env][:peer_review_available]).to eq true
+          end
+
+          it "sets peer_review_available to true when anonymous_asset_id is present and both submissions have been submitted" do
+            @assignment.submit_homework(@student, submission_type: "online_url", url: "http://www.google.com")
+            @assignment.submit_homework(@reviewee, submission_type: "online_url", url: "http://www.google.com")
+
+            user_session(@student)
+            get "show", params: { course_id: @course.id, id: @assignment.id, anonymous_asset_id: @reviewee_submission.anonymous_id }
+            expect(assigns[:js_env][:peer_review_available]).to eq true
+          end
+
+          it "sets peer_review_available value to the reviewee name when anonymous_peer_reviews is false" do
+            @assignment.submit_homework(@student, submission_type: "online_url", url: "http://www.google.com")
+            @assignment.submit_homework(@reviewee, submission_type: "online_url", url: "http://www.google.com")
+
+            user_session(@student)
+            get "show", params: { course_id: @course.id, id: @assignment.id, anonymous_asset_id: @reviewee_submission.anonymous_id }
+            expect(assigns[:js_env][:peer_display_name]).to eq @reviewee.name
+          end
+
+          it "sets peer_review_available value to 'Anonymous student' when anonymous_peer_reviews is true" do
+            @assignment.update_attribute(:anonymous_peer_reviews, true)
+            @assignment.submit_homework(@student, submission_type: "online_url", url: "http://www.google.com")
+            @assignment.submit_homework(@reviewee, submission_type: "online_url", url: "http://www.google.com")
+
+            user_session(@student)
+            get "show", params: { course_id: @course.id, id: @assignment.id, anonymous_asset_id: @reviewee_submission.anonymous_id }
+            expect(assigns[:js_env][:peer_display_name]).to eq "Anonymous student"
+          end
         end
       end
 
@@ -1479,6 +1654,11 @@ describe AssignmentsController do
         get :show, params: { course_id: @course.id, id: @assignment.id }
         expect(assigns[:js_env][:PERMISSIONS]).to include can_manage_groups: true
       end
+
+      it "does not sets can_edit_grades permissions in the ENV for students" do
+        get :show, params: { course_id: @course.id, id: @assignment.id }
+        expect(assigns[:js_env][:PERMISSIONS]).not_to include :can_edit_grades
+      end
     end
   end
 
@@ -1851,7 +2031,13 @@ describe AssignmentsController do
     it "sets can_manage_groups permissions in the ENV" do
       user_session(@teacher)
       get "edit", params: { course_id: @course.id, id: @assignment.id }
-      expect(assigns[:js_env][:PERMISSIONS]).to eq can_manage_groups: true
+      expect(assigns[:js_env][:PERMISSIONS]).to include can_manage_groups: true
+    end
+
+    it "sets can_edit_grades permissions in the ENV for teachers" do
+      user_session(@teacher)
+      get "edit", params: { course_id: @course.id, id: @assignment.id }
+      expect(assigns[:js_env][:PERMISSIONS]).to include can_edit_grades: true
     end
 
     it "requires authorization" do

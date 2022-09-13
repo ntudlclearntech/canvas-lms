@@ -283,6 +283,12 @@ describe Types::UserType do
         user_type.resolve(%|enrollments(courseId: "#{@course2.id}") { _id }|)
       ).to eq []
     end
+
+    it "excludes concluded enrollments when excludeConcluded is true" do
+      expect(user_type.resolve("enrollments(excludeConcluded: true) { _id }").length).to eq 1
+      @student.enrollments.update_all workflow_state: "completed"
+      expect(user_type.resolve("enrollments(excludeConcluded: true) { _id }")).to eq []
+    end
   end
 
   context "email" do
@@ -485,6 +491,7 @@ describe Types::UserType do
     end
 
     it "scopes the conversations" do
+      allow(InstStatsd::Statsd).to receive(:increment)
       conversation(@student, @teacher, { body: "You get that thing I sent ya?" })
       conversation(@teacher, @student, { body: "oh yea =)" })
       conversation(@student, @random_person, { body: "Whats up?", starred: true })
@@ -503,6 +510,13 @@ describe Types::UserType do
       )
       expect(result.count).to eq 1
       expect(result[0][0]).to eq "Whats up?"
+
+      type = GraphQLTypeTester.new(@student, current_user: @student, domain_root_account: @student.account, request: ActionDispatch::TestRequest.create)
+      result = type.resolve(
+        "conversationsConnection(scope: \"unread\") { nodes { conversation { conversationMessagesConnection { nodes { body } } } } }"
+      )
+      expect(result.flatten.count).to eq 2
+      expect(InstStatsd::Statsd).to have_received(:increment).with("inbox.visit.scope.unread.pages_loaded.react")
 
       type = GraphQLTypeTester.new(
         @random_person,
@@ -541,6 +555,24 @@ describe Types::UserType do
       expect(result[0]).to eq(@course.name)
     end
 
+    it "returns false for sendMessagesAll if no context is given" do
+      result = type.resolve("recipients { sendMessagesAll }")
+      expect(result).to eq(false)
+    end
+
+    it "returns false for sendMessagesAll if not allowed" do
+      # Students do not have the sendMessagesAll permission by default
+      result = type.resolve("recipients(context: \"course_#{@course.id}_students\") { sendMessagesAll }")
+      expect(result).to eq(false)
+    end
+
+    it "returns true for sendMessagesAll if allowed" do
+      @random_person.account.role_overrides.create!(permission: :send_messages_all, role: student_role, enabled: true)
+
+      result = type.resolve("recipients(context: \"course_#{@course.id}_students\") { sendMessagesAll }")
+      expect(result).to eq(true)
+    end
+
     it "searches users" do
       known_users = @student.address_book.search_users.paginate(per_page: 3)
       User.find(known_users.first.id).update!(name: "Matthew Lemon")
@@ -563,6 +595,22 @@ describe Types::UserType do
       known_users = @student.address_book.search_users(context: "course_#{@course.id}_students").paginate(per_page: 3)
       result = type.resolve("recipients(context: \"course_#{@course.id}_students\") { usersConnection { nodes { _id } } }")
       expect(result).to match_array(known_users.pluck(:id).map(&:to_s))
+    end
+  end
+
+  context "total_recipients" do
+    let(:type) do
+      GraphQLTypeTester.new(
+        @student,
+        current_user: @student,
+        domain_root_account: @course.account.root_account,
+        request: ActionDispatch::TestRequest.create
+      )
+    end
+
+    it "returns total_recipients for given context (excluding current_user)" do
+      result = type.resolve("totalRecipients(context: \"course_#{@course.id}\")")
+      expect(result).to eq(@course.enrollments.count - 1)
     end
   end
 
@@ -795,11 +843,18 @@ describe Types::UserType do
 
   describe "submission comments" do
     before(:once) do
-      @course = Course.create! name: "TEST"
+      course = Course.create! name: "TEST"
+      course_2 = Course.create! name: "TEST 2"
 
-      @teacher = course_with_user("TeacherEnrollment", course: @course, name: "Mr Teacher", active_all: true).user
-      @student = course_with_user("StudentEnrollment", course: @course, name: "Mr Student 1", active_all: true).user
+      # these 'course_with_user' will  reassign @course
+      @teacher = course_with_user("TeacherEnrollment", course: course, name: "Mr Teacher", active_all: true).user
+      @teacher = course_with_user("TeacherEnrollment", course: course_2, user: @teacher, active_all: true).user
+      @student = course_with_user("StudentEnrollment", course: course, name: "Mr Student 1", active_all: true).user
+      @student_2 = course_with_user("StudentEnrollment", course: course, name: "Mr Student 2", active_all: true).user
+      @student_2 = course_with_user("StudentEnrollment", course: course_2, user: @student_2, active_all: true).user
 
+      @course = course
+      @course_2 = course_2
       assignment = @course.assignments.create!(
         name: "Test Assignment",
         moderated_grading: true,
@@ -812,9 +867,17 @@ describe Types::UserType do
         grader_count: 10,
         final_grader: @teacher
       )
+      @assignment3 = @course_2.assignments.create!(
+        name: "Assignment without Comments 2",
+        moderated_grading: true,
+        grader_count: 10,
+        final_grader: @teacher
+      )
 
       assignment.grade_student(@student, grade: 1, grader: @teacher, provisional: true)
       @assignment2.grade_student(@student, grade: 1, grader: @teacher, provisional: true)
+      @assignment2.grade_student(@student_2, grade: 1, grader: @teacher, provisional: true)
+      @assignment3.grade_student(@student_2, grade: 1, grader: @teacher, provisional: true)
 
       @student_submission_1 = assignment.submissions.find_by(user: @student)
 
@@ -862,6 +925,31 @@ describe Types::UserType do
 
       it "can get course names" do
         expect(teacher_type.resolve("viewableSubmissionsConnection { nodes { commentsConnection { nodes { course { name } } }  }  }")[0]).to match_array %w[TEST TEST TEST]
+      end
+
+      describe "filter" do
+        before(:once) do
+          # add_comments by user 2 to course 1 and 2
+          student_submission_2 = @assignment2.submissions.find_by(user: @student_2)
+          @student_submission_3 = @assignment3.submissions.find_by(user: @student_2)
+
+          student_submission_2.add_comment(author: @student_2, comment: "Fourth comment")
+          student_submission_2.add_comment(author: @teacher, comment: "Fifth comment")
+          @student_submission_3.add_comment(author: @student_2, comment: "sixth comment")
+          @student_submission_3.add_comment(author: @teacher, comment: "seventh comment")
+        end
+
+        it "submissions by course" do
+          query_result = teacher_type.resolve("viewableSubmissionsConnection(filter: [\"course_#{@course_2.id}\"]) { nodes { _id }  }")
+          expect(query_result.count).to eq 1
+          expect(query_result[0].to_i).to eq @student_submission_3.id
+        end
+
+        it "submissions by user" do
+          query_result = teacher_type.resolve("viewableSubmissionsConnection(filter: [\"user_#{@student_2.id}\"]) { nodes { _id }  }")
+          expect(query_result.count).to eq 2
+          expect(query_result[0].to_i).to eq @student_submission_3.id
+        end
       end
     end
   end

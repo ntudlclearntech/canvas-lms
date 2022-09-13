@@ -184,66 +184,24 @@ describe('FilterNav', () => {
   })
 
   it('renders new filter button', () => {
-    const {getByText, getByRole} = render(<FilterNav {...defaultProps} />)
+    const {getByText, getByTestId} = render(<FilterNav {...defaultProps} />)
     userEvent.click(getByText('Filters'))
-    expect(getByRole('button', {name: /Create New Filter/})).toBeInTheDocument()
+    expect(getByTestId('new-filter-button')).toBeInTheDocument()
   })
 
   it('clicking Create New Filter triggers onChange with filter', async () => {
     store.setState({filters: []})
-    const {getByText, queryByRole, getByRole} = render(<FilterNav {...defaultProps} />)
-    expect(queryByRole('button', {name: /Save/})).toBeNull()
+    const {getByText, queryByTestId, getByTestId} = render(<FilterNav {...defaultProps} />)
+    expect(queryByTestId('save-filter-button')).toBeNull()
     userEvent.click(getByText('Filters'))
-    userEvent.click(getByRole('button', {name: /Create New Filter/}))
-    expect(getByRole('button', {name: /Save/})).toBeVisible()
-  })
-
-  it('Shows condition type placeholder', () => {
-    const {getByText, getAllByPlaceholderText} = render(<FilterNav {...defaultProps} />)
-    userEvent.click(getByText('Filters'))
-    expect(getAllByPlaceholderText(/Select condition type/)[0]).toBeInTheDocument()
-  })
-
-  it('Shows condition placeholder; selection triggers change', async () => {
-    const {getByText, getByRole, getAllByRole, getAllByLabelText} = render(
-      <FilterNav {...defaultProps} />
-    )
-    userEvent.click(getByText('Filters'))
-    expect(getAllByRole('button', {name: 'Condition'})[0]).not.toHaveValue('Module 2')
-    userEvent.click(getAllByLabelText('Condition')[0])
-    userEvent.click(getByRole('option', {name: 'Module 2'}))
-    expect(getAllByRole('button', {name: 'Condition'})[0]).toHaveValue('Module 2')
-  })
-
-  it('Deletes condition', () => {
-    const {getByText, getAllByRole, queryAllByRole, getAllByPlaceholderText} = render(
-      <FilterNav {...defaultProps} />
-    )
-    userEvent.click(getByText('Filters'))
-    expect(getAllByPlaceholderText(/Select condition type/)[1]).toBeInTheDocument()
-    expect(queryAllByRole('button', {name: /Delete condition/})[1]).toBeVisible()
-    expect(queryAllByRole('button', {name: /Delete condition/}).length).toStrictEqual(2)
-    userEvent.click(getAllByRole('button', {name: /Delete condition/})[1])
-    expect(queryAllByRole('button', {name: /Delete condition/}).length).toStrictEqual(1)
-  })
-
-  it('Disables filter', () => {
-    const {getAllByPlaceholderText, getAllByRole, getByText} = render(
-      <FilterNav {...defaultProps} />
-    )
-    userEvent.click(getByText('Filters'))
-    expect(getAllByPlaceholderText(/Select condition type/)[0]).toBeInTheDocument()
-    const checkbox = getAllByRole('checkbox', {name: /Apply conditions/})[0]
-    expect(checkbox).toBeChecked()
-    userEvent.click(checkbox)
-    expect(checkbox).not.toBeChecked()
+    userEvent.click(getByTestId('new-filter-button'))
+    expect(getByTestId('save-filter-button')).toBeVisible()
   })
 
   it('Enables filter', () => {
     store.setState({filters: [{...defaultFilters[0]}], appliedFilterConditions: []})
-    const {getByText, getByRole, getByPlaceholderText} = render(<FilterNav {...defaultProps} />)
+    const {getByText, getByRole} = render(<FilterNav {...defaultProps} />)
     userEvent.click(getByText('Filters'))
-    expect(getByPlaceholderText(/Select condition type/)).toBeInTheDocument()
     const checkbox = getByRole('checkbox', {name: /Apply conditions/})
     expect(checkbox).not.toBeChecked()
     userEvent.click(checkbox)
@@ -265,21 +223,23 @@ describe('FilterNav (save)', () => {
   })
 
   it('Save button is disabled if filter name is blank', async () => {
-    const {getByText, getByRole} = render(<FilterNav {...defaultProps} />)
+    const {getByText, getByTestId} = render(<FilterNav {...defaultProps} />)
     userEvent.click(getByText('Filters'))
-    userEvent.click(getByRole('button', {name: /Create New Filter/}))
-    expect(getByRole('button', {name: /Save/})).toBeDisabled()
+    userEvent.click(getByTestId('new-filter-button'))
+    expect(getByTestId('save-filter-button')).toBeDisabled()
   })
 
   it('clicking Save saves new filter', async () => {
-    const {getByText, queryByRole, getByPlaceholderText, getByRole} = render(
+    const {getByText, queryByTestId, getByPlaceholderText, getByTestId} = render(
       <FilterNav {...defaultProps} />
     )
     userEvent.click(getByText('Filters'))
-    userEvent.click(getByRole('button', {name: /Create New Filter/}))
-    userEvent.type(getByPlaceholderText('Give this filter a name'), 'Sample filter name')
-    expect(getByRole('button', {name: /Save/})).toBeVisible()
-    userEvent.click(getByRole('button', {name: /Save/}))
-    await waitFor(() => expect(queryByRole('button', {name: /Save/})).toBeNull())
+    userEvent.click(getByTestId('new-filter-button'))
+    // https://github.com/testing-library/user-event/issues/577
+    // type() is very slow, so use paste() instead since we don't need to test anything specific to typing
+    userEvent.paste(getByPlaceholderText('Give this filter a name'), 'Sample filter name')
+    expect(getByTestId('save-filter-button')).toBeVisible()
+    userEvent.click(getByTestId('save-filter-button'))
+    await waitFor(() => expect(queryByTestId('save-filter-button')).toBeNull())
   })
 })

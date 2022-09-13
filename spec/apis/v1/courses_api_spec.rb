@@ -1251,10 +1251,16 @@ describe CoursesController, type: :request do
         end
 
         it "applies a course template" do
-          template = @account.courses.create!(name: "Template", template: true)
+          settings_hash = { filter_speed_grader_by_student_group: true }
+          template = @account.courses.create!(
+            name: "Template",
+            settings: settings_hash,
+            template: true
+          )
           template.assignments.create!(title: "my assignment")
 
           @account.root_account.enable_feature!(:course_templates)
+          @account.root_account.enable_feature!(:filter_speed_grader_by_student_group)
           @account.update!(course_template: template)
 
           post_params = {
@@ -1271,6 +1277,7 @@ describe CoursesController, type: :request do
           expect(new_course.name).to eq "Test Course"
           expect(new_course.assignments.length).to eq 1
           expect(new_course.assignments.first.title).to eq "my assignment"
+          expect(new_course.settings[:filter_speed_grader_by_student_group]).to be true
         end
 
         it "removes start and end dates when restrict_enrollments_to_course_dates is false and an enrollment_term is present" do
@@ -4115,7 +4122,8 @@ describe CoursesController, type: :request do
                                "image_url" => nil,
                                "image_id" => nil,
                                "image" => nil,
-                               "default_due_time" => "23:59:59"
+                               "default_due_time" => "23:59:59",
+                               "conditional_release" => false
                              })
         end
 
@@ -4123,6 +4131,8 @@ describe CoursesController, type: :request do
           @course.root_account.enable_feature!(:filter_speed_grader_by_student_group)
           @course.enable_feature!(:final_grades_override)
           @course.account.enable_as_k5_account!
+          @course.conditional_release = true
+          @course.save!
           expect(Auditors::Course).to receive(:record_updated)
             .with(anything, anything, anything, source: :api)
 
@@ -4153,7 +4163,8 @@ describe CoursesController, type: :request do
                             syllabus_course_summary: false,
                             home_page_announcement_limit: nil,
                             homeroom_course: true,
-                            default_due_time: "9:00:00"
+                            default_due_time: "9:00:00",
+                            conditional_release: false
                           })
           expect(json).to eq({
                                "allow_final_grade_override" => true,
@@ -4186,7 +4197,8 @@ describe CoursesController, type: :request do
                                "image_url" => nil,
                                "image_id" => nil,
                                "image" => nil,
-                               "default_due_time" => "09:00:00"
+                               "default_due_time" => "09:00:00",
+                               "conditional_release" => false
                              })
           @course.reload
           expect(@course.allow_final_grade_override?).to eq true
@@ -4208,6 +4220,32 @@ describe CoursesController, type: :request do
           expect(@course.home_page_announcement_limit).to be nil
           expect(@course.homeroom_course?).to eq true
           expect(@course.default_due_time).to eq "09:00:00"
+          expect(@course.conditional_release?).to eq false
+        end
+
+        it "does not enable conditional_release unless the account allows it" do
+          account = @course.account
+          account.settings[:conditional_release] = { value: false, locked: true }
+          account.save!
+          json = api_call(:put, "/api/v1/courses/#{@course.id}/settings", {
+                            controller: "courses",
+                            action: "update_settings",
+                            course_id: @course.to_param,
+                            format: "json"
+                          }, { conditional_release: true })
+          expect(json["conditional_release"]).to eq false
+          expect(@course.reload.conditional_release?).to eq false
+
+          account.settings[:conditional_release] = { value: false, locked: false }
+          account.save!
+          json = api_call(:put, "/api/v1/courses/#{@course.id}/settings", {
+                            controller: "courses",
+                            action: "update_settings",
+                            course_id: @course.to_param,
+                            format: "json"
+                          }, { conditional_release: true })
+          expect(json["conditional_release"]).to eq true
+          expect(@course.reload.conditional_release?).to eq true
         end
       end
 
@@ -4254,7 +4292,8 @@ describe CoursesController, type: :request do
                                "image_url" => nil,
                                "image_id" => nil,
                                "image" => nil,
-                               "default_due_time" => "23:59:59"
+                               "default_due_time" => "23:59:59",
+                               "conditional_release" => false
                              })
         end
 

@@ -124,8 +124,9 @@ sends a partial or an empty file, diffing would see that all users not included
 should be removed. Using `change_threshold=10` will then not perform diffing if
 the files being compared are greater than 10% different. The threshold can be
 set to help prevent removing objects unintentionally. When set and the file is
-over 10% different it will be the same as if `diffing_remaster_data_set=true`.
-The change_threshold can be set to any integer between 1 and 100.
+over 10% different, the entire import file will be applied instead of diffing
+against a previous batch and this batch will not be used for diffing any future
+batches. The change_threshold can be set to any integer between 1 and 100.
 
 change_threshold also impacts batch mode.
 
@@ -282,6 +283,7 @@ recommended to omit this field over using fake email addresses for testing.</td>
 student, student_other, or teacher. Can pass "&lt;delete>" to remove the
 declared user type from the user.</td>
 </tr>
+<tr>
 <td>canvas_password_notification</td>
 <td>boolean</td>
 <td></td>
@@ -290,6 +292,15 @@ declared user type from the user.</td>
 the authentication_provider_id is canvas</td>
 </tr>
 <tr>
+<td>home_account</td>
+<td>boolean</td>
+<td></td>
+<td></td>
+<td>Setting this to true will create a new user in the target account for the
+SIS import and merge in another existing user from another account within the
+consortium with a matching integration_id. Will be ignored unless the target
+account is associated with an auto-merge consortium.</td>
+</tr>
 <tr>
 <td>status</td>
 <td>enum</td>

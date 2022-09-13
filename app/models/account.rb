@@ -24,6 +24,7 @@ class Account < ActiveRecord::Base
   include Context
   include OutcomeImportContext
   include Pronouns
+  include SearchTermHelper
 
   INSTANCE_GUID_SUFFIX = "canvas-lms"
   # a list of columns necessary for validation and save callbacks to work on a slim object
@@ -75,6 +76,7 @@ class Account < ActiveRecord::Base
            -> { ordered },
            inverse_of: :account,
            extend: AuthenticationProvider::FindWithType
+  has_many :calendar_events, -> { where("calendar_events.workflow_state<>'cancelled'") }, as: :context, inverse_of: :context, dependent: :destroy
 
   has_many :account_reports, inverse_of: :account
   has_many :grading_standards, -> { where("workflow_state<>'deleted'") }, as: :context, inverse_of: :context
@@ -357,7 +359,6 @@ class Account < ActiveRecord::Base
 
   # privacy settings for root accounts
   add_setting :enable_fullstory, boolean: true, root_only: true, default: true
-  add_setting :enable_google_analytics, boolean: true, root_only: true, default: true
 
   add_setting :rce_favorite_tool_ids, inheritable: true
 
@@ -606,26 +607,26 @@ class Account < ActiveRecord::Base
     if keys_to_clear.any?
       shard.activate do
         self.class.connection.after_transaction_commit do
-          delay_if_production(singleton: "Account#clear_downstream_caches/#{global_id}")
+          delay_if_production(singleton: "Account#clear_downstream_caches/#{global_id}:#{keys_to_clear.join("/")}")
             .clear_downstream_caches(*keys_to_clear, xlog_location: self.class.current_xlog_location)
         end
       end
     end
   end
 
-  def clear_downstream_caches(*key_types, xlog_location: nil, is_retry: false)
+  def clear_downstream_caches(*keys_to_clear, xlog_location: nil, is_retry: false)
     shard.activate do
       if xlog_location
         timeout = Setting.get("account_cache_clear_replication_timeout", "60").to_i.seconds
         unless self.class.wait_for_replication(start: xlog_location, timeout: timeout)
-          delay(run_at: Time.now + timeout, singleton: "Account#clear_downstream_caches/#{global_id}")
+          delay(run_at: Time.now + timeout, singleton: "Account#clear_downstream_caches/#{global_id}:#{keys_to_clear.join("/")}")
             .clear_downstream_caches(*keys_to_clear, xlog_location: xlog_location, is_retry: true)
           # we still clear, but only the first time; after that we just keep waiting
           return if is_retry
         end
       end
 
-      Account.clear_cache_keys([id] + Account.sub_account_ids_recursive(id), *key_types)
+      Account.clear_cache_keys([id] + Account.sub_account_ids_recursive(id), *keys_to_clear)
     end
   end
 
@@ -1003,7 +1004,7 @@ class Account < ActiveRecord::Base
     chain
   end
 
-  def self.account_chain_ids(starting_account_id)
+  def self.account_chain_ids(starting_account_id, include_federated_parent_id: false)
     block = lambda do |_name|
       original_shard = Shard.current
       Shard.shard_for(starting_account_id).activate do
@@ -1030,7 +1031,9 @@ class Account < ActiveRecord::Base
       end
     end
     key = Account.cache_key_for_id(starting_account_id, :account_chain)
-    key ? Rails.cache.fetch(["account_chain_ids", key], &block) : block.call(nil)
+    result = key ? Rails.cache.fetch(["account_chain_ids", key], &block) : block.call(nil)
+    Account.add_federated_parent_id_to_chain!(result) if include_federated_parent_id
+    result
   end
 
   def self.multi_account_chain_ids(starting_account_ids)
@@ -1049,6 +1052,10 @@ class Account < ActiveRecord::Base
   end
 
   def self.add_federated_parent_to_chain!(chain)
+    chain
+  end
+
+  def self.add_federated_parent_id_to_chain!(chain)
     chain
   end
 
@@ -1078,8 +1085,8 @@ class Account < ActiveRecord::Base
     @account_chain
   end
 
-  def account_chain_ids
-    @cached_account_chain_ids ||= Account.account_chain_ids(self)
+  def account_chain_ids(include_federated_parent_id: false)
+    @cached_account_chain_ids ||= Account.account_chain_ids(self, include_federated_parent_id: include_federated_parent_id)
   end
 
   def account_chain_loop
@@ -1396,6 +1403,13 @@ class Account < ActiveRecord::Base
         (grants_right?(user, :view_notifications) || Account.site_admin.grants_right?(user, :read_messages))
     end
     can :view_bounced_emails
+
+    given do |user|
+      user &&
+        (user_account_associations.where(user_id: user).exists? || grants_right?(user, :read)) &&
+        (account_calendar_visible || grants_right?(user, :manage_account_calendar_visibility))
+    end
+    can :view_account_calendar_details
   end
 
   def reload(*)
@@ -1784,6 +1798,7 @@ class Account < ActiveRecord::Base
   TAB_SEARCH = 18
   TAB_BRAND_CONFIGS = 19
   TAB_EPORTFOLIO_MODERATION = 20
+  TAB_ACCOUNT_CALENDARS = 21
 
   # site admin tabs
   TAB_PLUGINS = 14
@@ -1822,6 +1837,7 @@ class Account < ActiveRecord::Base
       tabs << { id: TAB_GRADING_STANDARDS, label: t("#account.tab_grading_standards", "Grading"), css_class: "grading_standards", href: :account_grading_standards_path } if user && grants_right?(user, :manage_grades)
       tabs << { id: TAB_QUESTION_BANKS, label: t("#account.tab_question_banks", "Question Banks"), css_class: "question_banks", href: :account_question_banks_path } if user && grants_any_right?(user, *RoleOverride::GRANULAR_MANAGE_ASSIGNMENT_PERMISSIONS)
       tabs << { id: TAB_SUB_ACCOUNTS, label: t("#account.tab_sub_accounts", "Sub-Accounts"), css_class: "sub_accounts", href: :account_sub_accounts_path } if manage_settings
+      tabs << { id: TAB_ACCOUNT_CALENDARS, label: t("Account Calendars"), css_class: "account_calendars", href: :account_calendar_settings_path } if user && grants_right?(user, :manage_account_calendar_visibility)
       tabs << { id: TAB_FACULTY_JOURNAL, label: t("#account.tab_faculty_journal", "Faculty Journal"), css_class: "faculty_journal", href: :account_user_notes_path } if enable_user_notes && user && grants_right?(user, :manage_user_notes)
       tabs << { id: TAB_TERMS, label: t("#account.tab_terms", "Terms"), css_class: "terms", href: :account_terms_path } if root_account? && manage_settings
       tabs << { id: TAB_AUTHENTICATION, label: t("#account.tab_authentication", "Authentication"), css_class: "authentication", href: :account_authentication_providers_path } if root_account? && manage_settings

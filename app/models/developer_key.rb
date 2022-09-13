@@ -23,7 +23,7 @@ require "aws-sdk-sns"
 class DeveloperKey < ActiveRecord::Base
   class CacheOnAssociation < ActiveRecord::Associations::BelongsToAssociation
     def find_target
-      DeveloperKey.find_cached(owner._read_attribute(reflection.foreign_key))
+      DeveloperKey.find_cached(owner.attribute(reflection.foreign_key))
     end
   end
 
@@ -242,7 +242,8 @@ class DeveloperKey < ActiveRecord::Base
     return true if account_id.blank?
     return true if target_account.id == account_id
 
-    target_account.account_chain_ids.include?(account_id)
+    # Include the federated parent unless we are the federated parent
+    target_account.account_chain_ids(include_federated_parent_id: !target_account.primary_settings_root_account?).include?(account_id)
   end
 
   def account_name
@@ -286,13 +287,10 @@ class DeveloperKey < ActiveRecord::Base
     # Search for bindings in the account chain starting with the highest account,
     # and include consortium parent if necessary
     accounts = binding_account.account_chain(include_federated_parent: !binding_account.primary_settings_root_account?).reverse
-    binding = DeveloperKeyAccountBinding.find_in_account_priority(accounts, id)
+    binding = DeveloperKeyAccountBinding.find_in_account_priority(accounts, self)
 
     # If no explicity set bindings were found check for 'allow' bindings
-    binding ||= DeveloperKeyAccountBinding.find_in_account_priority(accounts.reverse, id, explicitly_set: false)
-
-    # Check binding not for wrong account (on different shard from any shard in account chain)
-    return nil if binding && accounts.map { |a| a.shard.id }.exclude?(binding.shard.id)
+    binding ||= DeveloperKeyAccountBinding.find_in_account_priority(accounts.reverse, self, explicitly_set: false)
 
     binding
   end

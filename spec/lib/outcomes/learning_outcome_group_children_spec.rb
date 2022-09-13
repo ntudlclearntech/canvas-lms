@@ -158,15 +158,17 @@ describe Outcomes::LearningOutcomeGroupChildren do
       before do
         o4.workflow_state = "deleted"
         o4.save!
+        o8.workflow_state = "deleted"
+        o8.save!
       end
 
       it "returns the total outcomes for a learning outcome group without the deleted outcomes" do
-        expect(subject.total_outcomes(g0.id)).to eq 11
+        expect(subject.total_outcomes(g0.id)).to eq 10
         expect(subject.total_outcomes(g1.id)).to eq 8
-        expect(subject.total_outcomes(g2.id)).to eq 2
+        expect(subject.total_outcomes(g2.id)).to eq 1
         expect(subject.total_outcomes(g3.id)).to eq 5
         expect(subject.total_outcomes(g4.id)).to eq 1
-        expect(subject.total_outcomes(g5.id)).to eq 1
+        expect(subject.total_outcomes(g5.id)).to eq 0
         expect(subject.total_outcomes(g6.id)).to eq 3
       end
     end
@@ -180,24 +182,43 @@ describe Outcomes::LearningOutcomeGroupChildren do
     end
 
     context "when filter arg is used" do
+      subject { described_class.new(course) }
+
       before do
         course.account.enable_feature!(:outcome_alignment_summary)
-        o3.align(assignment_model, course)
+        cg2.add_outcome o7
       end
 
-      it "returns the total outcomes based on filter argument" do
-        expect(subject.total_outcomes(cg1.id, { filter: "WITH_ALIGNMENTS" })).to eq 1
-        expect(subject.total_outcomes(cg1.id, { filter: "NO_ALIGNMENTS" })).to eq 1
+      context "when outcomes are aligned in course context" do
+        before do
+          o3.align(assignment_model, course)
+        end
+
+        it "returns the total outcomes based on filter argument" do
+          expect(subject.total_outcomes(cg0.id, { filter: "WITH_ALIGNMENTS" })).to eq 1
+          expect(subject.total_outcomes(cg0.id, { filter: "NO_ALIGNMENTS" })).to eq 2
+        end
+
+        it "returns the total outcomes if filter arg isn't passed in" do
+          expect(subject.total_outcomes(cg0.id, {})).to eq 3
+        end
+
+        it "returns the total outcomes without filtering if the FF is disabled" do
+          course.account.disable_feature!(:outcome_alignment_summary)
+          expect(subject.total_outcomes(cg0.id, { filter: "WITH_ALIGNMENTS" })).to eq 3
+          expect(subject.total_outcomes(cg0.id, { filter: "NO_ALIGNMENTS" })).to eq 3
+        end
       end
 
-      it "returns the total outcomes if filter arg isn't passed in" do
-        expect(subject.total_outcomes(cg1.id, {})).to eq 2
-      end
+      context "when outcomes are aligned in account context and imported in a course" do
+        before do
+          o3.align(assignment_model, context)
+        end
 
-      it "returns the total outcomes without filtering if the FF is disabled" do
-        course.account.disable_feature!(:outcome_alignment_summary)
-        expect(subject.total_outcomes(cg1.id, { filter: "WITH_ALIGNMENTS" })).to eq 2
-        expect(subject.total_outcomes(cg1.id, { filter: "NO_ALIGNMENTS" })).to eq 2
+        it "returns the correct number of total outcomes based on filter argument" do
+          expect(subject.total_outcomes(cg0.id, { filter: "WITH_ALIGNMENTS" })).to eq 0
+          expect(subject.total_outcomes(cg0.id, { filter: "NO_ALIGNMENTS" })).to eq 3
+        end
       end
     end
   end
@@ -486,6 +507,8 @@ describe Outcomes::LearningOutcomeGroupChildren do
     end
 
     context "filter" do
+      subject { described_class.new(course) }
+
       before do
         course.account.enable_feature!(:outcome_alignment_summary)
         o3.align(assignment_model, course)

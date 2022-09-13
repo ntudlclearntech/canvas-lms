@@ -32,6 +32,7 @@ import {resetCardCache} from '@canvas/dashboard-card'
 import {MOCK_CARDS, MOCK_CARDS_2} from '@canvas/k5/react/__tests__/fixtures'
 import {fetchShowK5Dashboard} from '@canvas/observer-picker/react/utils'
 
+jest.useFakeTimers()
 jest.mock('@canvas/observer-picker/react/utils', () => ({
   ...jest.requireActual('@canvas/observer-picker/react/utils'),
   fetchShowK5Dashboard: jest.fn()
@@ -41,14 +42,6 @@ const currentUserId = defaultProps.currentUser.id
 const observedUserCookieName = `${OBSERVER_COOKIE_PREFIX}${currentUserId}`
 
 describe('K5Dashboard Parent Support', () => {
-  beforeAll(() => {
-    jest.setTimeout(15000)
-  })
-
-  afterAll(() => {
-    jest.setTimeout(5000)
-  })
-
   beforeEach(() => {
     document.cookie = `${observedUserCookieName}=4;path=/`
     moxios.install()
@@ -75,7 +68,7 @@ describe('K5Dashboard Parent Support', () => {
   ]
 
   it('shows picker when user is an observer', () => {
-    const {getByRole} = render(
+    const {getByTestId} = render(
       <K5Dashboard
         {...defaultProps}
         canAddObservee
@@ -83,12 +76,12 @@ describe('K5Dashboard Parent Support', () => {
         observedUsersList={MOCK_OBSERVED_USERS_LIST}
       />
     )
-    const select = getByRole('combobox', {name: 'Select a student to view'})
+    const select = getByTestId('observed-student-dropdown')
     expect(select).toBeInTheDocument()
     expect(select.value).toBe('Student 4')
   })
 
-  it('prefetches dashboard cards with the correct url param', async done => {
+  it('prefetches dashboard cards with the correct url param', async () => {
     moxios.stubRequest('/api/v1/dashboard/dashboard_cards?observed_user_id=4', {
       status: 200,
       response: MOCK_CARDS
@@ -112,7 +105,6 @@ describe('K5Dashboard Parent Support', () => {
     const preFetchedRequest = moxios.requests.mostRecent()
     expect(preFetchedRequest.url).toBe('/api/v1/dashboard/dashboard_cards?observed_user_id=4')
     expect(moxios.requests.count()).toBe(1)
-    done()
   })
 
   it('does not make a request if the user has been already requested', async () => {
@@ -124,7 +116,7 @@ describe('K5Dashboard Parent Support', () => {
       status: 200,
       response: MOCK_CARDS_2
     })
-    const {findByText, getByRole, getByText, queryByText} = render(
+    const {findByText, getByTestId, getByText, queryByText} = render(
       <K5Dashboard
         {...defaultProps}
         currentUserRoles={['user', 'observer', 'teacher']}
@@ -134,7 +126,7 @@ describe('K5Dashboard Parent Support', () => {
     )
     expect(await findByText('Economics 101')).toBeInTheDocument()
     expect(queryByText('Economics 203')).not.toBeInTheDocument()
-    const select = getByRole('combobox', {name: 'Select a student to view'})
+    const select = getByTestId('observed-student-dropdown')
     expect(select.value).toBe('Student 4')
     expect(moxios.requests.mostRecent().url).toBe(
       '/api/v1/dashboard/dashboard_cards?observed_user_id=4'
@@ -181,7 +173,7 @@ describe('K5Dashboard Parent Support', () => {
     })
     createPlannerMocks()
 
-    const {getByText, findByRole, getByRole} = render(
+    const {getByText, findByTestId, getByTestId} = render(
       <K5Dashboard
         {...defaultProps}
         currentUserRoles={['user', 'observer', 'teacher']}
@@ -197,43 +189,41 @@ describe('K5Dashboard Parent Support', () => {
       },
       {timeout: 5000}
     )
-    expect(
-      await findByRole('link', {
-        name: 'View 2 missing items for course Economics 101',
-        timeout: 5000,
-        exact: false
-      })
-    ).toBeInTheDocument()
-    const observerSelect = getByRole('combobox', {name: 'Select a student to view'})
+
+    const missingItemsLink = await findByTestId('number-missing')
+    expect(missingItemsLink).toBeInTheDocument()
+    expect(missingItemsLink).toHaveTextContent('View 2 missing items for course Economics 1012 missing')
+
+    const observerSelect = getByTestId('observed-student-dropdown')
     act(() => observerSelect.click())
     act(() => getByText('Student 2').click())
-    expect(
-      await findByRole('link', {
-        name: 'View 1 missing items for course Economics 203',
-        timeout: 5000,
-        exact: false
-      })
-    ).toBeInTheDocument()
+
+    await waitFor(
+      () => {
+        expect(getByTestId('number-missing')).toHaveTextContent('View 1 missing items for course Economics 203')
+      }
+    )
+    expect(getByTestId('number-missing')).toBeInTheDocument()
   })
 
   it('does not show options to disable k5 dashboard if student is selected', async () => {
     clearObservedId(defaultProps.currentUser.id)
-    const {getByRole, findByRole, getByText, queryByRole} = render(
+    const {getByTestId, findByTestId, getByText, queryByTestId} = render(
       <K5Dashboard
         {...defaultProps}
         currentUserRoles={['user', 'observer', 'teacher']}
         observedUsersList={[defaultProps.currentUser, ...MOCK_OBSERVED_USERS_LIST]}
       />
     )
-    const select = getByRole('combobox', {name: 'Select a student to view'})
+    const select = getByTestId('observed-student-dropdown')
     expect(select.value).toBe('Geoffrey Jellineck')
-    expect(await findByRole('button', {name: 'Dashboard Options'})).toBeInTheDocument()
+    expect(await findByTestId('k5-dashboard-options')).toBeInTheDocument()
 
     act(() => select.click())
     act(() => getByText('Student 4').click())
     expect(select.value).toBe('Student 4')
     await waitFor(() =>
-      expect(queryByRole('button', {name: 'Dashboard Options'})).not.toBeInTheDocument()
+      expect(queryByTestId('k5-dashboard-options')).not.toBeInTheDocument()
     )
   })
 
@@ -299,6 +289,44 @@ describe('K5Dashboard Parent Support', () => {
       act(() => getByText('Student 2').click())
       expect(await findByText('Economics 203')).toBeInTheDocument()
       expect(reloadMock).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('grades tab', () => {
+    it('is visible to observers who have student enrollments', async () => {
+      clearObservedId(defaultProps.currentUser.id)
+      const {findByRole} = render(
+        <K5Dashboard
+          {...defaultProps}
+          currentUserRoles={['student', 'observer']}
+          observedUsersList={[defaultProps.currentUser, ...MOCK_OBSERVED_USERS_LIST]}
+        />
+      )
+      expect(await findByRole('tab', {name: 'Grades'})).toBeInTheDocument()
+    })
+
+    it('is visible to observers who have selected a student', async () => {
+      const {findByRole} = render(
+        <K5Dashboard
+          {...defaultProps}
+          currentUserRoles={['observer']}
+          observedUsersList={MOCK_OBSERVED_USERS_LIST}
+        />
+      )
+      expect(await findByRole('tab', {name: 'Grades'})).toBeInTheDocument()
+    })
+
+    it('is not visible to observers who have themself selected (and no student/teacher enrollments)', async () => {
+      clearObservedId(defaultProps.currentUser.id)
+      const {findByRole, queryByRole} = render(
+        <K5Dashboard
+          {...defaultProps}
+          currentUserRoles={['observer']}
+          observedUsersList={[defaultProps.currentUser, ...MOCK_OBSERVED_USERS_LIST]}
+        />
+      )
+      await findByRole('tab', {name: 'Homeroom'})
+      expect(queryByRole('tab', {name: 'Grades'})).not.toBeInTheDocument()
     })
   })
 })

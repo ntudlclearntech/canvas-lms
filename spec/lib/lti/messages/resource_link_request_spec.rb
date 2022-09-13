@@ -47,13 +47,37 @@ describe Lti::Messages::ResourceLinkRequest do
           custom: {
             link_has_expansion2: "$Canvas.assignment.id",
             no_expansion: "overrides tool param!"
-          }
+          },
+          url: "http://www.example.com/launch"
         )
       end
       let(:opts) { super().merge(resource_link: resource_link) }
 
       it "uses resource link uuid for rlid claim" do
         expect(jws.dig("https://purl.imsglobal.org/spec/lti/claim/resource_link", "id")).to eq resource_link.resource_link_uuid
+      end
+
+      it "uses context title for rlid title" do
+        expect(jws.dig("https://purl.imsglobal.org/spec/lti/claim/resource_link", "title")).to eq course.name
+      end
+
+      context "when resource_link is associated with a content tag" do
+        let(:content_tag) do
+          ContentTag.create!(
+            context: course,
+            title: "fake title",
+            url: "https://example.com",
+            associated_asset: resource_link
+          )
+        end
+
+        before do
+          content_tag
+        end
+
+        it "uses content_tag_title for rlid title" do
+          expect(jws.dig("https://purl.imsglobal.org/spec/lti/claim/resource_link", "title")).to eq content_tag.title
+        end
       end
 
       context "when link-level custom params are given in resource_link" do

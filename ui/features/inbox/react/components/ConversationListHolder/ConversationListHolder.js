@@ -21,15 +21,13 @@ import {Flex} from '@instructure/ui-flex'
 import {Spinner} from '@instructure/ui-spinner'
 import {useScope as useI18nScope} from '@canvas/i18n'
 import PropTypes from 'prop-types'
-import React, {useEffect, useState, useContext, useCallback, useMemo} from 'react'
-import {useMutation} from 'react-apollo'
+import React, {useEffect, useState, useContext, useCallback, useMemo, useRef} from 'react'
 import InboxEmpty from '../../../svg/inbox-empty.svg'
 import {ConversationContext} from '../../../util/constants'
 import {Text} from '@instructure/ui-text'
 import {View} from '@instructure/ui-view'
 
 import {ConversationListItem} from './ConversationListItem'
-import {UPDATE_CONVERSATION_PARTICIPANTS} from '../../../graphql/Mutations'
 
 const I18n = useI18nScope('conversations_2')
 
@@ -41,8 +39,8 @@ export const ConversationListHolder = ({
   ...props
 }) => {
   const [selectedMessages, setSelectedMessages] = useState([])
-  const [rangeClickStart, setRangeClickStart] = useState()
-  const {setOnFailure, setOnSuccess} = useContext(AlertManagerContext)
+  const rangeClickStartRef = useRef()
+  const {setOnFailure} = useContext(AlertManagerContext)
   const {setMultiselect, isSubmissionCommentsType} = useContext(ConversationContext)
 
   const [menuData, setMenuData] = useState([...props.conversations])
@@ -121,16 +119,16 @@ export const ConversationListHolder = ({
     if (e.shiftKey) {
       window.document.getSelection().removeAllRanges()
     }
-    if (e.shiftKey && rangeClickStart && multiple) {
+    if (e.shiftKey && rangeClickStartRef.current && multiple) {
       // Range Click
       rangeSelect(_id)
     } else if (multiple) {
       // MultiSelect
-      setRangeClickStart(_id)
+      rangeClickStartRef.current = _id
       updatedSelectedItems(_id)
     } else {
       // Single Select
-      setRangeClickStart(_id)
+      rangeClickStartRef.current = _id
       if (selectedMessages.includes(_id) && e.target.type === 'checkbox') {
         removeFromSelectedConversations(_id)
         return
@@ -154,7 +152,7 @@ export const ConversationListHolder = ({
     // Find position of start/ending messages
     for (let i = 0; i < props.conversations.length; i++) {
       const conversation = props.conversations[i]
-      if (conversation._id === rangeClickStart) {
+      if (conversation._id === rangeClickStartRef.current) {
         positionStart = i
       } else if (conversation._id === rangeClickEnd) {
         positionEnd = i
@@ -185,27 +183,6 @@ export const ConversationListHolder = ({
     })
     setSelectedMessages([...updatedSelectedMessage])
   }
-
-  const [readStateChangeConversationParticipants] = useMutation(UPDATE_CONVERSATION_PARTICIPANTS, {
-    onCompleted(data) {
-      if (data.updateConversationParticipants.errors) {
-        setOnFailure(I18n.t('Read state change operation failed'))
-      } else {
-        setOnSuccess(
-          I18n.t(
-            {
-              one: 'Read state Changed!',
-              other: 'Read states Changed!'
-            },
-            {count: '1000'}
-          )
-        )
-      }
-    },
-    onError() {
-      setOnFailure(I18n.t('Read state change failed'))
-    }
-  })
 
   // Render no results found item
   const renderNoResultsFound = () => {
@@ -248,9 +225,8 @@ export const ConversationListHolder = ({
           onSelect={handleItemSelection}
           onStar={props.onStar}
           key={conversation._id}
-          readStateChangeConversationParticipants={
-            isSubmissionCommentsType ? () => {} : readStateChangeConversationParticipants
-          }
+          onMarkAsRead={props.onMarkAsRead}
+          onMarkAsUnread={props.onMarkAsUnread}
           textSize={props.textSize}
         />
       </View>
@@ -296,17 +272,16 @@ export const ConversationListHolder = ({
   }
 
   return (
-    <View
-      as="div"
-      height="100%"
-      overflowX="hidden"
-      overflowY="auto"
-      borderWidth="small"
-      data-testid={props.datatestid}
-    >
+    <View as="div" height="100%" overflowX="hidden" overflowY="auto" data-testid={props.datatestid}>
       {isLoading && !isLoadingMoreMenuData && renderLoading()}
       {(!isLoading || isLoadingMoreMenuData) && (
-        <View as="div" height="100%" overflowX="hidden" overflowY="auto" borderWidth="small">
+        <View
+          as="div"
+          height="100%"
+          overflowX="hidden"
+          overflowY="auto"
+          borderWidth="0 small small small"
+        >
           {renderedItems}
           {isLoadingMoreMenuData && renderLoading()}
         </View>
@@ -320,6 +295,8 @@ ConversationListHolder.propTypes = {
   id: PropTypes.string,
   onSelect: PropTypes.func,
   onStar: PropTypes.func,
+  onMarkAsRead: PropTypes.func,
+  onMarkAsUnread: PropTypes.func,
   textSize: PropTypes.string,
   datatestid: PropTypes.string,
   /**

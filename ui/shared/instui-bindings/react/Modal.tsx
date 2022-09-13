@@ -37,16 +37,18 @@ type Props = {
   children: ReactElement | ReactElement[]
   footer: ReactElement | null | (() => ReactElement) // render prop. usually to render the buttons for the footer.
   padding?: string
-  title: string | null // specify this if the header text should be different than the modal's label
+  label: string
+  title?: string | null // specify this if the header text should be different than the modal's label
   // Optional props to pass to the GenericErrorPage in ErrorBoundary
   errorSubject?: string
   errorCategory?: string
   errorImageUrl?: string
-  closeButtonSize: 'small' | 'medium' | 'large' | undefined
+  closeButtonSize?: 'small' | 'medium' | 'large' | undefined
+  onDismiss?: () => void
   [key: string]: any
 }
 
-export default function CanvasModal({
+function CanvasModal({
   padding = 'small',
   errorSubject,
   errorCategory,
@@ -96,3 +98,5 @@ export default function CanvasModal({
     </Modal>
   )
 }
+
+export default CanvasModal

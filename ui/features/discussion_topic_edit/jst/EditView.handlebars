@@ -21,7 +21,7 @@
       {{> ui/features/discussion_topic_edit/jst/_publishedButton.handlebars }}
     </ul>
     {{else}}
-    <div class="span4 offset8 text-right">
+    <div class="full-width text-right">
       {{> ui/features/discussion_topic_edit/jst/_publishedButton.handlebars }}
     </div>
   </div>
@@ -380,13 +380,6 @@
     {{#t "buttons.save_and_publish"}}Save & Publish{{/t}}
   </button>
   {{/if}}
-  {{#if isAnnouncement }}
-    <button type="submit"
-            data-text-while-loading="{{#t "saving"}}Saving...{{/t}}"
-            class="btn btn-primary">{{#t "buttons.publish"}}Publish{{/t}}</button>
-  {{else}}
-    <button type="submit"
-            data-text-while-loading="{{#t "saving"}}Saving...{{/t}}"
-            class="btn btn-primary">{{#t "save"}}Save{{/t}}</button>
-  {{/if}}
+  <button type="submit" data-text-while-loading="{{#t " saving"}}Saving...{{/t}}" class="btn btn-primary">{{#t
+    "save"}}Save{{/t}}</button>
 </div>

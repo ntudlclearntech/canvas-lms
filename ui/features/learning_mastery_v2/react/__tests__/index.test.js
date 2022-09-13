@@ -93,7 +93,9 @@ describe('LearningMastery', () => {
   beforeEach(() => {
     useRollups.mockReturnValue({isLoading: false, students: users, outcomes, rollups})
     oldEnv = {...window.ENV}
-    window.ENV = {GRADEBOOK_OPTIONS: {outcome_proficiency: {ratings}}}
+    window.ENV = {
+      GRADEBOOK_OPTIONS: {outcome_proficiency: {ratings}, ACCOUNT_LEVEL_MASTERY_SCALES: true}
+    }
   })
 
   afterEach(() => {
@@ -114,6 +116,11 @@ describe('LearningMastery', () => {
     expect(getByText('Loading')).toBeInTheDocument()
   })
 
+  it('renders the gradebook menu on the page', async () => {
+    const {getByTestId} = render(<LearningMastery {...defaultProps()} />)
+    expect(getByTestId('lmgb-gradebook-menu')).toBeInTheDocument()
+  })
+
   it('renders each student, outcome, rollup from the response', async () => {
     useRollups.mockReturnValue({isLoading: false, students: users, outcomes, rollups})
     const {getByText} = render(<LearningMastery {...defaultProps()} />)
@@ -126,6 +133,9 @@ describe('LearningMastery', () => {
   it('calls useRollups with the provided courseId', () => {
     const props = defaultProps()
     render(<LearningMastery {...props} />)
-    expect(useRollups).toHaveBeenCalledWith({courseId: props.courseId})
+    expect(useRollups).toHaveBeenCalledWith({
+      courseId: props.courseId,
+      accountLevelMasteryScalesFF: true
+    })
   })
 })

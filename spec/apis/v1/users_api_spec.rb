@@ -1085,6 +1085,34 @@ describe "Users API", type: :request do
       expect(json.map { |r| r["id"] }).to eq [@student.id]
     end
 
+    context "includes ui_invoked" do
+      before(:once) { Setting.set("ui_invoked_count_pages", "true") }
+
+      let(:root_account) { Account.default }
+
+      it "sets pagination total_pages/last page link" do
+        user_session(@admin)
+        api_call(:get, "/api/v1/accounts/#{root_account.id}/users",
+                 { controller: "users", action: "api_index", format: "json", account_id: root_account.id.to_param },
+                 { role_filter_id: student_role.id.to_s, include: ["ui_invoked"] })
+        expect(response).to be_successful
+        expect(response.headers["Link"]).to include("last")
+      end
+
+      it "includes context account and sub-accounts when filtering by role" do
+        subaccount = Account.create!(parent_account: root_account)
+        course_with_student(account: subaccount, active_all: true)
+        account_admin_user
+        user_session(@user)
+        json = api_call(:get, "/api/v1/accounts/#{root_account.id}/users",
+                        { controller: "users", action: "api_index", format: "json", account_id: root_account.id.to_param },
+                        { role_filter_id: student_role.id.to_s, include: ["ui_invoked"] })
+        expect(response).to be_successful
+        # includes the first describe block student and the new subaccount student user
+        expect(json.count).to eq 2
+      end
+    end
+
     context "includes last login info" do
       before :once do
         @account = Account.default
@@ -1186,12 +1214,28 @@ describe "Users API", type: :request do
       end
     end
 
-    it "does not return a next-page link on the last page" do
+    it "does return a next header on the last page" do
       @account = Account.default
       u = User.create!(name: "test user")
       u.pseudonyms.create!(account: @account, unique_id: "user")
 
       json = api_call(:get, "/api/v1/accounts/#{@account.id}/users", { controller: "users", action: "api_index", format: "json", account_id: @account.id.to_param }, { search_term: u.id.to_s, per_page: "1", page: "1" })
+      expect(json.length).to eq 1
+      expect(response.headers["Link"]).to include("rel=\"next\"")
+      json = api_call(:get, "/api/v1/accounts/#{@account.id}/users", { controller: "users", action: "api_index", format: "json", account_id: @account.id.to_param }, { search_term: u.id.to_s, per_page: "1", page: "2" })
+      expect(json).to be_empty
+      expect(response.headers["Link"]).to_not include("rel=\"next\"")
+    end
+
+    it "does not return a next-page link on the last page" do
+      Setting.set("ui_invoked_count_pages", "true")
+      @account = Account.default
+      u = User.create!(name: "test user")
+      u.pseudonyms.create!(account: @account, unique_id: "user")
+
+      json = api_call(:get, "/api/v1/accounts/#{@account.id}/users",
+                      { controller: "users", action: "api_index", format: "json", account_id: @account.id.to_param },
+                      { search_term: u.id.to_s, per_page: "1", page: "1", include: ["ui_invoked"] })
       expect(json.length).to eq 1
       expect(response.headers["Link"]).to_not include("rel=\"next\"")
     end
@@ -2537,6 +2581,21 @@ describe "Users API", type: :request do
           { expected_status: 200 }
         )
         expect(json["hexcode"]).to eq "#ababab"
+      end
+
+      it "emits user.set_custom_color to statsd" do
+        course_with_student(active_all: true)
+        allow(InstStatsd::Statsd).to receive(:increment)
+        api_call(
+          :put,
+          "/api/v1/users/#{@user.id}/colors/course_#{@course.id}",
+          { controller: "users", action: "set_custom_color", format: "json",
+            id: @user.to_param, asset_string: "course_#{@course.id}", hexcode: "ababab" },
+          {},
+          {},
+          { expected_status: 200 }
+        )
+        expect(InstStatsd::Statsd).to have_received(:increment).once.with("user.set_custom_color", tags: %w[enrollment_type:StudentEnrollment])
       end
     end
 

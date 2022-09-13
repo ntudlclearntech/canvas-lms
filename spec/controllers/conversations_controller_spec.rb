@@ -19,6 +19,11 @@
 #
 
 describe ConversationsController do
+  before do
+    allow(InstStatsd::Statsd).to receive(:count)
+    allow(InstStatsd::Statsd).to receive(:increment)
+  end
+
   def conversation(opts = {})
     num_other_users = opts[:num_other_users] || 1
     course = opts[:course] || @course
@@ -52,6 +57,35 @@ describe ConversationsController do
       expect(assigns[:js_env]).not_to be_nil
     end
 
+    it "tallies legacy inbox stats" do
+      user_session(@student)
+
+      # counts toward inbox and sent, and unread
+      c1 = conversation
+      c1.update_attribute :workflow_state, "unread"
+
+      # counts toward inbox, sent, and starred
+      c2 = conversation
+      c2.update(starred: true)
+
+      # counts toward sent, and archived
+      c3 = conversation
+      c3.update_attribute :workflow_state, "archived"
+
+      term = @course.root_account.enrollment_terms.create! name: "Fall"
+      @course.update! enrollment_term: term
+
+      get "index"
+      expect(response).to be_successful
+
+      expect(InstStatsd::Statsd).to have_received(:increment).with("inbox.visit.legacy")
+      expect(InstStatsd::Statsd).to have_received(:count).with("inbox.visit.scope.inbox.count.legacy", 2).once
+      expect(InstStatsd::Statsd).to have_received(:count).with("inbox.visit.scope.sent.count.legacy", 3).once
+      expect(InstStatsd::Statsd).to have_received(:count).with("inbox.visit.scope.unread.count.legacy", 1).once
+      expect(InstStatsd::Statsd).to have_received(:count).with("inbox.visit.scope.starred.count.legacy", 1).once
+      expect(InstStatsd::Statsd).to have_received(:count).with("inbox.visit.scope.archived.count.legacy", 1).once
+    end
+
     it "assigns variables for json" do
       user_session(@student)
       conversation
@@ -60,6 +94,15 @@ describe ConversationsController do
       expect(response).to be_successful
       expect(assigns[:js_env]).to be_nil
       expect(assigns[:conversations_json].pluck(:id)).to eq @user.conversations.map(&:conversation_id)
+    end
+
+    it "does not log scope count stats for json" do
+      user_session(@student)
+      conversation
+
+      get "index", format: "json"
+      expect(response).to be_successful
+      expect(InstStatsd::Statsd).not_to have_received(:count)
     end
 
     it "works for an admin as well" do
@@ -82,6 +125,19 @@ describe ConversationsController do
       get "index", params: { scope: "sent" }, format: "json"
       expect(response).to be_successful
       expect(assigns[:conversations_json].size).to eql 3
+    end
+
+    it "returns all unread conversations" do
+      user_session(@student)
+      @c1 = conversation
+      @c2 = conversation
+      @c3 = conversation
+      @c3.update_attribute :workflow_state, "unread"
+
+      get "index", params: { scope: "unread" }, format: "json"
+      expect(response).to be_successful
+      expect(assigns[:conversations_json].size).to eql 1
+      expect(InstStatsd::Statsd).to have_received(:increment).with("inbox.visit.scope.unread.pages_loaded.legacy")
     end
 
     it "returns conversations matching the specified filter" do
@@ -207,6 +263,48 @@ describe ConversationsController do
         expect(assigns[:conversations_json].size).to be 1
       end
     end
+
+    context "react-inbox" do
+      before do
+        Account.default.enable_feature! :react_inbox
+      end
+
+      context "metrics" do
+        it "does not increment visit count if not authorized to open inbox" do
+          get "index"
+          assert_require_login
+          expect(InstStatsd::Statsd).not_to have_received(:increment).with("inbox.visit.react")
+        end
+
+        it "tallies react inbox stats" do
+          user_session(@student)
+          # counts toward inbox and sent, and unread
+          c1 = conversation
+          c1.update_attribute :workflow_state, "unread"
+
+          # counts toward inbox, sent, and starred
+          c2 = conversation
+          c2.update(starred: true)
+
+          # counts toward sent, and archived
+          c3 = conversation
+          c3.update_attribute :workflow_state, "archived"
+
+          term = @course.root_account.enrollment_terms.create! name: "Fall"
+          @course.update! enrollment_term: term
+
+          get "index"
+          expect(response).to be_successful
+
+          expect(InstStatsd::Statsd).to have_received(:increment).with("inbox.visit.react")
+          expect(InstStatsd::Statsd).to have_received(:count).with("inbox.visit.scope.inbox.count.react", 2).once
+          expect(InstStatsd::Statsd).to have_received(:count).with("inbox.visit.scope.sent.count.react", 3).once
+          expect(InstStatsd::Statsd).to have_received(:count).with("inbox.visit.scope.unread.count.react", 1).once
+          expect(InstStatsd::Statsd).to have_received(:count).with("inbox.visit.scope.starred.count.react", 1).once
+          expect(InstStatsd::Statsd).to have_received(:count).with("inbox.visit.scope.archived.count.react", 1).once
+        end
+      end
+    end
   end
 
   describe "GET 'show'" do
@@ -235,6 +333,8 @@ describe ConversationsController do
     before :once do
       course_with_teacher(active_all: true)
       student_in_course(active_all: true)
+      @student2 = @student
+      student_in_course(active_all: true)
     end
 
     it "creates the conversation" do
@@ -245,6 +345,10 @@ describe ConversationsController do
       enrollment.workflow_state = "active"
       enrollment.save
       post "create", params: { recipients: [new_user.id.to_s], body: "yo" }
+      expect(InstStatsd::Statsd).to have_received(:increment).with("inbox.conversation.created.legacy")
+      expect(InstStatsd::Statsd).to have_received(:increment).with("inbox.message.sent.legacy")
+      expect(InstStatsd::Statsd).to have_received(:increment).with("inbox.conversation.sent.legacy")
+      expect(InstStatsd::Statsd).to have_received(:count).with("inbox.message.sent.recipients.legacy", 1)
       expect(response).to be_successful
       expect(assigns[:conversation]).not_to be_nil
     end
@@ -379,9 +483,24 @@ describe ConversationsController do
         end
       end
 
+      it "Creates one conversation per recipients if bulk_message is true" do
+        post "create", params: { recipients: [@new_user1.id.to_s, @new_user2.id.to_s], body: "yo", group_conversation: true, bulk_message: "1" }
+        expect(response).to be_successful
+
+        expect(InstStatsd::Statsd).to have_received(:increment).with("inbox.conversation.sent.individual_message_option.legacy")
+        expect(Conversation.count).to eql(@old_count + 2)
+      end
+
       [nil, "", "0", "false", "no", "off", "wat"].each do |falsish|
         it "creates one conversation per recipient if group_conversation=#{falsish.inspect}" do
-          post "create", params: { recipients: [@new_user1.id.to_s, @new_user2.id.to_s], body: "yo", group_conversation: falsish }
+          @teacher.media_objects.where(media_id: "m-whatever", media_type: "video/mp4").first_or_create!
+          post "create", params: { recipients: [@new_user1.id.to_s, @new_user2.id.to_s], body: "yo", group_conversation: falsish, media_comment_id: "m-whatever", media_comment_type: "video" }
+
+          expect(InstStatsd::Statsd).to have_received(:count).with("inbox.conversation.created.legacy", 2)
+          expect(InstStatsd::Statsd).to have_received(:increment).with("inbox.message.sent.legacy")
+          expect(InstStatsd::Statsd).to have_received(:increment).with("inbox.conversation.sent.legacy")
+          expect(InstStatsd::Statsd).to have_received(:count).with("inbox.message.sent.media.legacy", 2)
+          expect(InstStatsd::Statsd).to have_received(:count).with("inbox.message.sent.recipients.legacy", 2)
           expect(response).to be_successful
 
           expect(Conversation.count).to eql(@old_count + 2)
@@ -510,11 +629,13 @@ describe ConversationsController do
       it "creates user notes" do
         post "create", params: { recipients: @students.map(&:id), body: "yo", subject: "greetings", user_note: "1" }
         @students.each { |x| expect(x.user_notes.size).to be(1) }
+        expect(InstStatsd::Statsd).to have_received(:increment).with("inbox.conversation.sent.faculty_journal.legacy")
       end
 
       it "_not_s create user notes if asked not to" do
         post "create", params: { recipients: @students.map(&:id), body: "yolo", subject: "salutations", user_note: "0" }
         @students.each { |x| expect(x.user_notes.size).to be(0) }
+        expect(InstStatsd::Statsd).not_to have_received(:increment).with("inbox.conversation.sent.faculty_journal.legacy")
       end
 
       it "includes the domain root account in the user note" do
@@ -533,8 +654,10 @@ describe ConversationsController do
 
       context "as a siteadmin user with send_messages grants" do
         it "succeeds" do
+          allow(InstStatsd::Statsd).to receive(:increment)
           user_session(site_admin_user)
           post "create", params: { recipients: [User.create.id.to_s], body: "foo" }
+          expect(InstStatsd::Statsd).to have_received(:increment).with("inbox.conversation.sent.account_context.legacy")
           expect(response.status).to eq 201
         end
       end
@@ -542,16 +665,75 @@ describe ConversationsController do
   end
 
   describe "POST 'update'" do
-    it "updates the conversation" do
+    it "updates the conversation to be archived and starred" do
       course_with_student_logged_in(active_all: true)
       conversation(num_other_users: 2).update_attribute(:workflow_state, "unread")
 
-      post "update", params: { id: @conversation.conversation_id, conversation: { subscribed: "0", workflow_state: "archived", starred: "1" } }
+      allow(InstStatsd::Statsd).to receive(:increment)
+      post "update", params: { id: @conversation.conversation_id, conversation: { subscribed: "0", workflow_state: "archived", starred: true } }
+
       expect(response).to be_successful
       @conversation.reload
       expect(@conversation.subscribed?).to be_falsey
       expect(@conversation).to be_archived
       expect(@conversation.starred).to be_truthy
+      expect(InstStatsd::Statsd).to have_received(:increment).with("inbox.conversation.archived.legacy")
+      expect(InstStatsd::Statsd).to have_received(:increment).with("inbox.conversation.starred.legacy")
+      expect(InstStatsd::Statsd).not_to have_received(:increment).with("inbox.conversation.archived.react")
+    end
+
+    it "updates the conversation to be unstarred" do
+      course_with_student_logged_in(active_all: true)
+      conversation(num_other_users: 2).update(starred: true)
+
+      post "update", params: { id: @conversation.conversation_id, conversation: { starred: false } }
+      expect(response).to be_successful
+      @conversation.reload
+      expect(@conversation.starred).to be_falsey
+      expect(InstStatsd::Statsd).to have_received(:increment).with("inbox.conversation.unstarred.legacy")
+    end
+
+    it "updates the conversation to be unread" do
+      course_with_student_logged_in(active_all: true)
+      conversation(num_other_users: 2).update(workflow_state: "read")
+
+      post "update", params: { id: @conversation.conversation_id, conversation: { workflow_state: "unread" } }
+      expect(response).to be_successful
+      @conversation.reload
+      expect(@conversation.starred).to be_falsey
+      expect(InstStatsd::Statsd).to have_received(:increment).with("inbox.conversation.unread.legacy")
+    end
+  end
+
+  describe "PUT 'batch_update'" do
+    it "calls batch update with star event" do
+      course_with_student_logged_in(active_all: true)
+      conversation(num_other_users: 2).update_attribute(:workflow_state, "unread")
+
+      allow(InstStatsd::Statsd).to receive(:count)
+      put "batch_update", params: { conversation_ids: [@conversation.id], event: "star" }
+
+      expect(InstStatsd::Statsd).to have_received(:count).with("inbox.conversation.starred.legacy", 1).once
+    end
+
+    it "calls batch update with unstar event" do
+      course_with_student_logged_in(active_all: true)
+      conversation(num_other_users: 2).update_attribute(:workflow_state, "unread")
+
+      allow(InstStatsd::Statsd).to receive(:count)
+      put "batch_update", params: { conversation_ids: [@conversation.id], event: "unstar" }
+
+      expect(InstStatsd::Statsd).to have_received(:count).with("inbox.conversation.unstarred.legacy", 1).once
+    end
+
+    it "calls batch update with unread event" do
+      course_with_student_logged_in(active_all: true)
+      conversation(num_other_users: 2).update_attribute(:workflow_state, "read")
+
+      allow(InstStatsd::Statsd).to receive(:count)
+      put "batch_update", params: { conversation_ids: [@conversation.id], event: "mark_as_unread" }
+
+      expect(InstStatsd::Statsd).to have_received(:count).with("inbox.conversation.unread.legacy", 1).once
     end
   end
 
@@ -564,6 +746,10 @@ describe ConversationsController do
       @conversation.save!
 
       post "add_message", params: { conversation_id: @conversation.conversation_id, body: "hello world" }
+
+      expect(InstStatsd::Statsd).to have_received(:increment).with("inbox.message.sent.legacy")
+      expect(InstStatsd::Statsd).to have_received(:increment).with("inbox.message.sent.isReply.legacy")
+      expect(InstStatsd::Statsd).to have_received(:count).with("inbox.message.sent.recipients.legacy", 0)
       expect(response).to be_successful
       expect(@conversation.messages.size).to eq 2
       expect(@conversation.reload.last_message_at).to eql expected_lma
@@ -651,15 +837,50 @@ describe ConversationsController do
       @course.update!({ workflow_state: "completed" })
 
       post "add_message", params: { conversation_id: @conversation.conversation_id, body: "hello world", recipients: [@teacher.id.to_s] }
+      expect(InstStatsd::Statsd).to have_received(:count).with("inbox.message.sent.recipients.legacy", 1)
+      expect(response).to be_successful
+      expect(assigns[:conversation]).not_to be_nil
+    end
+
+    it "allows a student to reply to a teacher in a soft-concluded course" do
+      course_with_student_logged_in(active_all: true)
+
+      teacher_convo = @teacher.initiate_conversation([@student])
+      teacher_convo.add_message("test")
+      teacher_convo.conversation.update_attribute(:context, @course)
+
+      @course.conclude_at = 1.day.ago
+      @course.start_at = 2.days.ago
+      @course.restrict_enrollments_to_course_dates = true
+      @course.restrict_student_past_view = true
+      @course.save!
+      post "add_message", params: { conversation_id: teacher_convo.conversation_id, body: "hello world", recipients: [@teacher.id.to_s] }
+      expect(response).to be_successful
+      expect(assigns[:conversation]).not_to be_nil
+    end
+
+    it "allows a teacher to reply to a student in a soft-concluded course" do
+      student_in_course(active_all: true)
+      course_with_teacher_logged_in(active_all: true)
+      conversation
+      @course.conclude_at = 1.day.ago
+      @course.start_at = 2.days.ago
+      @course.restrict_enrollments_to_course_dates = true
+      @course.restrict_student_past_view = true
+      @course.save!
+
+      post "add_message", params: { conversation_id: @conversation.conversation_id, body: "hello world", recipients: [@student.id.to_s] }
       expect(response).to be_successful
       expect(assigns[:conversation]).not_to be_nil
     end
 
     it "refrains from duplicating the RCE-created media_comment" do
       course_with_student_logged_in(active_all: true)
+      allow(InstStatsd::Statsd).to receive(:increment)
       conversation
       @student.media_objects.where(media_id: "m-whatever", media_type: "video/mp4").first_or_create!
       post "add_message", params: { conversation_id: @conversation.conversation_id, body: "hello world", media_comment_id: "m-whatever", media_comment_type: "video" }
+      expect(InstStatsd::Statsd).to have_received(:increment).with("inbox.message.sent.media.legacy")
       expect(response).to be_successful
       expect(@student.media_objects.by_media_id("m-whatever").count).to eq 1
     end
@@ -677,6 +898,104 @@ describe ConversationsController do
       messages = convo.messages.to_a
       expect(messages.count).to eq 2
       expect(messages.pluck(:body)).to match_array(["wut up BOI!", "just chillin"])
+    end
+
+    context "concluded enrollments" do
+      before do
+        course_factory(active_all: true)
+        @student1 = User.create(name: "bob")
+        @concluded_student = User.create(name: "billy")
+        @teacher1 = User.create(name: "Mr. Teacher")
+        @concluded_teacher = User.create(name: "Mr. Professor")
+        @course.enroll_student(@student1).accept
+        @course.enroll_student(@concluded_student).accept
+        @course.enroll_teacher(@teacher1).accept
+        @course.enroll_teacher(@concluded_teacher).accept
+        @course.save!
+
+        # Conversations are created before the enrollments are concluded
+        @active_teacher_with_concluded_teacher_convo = @teacher1.initiate_conversation([@concluded_teacher])
+        @active_teacher_with_concluded_student_convo = @teacher1.initiate_conversation([@concluded_student])
+
+        @active_student_with_concluded_teacher_convo = @student1.initiate_conversation([@concluded_teacher])
+        @active_student_with_concluded_student_convo = @student1.initiate_conversation([@concluded_student])
+
+        @active_teacher_with_concluded_teacher_convo.conversation.update_attribute(:context, @course)
+        @active_teacher_with_concluded_student_convo.conversation.update_attribute(:context, @course)
+        @active_student_with_concluded_teacher_convo.conversation.update_attribute(:context, @course)
+        @active_student_with_concluded_student_convo.conversation.update_attribute(:context, @course)
+
+        @concluded_teacher.enrollments.each(&:conclude)
+        @concluded_student.enrollments.each(&:conclude)
+      end
+
+      context "current user is active teacher" do
+        before do
+          user_session(@teacher1)
+        end
+
+        it "allows active teacher to respond to concluded teacher" do
+          post "add_message", params: { conversation_id: @active_teacher_with_concluded_teacher_convo.conversation_id, body: "hello world", recipients: [@concluded_teacher.id.to_s] }
+          expect(response).to be_successful
+          expect(assigns[:conversation]).not_to be_nil
+        end
+
+        it "allows active teacher to respond to concluded student" do
+          post "add_message", params: { conversation_id: @active_teacher_with_concluded_student_convo.conversation_id, body: "hello world", recipients: [@concluded_student.id.to_s] }
+          expect(response).to be_successful
+          expect(assigns[:conversation]).not_to be_nil
+        end
+      end
+
+      context "current user is active student" do
+        before do
+          user_session(@student1)
+        end
+
+        it "does not allow active student to respond to concluded teacher" do
+          post "add_message", params: { conversation_id: @active_student_with_concluded_teacher_convo.conversation_id, body: "hello world", recipients: [@concluded_teacher.id.to_s] }
+          assert_unauthorized
+        end
+
+        it "does not allow active student to respond to concluded student" do
+          post "add_message", params: { conversation_id: @active_student_with_concluded_student_convo.conversation_id, body: "hello world", recipients: [@concluded_student.id.to_s] }
+          assert_unauthorized
+        end
+      end
+
+      context "current user is concluded teacher" do
+        before do
+          user_session(@concluded_teacher)
+        end
+
+        it "allows concluded teacher to respond to active teacher" do
+          post "add_message", params: { conversation_id: @active_teacher_with_concluded_teacher_convo.conversation_id, body: "hello world", recipients: [@teacher1.id.to_s] }
+          expect(response).to be_successful
+          expect(assigns[:conversation]).not_to be_nil
+        end
+
+        it "does not allow concluded teacher to respond to active student" do
+          post "add_message", params: { conversation_id: @active_student_with_concluded_teacher_convo.conversation_id, body: "hello world", recipients: [@student1.id.to_s] }
+          assert_unauthorized
+        end
+      end
+
+      context "current user is concluded student" do
+        before do
+          user_session(@concluded_student)
+        end
+
+        it "allows concluded student to respond to active teacher" do
+          post "add_message", params: { conversation_id: @active_teacher_with_concluded_student_convo.conversation_id, body: "hello world", recipients: [@teacher1.id.to_s] }
+          expect(response).to be_successful
+          expect(assigns[:conversation]).not_to be_nil
+        end
+
+        it "does not allow concluded student to respond to active student" do
+          post "add_message", params: { conversation_id: @active_student_with_concluded_student_convo.conversation_id, body: "hello world", recipients: [@student1.id.to_s] }
+          assert_unauthorized
+        end
+      end
     end
   end
 

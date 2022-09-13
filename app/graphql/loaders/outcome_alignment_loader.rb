@@ -37,17 +37,42 @@ class Loaders::OutcomeAlignmentLoader < GraphQL::Batch::Loader
     end
 
     outcomes.each do |outcome|
-      alignments = outcome.alignments.active.where(context: @context).order("title ASC").to_a
-      alignments.each do |alignment|
-        alignment.url = [
-          "/#{alignment.context_type.downcase.pluralize}",
-          alignment.context_id,
-          "outcomes",
-          alignment.learning_outcome_id,
-          "alignments",
-          alignment.id
-        ].join("/")
-      end
+      # map assignment id to quiz and discussion ids
+      assignments_sub = Assignment
+                        .active
+                        .select("assignments.id as assignment_id, discussion_topics.id as discussion_id, quizzes.id as quizzes_id")
+                        .where(context: @context)
+                        .left_joins(:discussion_topic)
+                        .left_joins(:quiz)
+                        .to_sql
+
+      # map assignment id to module id
+      modules_sub = ContextModule
+                    .not_deleted
+                    .select("context_modules.id as module_id, context_modules.name as module_name, context_modules.workflow_state as module_workflow_state, content_tags.content_id as assignment_content_id, content_tags.content_type as assignment_content_type")
+                    .where(context: @context)
+                    .left_joins(:content_tags)
+                    .where(content_tags: { workflow_state: "active" })
+                    .to_sql
+
+      # map alignment id to assignment, quiz and discussion ids
+      alignments_sub = outcome.alignments
+                              .select("content_tags.id, content_tags.content_id, content_tags.content_type, content_tags.context_id, content_tags.context_type, content_tags.title, content_tags.learning_outcome_id, content_tags.created_at, content_tags.updated_at, assignments.assignment_id, assignments.discussion_id, assignments.quizzes_id")
+                              .where(context: @context)
+                              .joins("LEFT OUTER JOIN (#{assignments_sub}) AS assignments ON content_tags.content_id = assignments.assignment_id AND content_tags.content_type = 'Assignment'")
+                              .to_sql
+
+      alignments = ContentTag
+                   .select("alignments.*, modules.module_id, modules.module_name, modules.module_workflow_state")
+                   .from("(#{alignments_sub}) AS alignments")
+                   .joins("LEFT OUTER JOIN (#{modules_sub}) AS modules
+                      ON (alignments.quizzes_id = modules.assignment_content_id AND modules.assignment_content_type = 'Quizzes::Quiz')
+                      OR (alignments.discussion_id = modules.assignment_content_id AND modules.assignment_content_type = 'DiscussionTopic')
+                      OR (alignments.assignment_id = modules.assignment_content_id AND modules.assignment_content_type = 'Assignment')
+                    ")
+                   .order("title ASC")
+                   .to_a
+
       fulfill(outcome, alignments)
     end
   end

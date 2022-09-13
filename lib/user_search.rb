@@ -55,9 +55,9 @@ module UserSearch
     end
 
     def scope_for(context, searcher, options = {})
-      users_scope = context_scope(context, searcher, options.slice(:enrollment_state, :include_inactive_enrollments))
-      users_scope = order_scope(users_scope, context, options.slice(:order, :sort))
-      roles_scope(users_scope, context, options.slice(:enrollment_role, :enrollment_role_id, :enrollment_type, :exclude_groups))
+      users_scope = context_scope(context, searcher, options.slice(:enrollment_state, :include_inactive_enrollments, :enrollment_role_id, :ui_invoked))
+      users_scope = roles_scope(users_scope, context, options.slice(:enrollment_role, :enrollment_role_id, :enrollment_type, :exclude_groups, :ui_invoked))
+      order_scope(users_scope, context, options.slice(:order, :sort))
     end
 
     def context_scope(context, searcher, options = {})
@@ -113,19 +113,31 @@ module UserSearch
       exclude_groups = Array(options[:exclude_groups]) if options[:exclude_groups]
 
       if enrollment_role_ids || enrollment_roles
-        users_scope = users_scope.joins(:not_removed_enrollments).distinct if context.is_a?(Account)
-        roles = if enrollment_role_ids
-                  enrollment_role_ids.filter_map { |id| Role.get_role_by_id(id) }
-                else
-                  enrollment_roles.filter_map do |name|
-                    if context.is_a?(Account)
-                      context.get_course_role_by_name(name)
-                    else
-                      context.account.get_course_role_by_name(name)
-                    end
-                  end
-                end
-        users_scope = users_scope.where(enrollments: { role_id: roles.map(&:id) })
+        role_ids =
+          if enrollment_role_ids
+            enrollment_role_ids.filter_map { |id| Role.get_role_by_id(id).id }
+          else
+            enrollment_roles.filter_map do |name|
+              if context.is_a?(Account)
+                context.get_course_role_by_name(name).id
+              else
+                context.account.get_course_role_by_name(name).id
+              end
+            end
+          end
+        users_scope =
+          if context.is_a?(Account)
+            users_scope.where(
+              "users.id IN (
+                SELECT e.user_id
+                FROM #{Enrollment.quoted_table_name} e
+                WHERE e.role_id=?
+                AND e.workflow_state NOT IN ('rejected', 'inactive', 'deleted')
+              )", role_ids
+            )
+          else
+            users_scope.where(enrollments: { role_id: role_ids }).distinct
+          end
       elsif enrollment_types
         enrollment_types = enrollment_types.map do |e|
           ce = e.camelize
@@ -161,11 +173,12 @@ module UserSearch
       queries = [name_sql(users_scope, params)]
       if complex_search_enabled?
         queries << id_sql(users_scope, params) if @is_id
+        queries << ids_sql(users_scope, params) unless @is_id
         queries << login_sql(users_scope, params) if @include_login
         queries << sis_sql(users_scope, params) if @include_sis
         queries << email_sql(users_scope, params) if @include_email
       end
-      queries.map(&:to_sql).join("\nUNION\n")
+      queries.compact.map(&:to_sql).join("\nUNION\n")
     end
 
     def id_sql(users_scope, params)
@@ -175,6 +188,22 @@ module UserSearch
           AND pseudonyms.workflow_state = 'active'")
                  .where(id: params[:db_id])
                  .group(:id)
+    end
+
+    def ids_sql(users_scope, params)
+      ids = specific_ids(params)
+      return nil unless ids.length.positive?
+
+      users_scope.select("users.*, MAX(current_login_at) as last_login")
+                 .joins("LEFT JOIN #{Pseudonym.quoted_table_name} ON pseudonyms.user_id = users.id
+          AND pseudonyms.account_id = #{User.connection.quote(params[:account].id_for_database)}
+          AND pseudonyms.workflow_state = 'active'")
+                 .where(id: ids)
+    end
+
+    # Plugin extension point
+    def specific_ids(_params)
+      []
     end
 
     def name_sql(users_scope, params)

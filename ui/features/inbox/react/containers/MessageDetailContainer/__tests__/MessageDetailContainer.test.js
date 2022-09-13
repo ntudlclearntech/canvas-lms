@@ -75,6 +75,7 @@ describe('MessageDetailContainer', () => {
     onReplyAll = jest.fn(),
     onDelete = jest.fn(),
     onForward = jest.fn(),
+    onReadStateChange = jest.fn(),
     setOnSuccess = jest.fn(),
     setCanReply = jest.fn(),
     overrideProps = {}
@@ -89,6 +90,7 @@ describe('MessageDetailContainer', () => {
               onReplyAll={onReplyAll}
               onDelete={onDelete}
               onForward={onForward}
+              onReadStateChange={onReadStateChange}
               setCanReply={setCanReply}
               {...overrideProps}
             />
@@ -110,7 +112,6 @@ describe('MessageDetailContainer', () => {
         const container = setup({
           conversation: {...Conversation.mock({_id: CONVERSATION_ID_WHERE_CAN_REPLY_IS_FALSE})}
         })
-        await waitForApolloLoading()
         await waitForElementToBeRemoved(() => container.queryByTestId('conversation-loader'))
 
         expect(container.queryByTestId('message-detail-header-reply-btn')).not.toBeInTheDocument()
@@ -180,22 +181,25 @@ describe('MessageDetailContainer', () => {
       })
 
       it('should mark loaded conversation as read', async () => {
-        const mockSetOnSuccess = jest.fn()
+        const mockReadStateChange = jest.fn()
         const container = setup({
-          setOnSuccess: mockSetOnSuccess,
-          conversation: {...Conversation.mock(), workflowState: 'unread'}
+          conversation: {
+            ...Conversation.mock(),
+            workflowState: 'unread'
+          },
+          onReadStateChange: mockReadStateChange
         })
         // wait for query to load
         await container.findAllByTestId('message-more-options')
 
         await waitForApolloLoading()
-        expect(mockSetOnSuccess).toHaveBeenCalled()
+        expect(mockReadStateChange).toHaveBeenCalled()
       })
     })
   })
 
   describe('submission comments', () => {
-    const mockSubmissionComment = {subject: 'mySubject', _id: '1'}
+    const mockSubmissionComment = {subject: 'mySubject', _id: '1', workflowState: 'unread'}
     describe('rendering', () => {
       it('should render', () => {
         const container = setup({
@@ -244,6 +248,19 @@ describe('MessageDetailContainer', () => {
         })
         await waitForApolloLoading()
         expect(container.queryByTestId('message-more-options')).not.toBeInTheDocument()
+      })
+
+      it('should mark loaded submission comments as read', async () => {
+        const mockReadStateChange = jest.fn()
+        const container = setup({
+          conversation: mockSubmissionComment,
+          onReadStateChange: mockReadStateChange
+        })
+        // wait for query to load
+        await container.findAllByTestId('message-more-options')
+
+        await waitForApolloLoading()
+        expect(mockReadStateChange).toHaveBeenCalled()
       })
     })
   })

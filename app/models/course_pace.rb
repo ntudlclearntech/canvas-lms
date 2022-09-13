@@ -22,6 +22,11 @@ class CoursePace < ActiveRecord::Base
   include Workflow
   include Canvas::SoftDeletable
 
+  include MasterCourses::Restrictor
+  restrict_columns :content, [:duration]
+  restrict_columns :state, [:workflow_state]
+  restrict_columns :settings, %i[exclude_weekends hard_end_dates]
+
   extend RootAccountResolver
   resolves_root_account through: :course
 
@@ -33,6 +38,10 @@ class CoursePace < ActiveRecord::Base
   belongs_to :course_section
   belongs_to :user
   belongs_to :root_account, class_name: "Account"
+
+  after_create :log_pace_counts
+  after_save :log_exclude_weekends_counts, if: :logging_for_weekends_required?
+  after_save :log_average_item_duration
 
   validates :course_id, presence: true
   validate :valid_secondary_context
@@ -56,6 +65,10 @@ class CoursePace < ActiveRecord::Base
   end
 
   self.ignored_columns = %i[start_date]
+
+  def asset_name
+    I18n.t("Course Pace")
+  end
 
   def valid_secondary_context
     if course_section_id.present? && user_id.present?
@@ -113,7 +126,7 @@ class CoursePace < ActiveRecord::Base
               assignment = content_tag.assignment
               next unless assignment
 
-              due_at = dates[course_pace_module_item.id]
+              due_at = CanvasTime.fancy_midnight(dates[course_pace_module_item.id].in_time_zone).in_time_zone("UTC")
               user_id = enrollment.user_id
 
               # Check for an old override
@@ -124,17 +137,21 @@ class CoursePace < ActiveRecord::Base
                 .where(set_type: "ADHOC", due_at_overridden: true)
                 .joins(:assignment_override_students)
                 .find_by(assignment_override_students: { user_id: user_id })
-              next if current_override&.due_at&.to_date == due_at
+              next if current_override&.due_at == due_at
 
               # See if there is already an assignment override with the correct date
-              due_time = CanvasTime.fancy_midnight(due_at.to_datetime).to_time
-              due_range = (due_time - 1.second).round..due_time.round
+              due_range = (due_at - 1.second).round..due_at.round
               correct_date_override =
                 assignment.assignment_overrides.active.find_by(
                   set_type: "ADHOC",
                   due_at_overridden: true,
                   due_at: due_range
                 )
+
+              # If the assignment has already been submitted we are going to log that and continue
+              if assignment.submissions.find_by(user_id: user_id).submitted?
+                InstStatsd::Statsd.increment("course_pacing.submitted_assignment_date_change")
+              end
 
               # If it exists let's just add the student to it and remove them from the other
               if correct_date_override
@@ -144,13 +161,13 @@ class CoursePace < ActiveRecord::Base
                   no_enrollment: false
                 )
               elsif current_override&.assignment_override_students&.size == 1
-                current_override.update(due_at: due_time.to_s)
+                current_override.update(due_at: due_at)
               else
                 AssignmentOverrideStudent.where(assignment: assignment, user_id: user_id).destroy_all
                 assignment.assignment_overrides.create!(
                   set_type: "ADHOC",
                   due_at_overridden: true,
-                  due_at: due_time.to_s,
+                  due_at: due_at,
                   assignment_override_students: [
                     AssignmentOverrideStudent.new(
                       assignment: assignment,
@@ -174,6 +191,7 @@ class CoursePace < ActiveRecord::Base
       DueDateCacher.recompute_course(course, assignments: assignments_to_refresh, update_grades: true)
 
       # Mark as published
+      log_module_items_count
       update(workflow_state: "active", published_at: DateTime.current)
     end
   end
@@ -205,6 +223,7 @@ class CoursePace < ActiveRecord::Base
           .where
           .not(course_section_id: course_section_course_pace_section_ids)
       end
+    @student_enrollments.where.not(workflow_state: "deleted")
   end
 
   def start_date(with_context: false)
@@ -261,5 +280,42 @@ class CoursePace < ActiveRecord::Base
     else
       date&.in_time_zone(course.time_zone)
     end
+  end
+
+  def logging_for_weekends_required?
+    saved_change_to_exclude_weekends? || (saved_change_to_id? && exclude_weekends)
+  end
+
+  def log_pace_counts
+    if course_section_id.present?
+      InstStatsd::Statsd.increment("course_pacing.section_paces.count")
+    elsif user_id.present?
+      InstStatsd::Statsd.increment("course_pacing.user_paces.count")
+    else
+      InstStatsd::Statsd.increment("course_pacing.course_paces.count")
+    end
+  end
+
+  def log_exclude_weekends_counts
+    if exclude_weekends
+      InstStatsd::Statsd.increment("course_pacing.weekends_excluded")
+    else
+      # Only decrementing during an update (not initial create)
+      InstStatsd::Statsd.decrement("course_pacing.weekends_excluded") unless saved_change_to_id?
+    end
+  end
+
+  def log_average_item_duration
+    return if course_pace_module_items.empty?
+
+    average_duration = course_pace_module_items.pluck(:duration).sum / course_pace_module_items.length
+    InstStatsd::Statsd.count("course_pacing.average_assignment_duration", average_duration)
+  end
+
+  def log_module_items_count
+    all_active_course_module_items = course.context_module_tags.active
+    paced_course_module_items = all_active_course_module_items.where(id: course_pace_module_items.pluck(:module_item_id))
+    InstStatsd::Statsd.count("course.paced.paced_module_item_count", paced_course_module_items.size)
+    InstStatsd::Statsd.count("course.paced.all_module_item_count", all_active_course_module_items.size)
   end
 end

@@ -16,17 +16,16 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import INST from 'browser-sniffer'
 import {useScope as useI18nScope} from '@canvas/i18n'
 import $ from 'jquery'
 import Pseudonym from '@canvas/pseudonyms/backbone/models/Pseudonym.coffee'
 import AvatarWidget from '@canvas/avatar-dialog-view'
 import '@canvas/jquery/jquery.ajaxJSON'
-import '@canvas/datetime'/* datetimeString, time_field, datetime_field */
-import '@canvas/forms/jquery/jquery.instructure_forms'/* formSubmit, formErrors, errorBox */
+import '@canvas/datetime' /* datetimeString, time_field, datetime_field */
+import '@canvas/forms/jquery/jquery.instructure_forms' /* formSubmit, formErrors, errorBox */
 import 'jqueryui/dialog'
 import '@canvas/util/jquery/fixDialogButtons'
-import '@canvas/jquery/jquery.instructure_misc_plugins'/* confirmDelete, fragmentChange, showIf */
+import '@canvas/jquery/jquery.instructure_misc_plugins' /* confirmDelete, fragmentChange, showIf */
 import '@canvas/loading-image'
 import '@canvas/util/templateData'
 import 'jqueryui/sortable'
@@ -38,10 +37,11 @@ const $edit_settings_link = $('.edit_settings_link')
 
 const $profile_table = $('.profile_table'),
   $update_profile_form = $('#update_profile_form'),
-  $default_email_id = $('#default_email_id'),
-  profile_pics_url = '/api/v1/users/self/avatars'
+  $default_email_id = $('#default_email_id')
 
-$edit_settings_link.click(function (event) {
+const maximumStringLength = 255
+
+$edit_settings_link.click(function () {
   $(this).hide()
   $profile_table
     .addClass('editing')
@@ -54,7 +54,7 @@ $edit_settings_link.click(function (event) {
   return false
 })
 
-$profile_table.find('.cancel_button').click(event => {
+$profile_table.find('.cancel_button').click(() => {
   $edit_settings_link.show()
   $profile_table
     .removeClass('editing')
@@ -68,7 +68,7 @@ $profile_table.find('.cancel_button').click(event => {
 
 $profile_table
   .find('#change_password_checkbox')
-  .change(function (event) {
+  .change(function () {
     if (!$(this).attr('checked')) {
       $profile_table.find('.change_password_row').hide().find(':password').val('')
     } else {
@@ -86,13 +86,13 @@ $update_profile_form
     required: $update_profile_form.find('#user_name').length ? ['name'] : [],
     object_name: 'user',
     property_validations: {
-      '=default_email_id': function (val, data) {
-        if ($('#default_email_id').length && (!val || val == 'new')) {
+      '=default_email_id': function (val, _data) {
+        if ($('#default_email_id').length && (!val || val === 'new')) {
           return I18n.t('please_select_an_option', 'Please select an option')
         }
       }
     },
-    beforeSubmit(data) {},
+    beforeSubmit() {},
     success(data) {
       const user = data.user
       const templateData = {
@@ -139,7 +139,7 @@ $update_profile_form
   })
 
 $('#default_email_id').change(function () {
-  if ($(this).val() == 'new') {
+  if ($(this).val() === 'new') {
     $('.add_email_link:first').click()
   }
 })
@@ -155,14 +155,23 @@ $('#unregistered_services li.service').click(function (event) {
 })
 $('.create_user_service_form').formSubmit({
   object_name: 'user_service',
-  beforeSubmit(data) {
+  property_validations: {
+    user_name(value) {
+      if (value && value.length > maximumStringLength) {
+        return I18n.t('Exceeded the maximum length (%{number} characters)', {
+          number: maximumStringLength
+        })
+      }
+    }
+  },
+  beforeSubmit() {
     $(this).loadingImage()
   },
-  success(data) {
+  success() {
     $(this).loadingImage('remove').parents('.content').dialog('close')
     document.location.reload()
   },
-  error(data) {
+  error() {
     $(this)
       .loadingImage('remove')
       .errorBox(
@@ -173,7 +182,7 @@ $('.create_user_service_form').formSubmit({
       )
   }
 })
-$('#unregistered_services li.service .content form .cancel_button').click(function (event) {
+$('#unregistered_services li.service .content form .cancel_button').click(function () {
   $(this).parents('.content').dialog('close')
 })
 $('#registered_services li.service .delete_service_link').click(function (event) {
@@ -186,7 +195,7 @@ $('#registered_services li.service .delete_service_link').click(function (event)
         'Are you sure you want to unregister this service?'
       ),
       url: $(this).attr('href'),
-      success(data) {
+      success() {
         $(this).slideUp(function () {
           $('#unregistered_services')
             .find('#unregistered_' + $(this).attr('id'))
@@ -265,8 +274,13 @@ $('#access_token_form').formSubmit({
   object_name: 'access_token',
   property_validations: {
     purpose(value) {
-      if (!value || value == '') {
+      if (!value || value === '') {
         return I18n.t('purpose_required', 'Purpose is required')
+      }
+      if (value.length > maximumStringLength) {
+        return I18n.t('Exceeded the maximum length (%{number} characters)', {
+          number: maximumStringLength
+        })
       }
     }
   },

@@ -185,6 +185,17 @@ describe Types::CourseType do
     end
   end
 
+  describe "outcomeAlignmentStats" do
+    it "resolves to outcome alignment stats" do
+      account_admin_user
+      outcome_alignment_stats_model
+      @course.account.enable_feature!(:outcome_alignment_summary)
+      course_type = GraphQLTypeTester.new(@course, { current_user: @admin })
+      expect(course_type.resolve("outcomeAlignmentStats { totalOutcomes }")).to eq 2
+      expect(course_type.resolve("outcomeAlignmentStats { alignedOutcomes }")).to eq 1
+    end
+  end
+
   describe "sectionsConnection" do
     it "only includes active sections" do
       section1 = course.course_sections.create!(name: "Delete Me")
@@ -398,6 +409,55 @@ describe Types::CourseType do
           GQL
         ).to match_array [@teacher, @student1, @student2, @concluded_user].map(&:to_param)
       end
+
+      it "allows filtering by enrollment type" do
+        expect(
+          course_type.resolve(<<~GQL, current_user: @teacher)
+            usersConnection(
+              filter: {enrollmentTypes: [TeacherEnrollment]}
+            ) { edges { node { _id } } }
+          GQL
+        ).to match_array [@teacher, other_teacher].map(&:to_param)
+        expect(
+          course_type.resolve(<<~GQL, current_user: @teacher)
+            usersConnection(
+              filter: {enrollmentTypes: [StudentEnrollment]}
+            ) { edges { node { _id } } }
+          GQL
+        ).to match_array [@student1, @student2, @inactive_user].map(&:to_param)
+      end
+
+      context "loginId" do
+        def pseud_params(unique_id, account = Account.default)
+          {
+            account: account,
+            unique_id: unique_id,
+          }
+        end
+
+        before do
+          users = [@teacher, @student1, other_teacher, @student2, @inactive_user]
+          @pseudonyms = users.map { |user| user.pseudonyms.create!(pseud_params("#{user.id}@example.com")).unique_id }
+        end
+
+        it "returns loginId for all users when requested by a teacher" do
+          expect(
+            course_type.resolve(
+              "usersConnection { edges { node { loginId } } }",
+              current_user: @teacher
+            )
+          ).to eq @pseudonyms
+        end
+
+        it "does not return loginId for any users when requested by a student" do
+          expect(
+            course_type.resolve(
+              "usersConnection { edges { node { loginId } } }",
+              current_user: @student1
+            )
+          ).to eq [nil, nil, nil, nil, nil]
+        end
+      end
     end
 
     describe "enrollmentsConnection" do
@@ -420,6 +480,44 @@ describe Types::CourseType do
           @teacher.enrollments.first.id.to_s,
           other_teacher.enrollments.first.id.to_s,
         ]
+      end
+
+      it "returns zero for each user's initial totalActivityTime" do
+        expect(
+          course_type.resolve(
+            "enrollmentsConnection { nodes { totalActivityTime } }",
+            current_user: @teacher
+          )
+        ).to eq [0, 0, 0, 0, 0, 0]
+      end
+
+      it "returns the sisRole of each user" do
+        expect(
+          course_type.resolve(
+            "enrollmentsConnection { nodes { sisRole } }",
+            current_user: @teacher
+          )
+        ).to eq %w[teacher student teacher student student student]
+      end
+
+      it "returns an htmlUrl for each enrollment" do
+        expect(
+          course_type.resolve(
+            "enrollmentsConnection { nodes { htmlUrl } }",
+            current_user: @teacher,
+            request: ActionDispatch::TestRequest.create
+          )
+        ).to eq([@teacher, @student1, other_teacher, @student2, @inactive_user, @concluded_user]
+          .map { |user| "http://test.host/courses/#{@course.id}/users/#{user.id}" })
+      end
+
+      it "returns canBeRemoved boolean value for each enrollment" do
+        expect(
+          course_type.resolve(
+            "enrollmentsConnection { nodes { canBeRemoved } }",
+            current_user: @teacher
+          )
+        ).to eq [false, true, true, true, true, true]
       end
 
       describe "filtering" do

@@ -37,7 +37,8 @@ export default class DashboardCardBox extends React.Component {
     headingLevel: PropTypes.oneOf(['h2', 'h3']),
     hideColorOverlays: PropTypes.bool,
     connectDropTarget: PropTypes.func,
-    showSplitDashboardView: PropTypes.bool
+    showSplitDashboardView: PropTypes.bool,
+    observedUserId: PropTypes.string
   }
 
   static defaultProps = {
@@ -51,6 +52,9 @@ export default class DashboardCardBox extends React.Component {
   constructor(props) {
     super(props)
 
+    this.state = {
+      observedUserId: props.observedUserId
+    }
     this.handleRerenderCards = this.handleRerenderCards.bind(this)
   }
 
@@ -188,7 +192,7 @@ export default class DashboardCardBox extends React.Component {
     const emptyEl = <Text size="medium">{I18n.t('No courses to display')}</Text>
 
     return (
-      <div className="unpublished_courses_redesign">
+      <div key={this.state.observedUserId} className="unpublished_courses_redesign">
         <div className="ic-DashboardCard__box">
           <HeadingElement className="ic-DashboardCard__box__header">
             <span>
@@ -237,7 +241,7 @@ export default class DashboardCardBox extends React.Component {
     if (!showSplitDashboardView) {
       const cards = this.state.courseCards.map(card => this.renderCard(card))
       dashboardCardBox = (
-        <div className="ic-DashboardCard__box">
+        <div key={this.state.observedUserId} className="ic-DashboardCard__box">
           <div className="ic-DashboardCard__box__container">{cards}</div>
         </div>
       )

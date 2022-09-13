@@ -60,6 +60,17 @@ module Types
       value "inactive"
     end
 
+    class CourseFilterableEnrollmentType < BaseEnum
+      graphql_name "CourseFilterableEnrollmentType"
+      description "Users in a course can be returned based on these enrollment types"
+      value "StudentEnrollment"
+      value "TeacherEnrollment"
+      value "TaEnrollment"
+      value "ObserverEnrollment"
+      value "DesignerEnrollment"
+      value "StudentViewEnrollment"
+    end
+
     class CourseUsersFilterInputType < Types::BaseInputObject
       graphql_name "CourseUsersFilter"
 
@@ -73,6 +84,9 @@ module Types
                  only return users with the given enrollment state. defaults
                  to `invited`, `creation_pending`, `active`
                MD
+               required: false
+      argument :enrollment_types, [CourseFilterableEnrollmentType],
+               "Only return users with the specified enrollment types",
                required: false
     end
 
@@ -122,6 +136,11 @@ module Types
       course.resolved_outcome_calculation_method
     end
 
+    field :outcome_alignment_stats, CourseOutcomeAlignmentStatsType, null: false
+    def outcome_alignment_stats
+      Loaders::CourseOutcomeAlignmentStatsLoader.load(course)
+    end
+
     field :sections_connection, SectionType.connection_type, null: true
     def sections_connection
       course.active_course_sections
@@ -151,9 +170,11 @@ module Types
         :read_roster, :view_all_grades, :manage_grades
       )
 
+      context.scoped_merge!(course: course)
       scope = UserSearch.scope_for(course, current_user,
                                    include_inactive_enrollments: true,
-                                   enrollment_state: filter[:enrollment_states])
+                                   enrollment_state: filter[:enrollment_states],
+                                   enrollment_type: filter[:enrollment_types])
 
       user_ids = filter[:user_ids] || user_ids
       if user_ids.present?
@@ -172,6 +193,7 @@ module Types
         :read_roster, :view_all_grades, :manage_grades
       )
 
+      context.scoped_merge!(course: course)
       scope = course.apply_enrollment_visibility(course.all_enrollments, current_user).active
       scope = scope.where(associated_user_id: filter[:associated_user_ids]) if filter[:associated_user_ids].present?
       scope = scope.where(type: filter[:types]) if filter[:types].present?

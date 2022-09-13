@@ -101,14 +101,39 @@ describe Submission do
         it { is_expected.to eq Submission.workflow_states.pending_review }
       end
 
-      context "when workflow state is pending_review and submission was graded by quizzes" do
+      context "when workflow state is pending_review" do
         before do
           submission.workflow_state = Submission.workflow_states.pending_review
-          submission.grader_id = -1
-          submission.cached_quiz_lti = true
         end
 
-        it { is_expected.to eq Submission.workflow_states.pending_review }
+        context "and the submission was graded by quizzes" do
+          before do
+            submission.grader_id = -1
+            submission.cached_quiz_lti = true
+          end
+
+          it { is_expected.to eq Submission.workflow_states.pending_review }
+        end
+      end
+
+      context "the submission's Lti::Result was marked as PendingManual by an external tool" do
+        let(:tool) { external_tool_1_3_model }
+        let(:result) { lti_result_model(result_overrides) }
+        let(:submission) { result.submission }
+        let(:result_overrides) do
+          {
+            assignment: assignment,
+            grading_progress: "PendingManual",
+            result_score: assignment.points_possible,
+            result_maximum: assignment.points_possible,
+            tool: tool
+          }
+        end
+
+        it "marks the submission as needing review" do
+          submission.infer_values
+          expect(submission.workflow_state).to eq Submission.workflow_states.pending_review
+        end
       end
     end
   end
@@ -347,6 +372,29 @@ describe Submission do
     end
   end
 
+  describe "update_quiz_submission" do
+    before do
+      submission.workflow_state = Submission.workflow_states.pending_review
+      submission.submission_type = "online_quiz"
+    end
+
+    it "does not set_final_score if kept_score equals score without deductions" do
+      quiz_submission_mock = double("QuizSubmission", "kept_score" => 123)
+      allow(submission).to receive(:quiz_submission).and_return(quiz_submission_mock)
+      submission.update(score: 100, points_deducted: 23, quiz_submission_id: 1)
+      expect(quiz_submission_mock).not_to receive(:set_final_score)
+      submission.update_quiz_submission
+    end
+
+    it "does set_final_score if kept_score differs from score without deductions" do
+      quiz_submission_mock = double("QuizSubmission", "kept_score" => 100)
+      allow(submission).to receive(:quiz_submission).and_return(quiz_submission_mock)
+      submission.update(score: 100, points_deducted: 23, quiz_submission_id: 1)
+      expect(quiz_submission_mock).to receive(:set_final_score)
+      submission.update_quiz_submission
+    end
+  end
+
   describe "entered_score" do
     let(:submission) { @assignment.submissions.find_by!(user_id: @student) }
 
@@ -457,7 +505,7 @@ describe Submission do
           }.from(20.minutes.ago(@now)).to(15.minutes.ago(@now))
         end
 
-        it "does not change if an override is added for the student and the due date is earlier" \
+        it "changes if an individual override is added for the student, even when the due date is earlier" \
            " than an existing override that applies to the student for the assignment" do
           section = @course.course_sections.create!(name: "My Awesome Section")
           student_in_section(section, user: @student)
@@ -472,9 +520,33 @@ describe Submission do
             due_at_overridden: true
           )
 
-          expect { override.assignment_override_students.create!(user: @student) }.not_to change {
+          expect { override.assignment_override_students.create!(user: @student) }.to change {
             submission.reload.cached_due_date
-          }
+          }.from(10.minutes.ago(@now)).to(15.minutes.ago(@now))
+        end
+
+        it "does not change if a non-individual-override is added for the student and the due date" \
+           " is earlier than an existing override that applies to the student for the assignment" do
+          category = @course.group_categories.create!(name: "New Group Category")
+          group = @course.groups.create!(group_category: category)
+          group.add_user(@student, "active")
+          assignment = @course.assignments.create!(group_category: category)
+
+          section = @course.course_sections.create!(name: "My Awesome Section")
+          student_in_section(section, user: @student)
+          assignment.assignment_overrides.create!(
+            due_at: 10.minutes.ago(@now),
+            due_at_overridden: true,
+            set: section
+          )
+
+          expect do
+            assignment.assignment_overrides.create!(
+              due_at: 15.minutes.ago(@now),
+              due_at_overridden: true,
+              set: group
+            )
+          end.not_to change { submission.reload.cached_due_date }
         end
 
         it "changes if an override is removed for the student" do
@@ -609,7 +681,7 @@ describe Submission do
         end
       end
 
-      it "uses the most lenient due date if there are multiple overrides" do
+      it "uses the individual override date, otherwise most lenient, if there are multiple overrides" do
         category = @course.group_categories.create!(name: "New Group Category")
         group = @course.groups.create!(group_category: category)
         assignment = @course.assignments.create!(group_category: category, due_at: 20.minutes.ago(@now))
@@ -637,13 +709,13 @@ describe Submission do
         override_student = student_override.assignment_override_students.create!(user: @student)
 
         submission = assignment.submissions.find_by!(user: @student)
-        expect { @student.enrollments.find_by(course_section: section).destroy }.to change {
-          submission.reload.cached_due_date
-        }.from(6.minutes.ago(@now)).to(14.minutes.ago(@now))
-
         expect { override_student.destroy }.to change {
           submission.reload.cached_due_date
-        }.from(14.minutes.ago(@now)).to(21.minutes.ago(@now))
+        }.from(14.minutes.ago(@now)).to(6.minutes.ago(@now))
+
+        expect { @student.enrollments.find_by(course_section: section).destroy }.to change {
+          submission.reload.cached_due_date
+        }.from(6.minutes.ago(@now)).to(21.minutes.ago(@now))
       end
 
       it "uses override due dates instead of assignment due dates, even if the assignment due date is more lenient" do
@@ -1297,6 +1369,25 @@ describe Submission do
       end
     end
 
+    context "when applied late policy deducts 100%" do
+      before(:once) do
+        @date = Time.zone.local(2017, 1, 15, 12)
+        Timecop.travel(@date) do
+          Auditors::ActiveRecord::Partitioner.process
+        end
+        @assignment.update!(due_at: @date - 12.days, points_possible: 1, submission_types: "online_text_entry")
+        @late_policy = late_policy_factory(course: @course, deduct: 10.0, every: :day)
+      end
+
+      it "sets the score to 0 when grade has three decimal points and ending in 5" do
+        Timecop.freeze(@date) do
+          @assignment.submit_homework(@student, body: "a body")
+          @assignment.grade_student(@student, grade: 0.555, grader: @teacher)
+          expect(submission.score).to eq 0.0
+        end
+      end
+    end
+
     context "when submitting to an LTI assignment" do
       before(:once) do
         @date = Time.zone.local(2017, 1, 15, 12)
@@ -1623,6 +1714,12 @@ describe Submission do
 
     it "emits a grade change live event when force_audit" do
       expect(Canvas::LiveEvents).to receive(:grade_changed).once
+      submission.grade_change_audit(force_audit: true)
+    end
+
+    it "moves mastery path along on force audit if appropriate" do
+      expect(ConditionalRelease::Rule).to receive(:is_trigger_assignment?).with(submission.assignment).once
+      submission.update! score: 1, workflow_state: :graded, posted_at: Time.now
       submission.grade_change_audit(force_audit: true)
     end
   end
@@ -3373,6 +3470,16 @@ describe Submission do
       end
 
       it { is_expected.not_to be_grants_right(student, nil, :view_turnitin_report) }
+
+      context "when the teacher's enrollment is concluded" do
+        before do
+          @course.enrollments.where(user: teacher).each(&:conclude)
+        end
+
+        it "still allows the teacher (with view_all_grades) to see reports" do
+          expect(@submission).to be_grants_right(teacher, nil, :view_turnitin_report)
+        end
+      end
     end
   end
 
@@ -5117,7 +5224,20 @@ describe Submission do
                         "Cannot give a final mark for a student with no other provisional grades")
     end
 
-    it "raises an exception if the grade has been selected" do
+    it "raises an exception if the grade has been selected and is associated with a provisional grader" do
+      pg = @submission.find_or_create_provisional_grade!(@teacher2, grade: "2", score: 2)
+      selection = @assignment.moderated_grading_selections.where(student: @submission.user).first
+      selection.provisional_grade = pg
+      selection.save!
+
+      expect do
+        @submission.find_or_create_provisional_grade!(@teacher2, grade: "3", score: 3)
+      end.to raise_error(Assignment::GradeError) do |error|
+        expect(error.error_code).to eq Assignment::GradeError::PROVISIONAL_GRADE_MODIFY_SELECTED
+      end
+    end
+
+    it "does not raise an exception if the grade has been selected and is associated with the final grader" do
       pg = @submission.find_or_create_provisional_grade!(@teacher, grade: "2", score: 2)
       selection = @assignment.moderated_grading_selections.where(student: @submission.user).first
       selection.provisional_grade = pg
@@ -5125,9 +5245,7 @@ describe Submission do
 
       expect do
         @submission.find_or_create_provisional_grade!(@teacher, grade: "3", score: 3)
-      end.to raise_error(Assignment::GradeError) do |error|
-        expect(error.error_code).to eq Assignment::GradeError::PROVISIONAL_GRADE_MODIFY_SELECTED
-      end
+      end.not_to raise_error
     end
 
     it "sets the source provisional grade if one is provided" do
@@ -6923,6 +7041,22 @@ describe Submission do
         sub = @assignment.submit_homework(@user, attachments: [@attachment])
         expect(sub.attachments).to eq [@attachment]
       end
+
+      it "bulk_load_versioned_attachments works with attachments in a different shard" do
+        course_factory(active_all: true)
+        student = user_factory(active_user: true)
+        attachment = attachment_model(filename: "submission.doc", context: student)
+
+        @course.enroll_user(student, "StudentEnrollment").accept!
+        assignment = @course.assignments.create!
+        submission = assignment.submit_homework(student, attachments: [attachment])
+        submission.update_attribute(:attachment_ids, attachment.id.to_s)
+
+        @shard1.activate do
+          submission_with_attachments = Submission.bulk_load_versioned_attachments([submission]).first
+          expect(submission_with_attachments.versioned_attachments).to eq [attachment]
+        end
+      end
     end
   end
 
@@ -6930,6 +7064,27 @@ describe Submission do
     before do
       @assignment.update!(anonymous_grading: true)
       @submission = @assignment.submit_homework(@student, submission_type: "online_text_entry", body: "a body")
+    end
+
+    context "for observers" do
+      let(:observer) do
+        course_with_observer(
+          course: @assignment.course,
+          associated_user_id: @submission.user_id,
+          active_all: true
+        ).user
+      end
+
+      it "allows observers of the submission's owner to view details" do
+        expect(@submission).to be_can_view_details(observer)
+      end
+
+      it "does not allow observers to view details if they're not observing the submission's owner" do
+        new_student = User.create!
+        @context.enroll_student(new_student, enrollment_state: "active")
+        new_student_submission = @assignment.submissions.find_by(user: new_student)
+        expect(new_student_submission).not_to be_can_view_details(observer)
+      end
     end
 
     context "for peer reviewers" do

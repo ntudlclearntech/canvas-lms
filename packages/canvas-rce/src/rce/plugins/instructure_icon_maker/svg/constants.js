@@ -42,6 +42,7 @@ export const DEFAULT_SETTINGS = {
   // Basic  icon maker settings
   type: TYPE,
   alt: '',
+  isDecorative: false,
   shape: 'square',
   size: Size.Small,
   color: null,
@@ -55,6 +56,10 @@ export const DEFAULT_SETTINGS = {
   encodedImage: '',
   encodedImageType: '',
   encodedImageName: '',
+  // Additional external attributes
+  externalStyle: null,
+  externalWidth: null,
+  externalHeight: null,
   // Embedded image crop settings
   x: 0,
   y: 0,
@@ -64,10 +69,6 @@ export const DEFAULT_SETTINGS = {
   height: 0,
   transform: '',
   imageSettings: null
-}
-
-export const DEFAULT_OPTIONS = {
-  isPreview: false
 }
 
 export const BASE_SIZE = {
@@ -89,6 +90,13 @@ export const TEXT_SIZE = {
   [Size.Medium]: 16,
   [Size.Large]: 22,
   [Size.ExtraLarge]: 28
+}
+
+export const TEXT_SIZE_FONT_DIFF = {
+  [Size.Small]: -1,
+  [Size.Medium]: 0,
+  [Size.Large]: 1,
+  [Size.ExtraLarge]: 2
 }
 
 export const MAX_CHAR_COUNT = {

@@ -21,6 +21,7 @@ class CoursePacesController < ApplicationController
   before_action :load_context
   before_action :load_course
   before_action :load_blackout_dates, only: %i[index]
+  before_action :load_calendar_event_blackout_dates, only: %i[index]
   before_action :require_feature_flag
   before_action :authorize_action
   before_action :load_course_pace, only: %i[api_show publish update]
@@ -56,15 +57,27 @@ class CoursePacesController < ApplicationController
       progress_json = progress_json(progress, @current_user, session)
     end
 
+    status = setup_master_course_restrictions([@course_pace], @context)
+
+    if status
+      master_course_data = @course_pace.master_course_api_restriction_data(status)
+      master_course_data[:default_restrictions] = MasterCourses::MasterTemplate.full_template_for(@context).default_restrictions_for(@course_pace) if status == :master
+    end
+
     js_env({
              BLACKOUT_DATES: @blackout_dates.as_json(include_root: false),
+             CALENDAR_EVENT_BLACKOUT_DATES: @calendar_event_blackout_dates.as_json(include_root: false),
              COURSE: course_json(@context, @current_user, session, [], nil),
              ENROLLMENTS: enrollments_json(@context),
              SECTIONS: sections_json(@context),
+             COURSE_ID: @context.id,
+             COURSE_PACE_ID: @course_pace.id,
              COURSE_PACE: CoursePacePresenter.new(@course_pace).as_json,
              COURSE_PACE_PROGRESS: progress_json,
-             VALID_DATE_RANGE: CourseDateRange.new(@context)
+             VALID_DATE_RANGE: CourseDateRange.new(@context),
+             MASTER_COURSE_DATA: master_course_data
            })
+
     js_bundle :course_paces
     css_bundle :course_paces
   end
@@ -88,20 +101,22 @@ class CoursePacesController < ApplicationController
                      @course.course_paces.for_user(@context.user).not_deleted.take
                    end
     if @course_pace.nil?
-      params = case @context
-               when Course
-                 { course_section_id: nil, user_id: nil }
-               when CourseSection
-                 { course_section_id: @context }
-               when Enrollment
-                 { user_id: @context.user }
-               end
+      pace_params = case @context
+                    when Course
+                      { course_section_id: nil, user_id: nil }
+                    when CourseSection
+                      { course_section_id: @context }
+                    when Enrollment
+                      { user_id: @context.user }
+                    end
       # Duplicate a published plan if one exists for the plan or for the course
-      published_course_pace = @course.course_paces.published.where(params).take || @course.course_paces.primary.published.take
+      published_course_pace = @course.course_paces.published.where(pace_params).take
+      published_course_pace ||= @course.course_paces.published.where(course_section_id: @context.course_section_id).take if @context.is_a?(Enrollment)
+      published_course_pace ||= @course.course_paces.primary.published.take
       if published_course_pace
-        @course_pace = published_course_pace.duplicate(params)
+        @course_pace = published_course_pace.duplicate(pace_params)
       else
-        @course_pace = @course.course_paces.new(params)
+        @course_pace = @course.course_paces.new(pace_params)
         @course.context_module_tags.can_have_assignment.not_deleted.each do |module_item|
           @course_pace.course_pace_module_items.new module_item: module_item, duration: 0
         end
@@ -189,7 +204,8 @@ class CoursePacesController < ApplicationController
         publish: [:manage_course_content_edit],
         create: [:manage_course_content_add],
         update: [:manage_course_content_edit],
-        compress_dates: [:manage_course_content_edit]
+        compress_dates: [:manage_course_content_edit],
+        master_course_info: [:manage_course_content_edit],
       }
     )
   end
@@ -252,6 +268,12 @@ class CoursePacesController < ApplicationController
 
   def load_blackout_dates
     @blackout_dates = @context.respond_to?(:blackout_dates) ? @context.blackout_dates : []
+  end
+
+  def load_calendar_event_blackout_dates
+    account_codes = Account.multi_account_chain_ids([@context.account.id]).map { |id| "account_#{id}" }
+    context_codes = account_codes.append("course_#{@context.id}")
+    @calendar_event_blackout_dates = CalendarEvent.with_blackout_date.active.for_context_codes(context_codes)
   end
 
   def update_params

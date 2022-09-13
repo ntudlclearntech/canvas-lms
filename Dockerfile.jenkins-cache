@@ -42,8 +42,8 @@ RUN --mount=target=/tmp/src \
     \
     /tmp/dst && \
   find \
-    gems/canvas_i18nliner \
     gems/plugins/* \
+    ui/engine \
     ui/shared/* \
     packages/* \
     \
@@ -55,6 +55,7 @@ WORKDIR /tmp/src
 RUN --mount=target=/tmp/src \
   mkdir -p /tmp/dst && \
   cp --parents -rf \
+    ui/engine \
     packages \
     \
     /tmp/dst
@@ -68,11 +69,6 @@ RUN --mount=target=/tmp/src \
     -not -path "gems/plugins" \
     -maxdepth 2 \
     -path "gems/*/lib" \
-    -exec cp -rf --parents {} /tmp/dst \; && \
-  find gems/canvas_i18nliner \
-    -not -path "gems/canvas_i18nliner" \
-    -not -path "gems/canvas_i18nliner/spec" \
-    -not -path "gems/canvas_i18nliner/spec/*" \
     -exec cp -rf --parents {} /tmp/dst \; && \
   find gems/plugins \( \
     -path "*/app/coffeescripts" -o \
@@ -121,4 +117,43 @@ RUN --mount=target=/tmp/src \
     gulpfile.js \
     webpack.config.js \
     \
+    /tmp/dst && \
+  find /tmp/dst/ui /tmp/dst/gems/plugins \
+    -regex ".*__mocks__\|.*__tests__" -prune \
+    -exec rm -rf {} \;
+
+FROM starlord.inscloudgate.net/jenkins/busybox AS cache-helper-collect-js
+WORKDIR /tmp/src
+RUN --mount=target=/tmp/src \
+  mkdir -p /tmp/dst && \
+  find gems/plugins \( \
+    -path "*/app/coffeescripts" -o \
+    -path "*/app/jsx" -o \
+    -path "*/app/stylesheets" -o \
+    -path "*/public" -o \
+    -path "*/spec_canvas/coffeescripts" -o \
+  \) -exec cp -rf --parents {} /tmp/dst \; && \
+  cp --parents -rf \
+    app/stylesheets \
+    config/brandable_css.yml \
+    config/browsers.yml \
+    jest \
+    packages \
+    public \
+    spec/coffeescripts \
+    spec/javascripts \
+    spec/selenium/helpers/jquery.simulate.js \
+    tmp \
+    ui \
+    ui-build \
+    jest.config.js \
+    karma.conf.js \
+    package.json \
+    tsconfig.json \
+    yarn.lock \
+    \
     /tmp/dst
+
+FROM local/cache-helper-collect-js AS cache-helper-collect-js-graphql
+RUN --mount=target=/tmp/src \
+  cp /tmp/src/schema.graphql /tmp/dst/schema.graphql

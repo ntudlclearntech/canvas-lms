@@ -39,7 +39,7 @@ import * as FlashAlert from '@canvas/alerts/react/FlashAlert'
 import * as useGroupDetail from '@canvas/outcomes/react/hooks/useGroupDetail'
 
 jest.mock('@canvas/rce/RichContentEditor')
-jest.useFakeTimers()
+jest.useFakeTimers({legacyFakeTimers: true})
 
 describe('OutcomeManagementPanel', () => {
   let cache
@@ -47,10 +47,29 @@ describe('OutcomeManagementPanel', () => {
   let defaultMocks
   let groupDetailDefaultProps
   let isMobileView = false
+  let onLhsSelectedGroupIdChangedMock
+  let handleFileDropMock
+  let setTargetGroupIdsToRefetchMock
+  let setImportsTargetGroupMock
+  const defaultProps = (props = {}) => ({
+    importNumber: 0,
+    createdOutcomeGroupIds: [],
+    onLhsSelectedGroupIdChanged: onLhsSelectedGroupIdChangedMock,
+    handleFileDrop: handleFileDropMock,
+    targetGroupIdsToRefetch: [],
+    setTargetGroupIdsToRefetch: setTargetGroupIdsToRefetchMock,
+    importsTargetGroup: {},
+    setImportsTargetGroup: setImportsTargetGroupMock,
+    ...props
+  })
 
   beforeEach(() => {
     cache = createCache()
     showFlashAlertSpy = jest.spyOn(FlashAlert, 'showFlashAlert')
+    onLhsSelectedGroupIdChangedMock = jest.fn()
+    handleFileDropMock = jest.fn()
+    setTargetGroupIdsToRefetchMock = jest.fn()
+    setImportsTargetGroupMock = jest.fn()
 
     window.ENV = {
       PERMISSIONS: {
@@ -87,13 +106,8 @@ describe('OutcomeManagementPanel', () => {
     jest.clearAllMocks()
   })
 
-  beforeAll(() => {
-    jest.setTimeout(10000)
-  })
-
   afterAll(() => {
     window.ENV = null
-    jest.setTimeout(5000)
   })
 
   const render = (
@@ -128,7 +142,7 @@ describe('OutcomeManagementPanel', () => {
   }
 
   it('renders the tree browser for empty root groups', async () => {
-    const {getByText} = render(<OutcomeManagementPanel />, {
+    const {getByText} = render(<OutcomeManagementPanel {...defaultProps()} />, {
       mocks: accountMocks({childGroupsCount: 0})
     })
     await act(async () => jest.runOnlyPendingTimers())
@@ -136,7 +150,7 @@ describe('OutcomeManagementPanel', () => {
   })
 
   it('loads outcome group data for Account', async () => {
-    const {getByText} = render(<OutcomeManagementPanel />, {
+    const {getByText} = render(<OutcomeManagementPanel {...defaultProps()} />, {
       mocks: accountMocks({childGroupsCount: 2})
     })
     await act(async () => jest.runOnlyPendingTimers())
@@ -147,7 +161,7 @@ describe('OutcomeManagementPanel', () => {
   })
 
   it('loads outcome group data for Course', async () => {
-    const {getByText} = render(<OutcomeManagementPanel />, {
+    const {getByText} = render(<OutcomeManagementPanel {...defaultProps()} />, {
       contextType: 'Course',
       contextId: '2',
       mocks: courseMocks({childGroupsCount: 2})
@@ -160,7 +174,7 @@ describe('OutcomeManagementPanel', () => {
   })
 
   it('loads nested groups', async () => {
-    const {getByText} = render(<OutcomeManagementPanel />, {
+    const {getByText} = render(<OutcomeManagementPanel {...defaultProps()} />, {
       mocks: [
         ...accountMocks({childGroupsCount: 2}),
         ...groupMocks({groupId: '100'}),
@@ -174,7 +188,7 @@ describe('OutcomeManagementPanel', () => {
   })
 
   it('displays a screen reader error and text error on failed request for course outcome groups', async () => {
-    const {getByText} = render(<OutcomeManagementPanel />, {
+    const {getByText} = render(<OutcomeManagementPanel {...defaultProps()} />, {
       contextType: 'Course',
       contextId: '2',
       mocks: []
@@ -189,7 +203,7 @@ describe('OutcomeManagementPanel', () => {
   })
 
   it('displays a screen reader error and text error on failed request for account outcome groups', async () => {
-    const {getByText} = render(<OutcomeManagementPanel />, {
+    const {getByText} = render(<OutcomeManagementPanel {...defaultProps()} />, {
       mocks: []
     })
     await act(async () => jest.runOnlyPendingTimers())
@@ -202,7 +216,7 @@ describe('OutcomeManagementPanel', () => {
   })
 
   it('displays a flash alert if a child group fails to load', async () => {
-    const {getByText} = render(<OutcomeManagementPanel />, {
+    const {getByText} = render(<OutcomeManagementPanel {...defaultProps()} />, {
       mocks: [...accountMocks({childGroupsCount: 2})]
     })
     await act(async () => jest.runOnlyPendingTimers())
@@ -216,7 +230,7 @@ describe('OutcomeManagementPanel', () => {
   })
 
   it('loads group detail data correctly', async () => {
-    const {getByText} = render(<OutcomeManagementPanel />, {
+    const {getByText} = render(<OutcomeManagementPanel {...defaultProps()} />, {
       ...groupDetailDefaultProps
     })
     await act(async () => jest.runOnlyPendingTimers())
@@ -228,9 +242,12 @@ describe('OutcomeManagementPanel', () => {
   })
 
   it('shows and closes Find Outcomes modal if Add Outcomes option from group menu is selected', async () => {
-    const {getByText, queryByText, getByTestId, getByRole} = render(<OutcomeManagementPanel />, {
-      ...groupDetailDefaultProps
-    })
+    const {getByText, queryByText, getByTestId, getByRole} = render(
+      <OutcomeManagementPanel {...defaultProps()} />,
+      {
+        ...groupDetailDefaultProps
+      }
+    )
     await act(async () => jest.runOnlyPendingTimers())
     fireEvent.click(getByText('Course folder 0'))
     await act(async () => jest.runOnlyPendingTimers())
@@ -245,20 +262,20 @@ describe('OutcomeManagementPanel', () => {
   })
 
   it('shows remove group modal if remove option from group menu is selected', async () => {
-    const {getByText, getByRole} = render(<OutcomeManagementPanel />, {
+    const {getByText, getByTestId} = render(<OutcomeManagementPanel {...defaultProps()} />, {
       ...groupDetailDefaultProps
     })
     await act(async () => jest.runOnlyPendingTimers())
     fireEvent.click(getByText('Course folder 0'))
     await act(async () => jest.runOnlyPendingTimers())
     fireEvent.click(getByText('Menu for group Course folder 0'))
-    fireEvent.click(within(getByRole('menu')).getByText('Remove'))
+    fireEvent.click(getByTestId('outcome-kebab-menu-remove'))
     await act(async () => jest.runOnlyPendingTimers())
     expect(getByText('Remove Group?')).toBeInTheDocument()
   })
 
   it('hides the "Outcome Group Menu" for the root group', async () => {
-    const {getByText, queryByText} = render(<OutcomeManagementPanel />, {
+    const {getByText, queryByText} = render(<OutcomeManagementPanel {...defaultProps()} />, {
       ...groupDetailDefaultProps
     })
     await act(async () => jest.runOnlyPendingTimers())
@@ -302,10 +319,13 @@ describe('OutcomeManagementPanel', () => {
     })
 
     it('Show parent group in the RHS', async () => {
-      const {getByText, queryByText, getByRole} = render(<OutcomeManagementPanel />, {
-        ...groupDetailDefaultProps,
-        mocks
-      })
+      const {getByText, queryByText, getByTestId} = render(
+        <OutcomeManagementPanel {...defaultProps()} />,
+        {
+          ...groupDetailDefaultProps,
+          mocks
+        }
+      )
       await act(async () => jest.runOnlyPendingTimers())
       // OutcomeManagementPanel Group Tree Browser
       fireEvent.click(getByText('Course folder 0'))
@@ -316,7 +336,7 @@ describe('OutcomeManagementPanel', () => {
       expect(queryByText('Course folder 0 Outcomes')).not.toBeInTheDocument()
       // OutcomeManagementPanel Outcome Group Kebab Menu
       fireEvent.click(getByText('Menu for group Group 200 folder 0'))
-      fireEvent.click(within(getByRole('menu')).getByText('Remove'))
+      fireEvent.click(getByTestId('outcome-kebab-menu-remove'))
       await act(async () => jest.runOnlyPendingTimers())
       // Remove Modal
       fireEvent.click(getByText('Remove Group'))
@@ -325,7 +345,7 @@ describe('OutcomeManagementPanel', () => {
     })
 
     it('clears selected outcomes', async () => {
-      const {getByText, getByRole} = render(<OutcomeManagementPanel />, {
+      const {getByText, getByTestId} = render(<OutcomeManagementPanel {...defaultProps()} />, {
         ...groupDetailDefaultProps,
         mocks
       })
@@ -337,7 +357,7 @@ describe('OutcomeManagementPanel', () => {
       fireEvent.click(getByText('Select outcome Outcome 1 - Group 300'))
       expect(getByText('1 Outcome Selected')).toBeInTheDocument()
       fireEvent.click(getByText('Menu for group Group 200 folder 0'))
-      fireEvent.click(within(getByRole('menu')).getByText('Remove'))
+      fireEvent.click(getByTestId('outcome-kebab-menu-remove'))
       await act(async () => jest.runOnlyPendingTimers())
       fireEvent.click(getByText('Remove Group'))
       await act(async () => jest.runOnlyPendingTimers())
@@ -346,7 +366,7 @@ describe('OutcomeManagementPanel', () => {
   })
 
   it('selects/unselects outcome via checkbox', async () => {
-    const {getByText} = render(<OutcomeManagementPanel />, {
+    const {getByText} = render(<OutcomeManagementPanel {...defaultProps()} />, {
       ...groupDetailDefaultProps
     })
     await act(async () => jest.runOnlyPendingTimers())
@@ -360,68 +380,74 @@ describe('OutcomeManagementPanel', () => {
   })
 
   it('shows remove outcome modal if remove option from individual outcome menu is selected', async () => {
-    const {getByText, getByRole} = render(<OutcomeManagementPanel />, {
+    const {getByText, getByTestId} = render(<OutcomeManagementPanel {...defaultProps()} />, {
       ...groupDetailDefaultProps
     })
     await act(async () => jest.runOnlyPendingTimers())
     fireEvent.click(getByText('Course folder 0'))
     await act(async () => jest.runOnlyPendingTimers())
     fireEvent.click(getByText('Menu for outcome Outcome 1 - Course folder 0'))
-    fireEvent.click(within(getByRole('menu')).getByText('Remove'))
+    fireEvent.click(getByTestId('outcome-kebab-menu-remove'))
     await act(async () => jest.runOnlyPendingTimers())
     expect(getByText('Remove Outcome?')).toBeInTheDocument()
   })
 
   it('shows edit outcome modal if edit option from individual outcome menu is selected', async () => {
-    const {getByText, getByRole} = render(<OutcomeManagementPanel />, {
+    const {getByText, getByTestId} = render(<OutcomeManagementPanel {...defaultProps()} />, {
       ...groupDetailDefaultProps
     })
     await act(async () => jest.runOnlyPendingTimers())
     fireEvent.click(getByText('Course folder 0'))
     await act(async () => jest.runOnlyPendingTimers())
     fireEvent.click(getByText('Menu for outcome Outcome 1 - Course folder 0'))
-    fireEvent.click(within(getByRole('menu')).getByText('Edit'))
+    fireEvent.click(getByTestId('outcome-kebab-menu-edit'))
     expect(getByText('Edit Outcome')).toBeInTheDocument()
   })
 
   it('shows move outcome modal if move option from individual outcome menu is selected', async () => {
-    const {getByText, getByRole} = render(<OutcomeManagementPanel />, {
+    const {getByText, getByTestId} = render(<OutcomeManagementPanel {...defaultProps()} />, {
       ...groupDetailDefaultProps
     })
     await act(async () => jest.runOnlyPendingTimers())
     fireEvent.click(getByText('Course folder 0'))
     await act(async () => jest.runOnlyPendingTimers())
     fireEvent.click(getByText('Menu for outcome Outcome 1 - Course folder 0'))
-    fireEvent.click(within(getByRole('menu')).getByText('Move'))
+    fireEvent.click(getByTestId('outcome-kebab-menu-move'))
     expect(getByText('Where would you like to move this outcome?')).toBeInTheDocument()
   })
 
   it('clears selected outcome when remove outcome modal is closed', async () => {
-    const {getByText, queryByText, getByRole} = render(<OutcomeManagementPanel />, {
-      ...groupDetailDefaultProps
-    })
+    const {getByText, queryByText, getByTestId} = render(
+      <OutcomeManagementPanel {...defaultProps()} />,
+      {
+        ...groupDetailDefaultProps
+      }
+    )
     await act(async () => jest.runOnlyPendingTimers())
     fireEvent.click(getByText('Course folder 0'))
     await act(async () => jest.runOnlyPendingTimers())
     fireEvent.click(getByText('Menu for outcome Outcome 1 - Course folder 0'))
-    fireEvent.click(within(getByRole('menu')).getByText('Remove'))
+    fireEvent.click(getByTestId('outcome-kebab-menu-remove'))
     await act(async () => jest.runOnlyPendingTimers())
     fireEvent.click(getByText('Cancel'))
     expect(queryByText('Remove Outcome?')).not.toBeInTheDocument()
   })
 
   it('Removes outcome from the list', async () => {
-    const {queryByText, getByText, getByRole} = render(<OutcomeManagementPanel />, {
-      ...groupDetailDefaultProps,
-      mocks: [...defaultMocks, deleteOutcomeMock({ids: ['1']})]
-    })
+    const {queryByText, getByText, getByTestId} = render(
+      <OutcomeManagementPanel {...defaultProps()} />,
+      {
+        ...groupDetailDefaultProps,
+        mocks: [...defaultMocks, deleteOutcomeMock({ids: ['1']})]
+      }
+    )
     await act(async () => jest.runOnlyPendingTimers())
     fireEvent.click(getByText('Course folder 0'))
     await act(async () => jest.runOnlyPendingTimers())
     expect(queryByText('Outcome 1 - Course folder 0')).toBeInTheDocument()
     expect(queryByText('2 Outcomes')).toBeInTheDocument()
     fireEvent.click(getByText('Select outcome Outcome 1 - Course folder 0'))
-    fireEvent.click(getByRole('button', {name: /remove/i}))
+    fireEvent.click(getByTestId('bulk-remove-outcomes'))
     await act(async () => jest.runOnlyPendingTimers())
     fireEvent.click(getByText('Remove Outcome'))
     await act(async () => jest.runOnlyPendingTimers())
@@ -430,17 +456,20 @@ describe('OutcomeManagementPanel', () => {
   })
 
   it('Removes selected outcome from the selected outcomes popover', async () => {
-    const {queryByText, getByText, getByRole} = render(<OutcomeManagementPanel />, {
-      ...groupDetailDefaultProps,
-      mocks: [...defaultMocks, deleteOutcomeMock({ids: ['1']})]
-    })
+    const {queryByText, getByText, getByTestId} = render(
+      <OutcomeManagementPanel {...defaultProps()} />,
+      {
+        ...groupDetailDefaultProps,
+        mocks: [...defaultMocks, deleteOutcomeMock({ids: ['1']})]
+      }
+    )
     await act(async () => jest.runOnlyPendingTimers())
     fireEvent.click(getByText('Course folder 0'))
     await act(async () => jest.runOnlyPendingTimers())
     expect(queryByText('Outcome 1 - Course folder 0')).toBeInTheDocument()
     fireEvent.click(getByText('Select outcome Outcome 1 - Course folder 0'))
     expect(queryByText('1 Outcome Selected')).toBeInTheDocument()
-    fireEvent.click(getByRole('button', {name: /remove/i}))
+    fireEvent.click(getByTestId('bulk-remove-outcomes'))
     await act(async () => jest.runOnlyPendingTimers())
     fireEvent.click(getByText('Remove Outcome'))
     await act(async () => jest.runOnlyPendingTimers())
@@ -448,24 +477,44 @@ describe('OutcomeManagementPanel', () => {
     expect(queryByText('0 Outcomes Selected')).toBeInTheDocument()
   })
 
-  it('clears selected outcome when move outcome modal is closed', async () => {
-    const {getByText, queryByText, getByRole} = render(<OutcomeManagementPanel />, {
+  it('Displays spinner in document when a single outcome is removed', async () => {
+    const {getByText, getByTestId} = render(<OutcomeManagementPanel {...defaultProps()} />, {
       ...groupDetailDefaultProps
     })
     await act(async () => jest.runOnlyPendingTimers())
     fireEvent.click(getByText('Course folder 0'))
     await act(async () => jest.runOnlyPendingTimers())
     fireEvent.click(getByText('Menu for outcome Outcome 1 - Course folder 0'))
-    fireEvent.click(within(getByRole('menu')).getByText('Move'))
+    fireEvent.click(getByTestId('outcome-kebab-menu-remove'))
+    await act(async () => jest.runOnlyPendingTimers())
+    fireEvent.click(getByText('Remove Outcome'))
+    expect(getByTestId('outcome-spinner')).toBeInTheDocument()
+  })
+
+  it('clears selected outcome when move outcome modal is closed', async () => {
+    const {getByText, queryByText, getByTestId} = render(
+      <OutcomeManagementPanel {...defaultProps()} />,
+      {
+        ...groupDetailDefaultProps
+      }
+    )
+    await act(async () => jest.runOnlyPendingTimers())
+    fireEvent.click(getByText('Course folder 0'))
+    await act(async () => jest.runOnlyPendingTimers())
+    fireEvent.click(getByText('Menu for outcome Outcome 1 - Course folder 0'))
+    fireEvent.click(getByTestId('outcome-kebab-menu-move'))
     await act(async () => jest.runOnlyPendingTimers())
     fireEvent.click(getByText('Cancel'))
     expect(queryByText('Move "Outcome 1 - Course folder 0"')).not.toBeInTheDocument()
   })
 
   it('should not disable search input and clear search button (X) if there are no results', async () => {
-    const {getByText, getByLabelText, queryByTestId} = render(<OutcomeManagementPanel />, {
-      ...groupDetailDefaultProps
-    })
+    const {getByText, getByLabelText, queryByTestId} = render(
+      <OutcomeManagementPanel {...defaultProps()} />,
+      {
+        ...groupDetailDefaultProps
+      }
+    )
     await act(async () => jest.runOnlyPendingTimers())
     fireEvent.click(getByText('Course folder 0'))
     await act(async () => jest.runOnlyPendingTimers())
@@ -477,7 +526,7 @@ describe('OutcomeManagementPanel', () => {
   })
 
   it('debounces search string typed by user', async () => {
-    const {getByText, getByLabelText} = render(<OutcomeManagementPanel />, {
+    const {getByText, getByLabelText} = render(<OutcomeManagementPanel {...defaultProps()} />, {
       ...groupDetailDefaultProps,
       mocks: [
         ...courseMocks({childGroupsCount: 2}),
@@ -515,7 +564,7 @@ describe('OutcomeManagementPanel', () => {
 
   describe('With manage_outcomes permission / canManage true', () => {
     it('displays outcome kebab menues', async () => {
-      const {getByText} = render(<OutcomeManagementPanel />, {
+      const {getByText} = render(<OutcomeManagementPanel {...defaultProps()} />, {
         ...groupDetailDefaultProps
       })
       await act(async () => jest.runOnlyPendingTimers())
@@ -525,7 +574,7 @@ describe('OutcomeManagementPanel', () => {
     })
 
     it('displays outcome checkboxes', async () => {
-      const {getByText} = render(<OutcomeManagementPanel />, {
+      const {getByText} = render(<OutcomeManagementPanel {...defaultProps()} />, {
         ...groupDetailDefaultProps
       })
       await act(async () => jest.runOnlyPendingTimers())
@@ -553,15 +602,18 @@ describe('OutcomeManagementPanel', () => {
           removeOnRefetch: true
         })
       ]
-      const {getByText, getByRole, getAllByText, queryByText} = render(<OutcomeManagementPanel />, {
-        ...groupDetailDefaultProps,
-        mocks: [
-          ...defaultMocks,
-          moveOutcomeMock({
-            groupId: '201'
-          })
-        ]
-      })
+      const {getByText, getByRole, getAllByText, queryByText} = render(
+        <OutcomeManagementPanel {...defaultProps()} />,
+        {
+          ...groupDetailDefaultProps,
+          mocks: [
+            ...defaultMocks,
+            moveOutcomeMock({
+              groupId: '201'
+            })
+          ]
+        }
+      )
       await act(async () => jest.runOnlyPendingTimers())
       await clickWithPending(getByText('Course folder 0'))
       expect(getByText('Outcome 1 - Course folder 0')).toBeInTheDocument()
@@ -583,7 +635,7 @@ describe('OutcomeManagementPanel', () => {
 
   describe('Without manage_outcomes permission / canManage false', () => {
     it('hides outcome kebab menues', async () => {
-      const {getByText, queryByText} = render(<OutcomeManagementPanel />, {
+      const {getByText, queryByText} = render(<OutcomeManagementPanel {...defaultProps()} />, {
         ...groupDetailDefaultProps,
         canManage: false
       })
@@ -594,7 +646,7 @@ describe('OutcomeManagementPanel', () => {
     })
 
     it('hides outcome checkboxes', async () => {
-      const {getByText, queryByText} = render(<OutcomeManagementPanel />, {
+      const {getByText, queryByText} = render(<OutcomeManagementPanel {...defaultProps()} />, {
         ...groupDetailDefaultProps,
         canManage: false
       })
@@ -605,7 +657,7 @@ describe('OutcomeManagementPanel', () => {
     })
 
     it('hides ManageOutcomesFooter', async () => {
-      const {queryByTestId} = render(<OutcomeManagementPanel />, {
+      const {queryByTestId} = render(<OutcomeManagementPanel {...defaultProps()} />, {
         ...groupDetailDefaultProps,
         canManage: false
       })
@@ -615,22 +667,25 @@ describe('OutcomeManagementPanel', () => {
 
   describe('Bulk remove outcomes', () => {
     it('shows bulk remove outcomes modal if outcomes are selected and remove button is clicked', async () => {
-      const {findByText, getByText, getByRole} = render(<OutcomeManagementPanel />, {
-        ...groupDetailDefaultProps
-      })
+      const {findByText, getByText, getByTestId} = render(
+        <OutcomeManagementPanel {...defaultProps()} />,
+        {
+          ...groupDetailDefaultProps
+        }
+      )
       await act(async () => jest.runOnlyPendingTimers())
       fireEvent.click(getByText('Course folder 0'))
       await act(async () => jest.runOnlyPendingTimers())
       fireEvent.click(getByText('Select outcome Outcome 1 - Course folder 0'))
       fireEvent.click(getByText('Select outcome Outcome 2 - Course folder 0'))
-      fireEvent.click(getByRole('button', {name: /remove/i}))
+      fireEvent.click(getByTestId('bulk-remove-outcomes'))
       await act(async () => jest.runOnlyPendingTimers())
       expect(await findByText('Remove Outcomes?')).toBeInTheDocument()
     })
 
     it('outcome names are passed to the remove modal when using bulk remove', async () => {
-      const {getByText, getByRole, getByTestId, getAllByTestId} = render(
-        <OutcomeManagementPanel />,
+      const {getByText, getByTestId, getAllByTestId} = render(
+        <OutcomeManagementPanel {...defaultProps()} />,
         {
           ...groupDetailDefaultProps
         }
@@ -642,7 +697,7 @@ describe('OutcomeManagementPanel', () => {
       const itemTwoTitle = getAllByTestId('outcome-management-item-title')[1].textContent
       fireEvent.click(getByText('Select outcome Outcome 1 - Course folder 0'))
       fireEvent.click(getByText('Select outcome Outcome 2 - Course folder 0'))
-      fireEvent.click(getByRole('button', {name: /remove/i}))
+      fireEvent.click(getByTestId('bulk-remove-outcomes'))
       await act(async () => jest.runOnlyPendingTimers())
       const removeModal = getByTestId('outcome-management-remove-modal')
       expect(await within(removeModal).findByText('Remove Outcomes?')).toBeInTheDocument()
@@ -650,9 +705,28 @@ describe('OutcomeManagementPanel', () => {
       expect(await within(removeModal).findByText(itemTwoTitle)).toBeInTheDocument()
     })
 
+    it('spinners show in the document when a bulk remove is pending', async () => {
+      const {getByText, getByTestId, getAllByTestId} = render(
+        <OutcomeManagementPanel {...defaultProps()} />,
+        {
+          ...groupDetailDefaultProps
+        }
+      )
+      await act(async () => jest.runOnlyPendingTimers())
+      fireEvent.click(getByText('Course folder 0'))
+      await act(async () => jest.runOnlyPendingTimers())
+      fireEvent.click(getByText('Select outcome Outcome 1 - Course folder 0'))
+      fireEvent.click(getByText('Select outcome Outcome 2 - Course folder 0'))
+      fireEvent.click(getByTestId('bulk-remove-outcomes'))
+      await act(async () => jest.runOnlyPendingTimers())
+      fireEvent.click(getByText('Remove Outcomes'))
+      const spinners = getAllByTestId('outcome-spinner')
+      expect(spinners.length).toBe(2)
+    })
+
     it('updated group names are passed to the remove modal if a selected outcome is moved', async () => {
-      const {findByText, getByTestId, findByRole, findByTestId} = render(
-        <OutcomeManagementPanel />,
+      const {findByText, getByTestId, findByTestId} = render(
+        <OutcomeManagementPanel {...defaultProps()} />,
         {
           ...groupDetailDefaultProps,
           mocks: [
@@ -683,7 +757,7 @@ describe('OutcomeManagementPanel', () => {
       await act(async () => jest.runOnlyPendingTimers())
       fireEvent.click(getByTestId('outcome-management-move-modal-move-button'))
       await act(async () => jest.runOnlyPendingTimers())
-      fireEvent.click(await findByRole('button', {name: /remove/i}))
+      fireEvent.click(await findByTestId('bulk-remove-outcomes'))
       await act(async () => jest.runOnlyPendingTimers())
 
       // Move outcome will trigger a refetch in lhs folder, so i'll change its name
@@ -695,7 +769,7 @@ describe('OutcomeManagementPanel', () => {
 
   describe('Bulk move outcomes', () => {
     it('shows bulk move outcomes modal if outcomes are selected and move button is clicked', async () => {
-      const {getByText, getAllByText} = render(<OutcomeManagementPanel />, {
+      const {getByText, getAllByText} = render(<OutcomeManagementPanel {...defaultProps()} />, {
         ...groupDetailDefaultProps
       })
       await act(async () => jest.runOnlyPendingTimers())
@@ -709,9 +783,12 @@ describe('OutcomeManagementPanel', () => {
     })
 
     it('closes modal and clears selected outcomes when destination group for move is selected and "Move" button is clicked', async () => {
-      const {getByText, getByRole, getAllByText, queryByText} = render(<OutcomeManagementPanel />, {
-        ...groupDetailDefaultProps
-      })
+      const {getByText, getByRole, getAllByText, queryByText} = render(
+        <OutcomeManagementPanel {...defaultProps()} />,
+        {
+          ...groupDetailDefaultProps
+        }
+      )
       await act(async () => jest.runOnlyPendingTimers())
       // OutcomeManagementPanel Group Tree Browser
       fireEvent.click(getByText('Course folder 0'))
@@ -733,15 +810,18 @@ describe('OutcomeManagementPanel', () => {
 
     it('refetch rhs when moving outcomes', async () => {
       const detailSpy = jest.spyOn(useGroupDetail, 'default')
-      const {getByText, getByRole, getAllByText} = render(<OutcomeManagementPanel />, {
-        ...groupDetailDefaultProps,
-        mocks: [
-          ...defaultMocks,
-          moveOutcomeMock({
-            groupId: '201'
-          })
-        ]
-      })
+      const {getByText, getByRole, getAllByText} = render(
+        <OutcomeManagementPanel {...defaultProps()} />,
+        {
+          ...groupDetailDefaultProps,
+          mocks: [
+            ...defaultMocks,
+            moveOutcomeMock({
+              groupId: '201'
+            })
+          ]
+        }
+      )
       await act(async () => jest.runOnlyPendingTimers())
       // OutcomeManagementPanel Group Tree Browser
       fireEvent.click(getByText('Course folder 0'))
@@ -814,10 +894,13 @@ describe('OutcomeManagementPanel', () => {
     }
 
     it('show old parent group in the RHS when moving a group succeeds', async () => {
-      const {getByText, getByRole} = render(<OutcomeManagementPanel />, {
-        ...groupDetailDefaultProps,
-        mocks
-      })
+      const {getByRole, getByText, getByTestId} = render(
+        <OutcomeManagementPanel {...defaultProps()} />,
+        {
+          ...groupDetailDefaultProps,
+          mocks
+        }
+      )
       await act(async () => jest.runOnlyPendingTimers())
       // OutcomeManagementPanel Group Tree Browser
       fireEvent.click(getByText('Course folder 0'))
@@ -826,7 +909,7 @@ describe('OutcomeManagementPanel', () => {
       await act(async () => jest.runOnlyPendingTimers())
       // OutcomeManagementPanel Outcome Group Kebab Menu
       fireEvent.click(getByText('Menu for group Group 200 folder 0'))
-      fireEvent.click(within(getByRole('menu')).getByText('Move'))
+      fireEvent.click(getByTestId('outcome-kebab-menu-move'))
       // Move Modal
       await act(async () => jest.runAllTimers())
       await moveSelectedGroup(getByRole)
@@ -834,10 +917,13 @@ describe('OutcomeManagementPanel', () => {
     })
 
     it('shows groups created in the modal immediately on the LHS', async () => {
-      const {getByText, getByRole, getByLabelText} = render(<OutcomeManagementPanel />, {
-        ...groupDetailDefaultProps,
-        mocks
-      })
+      const {getByText, getByRole, getByLabelText, getByTestId} = render(
+        <OutcomeManagementPanel {...defaultProps()} />,
+        {
+          ...groupDetailDefaultProps,
+          mocks
+        }
+      )
       await act(async () => jest.runOnlyPendingTimers())
       // OutcomeManagementPanel Group Tree Browser
       fireEvent.click(getByText('Course folder 0'))
@@ -846,7 +932,7 @@ describe('OutcomeManagementPanel', () => {
       await act(async () => jest.runOnlyPendingTimers())
       // OutcomeManagementPanel Outcome Group Kebab Menu
       fireEvent.click(getByText('Menu for group Group 200 folder 0'))
-      fireEvent.click(within(getByRole('menu')).getByText('Move'))
+      fireEvent.click(getByTestId('outcome-kebab-menu-move'))
       await act(async () => jest.runOnlyPendingTimers())
       fireEvent.click(within(getByRole('dialog')).getByText('Back'))
       await act(async () => jest.runOnlyPendingTimers())
@@ -862,14 +948,14 @@ describe('OutcomeManagementPanel', () => {
     })
 
     it('shows move group modal if move option from group menu is selected', async () => {
-      const {getByText, getByRole} = render(<OutcomeManagementPanel />, {
+      const {getByText, getByTestId} = render(<OutcomeManagementPanel {...defaultProps()} />, {
         ...groupDetailDefaultProps
       })
       await act(async () => jest.runOnlyPendingTimers())
       fireEvent.click(getByText('Course folder 0'))
       await act(async () => jest.runOnlyPendingTimers())
       fireEvent.click(getByText('Menu for group Course folder 0'))
-      fireEvent.click(within(getByRole('menu')).getByText('Move'))
+      fireEvent.click(getByTestId('outcome-kebab-menu-move'))
       await act(async () => jest.runOnlyPendingTimers())
       expect(getByText('Where would you like to move this group?')).toBeInTheDocument()
     })
@@ -877,7 +963,7 @@ describe('OutcomeManagementPanel', () => {
 
   describe('Selected outcomes popover', () => {
     it('shows selected outcomes popover if outcomes are selected and Outcomes Selected link is clicked', async () => {
-      const {getByText} = render(<OutcomeManagementPanel />, {
+      const {getByText} = render(<OutcomeManagementPanel {...defaultProps()} />, {
         ...groupDetailDefaultProps
       })
       await act(async () => jest.runOnlyPendingTimers())
@@ -892,7 +978,7 @@ describe('OutcomeManagementPanel', () => {
     })
 
     it('closes popover and clears selected outcomes when Clear all link in popover is clicked', async () => {
-      const {getByText} = render(<OutcomeManagementPanel />, {
+      const {getByText} = render(<OutcomeManagementPanel {...defaultProps()} />, {
         ...groupDetailDefaultProps
       })
       await act(async () => jest.runOnlyPendingTimers())
@@ -912,55 +998,58 @@ describe('OutcomeManagementPanel', () => {
   // Need to move this bellow since somehow this spec is triggering an infinite loop
   // in runAllTimers above if we put this spec before it
   it('clears selected outcome when edit outcome modal is closed', async () => {
-    const {getByText, queryByText, getByRole} = render(<OutcomeManagementPanel />, {
-      ...groupDetailDefaultProps
-    })
+    const {getByText, queryByText, getByTestId} = render(
+      <OutcomeManagementPanel {...defaultProps()} />,
+      {
+        ...groupDetailDefaultProps
+      }
+    )
     await act(async () => jest.runOnlyPendingTimers())
     fireEvent.click(getByText('Course folder 0'))
     await act(async () => jest.runOnlyPendingTimers())
     fireEvent.click(getByText('Menu for outcome Outcome 1 - Course folder 0'))
-    fireEvent.click(within(getByRole('menu')).getByText('Edit'))
+    fireEvent.click(getByTestId('outcome-kebab-menu-edit'))
     await act(async () => jest.runOnlyPendingTimers())
     fireEvent.click(getByText('Cancel'))
     expect(queryByText('Edit Outcome')).not.toBeInTheDocument()
   })
 
   it('shows edit group modal if edit option from group menu is selected', async () => {
-    const {getByText, getByRole} = render(<OutcomeManagementPanel />, {
+    const {getByText, getByTestId} = render(<OutcomeManagementPanel {...defaultProps()} />, {
       ...groupDetailDefaultProps
     })
     await act(async () => jest.runOnlyPendingTimers())
     fireEvent.click(getByText('Course folder 0'))
     await act(async () => jest.runOnlyPendingTimers())
     fireEvent.click(getByText('Menu for group Course folder 0'))
-    fireEvent.click(within(getByRole('menu')).getByText('Edit'))
+    fireEvent.click(getByTestId('outcome-kebab-menu-edit'))
     await act(async () => jest.runOnlyPendingTimers())
     expect(getByText('Edit Group')).toBeInTheDocument()
   })
 
   it('shows selected group title within edit group modal', async () => {
-    const {getByText, getByRole, getByTestId} = render(<OutcomeManagementPanel />, {
+    const {getByText, getByTestId} = render(<OutcomeManagementPanel {...defaultProps()} />, {
       ...groupDetailDefaultProps
     })
     await act(async () => jest.runOnlyPendingTimers())
     fireEvent.click(getByText('Course folder 0'))
     await act(async () => jest.runOnlyPendingTimers())
     fireEvent.click(getByText('Menu for group Course folder 0'))
-    fireEvent.click(within(getByRole('menu')).getByText('Edit'))
+    fireEvent.click(getByTestId('outcome-kebab-menu-edit'))
     await act(async () => jest.runOnlyPendingTimers())
     const editModal = getByTestId('outcome-management-edit-modal')
     expect(within(editModal).getByDisplayValue('Course folder 0')).toBeInTheDocument()
   })
 
   it('shows selected group description within edit group modal', async () => {
-    const {getByText, getByRole, getByTestId} = render(<OutcomeManagementPanel />, {
+    const {getByText, getByTestId} = render(<OutcomeManagementPanel {...defaultProps()} />, {
       ...groupDetailDefaultProps
     })
     await act(async () => jest.runOnlyPendingTimers())
     fireEvent.click(getByText('Course folder 0'))
     await act(async () => jest.runOnlyPendingTimers())
     fireEvent.click(getByText('Menu for group Course folder 0'))
-    fireEvent.click(within(getByRole('menu')).getByText('Edit'))
+    fireEvent.click(getByTestId('outcome-kebab-menu-edit'))
     await act(async () => jest.runOnlyPendingTimers())
     const editModal = getByTestId('outcome-management-edit-modal')
     expect(within(editModal).getByText('Group Description 4')).toBeInTheDocument()
@@ -990,7 +1079,7 @@ describe('OutcomeManagementPanel', () => {
     ]
 
     it('should not clear search input if same group is selected/toggled', async () => {
-      const {getByText, getByLabelText} = render(<OutcomeManagementPanel />, {
+      const {getByText, getByLabelText} = render(<OutcomeManagementPanel {...defaultProps()} />, {
         ...groupDetailDefaultProps,
         mocks: searchInputMocks
       })
@@ -1009,7 +1098,7 @@ describe('OutcomeManagementPanel', () => {
     })
 
     it('should clear search input if different group is selected', async () => {
-      const {getByText, getByLabelText} = render(<OutcomeManagementPanel />, {
+      const {getByText, getByLabelText} = render(<OutcomeManagementPanel {...defaultProps()} />, {
         ...groupDetailDefaultProps,
         mocks: searchInputMocks
       })
@@ -1028,19 +1117,17 @@ describe('OutcomeManagementPanel', () => {
   })
 
   describe('After an outcome is added', () => {
-    const createdOutcomeProps = (props = {}, ancestorIds = ['2']) => ({
-      createdOutcomeGroupIds: ancestorIds,
-      ...props
-    })
-
     it('it does not trigger a refetch if an outcome is created but not in the currently selected group', async () => {
-      const {getByText, queryByText, rerender} = render(<OutcomeManagementPanel />, {
-        ...groupDetailDefaultProps
-      })
+      const {getByText, queryByText, rerender} = render(
+        <OutcomeManagementPanel {...defaultProps()} />,
+        {
+          ...groupDetailDefaultProps
+        }
+      )
       await act(async () => jest.runOnlyPendingTimers())
       fireEvent.click(getByText('Course folder 0'))
       await act(async () => jest.runOnlyPendingTimers())
-      render(<OutcomeManagementPanel {...createdOutcomeProps()} />, {
+      render(<OutcomeManagementPanel {...defaultProps({createdOutcomeGroupIds: ['2']})} />, {
         ...groupDetailDefaultProps,
         renderer: rerender
       })
@@ -1049,19 +1136,30 @@ describe('OutcomeManagementPanel', () => {
     })
 
     it('it does trigger a refetch if an outcome is created is in currently selected group in RHS', async () => {
-      const {getByText, queryByText, rerender} = render(<OutcomeManagementPanel />, {
-        ...groupDetailDefaultProps
-      })
+      const {getByText, queryByText, rerender} = render(
+        <OutcomeManagementPanel {...defaultProps()} />,
+        {
+          ...groupDetailDefaultProps
+        }
+      )
       await act(async () => jest.runOnlyPendingTimers())
       fireEvent.click(getByText('Course folder 0'))
       await act(async () => jest.runOnlyPendingTimers())
 
-      render(<OutcomeManagementPanel {...createdOutcomeProps({}, ['200'])} />, {
+      render(<OutcomeManagementPanel {...defaultProps({createdOutcomeGroupIds: ['200']})} />, {
         ...groupDetailDefaultProps,
         renderer: rerender
       })
       await act(async () => jest.runOnlyPendingTimers())
       expect(queryByText('Newly Created Outcome - Course folder 0')).toBeInTheDocument()
+    })
+  })
+
+  describe('After outcomes import', () => {
+    it('resets targetGroupIdsToRefetch', () => {
+      render(<OutcomeManagementPanel {...defaultProps({targetGroupIdsToRefetch: ['200']})} />)
+      expect(setTargetGroupIdsToRefetchMock).toHaveBeenCalledTimes(1)
+      expect(setTargetGroupIdsToRefetchMock).toHaveBeenCalledWith([])
     })
   })
 
@@ -1076,7 +1174,7 @@ describe('OutcomeManagementPanel', () => {
     }
 
     it('renders the action drilldown', async () => {
-      const {getByText} = render(<OutcomeManagementPanel />, {
+      const {getByText} = render(<OutcomeManagementPanel {...defaultProps()} />, {
         mocks: accountMocks({childGroupsCount: 2})
       })
       await act(async () => jest.runOnlyPendingTimers())
@@ -1084,7 +1182,7 @@ describe('OutcomeManagementPanel', () => {
     })
 
     it('renders the groups within the drilldown', async () => {
-      const {getByText, queryByText} = render(<OutcomeManagementPanel />, {
+      const {getByText, queryByText} = render(<OutcomeManagementPanel {...defaultProps()} />, {
         mocks: accountMocks({childGroupsCount: 2})
       })
       await act(async () => jest.runOnlyPendingTimers())
@@ -1094,7 +1192,7 @@ describe('OutcomeManagementPanel', () => {
     })
 
     it('renders the action link for the root group', async () => {
-      const {getByText, queryByText} = render(<OutcomeManagementPanel />, {
+      const {getByText, queryByText} = render(<OutcomeManagementPanel {...defaultProps()} />, {
         mocks: accountMocks({childGroupsCount: 2})
       })
       await act(async () => jest.runOnlyPendingTimers())
@@ -1103,7 +1201,7 @@ describe('OutcomeManagementPanel', () => {
     })
 
     it('loads group detail data correctly', async () => {
-      const {getByText, queryByText} = render(<OutcomeManagementPanel />, {
+      const {getByText, queryByText} = render(<OutcomeManagementPanel {...defaultProps()} />, {
         ...groupDetailDefaultProps
       })
       await act(async () => jest.runOnlyPendingTimers())
@@ -1117,9 +1215,12 @@ describe('OutcomeManagementPanel', () => {
     })
 
     it('focuses on the Select input after the group header is clicked', async () => {
-      const {getByText, queryByText, getByPlaceholderText} = render(<OutcomeManagementPanel />, {
-        ...groupDetailDefaultProps
-      })
+      const {getByText, queryByText, getByPlaceholderText} = render(
+        <OutcomeManagementPanel {...defaultProps()} />,
+        {
+          ...groupDetailDefaultProps
+        }
+      )
       await act(async () => jest.runOnlyPendingTimers())
       await clickWithinMobileSelect(queryByText('Groups'))
       fireEvent.click(getByText('Course folder 0'))

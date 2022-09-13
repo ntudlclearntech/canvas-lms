@@ -23,6 +23,7 @@ import {SimpleSelect} from '@instructure/ui-simple-select'
 import {ScreenReaderContent} from '@instructure/ui-a11y-content'
 import AlignmentStatItem from './AlignmentStatItem'
 import OutcomeSearchBar from '../Management/OutcomeSearchBar'
+import useCanvasContext from '@canvas/outcomes/react/hooks/useCanvasContext'
 import {useScope as useI18nScope} from '@canvas/i18n'
 
 const I18n = useI18nScope('AlignmentSummary')
@@ -35,9 +36,11 @@ const AlignmentSummaryHeader = ({
   alignedArtifacts,
   searchString,
   updateSearchHandler,
-  clearSearchHandler
+  clearSearchHandler,
+  updateFilterHandler
 }) => {
-  const [selectedFilter, setSelectedFilter] = useState('all_outcomes')
+  const [selectedFilter, setSelectedFilter] = useState('ALL_OUTCOMES')
+  const {isMobileView} = useCanvasContext()
   const percentCoverage = totalOutcomes !== 0 ? alignedOutcomes / totalOutcomes : 0
   const avgPerOutcome = totalOutcomes !== 0 ? totalAlignments / totalOutcomes : 0
   const percentWithAlignments = totalArtifacts !== 0 ? alignedArtifacts / totalArtifacts : 0
@@ -45,19 +48,22 @@ const AlignmentSummaryHeader = ({
   const withAlignments = totalOutcomes !== 0 ? alignedOutcomes : 0
   const withoutAlignments = totalOutcomes !== 0 ? totalOutcomes - alignedOutcomes : 0
 
-  const handleFilterChange = (_event, {id}) => setSelectedFilter(id)
+  const handleFilterChange = (_event, {id}) => {
+    setSelectedFilter(id)
+    updateFilterHandler(id)
+  }
 
   const renderFilter = () => {
     const filterOptions = {
-      all_outcomes: {
+      ALL_OUTCOMES: {
         label: I18n.t('All Outcomes'),
         value: totalOutcomes || 0
       },
-      with_alignments: {
+      WITH_ALIGNMENTS: {
         label: I18n.t('With Alignments'),
         value: withAlignments
       },
-      without_alignments: {
+      NO_ALIGNMENTS: {
         label: I18n.t('Without Alignments'),
         value: withoutAlignments
       }
@@ -86,8 +92,15 @@ const AlignmentSummaryHeader = ({
       data-testid="outcome-alignment-summary-header"
     >
       <Flex.Item as="div">
-        <Flex as="div" wrap="wrap">
-          <Flex.Item size="28rem" padding="x-small small x-small x-small">
+        <div
+          style={{display: 'flex', flexWrap: isMobileView ? 'nowrap' : 'wrap', overflow: 'auto'}}
+          className="alignment-summary-stats"
+        >
+          <Flex.Item
+            as="div"
+            size={isMobileView ? '17.5rem' : '31rem'}
+            padding={isMobileView ? 'xx-small x-small x-small' : 'x-small small x-small x-small'}
+          >
             <AlignmentStatItem
               type="outcome"
               count={totalOutcomes}
@@ -95,7 +108,13 @@ const AlignmentSummaryHeader = ({
               average={avgPerOutcome}
             />
           </Flex.Item>
-          <Flex.Item size="28rem" padding="x-small small x-small x-small">
+          <Flex.Item
+            as="div"
+            size={isMobileView ? '17.5rem' : '31rem'}
+            padding={
+              isMobileView ? 'xx-small x-small x-small small' : 'x-small small x-small x-small'
+            }
+          >
             <AlignmentStatItem
               type="artifact"
               count={totalArtifacts}
@@ -103,14 +122,23 @@ const AlignmentSummaryHeader = ({
               average={avgPerArtifact}
             />
           </Flex.Item>
-        </Flex>
+        </div>
       </Flex.Item>
-      <Flex.Item as="div" padding="small 0 0">
-        <Flex as="div" wrap="wrap">
-          <Flex.Item padding="x-small small x-small x-small" size="17rem">
+      <Flex.Item as="div" padding="xx-small 0 0">
+        <Flex as="div" wrap="wrap" direction={isMobileView ? 'column' : 'row'}>
+          <Flex.Item
+            as="div"
+            padding={isMobileView ? 'xx-small xx-small xx-small' : 'x-small small x-small x-small'}
+            size={isMobileView ? '100%' : '17rem'}
+          >
             {renderFilter()}
           </Flex.Item>
-          <Flex.Item padding="x-small" size="28rem" shouldGrow>
+          <Flex.Item
+            as="div"
+            padding={isMobileView ? 'xx-small xx-small small' : 'x-small'}
+            size={isMobileView ? '100%' : '17rem'}
+            shouldGrow
+          >
             <OutcomeSearchBar
               placeholder={I18n.t('Search...')}
               searchString={searchString}
@@ -124,15 +152,25 @@ const AlignmentSummaryHeader = ({
   )
 }
 
+AlignmentSummaryHeader.defaultProps = {
+  totalOutcomes: 0,
+  alignedOutcomes: 0,
+  totalAlignments: 0,
+  totalArtifacts: 0,
+  alignedArtifacts: 0,
+  searchString: ''
+}
+
 AlignmentSummaryHeader.propTypes = {
-  totalOutcomes: PropTypes.number.isRequired,
-  alignedOutcomes: PropTypes.number.isRequired,
-  totalAlignments: PropTypes.number.isRequired,
-  totalArtifacts: PropTypes.number.isRequired,
-  alignedArtifacts: PropTypes.number.isRequired,
+  totalOutcomes: PropTypes.number,
+  alignedOutcomes: PropTypes.number,
+  totalAlignments: PropTypes.number,
+  totalArtifacts: PropTypes.number,
+  alignedArtifacts: PropTypes.number,
   searchString: PropTypes.string,
   updateSearchHandler: PropTypes.func.isRequired,
-  clearSearchHandler: PropTypes.func.isRequired
+  clearSearchHandler: PropTypes.func.isRequired,
+  updateFilterHandler: PropTypes.func.isRequired
 }
 
 export default AlignmentSummaryHeader

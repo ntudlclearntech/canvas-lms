@@ -234,6 +234,10 @@ class AssignmentOverride < ActiveRecord::Base
   end
   protected :default_values
 
+  def adhoc?
+    set_type == "ADHOC"
+  end
+
   def mastery_paths?
     set_type == SET_TYPE_NOOP && set_id == NOOP_MASTERY_PATHS
   end
@@ -327,6 +331,8 @@ class AssignmentOverride < ActiveRecord::Base
   end
 
   def availability_expired?
+    return false if adhoc?
+
     lock_at_overridden &&
       lock_at.present? &&
       lock_at <= Time.zone.now
@@ -373,6 +379,7 @@ class AssignmentOverride < ActiveRecord::Base
     assignment&.context&.available? &&
       assignment.published? &&
       assignment.created_at < 3.hours.ago &&
+      !deleted? &&
       (saved_change_to_workflow_state? ||
         saved_change_to_due_at_overridden? ||
         (due_at_overridden && !Assignment.due_dates_equal?(due_at, due_at_before_last_save)))

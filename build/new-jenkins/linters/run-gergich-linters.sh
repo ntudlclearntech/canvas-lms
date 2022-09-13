@@ -21,6 +21,16 @@ if [ "$GERRIT_PROJECT" == "canvas-lms" ]; then
   fi
 fi
 
+cp ui/shared/apollo/fragmentTypes.json ui/shared/apollo/fragmentTypes.json.old
+
+# always keep the graphQL schema up-to-date
+rake graphql:schema RAILS_ENV=test
+
+if ! diff ui/shared/apollo/fragmentTypes.json ui/shared/apollo/fragmentTypes.json.old; then
+    message="ui/shared/apollo/fragmentTypes.json needs to be kept up-to-date. Run bundle exec rake graphql:schema and push the changes.\\n"
+    gergich comment "{\"path\":\"ui/shared/apollo/fragmentTypes.json\",\"position\":1,\"severity\":\"error\",\"message\":\"$message\"}"
+  fi
+
 gergich capture custom:./build/gergich/xsslint:Gergich::XSSLint 'node script/xsslint.js'
 gergich capture i18nliner 'rake i18n:check'
 # purposely don't run under bundler; they shell out and use bundler as necessary

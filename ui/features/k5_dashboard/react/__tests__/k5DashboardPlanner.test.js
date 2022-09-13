@@ -37,16 +37,9 @@ jest.mock('@canvas/observer-picker/react/utils', () => ({
 }))
 
 const currentUserId = defaultProps.currentUser.id
+const moxiosWait = () => new Promise((r) => moxios.wait(r));
 
 describe('K5Dashboard Schedule Section', () => {
-  beforeAll(() => {
-    jest.setTimeout(15000)
-  })
-
-  afterAll(() => {
-    jest.setTimeout(5000)
-  })
-
   beforeEach(() => {
     moxios.install()
     createPlannerMocks()
@@ -68,18 +61,17 @@ describe('K5Dashboard Schedule Section', () => {
   })
 
   it('displays a list of missing assignments if there are any', async () => {
-    const {findByRole, getByRole, getByText} = render(
+    const {findByTestId, findByText} = render(
       <K5Dashboard {...defaultProps} defaultTab="tab-schedule" plannerEnabled />
     )
-    const missingAssignments = await findByRole('button', {
-      name: 'Show 2 missing items',
-      timeout: 5000
-    })
+    const missingAssignments = await findByTestId('missing-item-info')
+    expect(missingAssignments).toHaveTextContent('Show 2 missing items')
     expect(missingAssignments).toBeInTheDocument()
+
     act(() => missingAssignments.click())
-    expect(getByRole('button', {name: 'Hide 2 missing items'})).toBeInTheDocument()
-    expect(getByText('Assignment 1')).toBeInTheDocument()
-    expect(getByText('Assignment 2')).toBeInTheDocument()
+    expect(missingAssignments).toHaveTextContent('Hide 2 missing items')
+    expect(await findByText('Assignment 1')).toBeInTheDocument()
+    expect(await findByText('Assignment 2')).toBeInTheDocument()
   })
 
   it('renders the weekly planner header', async () => {
@@ -93,10 +85,10 @@ describe('K5Dashboard Schedule Section', () => {
   })
 
   it('renders an "jump to navigation" button at the bottom of the schedule tab', async () => {
-    const {findByRole} = render(
+    const {findByTestId} = render(
       <K5Dashboard {...defaultProps} defaultTab="tab-schedule" plannerEnabled />
     )
-    const jumpToNavButton = await findByRole('button', {name: 'Jump to navigation toolbar'})
+    const jumpToNavButton = await findByTestId('jump-to-weekly-nav-button')
     expect(jumpToNavButton).not.toBeVisible()
     act(() => jumpToNavButton.focus())
     expect(jumpToNavButton).toBeVisible()
@@ -106,14 +98,14 @@ describe('K5Dashboard Schedule Section', () => {
   })
 
   it('allows navigating to next/previous weeks if there are plannable items in the future/past', async () => {
-    const {findByRole, getByRole} = render(
+    const {findByTestId, getByTestId} = render(
       <K5Dashboard {...defaultProps} defaultTab="tab-schedule" plannerEnabled />
     )
-    const todayButton = await findByRole('button', {name: 'Jump to Today'})
+    const todayButton = await findByTestId('jump-to-today-button')
     expect(todayButton).toBeEnabled()
-    const previousButton = getByRole('button', {name: 'View previous week'})
+    const previousButton = getByTestId('view-previous-week-button')
     await waitFor(() => expect(previousButton).toBeEnabled())
-    const nextButton = getByRole('button', {name: 'View next week'})
+    const nextButton = getByTestId('view-next-week-button')
     expect(nextButton).toBeEnabled()
   })
 
@@ -132,20 +124,18 @@ describe('K5Dashboard Schedule Section', () => {
     expect(getByText('Exciting discussion')).toBeInTheDocument()
   })
 
-  it('preloads surrounding weeks only once schedule tab is visible', async done => {
-    const {findByText, getByRole} = render(
+  it('preloads surrounding weeks only once schedule tab is visible', async () => {
+    const {findByText, getByText} = render(
       <K5Dashboard {...defaultProps} currentUserRoles={['user', 'student']} plannerEnabled />
     )
     expect(await findByText('Assignment 15')).toBeInTheDocument()
     expect(moxios.requests.count()).toBe(6)
-    act(() => getByRole('tab', {name: 'Schedule'}).click())
-    moxios.wait(() => {
-      expect(moxios.requests.count()).toBe(8) // 2 more requests for prev and next week preloads
-      done()
-    })
+    act(() => getByText('Schedule').click())
+    await moxiosWait()
+    expect(moxios.requests.count()).toBe(8) // 2 more requests for prev and next week preloads
   })
 
-  it('reloads the planner with correct data when the selected observee is updated', async done => {
+  it('reloads the planner with correct data when the selected observee is updated', async () => {
     moxios.stubRequest('/api/v1/dashboard/dashboard_cards?observed_user_id=1', {
       status: 200,
       response: MOCK_CARDS
@@ -162,7 +152,7 @@ describe('K5Dashboard Schedule Section', () => {
         name: 'Student 2'
       }
     ]
-    const {findByText, findByRole, getByRole, getByText} = render(
+    const {findByText, findByTestId, getByTestId, getByText} = render(
       <K5Dashboard
         {...defaultProps}
         defaultTab="tab-schedule"
@@ -173,12 +163,7 @@ describe('K5Dashboard Schedule Section', () => {
       />
     )
     expect(await findByText('Assignment 15')).toBeInTheDocument()
-    expect(
-      await findByRole('button', {
-        name: 'Show 2 missing items',
-        timeout: 5000
-      })
-    ).toBeInTheDocument()
+    expect(await findByTestId('missing-item-info')).toHaveTextContent('Show 2 missing items')
     moxios.stubs.reset()
     moxios.stubRequest('/api/v1/dashboard/dashboard_cards?observed_user_id=2', {
       status: 200,
@@ -194,20 +179,13 @@ describe('K5Dashboard Schedule Section', () => {
       headers: {link: 'url; rel="current"'},
       response: [opportunities[0]]
     })
-    const observerSelect = getByRole('combobox', {name: 'Select a student to view'})
+    const observerSelect = getByTestId('observed-student-dropdown')
     act(() => observerSelect.click())
     act(() => getByText('Student 2').click())
     expect(await findByText('Assignment for Observee')).toBeInTheDocument()
-    expect(
-      await findByRole('button', {
-        name: 'Show 1 missing item',
-        timeout: 10000
-      })
-    ).toBeInTheDocument()
-    moxios.wait(() => {
-      const request = moxios.requests.mostRecent()
-      expect(request.url).toContain('observed_user_id=2')
-      done()
-    })
+    expect(await findByTestId('missing-item-info')).toHaveTextContent('Show 1 missing item')
+    await moxiosWait()
+    const request = moxios.requests.mostRecent()
+    expect(request.url).toContain('observed_user_id=2')
   })
 })

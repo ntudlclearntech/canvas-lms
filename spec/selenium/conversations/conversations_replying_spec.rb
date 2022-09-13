@@ -48,6 +48,49 @@ describe "conversations new" do
         Account.default.set_feature_flag! :react_inbox, "on"
       end
 
+      it "doesn't allow replying with no recipients", ignore_js_errors: true do
+        get "/conversations"
+        f("div[data-testid='conversation']").click
+        wait_for_ajaximations
+        f("button[data-testid='message-reply']").click
+        f("span[data-testid='address-book-tag']").click
+        f("textarea[data-testid='message-body']").send_keys("no recipient")
+        f("button[data-testid='send-button']").click
+        wait_for_ajaximations
+        expect(fj("span:contains('Please select a recipient.')")).to be_displayed
+      end
+
+      it "allows adding a new recipient", ignore_js_errors: true do
+        get "/conversations"
+        f("div[data-testid='conversation']").click
+        wait_for_ajaximations
+        f("button[data-testid='message-reply']").click
+
+        # The second compose modal addressbook should appear
+        expect(ff("input[aria-label='Address Book']").count).to eq(2)
+
+        f("textarea[data-testid='message-body']").send_keys("new recipient")
+        ff("input[aria-label='Address Book']")[1].click
+        fj("div[data-testid='address-book-item']:contains('Students')").click
+        fj("div[data-testid='address-book-item']:contains('first student')").click
+        f("button[data-testid='send-button']").click
+        wait_for_ajaximations
+
+        expect(ConversationMessage.last.body).to eq "new recipient"
+        participants = ConversationMessage.last.conversation_message_participants
+        expect(participants.collect(&:user_id)).to match_array [@s1.id, @s2.id, @teacher.id]
+      end
+
+      it "does not allow adding recipients to private messages", ignore_js_errors: true do
+        @convo.update_attribute(:private_hash, "12345")
+        get "/conversations"
+        f("div[data-testid='conversation']").click
+        wait_for_ajaximations
+        f("button[data-testid='message-reply']").click
+        # There should only be one addressbook, which controls the inbox filter
+        expect(ff("input[aria-label='Address Book']").count).to eq(1)
+      end
+
       it "replies to most recent author using the individual message reply button", ignore_js_errors: true do
         get "/conversations"
         f("div[data-testid='conversation']").click
@@ -211,6 +254,44 @@ describe "conversations new" do
         @course.account.role_overrides.create!(permission: :send_messages, role: student_role, enabled: false)
         go_to_inbox_and_select_message
         expect(f("#reply-btn")).to_not be_disabled
+      end
+
+      context "with date restricted course" do
+        before do
+          @course.restrict_enrollments_to_course_dates = true
+          @course.restrict_student_past_view = true
+          @course.restrict_student_future_view = true
+          @course.save!
+        end
+
+        context "teacher inbox" do
+          it "allows teachers to reply to a conversation if the course is soft concluded" do
+            go_to_inbox_and_select_message
+            expect(f("#reply-btn")).to_not be_disabled
+          end
+
+          it "does not allow teachers to reply to a conversation if the course is hard-concluded" do
+            @course.complete!
+            go_to_inbox_and_select_message
+            expect(f("#reply-btn")).to be_disabled
+          end
+        end
+
+        context "student inbox" do
+          it "allows student to reply to a conversation if the course is soft concluded and a teacher is in the conversation" do
+            user_session(@s1)
+            go_to_inbox_and_select_message
+            expect(f("#reply-btn")).to_not be_disabled
+          end
+
+          it "does not allow students to reply to a conversation if the course is hard-concluded" do
+            skip("Unskip in VICE-2785")
+            user_session(@s1)
+            @course.complete!
+            go_to_inbox_and_select_message
+            expect(f("#reply-btn")).to be_disabled
+          end
+        end
       end
     end
   end

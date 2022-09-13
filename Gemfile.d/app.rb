@@ -29,9 +29,9 @@ end
 
 gem "rails", CANVAS_RAILS == "6.1" ? "6.1.4.6" : "7.0.3"
   gem "tzinfo", "2.0.4"
-gem_override "switchman", "3.1.1"
+gem_override "switchman", "3.1.3"
   gem "guardrail", "3.0.2"
-gem_override "switchman-inst-jobs", "4.0.7"
+gem_override "switchman-inst-jobs", "4.0.9"
   gem "irb", "1.4.1"
   gem "open4", "1.3.4", require: false
 
@@ -77,11 +77,11 @@ gem "hashery", "2.1.2", require: false
 gem "highline", "2.0.3", require: false
 gem "httparty", "0.18.1"
 gem "i18n", "1.8.5"
-gem "i18nliner", "0.1.2", github: "instructure/i18nliner", ref: "rails-61"
+gem "i18nliner", "0.2.2"
   gem "ruby2ruby", "2.4.4", require: false
   gem "ruby_parser", "3.18.1", require: false
 gem "icalendar", "2.7.0", require: false
-gem "diplomat", "2.5.1", require: false
+gem "diplomat", "2.6.3", require: false
 gem "ims-lti", "2.3.2", require: "ims"
 gem "rrule", "0.4.4", require: false
 
@@ -90,7 +90,7 @@ gem "inst_statsd", "2.2.0"
   gem "statsd-ruby", "1.4.0", require: false
   gem "aroi", "0.0.7", require: false
   gem "dogstatsd-ruby", "4.8.2"
-gem_override "inst-jobs", "3.1.3"
+gem_override "inst-jobs", "3.1.5"
   gem "fugit", "1.4.0", require: false
     gem "et-orbi", "1.2.4", require: false
 gem "inst-jobs-autoscaling", "2.1.1"
@@ -99,7 +99,7 @@ gem "inst-jobs-statsd", "2.2.0"
 # if updating json gem it will need to be hotfixed because if a newer version of
 # the json gem is installed, it will always use that one even before bundler
 # gets activated. Updating the gem in it's own commit will make this easier.
-gem "json", "2.6.1"
+gem "json", "~> 2.6.1"
 gem "json_schemer", "0.2.16", github: "robotdana/json_schemer", ref: "0d2ac359a87964f74c07a14cafeb98cfcae4e29f"
   gem "ecma-re-validator", "0.2.1"
 gem "json-jwt", "1.13.0", require: false
@@ -125,7 +125,6 @@ gem "rack-test", "1.1.0"
 gem "rake", "13.0.3"
 gem "rails-observers", "0.1.5"
 gem "ratom-nokogiri", "0.10.11", require: false
-gem "rchardet", "1.8.0"
 gem "redcarpet", "3.5.0", require: false
 gem "retriable", "1.4.1"
 gem "ritex", "1.0.1", require: false

@@ -150,17 +150,14 @@ class ExternalToolsController < ApplicationController
   end
 
   def retrieve
-    @tool = ContextExternalTool.find_external_tool(params[:url], @context, nil, nil, params[:client_id])
-    unless @tool
-      raise InvalidSettingsError, t("#application.errors.invalid_external_tool", "Couldn't find valid settings for this link")
-    end
-
+    tool, url = find_tool_and_url(resource_link_lookup_uuid, params[:url], @context, params[:client_id])
+    @tool = tool
     placement = placement_from_params
     add_crumb(@tool.name)
     @lti_launch = lti_launch(
       tool: @tool,
       selection_type: placement,
-      launch_url: params[:url],
+      launch_url: url,
       content_item_id: params[:content_item_id],
       secure_params: params[:secure_params]
     )
@@ -171,6 +168,33 @@ class ExternalToolsController < ApplicationController
   rescue InvalidSettingsError => e
     flash[:error] = e.message
     redirect_to named_context_url(@context, :context_url)
+  end
+
+  # Finds a tool for a given resource_link_id or url in a context
+  # Prefers the resource_link_id, but defaults to the provided_url,
+  #   if the resource_link does not provide a url
+  def find_tool_and_url(lookup_id, provided_url, context, client_id)
+    resource_link = Lti::ResourceLink.where(
+      lookup_uuid: lookup_id,
+      context: context
+    ).active.take
+    if resource_link.nil? || resource_link.url.nil?
+      # If the resource_link doesn't have a url, then use the provided url to look up the tool
+      tool = ContextExternalTool.find_external_tool(provided_url, context, nil, nil, client_id)
+      unless tool
+        invalid_settings_error
+      end
+      [tool, provided_url]
+    elsif resource_link.url
+      tool = resource_link.current_external_tool context
+      [tool, resource_link.url]
+    else
+      invalid_settings_error
+    end
+  end
+
+  def invalid_settings_error
+    raise InvalidSettingsError, t("#application.errors.invalid_external_tool", "Couldn't find valid settings for this link")
   end
 
   # @API Get a sessionless launch url for an external tool.
@@ -384,8 +408,7 @@ class ExternalToolsController < ApplicationController
       placement = placement_from_params
       return unless find_tool(params[:id], placement)
 
-      I18n.set_locale_with_localizer
-      add_crumb(@tool.label_for(placement_from_params, I18n.locale.to_s), nil)
+      add_crumb(@tool.label_for(placement, I18n.locale))
 
       @return_url = named_context_url(@context, :context_external_content_success_url, "external_tool_redirect", { include_host: true })
       @redirect_return = true
@@ -519,7 +542,7 @@ class ExternalToolsController < ApplicationController
 
   # As `resource_link_lookup_id` was renamed to `resource_link_lookup_uuid` we
   # have to support both names because, there are cases like RCE editor, that a
-  # resource link was previously-created and the genererated links couldn't stop
+  # resource link was previously-created and the generated links couldn't stop
   # working.
   def resource_link_lookup_uuid
     params[:resource_link_lookup_id] || params[:resource_link_lookup_uuid]
@@ -532,7 +555,6 @@ class ExternalToolsController < ApplicationController
   # determine resource_link_id to send to tool.
   def lookup_resource_link(tool)
     return nil unless resource_link_lookup_uuid
-    return nil unless params[:url]
 
     resource_link = Lti::ResourceLink.where(
       lookup_uuid: resource_link_lookup_uuid,
@@ -547,8 +569,12 @@ class ExternalToolsController < ApplicationController
 
     # Verify the resource link was intended for the domain it's being
     # launched from
-    resource_link if resource_link&.current_external_tool(@context)
+    if params[:url] && !resource_link&.current_external_tool(@context)
       &.matches_host?(params[:url])
+      nil
+    else
+      resource_link
+    end
   end
 
   def basic_lti_launch_request(tool, selection_type = nil, opts = {})

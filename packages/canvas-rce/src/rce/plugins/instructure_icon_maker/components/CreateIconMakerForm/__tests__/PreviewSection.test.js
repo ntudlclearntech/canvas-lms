@@ -35,11 +35,13 @@ describe('<Preview />', () => {
         }}
       />
     )
+
     expect(container.querySelector('svg')).toMatchInlineSnapshot(`
       <svg
         fill="none"
-        height="244px"
-        viewBox="0 0 218 244"
+        height="218px"
+        style="padding: 16px"
+        viewBox="0 0 218 218"
         width="218px"
         xmlns="http://www.w3.org/2000/svg"
       >
@@ -50,31 +52,8 @@ describe('<Preview />', () => {
           width="218px"
           x="0"
         >
-          <pattern
-            height="16"
-            id="checkerboard"
-            patternUnits="userSpaceOnUse"
-            width="16"
-            x="0"
-            y="0"
-          >
-            <rect
-              fill="#d9d9d9"
-              height="8"
-              width="8"
-              x="0"
-              y="0"
-            />
-            <rect
-              fill="#d9d9d9"
-              height="8"
-              width="8"
-              x="8"
-              y="8"
-            />
-          </pattern>
           <g
-            fill="url(#checkerboard)"
+            fill="none"
             stroke="#0f0"
             stroke-width="4"
           >

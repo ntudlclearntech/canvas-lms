@@ -31,7 +31,6 @@ import './instructure_helper'
 import 'jqueryui/draggable'
 import '@canvas/jquery/jquery.ajaxJSON'
 import '@canvas/doc-previews' /* loadDocPreview */
-import {trackEvent} from '@canvas/google-analytics'
 import '@canvas/datetime' /* datetimeString, dateString, fudgeDateForProfileTimezone */
 import '@canvas/forms/jquery/jquery.instructure_forms' /* formSubmit, fillFormData, formErrors */
 import 'jqueryui/dialog'
@@ -43,7 +42,7 @@ import '@canvas/rails-flash-notifications'
 import '@canvas/util/templateData'
 import '@canvas/util/jquery/fixDialogButtons'
 import '@canvas/media-comments/jquery/mediaCommentThumbnail'
-import 'date'
+import 'date-js'
 import 'jquery-tinypubsub' /* /\.publish\(/ */
 import 'jqueryui/resizable'
 import 'jqueryui/sortable'
@@ -98,19 +97,13 @@ function handleYoutubeLink() {
           preventDefault(() => {
             $video.remove()
             $after.show()
-            trackEvent('hide_embedded_content', 'hide_you_tube')
           })
         )
         $(this).after($video).hide()
       })
     )
-    trackEvent('show_embedded_content', 'show_you_tube')
     $link.addClass('youtubed').after($after)
   }
-}
-
-function submitRouteEventToGA() {
-  trackEvent('Route', window.location.pathname.replace(/\/$/, '').replace(/\d+/g, '--') || '/')
 }
 
 function buildUrl(url) {
@@ -267,7 +260,11 @@ export function enhanceUserContent(visibilityMod) {
       )
 
       if ($link.hasClass('instructure_scribd_file')) {
-        if ($link.hasClass('inline_disabled')) {
+        if ($link.hasClass('no_preview')) {
+          // link downloads
+          $link.attr('href', download_url)
+          $link.removeAttr('target')
+        } else if ($link.hasClass('inline_disabled')) {
           // link opens in overlay
           $link.addClass('preview_in_overlay')
         } else {
@@ -622,7 +619,6 @@ function previewFilesWhenClicked() {
             $link.show()
             $link.focus()
             $div.html('').css('display', 'none')
-            trackEvent('hide_embedded_content', 'hide_file_preview')
           })
           $div.prepend($minimizeLink)
           if (Object.prototype.hasOwnProperty.call(event, 'originalEvent')) {
@@ -630,7 +626,6 @@ function previewFilesWhenClicked() {
             // If it was triggered by our auto_open stuff it shouldn't focus here.
             $minimizeLink.focus()
           }
-          trackEvent('show_embedded_content', 'show_file_preview')
         }
       },
       () => {
@@ -789,9 +784,6 @@ function doThingsWhenDiscussionTopicSubMessageIsPosted() {
       $(document).triggerHandler('richTextEnd', $(this).find('textarea.rich_text'))
       $(document).triggerHandler('user_content_change')
       $(this).remove()
-      if (window.location.href.match(/dashboard/)) {
-        trackEvent('dashboard_comment', 'create')
-      }
     },
     error(data) {
       $(this).loadingImage('remove')
@@ -959,7 +951,6 @@ function makeAllExternalLinksExternalLinks() {
 
 export default function enhanceTheEntireUniverse() {
   [
-    submitRouteEventToGA,
     retriggerEarlyClicks,
     ellipsifyBreadcrumbs,
     bindKeyboardShortcutsHelpPanel,

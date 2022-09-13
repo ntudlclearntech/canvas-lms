@@ -25,15 +25,19 @@ import ConversationListContainer from './ConversationListContainer'
 import {NoSelectedConversation} from '../components/NoSelectedConversation/NoSelectedConversation'
 import {AlertManagerContext} from '@canvas/alerts/react/AlertManager'
 import {useScope as useI18nScope} from '@canvas/i18n'
-import {useMutation} from 'react-apollo'
-import {DELETE_CONVERSATIONS, UPDATE_CONVERSATION_PARTICIPANTS} from '../../graphql/Mutations'
-import {CONVERSATIONS_QUERY} from '../../graphql/Queries'
+import {useMutation, useQuery} from 'react-apollo'
+import {
+  DELETE_CONVERSATIONS,
+  UPDATE_CONVERSATION_PARTICIPANTS,
+  UPDATE_SUBMISSIONS_READ_STATE
+} from '../../graphql/Mutations'
+import {CONVERSATIONS_QUERY, VIEWABLE_SUBMISSIONS_QUERY} from '../../graphql/Queries'
 import {decodeQueryString} from 'query-string-encoding'
 import {responsiveQuerySizes} from '../../util/utils'
-import {CondensedButton, IconButton} from '@instructure/ui-buttons'
+import {CondensedButton} from '@instructure/ui-buttons'
 
 import {Flex} from '@instructure/ui-flex'
-import {IconArrowOpenStartLine, IconXSolid} from '@instructure/ui-icons'
+import {IconArrowOpenStartLine} from '@instructure/ui-icons'
 import {Responsive} from '@instructure/ui-responsive'
 import {Text} from '@instructure/ui-text'
 import {View} from '@instructure/ui-view'
@@ -126,6 +130,19 @@ const CanvasInbox = () => {
     setIsSubmissionCommentsType(scope === 'submission_comments')
   }, [scope])
 
+  // clear conversationsManuallyMarkedUnread when
+  // selectedConversations is not the same
+  useEffect(() => {
+    if (
+      selectedConversations.length > 0 &&
+      !JSON.parse(sessionStorage.getItem('conversationsManuallyMarkedUnread'))?.includes(
+        selectedConversations[0]._id
+      )
+    ) {
+      sessionStorage.removeItem('conversationsManuallyMarkedUnread')
+    }
+  }, [selectedConversations])
+
   const conversationContext = {
     multiselect,
     setMultiselect,
@@ -148,16 +165,40 @@ const CanvasInbox = () => {
 
   const {setOnFailure, setOnSuccess} = useContext(AlertManagerContext)
 
+  const commonQueryVariables = {
+    userID: ENV.current_user_id?.toString(),
+    filter: [userFilter, courseFilter]
+  }
+
   const conversationsQueryOption = {
     query: CONVERSATIONS_QUERY,
     variables: {
-      userID: ENV.current_user_id?.toString(),
-      scope,
-      filter: [userFilter, courseFilter]
+      ...commonQueryVariables,
+      scope
     }
   }
 
+  const conversationsQuery = useQuery(CONVERSATIONS_QUERY, {
+    variables: {...commonQueryVariables, scope},
+    fetchPolicy: 'cache-and-network',
+    skip: isSubmissionCommentsType || scope === 'submission_comments'
+  })
+
+  const submissionCommentsQuery = useQuery(VIEWABLE_SUBMISSIONS_QUERY, {
+    variables: {...commonQueryVariables, sort: 'desc'},
+    fetchPolicy: 'cache-and-network',
+    skip: !isSubmissionCommentsType || !(scope === 'submission_comments')
+  })
+  const submissionCommentLength =
+    submissionCommentsQuery.data?.legacyNode?.viewableSubmissionsConnection?.nodes?.length || 0
+  const conversationLength =
+    conversationsQuery.data?.legacyNode?.conversationsConnection?.nodes?.length || 0
+
   const removeOutOfScopeConversationsFromCache = (cache, result) => {
+    if (scope === 'starred') {
+      return
+    }
+
     if (result.data.updateConversationParticipants.errors) {
       return
     }
@@ -225,8 +266,8 @@ const CanvasInbox = () => {
   const handleArchiveComplete = data => {
     const archiveSuccessMsg = I18n.t(
       {
-        one: 'Message Archived!',
-        other: 'Messages Archived!'
+        one: 'Message archived!',
+        other: 'Messages archived!'
       },
       {count: selectedConversations.length}
     )
@@ -235,16 +276,18 @@ const CanvasInbox = () => {
       setOnFailure(I18n.t('Archive operation failed'))
     } else {
       setArchiveDisabled(true)
-      removeFromSelectedConversations(selectedConversations)
-      setOnSuccess(archiveSuccessMsg) // screenReaderOnly
+      if (scope !== 'Starred') {
+        removeFromSelectedConversations(selectedConversations)
+      }
+      setOnSuccess(archiveSuccessMsg, false)
     }
   }
 
   const handleUnarchiveComplete = data => {
     const unarchiveSuccessMsg = I18n.t(
       {
-        one: 'Message Unarchived!',
-        other: 'Messages Unarchived!'
+        one: 'Message unarchived!',
+        other: 'Messages unarchived!'
       },
       {count: selectedConversations.length}
     )
@@ -253,8 +296,10 @@ const CanvasInbox = () => {
       setOnFailure(I18n.t('Unarchive operation failed'))
     } else {
       setArchiveDisabled(false)
-      removeFromSelectedConversations(selectedConversations)
-      setOnSuccess(unarchiveSuccessMsg) // screenReaderOnly
+      if (scope !== 'Starred') {
+        removeFromSelectedConversations(selectedConversations)
+      }
+      setOnSuccess(unarchiveSuccessMsg, false)
     }
   }
 
@@ -401,6 +446,75 @@ const CanvasInbox = () => {
     })
   }
 
+  const [readStateChangeSubmission] = useMutation(UPDATE_SUBMISSIONS_READ_STATE, {
+    onCompleted(data) {
+      if (data.updateSubmissionsReadState.errors) {
+        setOnFailure(I18n.t('Read state change operation failed'))
+      } else {
+        setOnSuccess(
+          I18n.t(
+            {
+              one: 'Read state Changed!',
+              other: 'Read states Changed!'
+            },
+            {count: '1000'}
+          )
+        )
+      }
+    },
+    onError() {
+      setOnFailure(I18n.t('Read state change failed'))
+    }
+  })
+
+  const [readStateChangeConversationParticipants] = useMutation(UPDATE_CONVERSATION_PARTICIPANTS, {
+    onCompleted(data) {
+      if (data.updateConversationParticipants.errors) {
+        setOnFailure(I18n.t('Read state change operation failed'))
+      } else {
+        setOnSuccess(
+          I18n.t(
+            {
+              one: 'Read state Changed!',
+              other: 'Read states Changed!'
+            },
+            {count: '1000'}
+          )
+        )
+      }
+    },
+    onError() {
+      setOnFailure(I18n.t('Read state change failed'))
+    }
+  })
+
+  const handleReadState = (markAsRead, conversationIds = null) => {
+    const conversationIdsToChange = conversationIds || selectedConversations.map(convo => convo._id)
+    if (scope === 'submission_comments') {
+      readStateChangeSubmission({
+        variables: {
+          submissionIds: conversationIds,
+          read: markAsRead === 'read'
+        }
+      })
+    } else {
+      readStateChangeConversationParticipants({
+        variables: {
+          conversationIds: conversationIdsToChange,
+          workflowState: markAsRead
+        }
+      })
+    }
+
+    // always change this to whatever was just changed
+    if (markAsRead === 'unread') {
+      sessionStorage.setItem(
+        'conversationsManuallyMarkedUnread',
+        JSON.stringify(conversationIdsToChange)
+      )
+    }
+  }
+
   const onReply = ({conversationMessage = null, replyAll = false} = {}) => {
     conversationMessage = isSubmissionCommentsType ? {} : conversationMessage
     setSelectedConversationMessage(conversationMessage)
@@ -487,6 +601,7 @@ const CanvasInbox = () => {
                   onStar={handleStar}
                   firstConversationIsStarred={firstConversationIsStarred}
                   onDelete={handleDelete}
+                  onReadStateChange={handleReadState}
                   canReply={canReply}
                 />
               </Flex.Item>
@@ -496,12 +611,23 @@ const CanvasInbox = () => {
                 {(matches.includes('desktop') ||
                   (matches.includes('mobile') && !selectedConversations.length) ||
                   multiselect) && (
-                  <Flex.Item width={responsiveProps.conversationListWidth} height="100%">
+                  <Flex.Item
+                    width={
+                      conversationLength || submissionCommentLength
+                        ? responsiveProps.conversationListWidth
+                        : '100%'
+                    }
+                    height="100%"
+                  >
                     <ConversationListContainer
                       course={courseFilter}
                       userFilter={userFilter}
                       scope={scope}
                       onSelectConversation={updateSelectedConversations}
+                      onReadStateChange={handleReadState}
+                      commonQueryVariables={commonQueryVariables}
+                      conversationsQuery={conversationsQuery}
+                      submissionCommentsQuery={submissionCommentsQuery}
                     />
                   </Flex.Item>
                 )}
@@ -519,9 +645,13 @@ const CanvasInbox = () => {
                     {selectedConversations.length > 0 ? (
                       <>
                         {matches.includes('mobile') && (
-                          <View as="div" borderWidth="none none small none">
+                          <View
+                            as="div"
+                            borderWidth="none none small none"
+                            padding="none none none xx-small"
+                          >
                             <Flex>
-                              <Flex.Item shouldGrow border>
+                              <Flex.Item shouldGrow border padding="medium none medium none">
                                 <CondensedButton
                                   data-testid="message-detail-back-button"
                                   renderIcon={<IconArrowOpenStartLine size="x-small" />}
@@ -531,20 +661,6 @@ const CanvasInbox = () => {
                                 >
                                   <Text>{I18n.t('Back')}</Text>
                                 </CondensedButton>
-                              </Flex.Item>
-                              <Flex.Item>
-                                <IconButton
-                                  shape="rectangle"
-                                  screenReaderLabel="Delete tag"
-                                  margin="small"
-                                  withBorder={false}
-                                  withBackground={false}
-                                  onClick={() => {
-                                    setSelectedConversations([])
-                                  }}
-                                >
-                                  <IconXSolid />
-                                </IconButton>
                               </Flex.Item>
                             </Flex>
                           </View>
@@ -574,6 +690,7 @@ const CanvasInbox = () => {
                                 }
                               : null
                           }
+                          onReadStateChange={handleReadState}
                           scope={scope}
                         />
                       </>

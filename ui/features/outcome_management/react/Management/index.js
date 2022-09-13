@@ -44,6 +44,9 @@ import GroupActionDrillDown from '../shared/GroupActionDrillDown'
 import useLhsTreeBrowserSelectParentGroup from '@canvas/outcomes/react/hooks/useLhsTreeBrowserSelectParentGroup'
 import FindOutcomesModal from '../FindOutcomesModal'
 import {showImportOutcomesModal} from '@canvas/outcomes/react/ImportOutcomesModal'
+import useOutcomesRemove from '@canvas/outcomes/react/hooks/useOutcomesRemove'
+import {getOutcomeGroupAncestorsWithSelf} from '../../helpers/getOutcomeGroupAncestorsWithSelf'
+import {ROOT_GROUP} from '@canvas/outcomes/react/hooks/useOutcomesImport'
 
 const I18n = useI18nScope('OutcomeManagement')
 
@@ -51,13 +54,18 @@ const OutcomeManagementPanel = ({
   importNumber,
   createdOutcomeGroupIds,
   onLhsSelectedGroupIdChanged,
-  handleFileDrop
+  handleFileDrop,
+  targetGroupIdsToRefetch,
+  setTargetGroupIdsToRefetch,
+  importsTargetGroup,
+  setImportsTargetGroup
 }) => {
   const {isCourse, isMobileView, canManage} = useCanvasContext()
   const {setContainerRef, setLeftColumnRef, setDelimiterRef, setRightColumnRef, onKeyDownHandler} =
     useResize()
   const [scrollContainer, setScrollContainer] = useState(null)
   const [rhsGroupIdsToRefetch, setRhsGroupIdsToRefetch] = useState([])
+  const [lhsGroupIdsToRefetch, setLhsGroupIdsToRefetch] = useState([])
   const {
     selectedOutcomeIds,
     selectedOutcomesCount,
@@ -81,7 +89,7 @@ const OutcomeManagementPanel = ({
     updateSearch: onSearchChangeHandler,
     clearSearch: onSearchClearHandler,
     clearCache
-  } = useManageOutcomes({collection: 'OutcomeManagementPanel', importNumber})
+  } = useManageOutcomes({collection: 'OutcomeManagementPanel', importNumber, lhsGroupIdsToRefetch})
 
   useEffect(() => {
     return () => {
@@ -93,6 +101,26 @@ const OutcomeManagementPanel = ({
   useEffect(() => {
     setRhsGroupIdsToRefetch(ids => [...new Set([...ids, ...createdOutcomeGroupIds])])
   }, [createdOutcomeGroupIds])
+
+  useEffect(() => {
+    if (targetGroupIdsToRefetch.length > 0) {
+      const groupIdsToRefetch = new Set(
+        targetGroupIdsToRefetch.reduce(
+          (acc, targetGroupId) =>
+            targetGroupId === ROOT_GROUP
+              ? [...acc, rootId]
+              : [...acc, ...getOutcomeGroupAncestorsWithSelf(collections, targetGroupId)],
+          []
+        )
+      )
+      const lhsTargetGroupIdsToRefetch = targetGroupIdsToRefetch.map(gid =>
+        gid === ROOT_GROUP ? rootId : gid
+      )
+      setLhsGroupIdsToRefetch(lhsTargetGroupIdsToRefetch)
+      setRhsGroupIdsToRefetch(ids => [...new Set([...ids, ...groupIdsToRefetch])])
+      setTargetGroupIdsToRefetch([])
+    }
+  }, [targetGroupIdsToRefetch]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const {
     group,
@@ -106,6 +134,8 @@ const OutcomeManagementPanel = ({
     searchString: debouncedSearchString,
     rhsGroupIdsToRefetch
   })
+
+  const {removeOutcomes, removeOutcomesStatus} = useOutcomesRemove()
 
   const selectedOutcomes = readLearningOutcomes(selectedOutcomeIds)
   const [showOutcomesView, setShowOutcomesView] = useState(false)
@@ -169,13 +199,7 @@ const OutcomeManagementPanel = ({
     clearSelectedOutcomes()
   }
 
-  const handleCloseFindOutcomesModal = hasAddedOutcomes => {
-    if (hasAddedOutcomes) {
-      // TODO: refetch the group in LHS and RHS.
-      // For RHS, we need OUT-4634 to set rhsGroupIdsToRefetch variable
-      // For LHS, we need to figure out the correct solution
-      // This will be handled in OUT-4798
-    }
+  const handleCloseFindOutcomesModal = _hasAddedOutcomes => {
     closeFindOutcomesModal()
   }
 
@@ -313,6 +337,7 @@ const OutcomeManagementPanel = ({
               onSearchChangeHandler={onSearchChangeHandler}
               onSearchClearHandler={onSearchClearHandler}
               loadMore={loadMore}
+              removeOutcomesStatus={removeOutcomesStatus}
               scrollContainer={scrollContainer}
               isRootGroup={collections[selectedGroupId]?.isRootGroup}
               hideOutcomesView={hideOutcomesViewHandler}
@@ -419,6 +444,7 @@ const OutcomeManagementPanel = ({
                   key={selectedGroupId}
                   outcomeGroup={group}
                   loading={loading}
+                  removeOutcomesStatus={removeOutcomesStatus}
                   selectedOutcomes={selectedOutcomes}
                   searchString={searchString}
                   onSelectOutcomesHandler={toggleSelectedOutcomes}
@@ -464,6 +490,7 @@ const OutcomeManagementPanel = ({
                 isOpen={isOutcomeRemoveModalOpen}
                 onCloseHandler={onCloseOutcomeRemoveModal}
                 onCleanupHandler={onCloseOutcomeRemoveModal}
+                removeOutcomes={removeOutcomes}
                 onRemoveLearningOutcomesHandler={onRemoveLearningOutcome}
               />
               <OutcomeEditModal
@@ -508,6 +535,9 @@ const OutcomeManagementPanel = ({
             open={isFindOutcomesModalOpen}
             onCloseHandler={handleCloseFindOutcomesModal}
             targetGroup={group}
+            setTargetGroupIdsToRefetch={setTargetGroupIdsToRefetch}
+            importsTargetGroup={importsTargetGroup}
+            setImportsTargetGroup={setImportsTargetGroup}
           />
         </>
       )}
@@ -518,6 +548,7 @@ const OutcomeManagementPanel = ({
             isOpen={isOutcomesRemoveModalOpen}
             onCloseHandler={closeOutcomesRemoveModal}
             onCleanupHandler={onCloseOutcomesRemoveModal}
+            removeOutcomes={removeOutcomes}
             onRemoveLearningOutcomesHandler={removeLearningOutcomes}
           />
           <OutcomeMoveModal
@@ -542,7 +573,11 @@ OutcomeManagementPanel.propTypes = {
   createdOutcomeGroupIds: PropTypes.arrayOf(PropTypes.string),
   onLhsSelectedGroupIdChanged: PropTypes.func,
   importNumber: PropTypes.number,
-  handleFileDrop: PropTypes.func
+  handleFileDrop: PropTypes.func,
+  targetGroupIdsToRefetch: PropTypes.arrayOf(PropTypes.string).isRequired,
+  setTargetGroupIdsToRefetch: PropTypes.func.isRequired,
+  importsTargetGroup: PropTypes.object.isRequired,
+  setImportsTargetGroup: PropTypes.func.isRequired
 }
 
 export default OutcomeManagementPanel

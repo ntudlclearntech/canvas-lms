@@ -31,8 +31,11 @@ class CalendarEvent < ActiveRecord::Base
   include Plannable
 
   include MasterCourses::Restrictor
+
+  self.ignored_columns = %i[series_id]
+
   restrict_columns :content, [:title, :description]
-  restrict_columns :settings, %i[location_name location_address start_at end_at all_day all_day_date series_id rrule]
+  restrict_columns :settings, %i[location_name location_address start_at end_at all_day all_day_date series_uuid rrule]
 
   attr_accessor :cancel_reason, :imported
 
@@ -41,14 +44,15 @@ class CalendarEvent < ActiveRecord::Base
 
   include Workflow
 
-  PERMITTED_ATTRIBUTES = %i[title description start_at end_at location_name
-                            location_address time_zone_edited cancel_reason participants_per_appointment
-                            remove_child_events all_day comments important_dates series_id rrule].freeze
+  PERMITTED_ATTRIBUTES = %i[title description start_at end_at location_name location_address
+                            time_zone_edited cancel_reason participants_per_appointment
+                            remove_child_events all_day comments important_dates series_uuid
+                            rrule blackout_date].freeze
   def self.permitted_attributes
     PERMITTED_ATTRIBUTES
   end
 
-  belongs_to :context, polymorphic: %i[course user group appointment_group course_section],
+  belongs_to :context, polymorphic: %i[course user group appointment_group course_section account],
                        polymorphic_prefix: true
   belongs_to :user
   belongs_to :parent_event, class_name: "CalendarEvent", foreign_key: :parent_calendar_event_id, inverse_of: :child_events
@@ -135,6 +139,14 @@ class CalendarEvent < ActiveRecord::Base
 
   def hidden?
     !appointment_group? && !child_events.empty?
+  end
+
+  def in_a_series?
+    !!series_uuid
+  end
+
+  def series_tail?
+    in_a_series? && !series_head
   end
 
   def effective_context
@@ -225,6 +237,7 @@ class CalendarEvent < ActiveRecord::Base
   scope :for_timetable, -> { where.not(timetable_code: nil) }
 
   scope :with_important_dates, -> { where(important_dates: true) }
+  scope :with_blackout_date, -> { where(blackout_date: true) }
 
   def validate_context!
     @validate_context = true
@@ -449,7 +462,7 @@ class CalendarEvent < ActiveRecord::Base
     dispatch :new_event_created
     to { participants(include_observers: true) - [@updating_user] }
     whenever do
-      !appointment_group && context.available? && just_created && !hidden?
+      !appointment_group && !account && context.available? && just_created && !hidden? && !series_tail?
     end
     data { course_broadcast_data }
 
@@ -457,6 +470,7 @@ class CalendarEvent < ActiveRecord::Base
     to { participants(include_observers: true) - [@updating_user] }
     whenever do
       !appointment_group &&
+        !account &&
         context.available? && (
         changed_in_state(:active, fields: :start_at) ||
         changed_in_state(:active, fields: :end_at)
@@ -545,6 +559,10 @@ class CalendarEvent < ActiveRecord::Base
     elsif context_type == "AppointmentGroup"
       context
     end
+  end
+
+  def account
+    context_type == "Account" ? context : nil
   end
 
   class ReservationError < StandardError; end

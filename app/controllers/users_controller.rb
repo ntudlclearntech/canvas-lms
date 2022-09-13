@@ -415,6 +415,9 @@ class UsersController < ApplicationController
     get_context
     return unless authorized_action(@context, @current_user, :read_roster)
 
+    includes = (params[:include] || []) & %w[avatar_url email last_login time_zone uuid ui_invoked]
+    includes << "last_login" if params[:sort] == "last_login" && !includes.include?("last_login")
+
     search_term = params[:search_term].presence
     if search_term
       users = UserSearch.for_user_in_context(search_term, @context, @current_user, session,
@@ -424,15 +427,22 @@ class UsersController < ApplicationController
                                              })
     else
       users = UserSearch.scope_for(@context, @current_user,
-                                   { order: params[:order], sort: params[:sort], enrollment_role_id: params[:role_filter_id],
-                                     enrollment_type: params[:enrollment_type] })
+                                   {
+                                     order: params[:order], sort: params[:sort], enrollment_role_id: params[:role_filter_id],
+                                     enrollment_type: params[:enrollment_type], ui_invoked: includes.include?("ui_invoked")
+                                   })
       users = users.with_last_login if params[:sort] == "last_login"
     end
 
-    includes = (params[:include] || []) & %w[avatar_url email last_login time_zone uuid]
-    includes << "last_login" if params[:sort] == "last_login" && !includes.include?("last_login")
+    page_opts = { total_entries: nil }
+    if includes.include?("ui_invoked") && Setting.get("ui_invoked_count_pages", "true") == "true"
+      page_opts = {} # let Folio calculate total entries
+      includes.delete("ui_invoked")
+    end
+
     GuardRail.activate(:secondary) do
-      users = Api.paginate(users, self, api_v1_account_users_url, { total_entries: nil })
+      users = Api.paginate(users, self, api_v1_account_users_url, page_opts)
+
       user_json_preloads(users, includes.include?("email"))
       User.preload_last_login(users, @context.resolved_root_account_id) if includes.include?("last_login") && params[:sort] != "last_login"
       render json: users.map { |u| user_json(u, @current_user, session, includes) }
@@ -464,7 +474,6 @@ class UsersController < ApplicationController
       css_bundle :act_as_modal
 
       @page_title = t("Act as %{user_name}", user_name: @user.short_name)
-      @google_analytics_page_title = t("Act as user")
       js_env act_as_user_data: {
         user: {
           name: @user.name,
@@ -1338,7 +1347,6 @@ class UsersController < ApplicationController
       status = @user.deleted? ? 404 : 200
       respond_to do |format|
         format.html do
-          @google_analytics_page_title = "User"
           @body_classes << "full-width"
           js_env(CONTEXT_USER_DISPLAY_NAME: @user.short_name,
                  USER_ID: @user.id)
@@ -1847,6 +1855,8 @@ class UsersController < ApplicationController
       respond_to do |format|
         format.json do
           if user.set_preference(:custom_colors, colors)
+            enrollment_types_tags = user.participating_enrollments.pluck(:type).uniq.map { |type| "enrollment_type:#{type}" }
+            InstStatsd::Statsd.increment("user.set_custom_color", tags: enrollment_types_tags)
             render(json: { hexcode: colors[context.asset_string] })
           else
             render(json: user.errors, status: :bad_request)
@@ -1999,12 +2009,16 @@ class UsersController < ApplicationController
   #   Adding and changing pronouns must be enabled on the root account.
   #
   # @argument user[event] [String, "suspend"|"unsuspend"]
-  #   suspends or unsuspends all logins for this user that the calling user
+  #   Suspends or unsuspends all logins for this user that the calling user
   #   has permission to
+  #
+  # @argument override_sis_stickiness [boolean]
+  #   Default is true. If false, any fields containing “sticky” changes will not be updated.
+  #   See SIS CSV Format documentation for information on which fields can have SIS stickiness
   #
   # @example_request
   #
-  #   curl 'https://<canvas>/api/v1/users/133.json' \
+  #   curl 'https://<canvas>/api/v1/users/133' \
   #        -X PUT \
   #        -F 'user[name]=Sheldon Cooper' \
   #        -F 'user[short_name]=Shelly' \
@@ -2071,6 +2085,11 @@ class UsersController < ApplicationController
     end
 
     managed_attributes << { avatar_image: strong_anything } if managed_attributes.delete(:avatar_image)
+
+    if params[:override_sis_stickiness] && !value_to_boolean(params[:override_sis_stickiness])
+      managed_attributes -= [*@user.stuck_sis_fields]
+    end
+
     user_params = user_params.permit(*managed_attributes)
     new_email = user_params.delete(:email)
     # admins can update avatar images even if they are locked

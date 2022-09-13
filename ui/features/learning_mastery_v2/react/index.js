@@ -16,7 +16,7 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import React from 'react'
+import React, {useEffect, useState} from 'react'
 import PropTypes from 'prop-types'
 import {View} from '@instructure/ui-view'
 import {Spinner} from '@instructure/ui-spinner'
@@ -24,6 +24,8 @@ import {useScope as useI18nScope} from '@canvas/i18n'
 import ProficiencyFilter from './ProficiencyFilter'
 import Gradebook from './Gradebook'
 import useRollups from './hooks/useRollups'
+import GradebookMenu from '@canvas/gradebook-menu/react/gradebook_menu'
+import {Flex} from '@instructure/ui-flex'
 
 const I18n = useI18nScope('LearningMasteryGradebook')
 
@@ -48,15 +50,55 @@ const renderLoader = () => (
 )
 
 const LearningMastery = ({courseId}) => {
-  const {isLoading, students, outcomes, rollups} = useRollups({courseId})
+  const options = ENV.GRADEBOOK_OPTIONS
+  const accountLevelMasteryScalesFF = options.ACCOUNT_LEVEL_MASTERY_SCALES
+
+  const {isLoading, students, outcomes, rollups} = useRollups({
+    courseId,
+    accountLevelMasteryScalesFF
+  })
+  const [visibleRatings, setVisibleRatings] = useState([])
+
+  useEffect(() => {
+    if (accountLevelMasteryScalesFF) {
+      setVisibleRatings([true, true, true, true, true, true])
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <>
-      <ProficiencyFilter ratings={getRatings()} />
+      <View
+        width="100%"
+        display="block"
+        padding="medium small medium small"
+        borderWidth="0 0 small 0"
+        data-testid="lmgb-gradebook-menu"
+      >
+        <GradebookMenu
+          courseUrl={options.context_url}
+          learningMasteryEnabled
+          variant="DefaultGradebookLearningMastery"
+        />
+      </View>
+      {accountLevelMasteryScalesFF && (
+        <Flex.Item as="div" width="100%" padding="small 0 0 0">
+          <ProficiencyFilter
+            ratings={getRatings()}
+            visibleRatings={visibleRatings}
+            setVisibleRatings={setVisibleRatings}
+          />
+        </Flex.Item>
+      )}
       {isLoading ? (
         renderLoader()
       ) : (
-        <Gradebook courseId={courseId} outcomes={outcomes} students={students} rollups={rollups} />
+        <Gradebook
+          courseId={courseId}
+          outcomes={outcomes}
+          students={students}
+          rollups={rollups}
+          visibleRatings={visibleRatings}
+        />
       )}
     </>
   )

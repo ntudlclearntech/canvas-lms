@@ -22,7 +22,7 @@ require_relative "../spec_helper"
 describe CoursePace do
   before :once do
     course_with_student active_all: true
-    @course.update start_at: "2021-09-01", restrict_enrollments_to_course_dates: true, time_zone: "America/Denver"
+    @course.update start_at: "2021-06-30", restrict_enrollments_to_course_dates: true, time_zone: "UTC"
     @course.root_account.enable_feature!(:course_paces)
     @course.enable_course_paces = true
     @course.save!
@@ -30,7 +30,7 @@ describe CoursePace do
     @assignment = @course.assignments.create!
     @course_section = @course.course_sections.first
     @tag = @assignment.context_module_tags.create! context_module: @module, context: @course, tag_type: "context_module"
-    @course_pace = @course.course_paces.create! workflow_state: "active"
+    @course_pace = @course.course_paces.create! workflow_state: "active", published_at: Time.zone.now
     @course_pace_module_item = @course_pace.course_pace_module_items.create! module_item: @tag
     @unpublished_assignment = @course.assignments.create! workflow_state: "unpublished"
     @unpublished_tag = @unpublished_assignment.context_module_tags.create! context_module: @module, context: @course, tag_type: "context_module", workflow_state: "unpublished"
@@ -131,12 +131,34 @@ describe CoursePace do
 
   context "publish" do
     def fancy_midnight_rounded_to_last_second(date)
-      (CanvasTime.fancy_midnight(date.to_datetime).to_time - 1.second).round
+      (CanvasTime.fancy_midnight(date.to_datetime).to_time).in_time_zone("UTC")
     end
 
     before :once do
       @course_pace.update! end_date: "2021-09-30"
       @student_enrollment.update(start_at: @course_pace.start_date)
+    end
+
+    it "respects the course timezone" do
+      @course.update! time_zone: "Abu Dhabi"
+      @course_pace.reload.publish
+      abu_due_at = @course.reload.assignments.last.assignment_overrides.last.due_at
+
+      @course.update! time_zone: "Brasilia"
+      @course_pace.reload.publish
+      br_due_at = @course.reload.assignments.last.assignment_overrides.last.due_at
+
+      @course.update! time_zone: "Mountain Time (US & Canada)"
+      @course_pace.reload.publish
+      mt_due_at = @course.reload.assignments.last.assignment_overrides.last.due_at
+
+      expected_abu_due_at = CanvasTime.fancy_midnight(Date.parse(@course.start_at.to_s).in_time_zone("UTC")) - 4.hours
+      expected_br_due_at  = CanvasTime.fancy_midnight(Date.parse(@course.start_at.to_s).in_time_zone("UTC")) + 3.hours
+
+      # DST, otherwise it'd be +7 (-0700)
+      expected_mt_due_at  = CanvasTime.fancy_midnight(Date.parse(@course.start_at.to_s).in_time_zone("UTC")) + 6.hours
+
+      expect([abu_due_at, br_due_at, mt_due_at]).to eq([expected_abu_due_at, expected_br_due_at, expected_mt_due_at])
     end
 
     it "creates an override for students" do
@@ -153,7 +175,7 @@ describe CoursePace do
       expect(AssignmentOverride.count).to eq(2)
       @course.assignments.each do |assignment|
         assignment_override = assignment.assignment_overrides.first
-        expect(assignment_override.due_at).to eq(fancy_midnight_rounded_to_last_second("2021-09-01"))
+        expect(assignment_override.due_at).to eq(fancy_midnight_rounded_to_last_second(@course.start_at.to_s))
         expect(assignment_override.assignment_override_students.first.user_id).to eq(@student.id)
       end
     end
@@ -205,7 +227,7 @@ describe CoursePace do
       expect(assignment_override.due_at).to eq(fancy_midnight_rounded_to_last_second("2021-09-05"))
       expect(assignment_override.assignment_override_students.pluck(:user_id)).to eq([student2.id])
       assignment_override2 = @assignment.assignment_overrides.second
-      expect(assignment_override2.due_at).to eq(fancy_midnight_rounded_to_last_second("2021-09-01"))
+      expect(assignment_override2.due_at).to eq(fancy_midnight_rounded_to_last_second(@course.start_at.to_s))
       expect(assignment_override2.assignment_override_students.pluck(:user_id)).to eq([@student.id])
     end
 
@@ -215,7 +237,7 @@ describe CoursePace do
         title: "ADHOC Test",
         workflow_state: "active",
         set_type: "ADHOC",
-        due_at: fancy_midnight_rounded_to_last_second("2021-09-01"),
+        due_at: fancy_midnight_rounded_to_last_second(@course.start_at.to_s),
         due_at_overridden: true
       )
       assignment_override.assignment_override_students << AssignmentOverrideStudent.new(user_id: @student, no_enrollment: false)
@@ -234,7 +256,7 @@ describe CoursePace do
       expect(@assignment.assignment_overrides.active.count).to eq(1)
       assignment_override = @assignment.assignment_overrides.active.first
       # We need to round to the last whole second to ensure the due_at is the same
-      expect(assignment_override.due_at).to eq(fancy_midnight_rounded_to_last_second("2021-09-01"))
+      expect(assignment_override.due_at).to eq(fancy_midnight_rounded_to_last_second(@course.start_at.to_s))
       expect(assignment_override.assignment_override_students.pluck(:user_id).sort).to eq([@student.id, student2.id])
     end
 
@@ -244,18 +266,18 @@ describe CoursePace do
       expect(@course_pace.publish).to eq(true)
       expect(@assignment.assignment_overrides.count).to eq(1)
       assignment_override = @assignment.assignment_overrides.first
-      expect(assignment_override.due_at).to eq(fancy_midnight_rounded_to_last_second("2021-09-01"))
+      expect(assignment_override.due_at).to eq(fancy_midnight_rounded_to_last_second(@course.start_at.to_s))
       expect(assignment_override.assignment_override_students.first.user_id).to eq(@student.id)
     end
 
     it "updates overrides that are already present if the days have changed" do
       @course_pace.publish
       assignment_override = @assignment.assignment_overrides.first
-      expect(assignment_override.due_at).to eq(fancy_midnight_rounded_to_last_second("2021-09-01"))
+      expect(assignment_override.due_at).to eq(fancy_midnight_rounded_to_last_second(@course.start_at.to_s))
       @course_pace_module_item.update duration: 2
       @course_pace.publish
       assignment_override.reload
-      expect(assignment_override.due_at).to eq(fancy_midnight_rounded_to_last_second("2021-09-03"))
+      expect(assignment_override.due_at).to eq(fancy_midnight_rounded_to_last_second("2021-07-02"))
     end
 
     it "updates user overrides that are already present if the days have changed" do
@@ -266,7 +288,7 @@ describe CoursePace do
       @course_pace.publish
       expect(@assignment.assignment_overrides.active.count).to eq(1)
       assignment_override = @assignment.assignment_overrides.active.first
-      expect(assignment_override.due_at).to eq(fancy_midnight_rounded_to_last_second("2021-09-03"))
+      expect(assignment_override.due_at).to eq(fancy_midnight_rounded_to_last_second("2021-07-02"))
       expect(assignment_override.assignment_override_students.first.user_id).to eq(@student.id)
     end
 
@@ -278,20 +300,20 @@ describe CoursePace do
       @course_pace.publish
       expect(@assignment.assignment_overrides.active.count).to eq(1)
       assignment_override = @assignment.assignment_overrides.active.first
-      expect(assignment_override.due_at).to eq(fancy_midnight_rounded_to_last_second("2021-09-03"))
+      expect(assignment_override.due_at).to eq(fancy_midnight_rounded_to_last_second("2021-07-02"))
       expect(assignment_override.assignment_override_students.first.user_id).to eq(@student.id)
     end
 
     it "does not change assignment due date when user course pace is published if an assignment override already exists" do
       @course_pace.publish
       assignment_override = @assignment.assignment_overrides.first
-      expect(assignment_override.due_at).to eq(fancy_midnight_rounded_to_last_second("2021-09-01"))
+      expect(assignment_override.due_at).to eq(fancy_midnight_rounded_to_last_second(@course.start_at.to_s))
       expect(@assignment.assignment_overrides.active.count).to eq(1)
 
       student_course_pace = @course.course_paces.create!(user: @student, workflow_state: "active")
       student_course_pace.publish
       assignment_override.reload
-      expect(assignment_override.due_at).to eq(fancy_midnight_rounded_to_last_second("2021-09-01"))
+      expect(assignment_override.due_at).to eq(fancy_midnight_rounded_to_last_second(@course.start_at.to_s))
       expect(@assignment.assignment_overrides.active.count).to eq(1)
     end
 
@@ -308,7 +330,7 @@ describe CoursePace do
       expect(@course_pace.publish).to eq(true)
       expect(@assignment.assignment_overrides.active.count).to eq(1)
       assignment_override = @assignment.assignment_overrides.active.first
-      expect(assignment_override.due_at).to eq(fancy_midnight_rounded_to_last_second("2021-09-01"))
+      expect(assignment_override.due_at).to eq(fancy_midnight_rounded_to_last_second(@course.start_at.to_s))
       # Publish student specific course pace and verify dates have changed
       student_course_pace = @course.course_paces.create! user: @student, workflow_state: "active"
       @course.student_enrollments.find_by(user: @student).update(start_at: "2021-09-06")
@@ -328,7 +350,7 @@ describe CoursePace do
       expect(@course_pace.publish).to eq(true)
       expect(@assignment.assignment_overrides.active.count).to eq(1)
       assignment_override = @assignment.assignment_overrides.active.first
-      expect(assignment_override.due_at).to eq(fancy_midnight_rounded_to_last_second("2021-09-01"))
+      expect(assignment_override.due_at).to eq(fancy_midnight_rounded_to_last_second(@course.start_at.to_s))
       # Publish course section specific course pace and verify dates have changed
       @course_section.update(start_at: Date.parse("2021-09-06").in_time_zone(@course.time_zone), restrict_enrollments_to_section_dates: true)
       section_course_pace = @course.course_paces.create! course_section: @course_section, workflow_state: "active"
@@ -348,7 +370,7 @@ describe CoursePace do
       expect(@course_pace.publish).to eq(true)
       expect(@assignment.assignment_overrides.active.count).to eq(1)
       assignment_override = @assignment.assignment_overrides.active.first
-      expect(assignment_override.due_at).to eq(fancy_midnight_rounded_to_last_second("2021-09-01"))
+      expect(assignment_override.due_at).to eq(fancy_midnight_rounded_to_last_second(@course.start_at.to_s))
       # Publish student specific course pace and verify dates have changed
       @course.student_enrollments.find_by(user: @student).update(start_at: "2021-09-06")
       student_course_pace = @course.course_paces.create! user: @student, workflow_state: "active"
@@ -361,6 +383,13 @@ describe CoursePace do
       expect(@course_pace.publish).to eq(true)
       assignment_override.reload
       expect(assignment_override.due_at).to eq(fancy_midnight_rounded_to_last_second("2021-09-06"))
+    end
+
+    it "logs if the assignment being updated has been completed" do
+      @assignment.submit_homework(@student, body: "Test")
+      allow(InstStatsd::Statsd).to receive(:increment).and_call_original
+      expect(@course_pace.publish).to eq(true)
+      expect(InstStatsd::Statsd).to have_received(:increment).with("course_pacing.submitted_assignment_date_change")
     end
   end
 
@@ -484,6 +513,158 @@ describe CoursePace do
       result = @course_pace.effective_end_date(with_context: true)
       expect(result[:end_date]).to be_nil
       expect(result[:end_date_context]).to eq("hypothetical")
+    end
+  end
+
+  context "course pace creates" do
+    before :once do
+      course_with_student active_all: true
+      @course.root_account.enable_feature!(:course_paces)
+      @course.enable_course_paces = true
+      @course.save!
+      @module = @course.context_modules.create!
+      @assignment = @course.assignments.create!
+      @tag = @assignment.context_module_tags.create! context_module: @module, context: @course, tag_type: "context_module"
+    end
+
+    it "writes the number of course-type course paces to statsd" do
+      allow(InstStatsd::Statsd).to receive(:increment).and_call_original
+      @course_pace = @course.course_paces.create! workflow_state: "active"
+      expect(InstStatsd::Statsd).to have_received(:increment).with("course_pacing.course_paces.count").once
+    end
+
+    it "writes the number of section-type course paces to statsd" do
+      allow(InstStatsd::Statsd).to receive(:increment).and_call_original
+      @new_section = @course.course_sections.create! name: "new_section"
+      @section_plan = @course.course_paces.create! course_section: @new_section
+      expect(InstStatsd::Statsd).to have_received(:increment).with("course_pacing.section_paces.count").once
+    end
+
+    it "writes the number of user-type course paces to statsd" do
+      allow(InstStatsd::Statsd).to receive(:increment).and_call_original
+      @course.course_paces.create!(user: @student, workflow_state: "active")
+      expect(InstStatsd::Statsd).to have_received(:increment).with("course_pacing.user_paces.count").once
+    end
+  end
+
+  context "course pace publish logs statsd for various values" do
+    before :once do
+      course_with_student active_all: true
+      @course.root_account.enable_feature!(:course_paces)
+      @course.enable_course_paces = true
+      @course.save!
+      @module = @course.context_modules.create!
+      @assignment = @course.assignments.create!
+      @tag = @assignment.context_module_tags.create! context_module: @module, context: @course, tag_type: "context_module"
+    end
+
+    it "increments on initial publish when exclude_weekends set to true" do
+      allow(InstStatsd::Statsd).to receive(:increment)
+
+      @course_pace = @course.course_paces.create!(workflow_state: "active")
+
+      expect(InstStatsd::Statsd).to have_received(:increment).with("course_pacing.weekends_excluded")
+    end
+
+    it "does not decrement on initial publish when exclude_weekends set to false" do
+      allow(InstStatsd::Statsd).to receive(:decrement)
+
+      @course_pace = @course.course_paces.create!(workflow_state: "active", exclude_weekends: false)
+
+      expect(InstStatsd::Statsd).not_to have_received(:decrement).with("course_pacing.weekends_excluded")
+    end
+
+    it "increments on subsequent publish when exclude_weekends initially false then set to true" do
+      allow(InstStatsd::Statsd).to receive(:increment)
+      allow(InstStatsd::Statsd).to receive(:decrement)
+
+      @course_pace = @course.course_paces.create!(workflow_state: "active", exclude_weekends: false)
+      @course_pace.update!(exclude_weekends: true)
+      @course_pace.publish
+
+      expect(InstStatsd::Statsd).not_to have_received(:decrement).with("course_pacing.weekends_excluded")
+      expect(InstStatsd::Statsd).to have_received(:increment).with("course_pacing.weekends_excluded")
+    end
+
+    it "decrements on subsequent publish when exclude_weekends initially true then set to false" do
+      allow(InstStatsd::Statsd).to receive(:increment)
+      allow(InstStatsd::Statsd).to receive(:decrement)
+
+      @course_pace = @course.course_paces.create!(workflow_state: "active")
+      @course_pace.update!(exclude_weekends: false)
+      @course_pace.publish
+
+      expect(InstStatsd::Statsd).to have_received(:increment).with("course_pacing.weekends_excluded")
+      expect(InstStatsd::Statsd).to have_received(:decrement).with("course_pacing.weekends_excluded")
+    end
+
+    it "logs the average module item duration as a count" do
+      allow(InstStatsd::Statsd).to receive(:count)
+
+      course_pace = @course.course_paces.create!(workflow_state: "active")
+      course_pace_module_item = course_pace.course_pace_module_items.create! module_item: @tag
+      course_pace_module_item.update duration: 2
+      course_pace.publish
+
+      expect(InstStatsd::Statsd).to have_received(:count).with("course_pacing.average_assignment_duration", 2)
+    end
+
+    it "logs updated average module item duration as a count when new assignment added" do
+      allow(InstStatsd::Statsd).to receive(:count)
+
+      course_pace = @course.course_paces.create!(workflow_state: "active")
+      course_pace_module_item = course_pace.course_pace_module_items.create! module_item: @tag
+      course_pace_module_item.update duration: 2
+      course_pace.publish
+
+      assignment = @course.assignments.create!
+      new_tag = assignment.context_module_tags.create! context_module: @module, context: @course, tag_type: "context_module"
+
+      new_course_pace_module_item = course_pace.course_pace_module_items.create! module_item: new_tag
+      new_course_pace_module_item.update duration: 4
+      course_pace.publish
+
+      expect(InstStatsd::Statsd).to have_received(:count).with("course_pacing.average_assignment_duration", 3)
+    end
+
+    it "doesn't log when no context modules exist" do
+      allow(InstStatsd::Statsd).to receive(:count)
+
+      course_pace = @course.course_paces.create!(workflow_state: "active")
+      course_pace.publish
+
+      expect(InstStatsd::Statsd).not_to have_received(:count).with("course_pacing.average_assignment_duration", 0)
+    end
+
+    it "logs when no context modules item duration is o" do
+      allow(InstStatsd::Statsd).to receive(:count)
+
+      course_pace = @course.course_paces.create!(workflow_state: "active")
+      course_pace_module_item = course_pace.course_pace_module_items.create! module_item: @tag
+      course_pace_module_item.update duration: 0
+      course_pace.publish
+
+      expect(InstStatsd::Statsd).to have_received(:count).with("course_pacing.average_assignment_duration", 0)
+    end
+  end
+
+  describe "log_module_items_count" do
+    before do
+      rubric = @course.rubrics.create!(title: "rubric")
+      @course.context_module_tags.create!(content: rubric, context_module: @module, context: @course, workflow_state: "active")
+      allow(InstStatsd::Statsd).to receive(:count)
+    end
+
+    it "logs the number of module items to statsd" do
+      @course_pace.log_module_items_count
+      expect(InstStatsd::Statsd).to have_received(:count).with("course.paced.paced_module_item_count", 1)
+      expect(InstStatsd::Statsd).to have_received(:count).with("course.paced.all_module_item_count", 2)
+    end
+
+    it "logs during #publish" do
+      @course_pace.publish
+      expect(InstStatsd::Statsd).to have_received(:count).with("course.paced.paced_module_item_count", 1)
+      expect(InstStatsd::Statsd).to have_received(:count).with("course.paced.all_module_item_count", 2)
     end
   end
 end

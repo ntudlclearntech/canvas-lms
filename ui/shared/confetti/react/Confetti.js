@@ -17,15 +17,58 @@
  */
 
 import React from 'react'
-import ConfettiGenerator from 'confetti-js'
+import ConfettiGenerator from '../javascript/ConfettiGenerator'
 import getRandomConfettiFlavor from './confettiFlavor'
 import {showFlashAlert} from '@canvas/alerts/react/FlashAlert'
 import {useScope as useI18nScope} from '@canvas/i18n'
+import hex2Rgb from '@canvas/util/hex2rgb'
 
 const I18n = useI18nScope('confetti')
 
-export default function Confetti() {
+const getBrandingColors = () => {
+  if (window.ENV.confetti_branding_enabled && window.ENV.active_brand_config) {
+    const colorVars = window.ENV.active_brand_config.variables
+    const primaryBrand = colorVars['ic-brand-primary']
+    const secondaryBrand = colorVars['ic-brand-global-nav-bgd']
+    const colors = []
+    if (primaryBrand) colors.push(Object.values(hex2Rgb(primaryBrand)))
+    if (secondaryBrand) colors.push(Object.values(hex2Rgb(secondaryBrand)))
+    if (colors.length > 0) {
+      return {
+        colors
+      }
+    }
+  }
+  return {}
+}
+
+const getProps = () => {
+  const props = ['square', getRandomConfettiFlavor()]
+  if (window.ENV.confetti_branding_enabled && window.ENV.active_brand_config) {
+    const variables = window.ENV.active_brand_config.variables
+    const logoUrl = variables['ic-brand-header-image']
+    if (logoUrl) {
+      props.push({
+        key: 'logo',
+        type: 'image',
+        src: logoUrl,
+        weight: 0.05,
+        size: 40
+      })
+    }
+  }
+  return props.filter(p => p !== null)
+}
+
+export default function Confetti({triggerCount}) {
   const [visible, setVisible] = React.useState(true)
+  React.useEffect(() => {
+    if (!visible) {
+      setVisible(true)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [triggerCount])
+
   React.useEffect(() => {
     if (window.ENV.disable_celebrations || !visible) {
       return
@@ -47,11 +90,8 @@ export default function Confetti() {
     }
 
     confetti = new ConfettiGenerator({
-      target: 'confetti-canvas',
-      max: 160,
-      clock: 50,
-      respawn: false,
-      props: ['square', getRandomConfettiFlavor()].filter(p => p !== null)
+      props: getProps(),
+      ...getBrandingColors()
     })
 
     clearConfettiOnSpaceOrEscape = event => {

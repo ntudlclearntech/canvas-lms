@@ -17,6 +17,7 @@
  */
 
 import {splitTextIntoLines, convertFileToBase64, decode} from '../utils'
+import {MAX_TOTAL_TEXT_CHARS} from '../constants'
 
 describe('splitTextIntoLines()', () => {
   it('returns empty list if text is empty', () => {
@@ -55,13 +56,26 @@ describe('splitTextIntoLines()', () => {
       'word!'
     ])
   })
+
+  it('does not count beginning or trailing whitespace when computing lines', () => {
+    const text = ' some text         '
+    const expectedLinesCount = 1
+    const lines = splitTextIntoLines(text, MAX_TOTAL_TEXT_CHARS)
+    expect(lines.length).toBe(expectedLinesCount)
+  })
+
+  it('returns empty array when text is whitespace only', () => {
+    const text = ''
+    const lines = splitTextIntoLines(text, MAX_TOTAL_TEXT_CHARS)
+    expect(lines).toStrictEqual([])
+  })
 })
 
 describe('convertFileToBase64()', () => {
   it('executes readAsDataURL with correct arguments', async () => {
     const blob = new Blob()
     const readAsDataURLSpy = jest.spyOn(FileReader.prototype, 'readAsDataURL')
-    expect(await convertFileToBase64(blob)).toEqual('data:;base64,')
+    expect(await convertFileToBase64(blob)).toEqual('data:application/octet-stream;base64,')
     expect(readAsDataURLSpy).toHaveBeenCalledWith(blob)
   })
 })

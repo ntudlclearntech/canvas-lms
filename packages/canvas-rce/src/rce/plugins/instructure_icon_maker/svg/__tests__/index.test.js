@@ -18,7 +18,12 @@
  */
 
 import {buildGroup, buildSvg, buildSvgWrapper, buildStylesheet} from '../index'
-import {DEFAULT_OPTIONS, DEFAULT_SETTINGS} from '../constants'
+import {DEFAULT_SETTINGS} from '../constants'
+import base64EncodedFont from '../font'
+
+// The real font is massive so lets avoid it in snapshots
+jest.mock('../../svg/font')
+base64EncodedFont.mockReturnValue('data:;base64,')
 
 let settings, options
 
@@ -32,20 +37,20 @@ describe('buildSvg()', () => {
       outlineColor: '#fff',
       outlineSize: 'large'
     }
-    options = {...DEFAULT_OPTIONS}
+    options = {}
   })
 
   it('builds the icon svg', () => {
     expect(buildSvg(settings)).toMatchInlineSnapshot(`
       <svg
         fill="none"
-        height="244px"
-        viewBox="0 0 218 244"
+        height="218px"
+        viewBox="0 0 218 218"
         width="218px"
         xmlns="http://www.w3.org/2000/svg"
       >
         <metadata>
-          {"type":"image/svg+xml-icon-maker-icons","alt":"","shape":"circle","size":"large","color":"#000","outlineColor":"#fff","outlineSize":"large","text":"","textSize":"small","textColor":"#000000","textBackgroundColor":null,"textPosition":"below","encodedImage":"","encodedImageType":"","encodedImageName":"","x":0,"y":0,"translateX":0,"translateY":0,"width":0,"height":0,"transform":"","imageSettings":null}
+          {"type":"image/svg+xml-icon-maker-icons","shape":"circle","size":"large","color":"#000","outlineColor":"#fff","outlineSize":"large","text":"","textSize":"small","textColor":"#000000","textBackgroundColor":null,"textPosition":"below","encodedImage":"","encodedImageType":"","encodedImageName":"","x":0,"y":0,"translateX":0,"translateY":0,"width":0,"height":0,"transform":"","imageSettings":null}
         </metadata>
         <svg
           fill="none"
@@ -85,8 +90,9 @@ describe('buildSvg()', () => {
     expect(buildSvg(settings, options)).toMatchInlineSnapshot(`
       <svg
         fill="none"
-        height="244px"
-        viewBox="0 0 218 244"
+        height="218px"
+        style="padding: 16px"
+        viewBox="0 0 218 218"
         width="218px"
         xmlns="http://www.w3.org/2000/svg"
       >
@@ -97,31 +103,8 @@ describe('buildSvg()', () => {
           width="218px"
           x="0"
         >
-          <pattern
-            height="16"
-            id="checkerboard"
-            patternUnits="userSpaceOnUse"
-            width="16"
-            x="0"
-            y="0"
-          >
-            <rect
-              fill="#d9d9d9"
-              height="8"
-              width="8"
-              x="0"
-              y="0"
-            />
-            <rect
-              fill="#d9d9d9"
-              height="8"
-              width="8"
-              x="8"
-              y="8"
-            />
-          </pattern>
           <g
-            fill="url(#checkerboard)"
+            fill="none"
             stroke="#fff"
             stroke-width="8"
           >
@@ -150,13 +133,13 @@ describe('buildSvg()', () => {
     expect(buildSvg(settings)).toMatchInlineSnapshot(`
       <svg
         fill="none"
-        height="258px"
-        viewBox="0 0 218 258"
+        height="248px"
+        viewBox="0 0 218 248"
         width="218px"
         xmlns="http://www.w3.org/2000/svg"
       >
         <metadata>
-          {"type":"image/svg+xml-icon-maker-icons","alt":"","shape":"circle","size":"large","color":"#000","outlineColor":"#fff","outlineSize":"large","text":"Hello World!","textSize":"small","textColor":"#000000","textBackgroundColor":null,"textPosition":"below","encodedImage":"","encodedImageType":"","encodedImageName":"","x":0,"y":0,"translateX":0,"translateY":0,"width":0,"height":0,"transform":"","imageSettings":null}
+          {"type":"image/svg+xml-icon-maker-icons","shape":"circle","size":"large","color":"#000","outlineColor":"#fff","outlineSize":"large","text":"Hello World!","textSize":"small","textColor":"#000000","textBackgroundColor":null,"textPosition":"below","encodedImage":"","encodedImageType":"","encodedImageName":"","x":0,"y":0,"translateX":0,"translateY":0,"width":0,"height":0,"transform":"","imageSettings":null}
         </metadata>
         <svg
           fill="none"
@@ -187,7 +170,7 @@ describe('buildSvg()', () => {
           </g>
         </svg>
         <path
-          d="M103,224 h14 a4,4 0 0 1 4,4 v16 a4,4 0 0 1 -4,4 h-14 a4,4 0 0 1 -4,-4 v-16 a4,4 0 0 1 4,-4 z"
+          d="M103,223 h14 a4,4 0 0 1 4,4 v16 a4,4 0 0 1 -4,4 h-14 a4,4 0 0 1 -4,-4 v-16 a4,4 0 0 1 4,-4 z"
           fill=""
         />
         <text
@@ -295,7 +278,7 @@ describe('buildGroup()', () => {
     options = {...options, isPreview: true}
     expect(buildGroup(settings, options)).toMatchInlineSnapshot(`
       <g
-        fill="url(#checkerboard)"
+        fill="none"
         stroke="#0f0"
         stroke-width="2"
       />
@@ -359,14 +342,8 @@ describe('buildGroup()', () => {
 })
 
 describe('buildStylesheet()', () => {
-  it('builds the <style /> element', async () => {
-    global.fetch = jest.fn(() =>
-      Promise.resolve({
-        blob: () => Promise.resolve(new Blob())
-      })
-    )
-
-    expect(await buildStylesheet()).toMatchInlineSnapshot(`
+  it('builds the <style /> element', () => {
+    expect(buildStylesheet()).toMatchInlineSnapshot(`
       <style
         type="text/css"
       >

@@ -628,6 +628,7 @@ CanvasRails::Application.routes.draw do
         delete :remove_role
       end
     end
+    get "calendar_settings", action: :account_calendar_settings, as: :calendar_settings
 
     scope(controller: :brand_configs) do
       get "theme_editor", action: :new, as: :theme_editor
@@ -647,6 +648,7 @@ CanvasRails::Application.routes.draw do
 
     resources :terms, except: %i[show new edit]
     resources :sub_accounts
+    resources :calendar_events
 
     get :avatars
     get :sis_import
@@ -1052,6 +1054,15 @@ CanvasRails::Application.routes.draw do
       get "courses/:course_id/student_view_student", action: :student_view_student
     end
 
+    scope(controller: :account_calendars_api) do
+      get "account_calendars", action: :index, as: :account_calendars
+      get "account_calendars/:account_id", action: :show, as: :account_calendar
+      put "account_calendars/:account_id", action: :update, as: :update_account_calendar
+      put "accounts/:account_id/account_calendars", action: :bulk_update, as: :bulk_update_account_calendars
+      get "accounts/:account_id/account_calendars", action: :all_calendars, as: :all_account_calendars
+      get "accounts/:account_id/visible_calendars_count", action: :visible_calendars_count, as: :visible_calendars_count
+    end
+
     scope(controller: :account_notifications) do
       post "accounts/:account_id/account_notifications", action: :create, as: "account_notification"
       put "accounts/:account_id/account_notifications/:id", action: :update, as: "account_notification_update"
@@ -1216,8 +1227,10 @@ CanvasRails::Application.routes.draw do
         delete "#{context.pluralize}/:#{context}_id/assignments/:assignment_id/submissions/:user_id/read", action: :mark_submission_unread, as: "#{context}_submission_mark_unread"
         get "#{context.pluralize}/:#{context}_id/assignments/:assignment_id/submissions/:user_id/document_annotations/read", action: :document_annotations_read_state, as: "#{path_prefix}_submission_document_annotations_read_state"
         put "#{context.pluralize}/:#{context}_id/assignments/:assignment_id/submissions/:user_id/document_annotations/read", action: :mark_document_annotations_read, as: "#{path_prefix}_submission_document_annotations_mark_read"
-        get "#{context.pluralize}/:#{context}_id/assignments/:assignment_id/submissions/:user_id/rubric_comments/read", action: :rubric_comments_read_state, as: "#{path_prefix}_submission_rubric_comments_read_state"
-        put "#{context.pluralize}/:#{context}_id/assignments/:assignment_id/submissions/:user_id/rubric_comments/read", action: :mark_rubric_comments_read, as: "#{path_prefix}_submission_rubric_comments_mark_read"
+        get "#{context.pluralize}/:#{context}_id/assignments/:assignment_id/submissions/:user_id/rubric_comments/read", action: :rubric_assessments_read_state, as: "#{path_prefix}_submission_rubric_comments_read_state"
+        put "#{context.pluralize}/:#{context}_id/assignments/:assignment_id/submissions/:user_id/rubric_comments/read", action: :mark_rubric_assessments_read, as: "#{path_prefix}_submission_rubric_comments_mark_read"
+        get "#{context.pluralize}/:#{context}_id/assignments/:assignment_id/submissions/:user_id/rubric_assessments/read", action: :rubric_assessments_read_state, as: "#{path_prefix}_submission_rubric_assessments_read_state"
+        put "#{context.pluralize}/:#{context}_id/assignments/:assignment_id/submissions/:user_id/rubric_assessments/read", action: :mark_rubric_assessments_read, as: "#{path_prefix}_submission_rubric_assessments_mark_read"
         get "#{context.pluralize}/:#{context}_id/assignments/:assignment_id/submissions", action: :index, as: "#{path_prefix}_assignment_submissions"
         get "#{context.pluralize}/:#{context}_id/students/submissions", controller: :submissions_api, action: :for_students, as: "#{path_prefix}_student_submissions"
         get "#{context.pluralize}/:#{context}_id/assignments/:assignment_id/submissions/:user_id", action: :show, as: "#{path_prefix}_assignment_submission"
@@ -1665,6 +1678,7 @@ CanvasRails::Application.routes.draw do
       post "calendar_events/:id/reservations/:participant_id", action: :reserve, as: "calendar_event_reserve"
       get "calendar_events/:id/participants", action: :participants, as: "calendar_event_participants"
       post "calendar_events/save_selected_contexts", action: :save_selected_contexts
+      post "calendar_events/save_enabled_account_calendars", action: :save_enabled_account_calendars
 
       get "courses/:course_id/calendar_events/timetable", action: :get_course_timetable
       post "courses/:course_id/calendar_events/timetable", action: :set_course_timetable
@@ -1716,7 +1730,6 @@ CanvasRails::Application.routes.draw do
 
     scope(controller: :developer_key_account_bindings) do
       post "accounts/:account_id/developer_keys/:developer_key_id/developer_key_account_bindings", action: :create_or_update
-      get "accounts/:account_id/developer_key_account_bindings", action: :index
     end
 
     scope(controller: :developer_keys) do

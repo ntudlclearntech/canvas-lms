@@ -39,6 +39,7 @@ export type ActionMenuProps = {
   gradebookIsEditable: boolean
   contextAllowsGradebookUploads: boolean
   getAssignmentOrder: any
+  getStudentOrder: any
   gradebookImportUrl: string
   showStudentFirstLastName: boolean
   lastExport?: {
@@ -57,6 +58,7 @@ export type ActionMenuProps = {
     id: string
     downloadUrl: string
     updatedAt: string
+    createdAt: string
   }
   postGradesLtis: {
     id: string
@@ -129,7 +131,7 @@ class ActionMenu extends React.Component<ActionMenuProps, ActionMenuState> {
     this.setState({exportInProgress: !!status})
   }
 
-  handleExport() {
+  handleExport(currentView) {
     this.setExportInProgress(true)
     $.flashMessage(I18n.t('Gradebook export started'))
 
@@ -137,7 +139,9 @@ class ActionMenu extends React.Component<ActionMenuProps, ActionMenuState> {
       ?.startExport(
         this.props.gradingPeriodId,
         this.props.getAssignmentOrder,
-        this.props.showStudentFirstLastName
+        this.props.showStudentFirstLastName,
+        this.props.getStudentOrder,
+        currentView
       )
       .then(resolution => {
         this.setExportInProgress(false)
@@ -206,13 +210,10 @@ class ActionMenu extends React.Component<ActionMenuProps, ActionMenuState> {
 
     if (!completedLastExport || !attachment) return undefined
 
-    const updatedAt = tz.parse(attachment.updatedAt)
+    const createdAt = tz.parse(attachment.createdAt)
 
     return {
-      label: `${I18n.t(
-        'Custom.previous_export',
-        'Previous Export'
-      )} (${DateHelper.formatDatetimeForDisplay(updatedAt)})`,
+      label: `${I18n.t('Previous Export')} (${DateHelper.formatDatetimeForDisplay(createdAt)})`,
       attachmentUrl: attachment.downloadUrl
     }
   }
@@ -337,11 +338,26 @@ class ActionMenu extends React.Component<ActionMenuProps, ActionMenuState> {
         <MenuItem
           disabled={this.exportInProgress()}
           onSelect={() => {
-            this.handleExport()
+            this.handleExport(true)
           }}
         >
           <span data-menu-id="export">
-            {this.exportInProgress() ? I18n.t('Export in progress') : I18n.t('Export CSV')}
+            {this.exportInProgress()
+              ? I18n.t('Export in progress')
+              : I18n.t('Export Current Gradebook View')}
+          </span>
+        </MenuItem>
+
+        <MenuItem
+          disabled={this.exportInProgress()}
+          onSelect={() => {
+            this.handleExport(false)
+          }}
+        >
+          <span data-menu-id="export-all">
+            {this.exportInProgress()
+              ? I18n.t('Export in progress')
+              : I18n.t('Export Entire Gradebook')}
           </span>
         </MenuItem>
 
