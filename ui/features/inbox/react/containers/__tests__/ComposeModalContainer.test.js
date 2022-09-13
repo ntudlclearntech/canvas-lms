@@ -288,6 +288,42 @@ describe('ComposeModalContainer', () => {
       await waitFor(() => expect(mockedSetOnSuccess).toHaveBeenCalled())
     })
 
+    it('displays specific error message for reply errors', async () => {
+      const mockedSetOnSuccess = jest.fn().mockResolvedValue({})
+
+      const mockConversationWithError = {
+        _id: '3',
+        messages: [
+          {
+            author: {
+              _id: '1337'
+            }
+          }
+        ]
+      }
+
+      const component = setup({
+        setOnSuccess: mockedSetOnSuccess,
+        isReply: true,
+        conversation: mockConversationWithError
+      })
+
+      // Set body
+      const bodyInput = await component.findByTestId('message-body')
+      fireEvent.change(bodyInput, {target: {value: 'Potato'}})
+
+      // Hit send
+      const button = component.getByTestId('send-button')
+      fireEvent.click(button)
+      await waitFor(() =>
+        expect(
+          component.queryByText(
+            'The following recipients have no active enrollment in the course, ["Student 2"], unable to send messages'
+          )
+        ).toBeInTheDocument()
+      )
+    })
+
     describe('Submission Comments', () => {
       const mockSubmission = {
         _id: '1',
@@ -347,6 +383,39 @@ describe('ComposeModalContainer', () => {
         fireEvent.click(button)
 
         await waitFor(() => expect(mockedSetOnSuccess).toHaveBeenCalled())
+      })
+
+      it('does not display success message when submission reply has errors', async () => {
+        const SUBMISSION_ID_THAT_RETURNS_ERROR = '440'
+        const mockErrorSubmission = {
+          _id: SUBMISSION_ID_THAT_RETURNS_ERROR,
+          subject: 'submission1 - course',
+          messages: [
+            {
+              author: {
+                _id: '1337'
+              }
+            }
+          ]
+        }
+        const mockedSetOnSuccess = jest.fn().mockResolvedValue({})
+
+        const component = setup({
+          setOnSuccess: mockedSetOnSuccess,
+          isReply: true,
+          conversation: mockErrorSubmission,
+          isSubmissionCommentsType: true
+        })
+
+        // Set body
+        const bodyInput = await component.findByTestId('message-body')
+        fireEvent.change(bodyInput, {target: {value: 'Potato'}})
+
+        // Hit send
+        const button = component.getByTestId('send-button')
+        fireEvent.click(button)
+
+        await waitFor(() => expect(mockedSetOnSuccess).not.toHaveBeenCalled())
       })
     })
   })
@@ -489,7 +558,7 @@ describe('ComposeModalContainer', () => {
     const button = component.getByTestId('send-button')
     fireEvent.click(button)
 
-    expect(component.findByText('You must choose a recipient')).toBeTruthy()
+    expect(component.findByText('Please select a recipient.')).toBeTruthy()
 
     // Write something...
     fireEvent.change(component.getByTestId('address-book-input'), {target: {value: 'potato'}})
@@ -497,7 +566,7 @@ describe('ComposeModalContainer', () => {
     // Hit send
     fireEvent.click(button)
 
-    expect(component.findByText('Invalid recipient')).toBeTruthy()
+    expect(component.findByText('No matches found. Please insert a valid recipient.')).toBeTruthy()
   })
 
   it('validates course', async () => {

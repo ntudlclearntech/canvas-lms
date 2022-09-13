@@ -26,7 +26,8 @@ class CalendarsController < ApplicationController
 
   def show
     get_context
-    get_all_pertinent_contexts(include_groups: true, favorites_first: true, cross_shard: true)
+    @account_calendar_events_enabled = Account.site_admin.feature_enabled?(:account_calendar_events)
+    get_all_pertinent_contexts(include_groups: true, include_accounts: @account_calendar_events_enabled, favorites_first: true, cross_shard: true)
     @manage_contexts = @contexts.select do |c|
       c.grants_right?(@current_user, session, :manage_calendar)
     end.map(&:asset_string)
@@ -37,6 +38,7 @@ class CalendarsController < ApplicationController
                            @current_user.get_preference(:selected_calendar_contexts)
                          end
     @inline_titles = @domain_root_account&.feature_enabled?(:wrap_calendar_event_titles)
+    @account_calendar_events_seen = @current_user.get_preference(:account_calendar_events_seen)
     # somewhere there's a bad link that doesn't separate parameters properly.
     # make sure we don't do a find on a non-numeric id.
     if params[:event_id] && params[:event_id] =~ Api::ID_REGEX && (event = CalendarEvent.where(id: params[:event_id]).first) && event.start_at
@@ -52,7 +54,8 @@ class CalendarsController < ApplicationController
           ag_permission = { all_sections: true }
         else
           section_ids = if Account.site_admin.feature_enabled?(:section_level_calendar_permissions)
-                          CourseSection.find(context.section_visibilities_for(@current_user).pluck(:course_section_id)).select { |cs| cs.grants_right?(@current_user, session, :manage_calendar) }.pluck(:id)
+                          all_course_sections = CourseSection.find(context.section_visibilities_for(@current_user).pluck(:course_section_id).map { |cs_id| Shard.global_id_for(cs_id, context.shard) })
+                          all_course_sections.select { |cs| cs.grants_right?(@current_user, session, :manage_calendar) }.pluck(:id)
                         else
                           context.section_visibilities_for(@current_user).pluck(:course_section_id)
                         end
@@ -63,6 +66,7 @@ class CalendarsController < ApplicationController
         name: context.nickname_for(@current_user),
         asset_string: context.asset_string,
         id: context.id,
+        type: context.class.to_s.downcase,
         url: named_context_url(context, :context_url),
         create_calendar_event_url: context.respond_to?("calendar_events") ? named_context_url(context, :context_calendar_events_url) : "",
         create_assignment_url: context.respond_to?("assignments") ? named_context_url(context, :api_v1_context_assignments_url) : "",
@@ -84,7 +88,8 @@ class CalendarsController < ApplicationController
         concluded: (context.is_a? Course) ? context.concluded? : false,
         k5_course: context.is_a?(Course) && context.elementary_enabled?,
         course_pacing_enabled: context.is_a?(Course) && @domain_root_account.feature_enabled?(:course_paces) && context.enable_course_paces,
-        user_is_observer: context.is_a?(Course) && context.enrollments.where(user_id: @current_user).first&.observer?
+        user_is_observer: context.is_a?(Course) && context.enrollments.where(user_id: @current_user).first&.observer?,
+        default_due_time: context.is_a?(Course) && context.default_due_time,
       }
       if context.respond_to?("course_sections")
         info[:course_sections] = context.course_sections.active.pluck(:id, :name).map do |id, name|
@@ -121,5 +126,8 @@ class CalendarsController < ApplicationController
 
     calendar_contexts = (@contexts + [@domain_root_account]).uniq
     add_conference_types_to_js_env(calendar_contexts)
+
+    enrollment_types_tags = @current_user.participating_enrollments.pluck(:type).uniq.map { |type| "enrollment_type:#{type}" }
+    InstStatsd::Statsd.increment("calendar.visit", tags: enrollment_types_tags)
   end
 end

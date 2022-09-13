@@ -49,6 +49,18 @@ describe Types::SubmissionType do
     end
   end
 
+  describe "read state" do
+    it "returns unread when user has not read the submission" do
+      @submission.change_read_state("unread", @teacher)
+      expect(submission_type.resolve("readState")).to eq "unread"
+    end
+
+    it "returns read when user has read the submission" do
+      @submission.change_read_state("read", @teacher)
+      expect(submission_type.resolve("readState")).to eq "read"
+    end
+  end
+
   describe "posted_at" do
     it "returns the posted_at of the submission" do
       now = Time.zone.now.change(usec: 0)
@@ -530,15 +542,15 @@ describe Types::SubmissionType do
   end
 
   describe "turnitin_data" do
-    tii_data = {
-      similarity_score: 10,
-      state: "acceptable",
-      report_url: "http://example.com",
-      status: "scored"
-    }
-
     before(:once) do
-      @submission.turnitin_data[@submission.asset_string] = tii_data
+      @tii_data = {
+        similarity_score: 10,
+        state: "acceptable",
+        report_url: "http://example.com",
+        status: "scored"
+      }
+
+      @submission.turnitin_data[@submission.asset_string] = @tii_data
       @submission.turnitin_data[:last_processed_attempt] = 1
       @submission.save!
     end
@@ -549,10 +561,16 @@ describe Types::SubmissionType do
       ).to eq [@submission.id.to_s]
       expect(
         submission_type.resolve("turnitinData { status }")
-      ).to eq [tii_data[:status]]
+      ).to eq [@tii_data[:status]]
       expect(
         submission_type.resolve("turnitinData { score }")
-      ).to eq [tii_data[:similarity_score]]
+      ).to eq [@tii_data[:similarity_score]]
+      expect(
+        submission_type.resolve("turnitinData { state }")
+      ).to eq [@tii_data[:state]]
+      expect(
+        submission_type.resolve("turnitinData { reportUrl }")
+      ).to eq [@tii_data[:report_url]]
     end
   end
 
@@ -565,6 +583,22 @@ describe Types::SubmissionType do
       expect(
         submission_type.resolve("submissionType")
       ).to eq "online_text_entry"
+    end
+  end
+
+  describe "assignedAssessments" do
+    before(:once) do
+      @assignment.update_attribute(:peer_reviews, true)
+      reviewee = User.create!
+      @course.enroll_user(reviewee, "StudentEnrollment", enrollment_state: "active")
+      @assignment.assign_peer_review(@student, reviewee)
+    end
+
+    let(:submission_type) { GraphQLTypeTester.new(@submission, current_user: @student) }
+
+    it "works" do
+      result = submission_type.resolve("assignedAssessments { workflowState }")
+      expect(result.count).to eq 1
     end
   end
 end

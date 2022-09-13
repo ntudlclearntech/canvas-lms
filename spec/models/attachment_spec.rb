@@ -595,7 +595,7 @@ describe Attachment do
       expect(a).to be_deleted
     end
 
-    it "does not probably be possible to actually destroy... somehow" do
+    it "is probably not possible to actually destroy... somehow" do
       a = attachment_model(uploaded_data: default_uploaded_data)
       expect(a.filename).to eql("doc.doc")
       a.destroy
@@ -632,7 +632,7 @@ describe Attachment do
       expect(a.content_type).to eq "application/pdf"
     end
 
-    it "alsoes destroy thumbnails" do
+    it "also destroys thumbnails" do
       a = attachment_model(uploaded_data: stub_png_data, content_type: "image/png")
       thumb = a.thumbnail
       expect(thumb).not_to be_nil
@@ -735,11 +735,33 @@ describe Attachment do
       expect(a2.submission_draft_attachments.count).to eq 1
     end
 
+    shared_examples_for "destroy_content_and_replace" do
+      it "succeeds in destroying content and replacing after previous failure" do
+        base_uuid = "base-id"
+        a = attachment_model(uploaded_data: default_uploaded_data, instfs_uuid: "old-id")
+        allow(InstFS).to receive(:duplicate_file)
+        allow(Attachment).to receive(:file_removed_base_instfs_uuid).and_return(base_uuid)
+        old_filename = a.filename
+        allow(a).to receive(:destroy_content).and_raise
+        a.destroy_content_and_replace rescue nil
+        purgatory = Purgatory.find_by(attachment_id: a)
+        expect(purgatory).not_to be_nil
+        expect(a.reload.filename).to eq old_filename
+        allow(a).to receive(:destroy_content).and_return(true)
+        expect { a.destroy_content_and_replace }.not_to change { purgatory }
+        expect(a.filename).to eq "file_removed.pdf"
+        expect(a.display_name).to eq "file_removed.pdf"
+      end
+    end
+
     context "inst-fs" do
       before do
         allow(InstFS).to receive(:enabled?).and_return(true)
         allow(InstFS).to receive(:app_host).and_return("https://somehost.example")
+        Attachment.class_variable_set :@@base_file_removed_uuids, nil if Attachment.class_variable_defined? :@@base_file_removed_uuids
       end
+
+      include_examples "destroy_content_and_replace"
 
       it "only uploads the replacement file to inst-fs once" do
         instfs_uuid = "1234-abcd"
@@ -771,7 +793,7 @@ describe Attachment do
         att.destroy_content
       end
 
-      it "duplicates the file for purgatory and restore from there" do
+      it "duplicates the file for purgatory and restores from there" do
         old_uuid = "old-id"
         att = attachment_model(instfs_uuid: old_uuid)
 
@@ -789,11 +811,15 @@ describe Attachment do
         a = attachment_model(uploaded_data: default_uploaded_data)
         old_filename = a.filename
         old_content_type = a.content_type
+        old_file_state = a.file_state
+        old_workflow_state = a.workflow_state
         a.destroy_content_and_replace
         purgatory = Purgatory.where(attachment_id: a).take
         expect(purgatory.old_filename).to eq old_filename
         expect(purgatory.old_display_name).to eq old_filename
         expect(purgatory.old_content_type).to eq old_content_type
+        expect(purgatory.old_file_state).to eq old_file_state
+        expect(purgatory.old_workflow_state).to eq old_workflow_state
         a.reload
         expect(a.filename).to eq "file_removed.pdf"
         expect(a.display_name).to eq "file_removed.pdf"
@@ -802,6 +828,8 @@ describe Attachment do
         expect(a.filename).to eq old_filename
         expect(a.display_name).to eq old_filename
         expect(a.content_type).to eq old_content_type
+        expect(a.file_state).to eq old_file_state
+        expect(a.workflow_state).to eq old_workflow_state
         expect(purgatory.reload.workflow_state).to eq "restored"
         a.destroy_content_and_replace
         expect(purgatory.reload.workflow_state).to eq "active"
@@ -810,11 +838,13 @@ describe Attachment do
 
     context "s3 storage" do
       include_examples "purgatory"
+      include_examples "destroy_content_and_replace"
       before { s3_storage! }
     end
 
     context "local storage" do
       include_examples "purgatory"
+      include_examples "destroy_content_and_replace"
       before { local_storage! }
     end
   end
@@ -1135,6 +1165,52 @@ describe Attachment do
       quiz.publish!
       expect(aq_att1.grants_right?(student, :download)).to eq true
       expect(aq_att2.grants_right?(student, :download)).to eq false
+    end
+
+    context "group assignment" do
+      before :once do
+        group_category = @course.group_categories.create!(name: "Group Category")
+        group_1 = group_model(context: @course, group_category: group_category)
+        group_2 = group_model(context: @course, group_category: group_category)
+
+        @user_1 = user_model
+        @user_2 = user_model
+        @user_3 = user_model
+        @user_4 = user_model
+
+        course.enroll_student(@user_1).accept
+        course.enroll_student(@user_2).accept
+        course.enroll_student(@user_3).accept
+        course.enroll_student(@user_4).accept
+
+        group_1.add_user(@user_1)
+        group_1.add_user(@user_2)
+
+        group_2.add_user(@user_3)
+        group_2.add_user(@user_4)
+
+        assignment = assignment_model(course: @course, submission_types: "online_upload")
+        assignment.group_category = group_category
+        assignment.save!
+
+        @attachment = attachment_model(context: @user_1)
+
+        submission_1 = assignment.find_or_create_submission(@user_1)
+        submission_2 = assignment.find_or_create_submission(@user_2)
+
+        @attachment.attachment_associations.create!(context: submission_1)
+        @attachment.attachment_associations.create!(context: submission_2)
+      end
+
+      it "does allow read attachments for users in the same group" do
+        expect(@attachment.grants_right?(@user_1, :read)).to eql(true)
+        expect(@attachment.grants_right?(@user_2, :read)).to eql(true)
+      end
+
+      it "does not allow read attachments for users in another group" do
+        expect(@attachment.grants_right?(@user_3, :read)).to eql(false)
+        expect(@attachment.grants_right?(@user_4, :read)).to eql(false)
+      end
     end
   end
 

@@ -42,12 +42,24 @@ module BasicLTI
   # that is coming from quizzes or from an external vendor.
   module BasicOutcomes
     class Unauthorized < StandardError
+      def initialize(msg)
+        InstStatsd::Statsd.increment("lti.1_1.basic_outcomes.bad_requests",
+                                     tags: { error_code: "Unauthorized" })
+        super(msg)
+      end
+
       def response_status
         401
       end
     end
 
     class InvalidRequest < StandardError
+      def initialize(msg)
+        InstStatsd::Statsd.increment("lti.1_1.basic_outcomes.bad_requests",
+                                     tags: { error_code: "InvalidRequest" })
+        super(msg)
+      end
+
       def response_status
         415
       end
@@ -68,13 +80,15 @@ module BasicLTI
     end
 
     def self.process_request(tool, xml)
-      res = (quizzes_next_tool?(tool) ? BasicLTI::QuizzesNextLtiResponse : LtiResponse).new(xml)
+      InstStatsd::Statsd.time("lti.1_1.basic_outcomes.process_request_time") do
+        res = (quizzes_next_tool?(tool) ? BasicLTI::QuizzesNextLtiResponse : LtiResponse).new(xml)
 
-      unless res.handle_request(tool)
-        res.code_major = "unsupported"
-        res.description = "Request could not be handled. ¯\\_(ツ)_/¯"
+        unless res.handle_request(tool)
+          res.code_major = "unsupported"
+          res.description = "Request could not be handled. ¯\\_(ツ)_/¯"
+        end
+        res
       end
-      res
     end
 
     def self.quizzes_next_tool?(tool)

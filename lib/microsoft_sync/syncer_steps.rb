@@ -205,6 +205,8 @@ module MicrosoftSync
       users_and_uluvs = users_uluvs_finder.call
       remote_attr = account_settings[:microsoft_sync_remote_attribute]
 
+      user_ids_with_aads = []
+
       # If some users in different slices have the same ULUVs, this could end up
       # looking up the same ULUV multiple times; but this should be very rare
       users_and_uluvs.each_slice(GraphServiceHelpers::USERS_ULUVS_TO_AADS_BATCH_SIZE) do |slice|
@@ -214,7 +216,13 @@ module MicrosoftSync
         # as passed into UsersUluvsFinder AND as used in #tenant, for the "have settings changed?"
         # check to work. For example, using course.root_account here would NOT be correct.
         UserMapping.bulk_insert_for_root_account(group.root_account, user_id_to_aad)
+
+        user_ids_with_aads.concat(user_id_to_aad.keys)
       end
+
+      # Make sure users who deleted whose email address no longer maps to a Microsoft user
+      # get their mappings cleared out:
+      UserMapping.delete_if_needs_updating(group.root_account_id, user_ids - user_ids_with_aads)
     end
 
     # Get group members/owners from the API and local enrollments and calculate
@@ -340,7 +348,7 @@ module MicrosoftSync
       StateMachineJob::COMPLETE
     rescue MicrosoftSync::Errors::TeamAlreadyExists
       StateMachineJob::COMPLETE
-    rescue MicrosoftSync::Errors::GroupHasNoOwners, MicrosoftSync::Errors::HTTPNotFound => e
+    rescue MicrosoftSync::Errors::GroupHasNoOwners, *MicrosoftSync::Errors::NOT_FOUND => e
       # API is eventually consistent: We often have to wait a couple minutes
       # after creating the group and adding owners for the Teams API to see the
       # group and owners.
@@ -432,6 +440,12 @@ module MicrosoftSync
                         "full sync in #{full_sync_after}"
       InstStatsd::Statsd.increment("#{STATSD_NAME}.partial_into_full_throttled")
       StateMachineJob::DelayedNextStep.new(:step_full_sync_prerequisites, full_sync_after)
+    rescue Errors::GroupNotFound
+      # If the MS group doesn't exist, it's possible (though unlikely) the API
+      # just hasn't settled. But more likely it's because someone else has
+      # deleted the MS group, which is an expected (graceful cancel) error. So
+      # retry but treat as an expected the error the last time.
+      retry_object_for_error(Errors::GroupNotFoundGracefulCancelError.new)
     rescue *Errors::INTERMITTENT_AND_NOTFOUND => e
       retry_object_for_error(e)
     end

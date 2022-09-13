@@ -262,6 +262,21 @@
 #           "description": "Mean score",
 #           "example": 6,
 #           "type": "integer"
+#         },
+#         "upper_q": {
+#           "description": "Upper quartile score",
+#           "example": 10,
+#           "type": "integer"
+#         },
+#         "median": {
+#           "description": "Median score",
+#           "example": 6,
+#           "type": "integer"
+#         },
+#         "lower_q": {
+#           "description": "Lower quartile score",
+#           "example": 1,
+#           "type": "integer"
 #         }
 #       }
 #     }
@@ -1358,6 +1373,9 @@ class AssignmentsApiController < ApplicationController
   #   The Attachment ID of the document being annotated.
   #
   #   Only applies when submission_types includes "student_annotation".
+  #
+  # @argument assignment[force_updated_at] [Boolean]
+  #   If true, updated_at will be set even if no changes were made.
   #
   # @returns Assignment
   def update

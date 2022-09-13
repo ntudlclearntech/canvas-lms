@@ -126,7 +126,8 @@ module Api::V1::Assignment
       exclude_response_fields: [],
       include_planner_override: false,
       include_can_edit: false,
-      include_webhook_info: false
+      include_webhook_info: false,
+      include_assessment_requests: false
     )
 
     if opts[:override_dates] && !assignment.new_record?
@@ -158,6 +159,7 @@ module Api::V1::Assignment
     end
 
     hash["grades_published"] = assignment.grades_published? if opts[:include_grades_published]
+    hash["graded_submissions_exist"] = assignment.graded_submissions_exist?
 
     if opts[:overrides].present?
       hash["overrides"] = assignment_overrides_json(opts[:overrides], user)
@@ -280,6 +282,16 @@ module Api::V1::Assignment
       hash["allowed_extensions"] = assignment.allowed_extensions
     end
 
+    if opts[:include_assessment_requests]
+      if user.assigned_assessments.any?
+        submission = assignment.submission_for_student(user)
+        assessment_requests = user.assigned_assessments.where(assessor_asset: submission)
+        hash["assessment_requests"] = assessment_requests.map { |assessment_request| assessment_request_json(assessment_request, anonymous_peer_reviews: assignment.anonymous_peer_reviews?) }
+      else
+        hash["assessment_requests"] = []
+      end
+    end
+
     unless opts[:exclude_response_fields].include?("rubric")
       if assignment.active_rubric_association?
         hash["use_rubric_for_grading"] = !!assignment.rubric_association.use_for_grading
@@ -288,7 +300,7 @@ module Api::V1::Assignment
         end
       end
 
-      if assignment.rubric && !assignment.rubric.deleted?
+      if assignment.active_rubric_association?
         rubric = assignment.rubric
         hash["rubric"] = rubric.data.map do |row|
           row_hash = row.slice(:id, :points, :description, :long_description, :ignore_for_scoring)
@@ -396,6 +408,14 @@ module Api::V1::Assignment
           "max" => stats.maximum.to_f.round(1),
           "mean" => stats.mean.to_f.round(1)
         }
+        if stats.median.nil?
+          # We must be serving an old score statistics, go update in the background to ensure it exists next time
+          ScoreStatisticsGenerator.update_score_statistics_in_singleton(@context)
+        elsif Account.site_admin.feature_enabled?(:enhanced_grade_statistics)
+          hash["score_statistics"]["upper_q"] = stats.upper_q.to_f.round(1)
+          hash["score_statistics"]["median"] = stats.median.to_f.round(1)
+          hash["score_statistics"]["lower_q"] = stats.lower_q.to_f.round(1)
+        end
       end
     end
 
@@ -562,7 +582,11 @@ module Api::V1::Assignment
       response = if prepared_update[:overrides]
                    update_api_assignment_with_overrides(prepared_update, user)
                  else
-                   prepared_update[:assignment].save!
+                   if assignment_params["force_updated_at"] && !prepared_update[:assignment].changed?
+                     prepared_update[:assignment].touch
+                   else
+                     prepared_update[:assignment].save!
+                   end
                    :ok
                  end
     end
@@ -716,6 +740,10 @@ module Api::V1::Assignment
     end
 
     if assignment.context.grants_right?(user, :manage_sis)
+      if update_params.key?("sis_assignment_id") && update_params["sis_assignment_id"].blank?
+        update_params["sis_assignment_id"] = nil
+      end
+
       data = update_params["integration_data"]
       update_params["integration_data"] = JSON.parse(data) if data.is_a?(String)
     else
@@ -971,6 +999,10 @@ module Api::V1::Assignment
       assignment.lti_resource_link_custom_params = custom_params.presence&.to_unsafe_h || {}
     end
 
+    if external_tool_tag_attributes&.include?(:url)
+      assignment.lti_resource_link_url = external_tool_tag_attributes[:url]
+    end
+
     {
       assignment: assignment,
       overrides: overrides,
@@ -1148,5 +1180,17 @@ module Api::V1::Assignment
 
     settings[:lockdown_browser] = ldb_settings
     assignment.settings = settings
+  end
+
+  def assessment_request_json(assessment_request, anonymous_peer_reviews: false)
+    fields = %i[workflow_state]
+    api_json(assessment_request, @current_user, session, only: fields).tap do |json|
+      if anonymous_peer_reviews
+        json[:anonymous_id] = assessment_request.asset.anonymous_id
+      else
+        json[:user_id] = assessment_request.user.id
+        json[:user_name] = assessment_request.user.name
+      end
+    end
   end
 end

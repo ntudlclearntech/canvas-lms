@@ -36,7 +36,7 @@ WORKSPACE=${WORKSPACE:-$(pwd)}
 # $WEBPACK_BUILDER_TAG: additional tag for the webpack-builder image
 #   - set to patchset unique ID for builds to reference without knowing about the hash ID
 
-export CACHE_VERSION="2022-05-19.1"
+export CACHE_VERSION="2022-07-27.1"
 
 source ./build/new-jenkins/docker-build-helpers.sh
 
@@ -47,6 +47,7 @@ DOCKER_BUILDKIT=1 docker build --file Dockerfile.jenkins-cache --tag "local/cach
 DOCKER_BUILDKIT=1 docker build --file Dockerfile.jenkins-cache --tag "local/cache-helper-collect-yarn" --target cache-helper-collect-yarn "$WORKSPACE"
 DOCKER_BUILDKIT=1 docker build --file Dockerfile.jenkins-cache --tag "local/cache-helper-collect-packages" --target cache-helper-collect-packages "$WORKSPACE"
 DOCKER_BUILDKIT=1 docker build --file Dockerfile.jenkins-cache --tag "local/cache-helper-collect-webpack" --target cache-helper-collect-webpack "$WORKSPACE"
+DOCKER_BUILDKIT=1 docker build --file Dockerfile.jenkins-cache --tag "local/cache-helper-collect-js" --target cache-helper-collect-js "$WORKSPACE"
 
 RUBY_CACHE_MD5=$(docker run local/cache-helper-collect-gems sh -c "find /tmp/dst -type f -exec md5sum {} \; | sort -k 2 | md5sum")
 YARN_CACHE_MD5=$(docker run local/cache-helper-collect-yarn sh -c "find /tmp/dst -type f -exec md5sum {} \; | sort -k 2 | md5sum")

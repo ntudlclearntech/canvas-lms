@@ -95,6 +95,7 @@ class Assignment < ActiveRecord::Base
   # and an actual Hash to set custom params to, which could be an empty hash.
   serialize :lti_resource_link_custom_params, JSON
   attribute :lti_resource_link_lookup_uuid, :string, default: nil
+  attribute :lti_resource_link_url, :string, default: nil
 
   has_many :submissions, -> { active.preload(:grading_period) }, inverse_of: :assignment
   has_many :all_submissions, class_name: "Submission", dependent: :delete_all
@@ -370,7 +371,7 @@ class Assignment < ActiveRecord::Base
 
   def can_duplicate?
     return false if quiz?
-    return false if external_tool_tag.present? && !quiz_lti?
+    return false if external_tool_tag.present? && submission_types.include?("external_tool") && !quiz_lti?
 
     true
   end
@@ -1142,7 +1143,8 @@ class Assignment < ActiveRecord::Base
           context_external_tool: ContextExternalTool.from_content_tag(
             external_tool_tag,
             context
-          )
+          ),
+          url: lti_resource_link_url
         )
 
         li = line_items.create!(label: title, score_maximum: points_possible, resource_link: rl, coupled: true)
@@ -1764,7 +1766,8 @@ class Assignment < ActiveRecord::Base
     can :submit
 
     given do |user, session|
-      (submittable_type? || %w[discussion_topic online_quiz].include?(submission_types)) &&
+      (submittable_type? || %w[discussion_topic online_quiz].include?(submission_types) ||
+      (a2_enabled? && submission_types == "none")) &&
         context.grants_right?(user, session, :participate_as_student) &&
         visible_to_user?(user)
     end
@@ -1936,13 +1939,15 @@ class Assignment < ActiveRecord::Base
     # grading a student results in a teacher occupying a grader slot for that assignment if it is moderated.
     ensure_grader_can_adjudicate(grader: opts[:grader], provisional: opts[:provisional], occupy_slot: true) do
       if grade_group_students
-        find_or_create_submissions(students, Submission.preload(:grading_period, :stream_item)) do |submission|
+        find_or_create_submissions(students, Submission.preload(:grading_period, :stream_item, :lti_result)) do |submission|
           submission.skip_grader_check = true if opts[:skip_grader_check]
+          submission&.lti_result&.mark_reviewed!
           submissions << save_grade_to_submission(submission, original_student, group, opts)
         end
       else
         submission = find_or_create_submission(original_student, skip_grader_check: opts[:skip_grader_check])
         submission.skip_grader_check = true if opts[:skip_grader_check]
+        submission&.lti_result&.mark_reviewed!
         submissions << save_grade_to_submission(submission, original_student, group, opts)
       end
     end

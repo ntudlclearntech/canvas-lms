@@ -1,4 +1,4 @@
-FROM instructure/node:14
+FROM instructure/node:16
 
 ENV APP_HOME /usr/src/app/
 ENV NODE_ENV test
@@ -23,7 +23,6 @@ USER docker
 RUN set -eux; \
   mkdir -p \
     app/stylesheets/brandable_css_brands \
-    gems/canvas_i18nliner/node_modules \
     log \
     node_modules \
     tmp \

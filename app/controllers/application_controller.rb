@@ -202,6 +202,8 @@ class ApplicationController < ActionController::Base
         @js_env = {
           ASSET_HOST: Canvas::Cdn.config.host,
           active_brand_config_json_url: active_brand_config_url("json"),
+          active_brand_config: active_brand_config.as_json(include_root: false),
+          confetti_branding_enabled: Account.site_admin.feature_enabled?(:confetti_branding),
           url_to_what_gets_loaded_inside_the_tinymce_editor_css: editor_css,
           url_for_high_contrast_tinymce_editor_css: editor_hc_css,
           current_user_id: @current_user&.id,
@@ -267,7 +269,8 @@ class ApplicationController < ActionController::Base
 
         direct_share_enabled = !@context.is_a?(Group) && @current_user&.can_content_share?
         if @context.is_a?(Course)
-          direct_share_enabled = @context.grants_right?(@current_user, :read_as_admin)
+          direct_share_enabled = @context.grants_right?(@current_user, session, :manage_content) ||
+                                 (@context.concluded? && @context.grants_right?(@current_user, :read_as_admin))
         end
         @js_env[:DIRECT_SHARE_ENABLED] = direct_share_enabled
         @js_env[:FEATURES] = cached_features.merge(
@@ -300,6 +303,7 @@ class ApplicationController < ActionController::Base
         @js_env[:K5_USER] = k5_user?
         @js_env[:K5_HOMEROOM_COURSE] = @context.is_a?(Course) && @context.elementary_homeroom_course?
         @js_env[:K5_SUBJECT_COURSE] = @context.is_a?(Course) && @context.elementary_subject_course?
+        @js_env[:LOCALE_TRANSLATION_FILE] = ::Canvas::Cdn.registry.url_for("javascripts/translations/#{@js_env[:LOCALES].first}.json")
       end
     end
 
@@ -312,8 +316,9 @@ class ApplicationController < ActionController::Base
   # put feature checks on Account.site_admin and @domain_root_account that we're loading for every page in here
   # so altogether we can get them faster the vast majority of the time
   JS_ENV_SITE_ADMIN_FEATURES = %i[
-    featured_help_links feature_flag_filters conferencing_in_planner word_count_in_speed_grader observer_picker
+    featured_help_links word_count_in_speed_grader observer_picker
     lti_platform_storage scale_equation_images new_equation_editor buttons_and_icons_cropper course_paces_for_sections
+    calendar_series account_level_blackout_dates account_calendar_events rce_ux_improvements render_both_to_do_lists
   ].freeze
   JS_ENV_ROOT_ACCOUNT_FEATURES = %i[
     product_tours files_dnd usage_rights_discussion_topics
@@ -1179,6 +1184,11 @@ class ApplicationController < ActionController::Base
       end
       groups = @context.filter_visible_groups_for_user(groups)
 
+      if opts[:include_accounts]
+        account_ids = @current_user.get_preference(:enabled_account_calendars) || []
+        accounts = Account.where(id: account_ids)
+      end
+
       if opts[:favorites_first]
         favorite_course_ids = @context.favorite_context_ids("Course")
         courses = courses.sort_by { |c| [favorite_course_ids.include?(c.id) ? 0 : 1, Canvas::ICU.collation_key(c.name)] }
@@ -1186,6 +1196,7 @@ class ApplicationController < ActionController::Base
 
       @contexts.concat courses
       @contexts.concat groups
+      @contexts.concat(accounts || [])
     end
 
     include_contexts = opts[:include_contexts] || params[:include_contexts]
@@ -2767,7 +2778,8 @@ class ApplicationController < ActionController::Base
                      "assignments",
                      "discussion_topic",
                      (permissions[:manage] || current_user_has_been_observer_in_this_course) && "all_dates",
-                     permissions[:manage] && "module_ids"
+                     permissions[:manage] && "module_ids",
+                     peer_reviews_for_a2_enabled? && "assessment_requests"
                    ].reject(&:blank?),
                    exclude_response_fields: ["description", "rubric"],
                    exclude_assignment_submission_types: ["wiki_page"],
@@ -2947,6 +2959,11 @@ class ApplicationController < ActionController::Base
     DynamicSettings.find(tree: :private)["recaptcha_server_key"].present? && @domain_root_account.self_registration_captcha?
   end
 
+  def peer_reviews_for_a2_enabled?
+    current_user_is_student = @context.respond_to?(:user_is_student?) && @context.user_is_student?(@current_user)
+    current_user_is_student && @context.respond_to?(:feature_enabled?) && @context.feature_enabled?(:peer_reviews_for_a2)
+  end
+
   # Show Student View button on the following controller/action pages, as long as defined tabs are not hidden
   STUDENT_VIEW_PAGES = {
     "courses#show" => nil,
@@ -3025,9 +3042,10 @@ class ApplicationController < ActionController::Base
         provided_account_chain_ids = Account.multi_account_chain_ids(provided_account_ids)
         break true if (provided_account_chain_ids & k5_account_ids).any?
       else
-        # If course_ids isn't passed, check all their (non-observer) enrollments and account_users
+        # If course_ids isn't passed, check all their (non-observer and unlinked observer) enrollments and account_users
+        # i.e., ignore observer enrollments with a linked student - the observer picker filters out these courses
         enrolled_courses_scope = user.enrollments.shard(Shard.current).new_or_active_by_date
-        enrolled_courses_scope = enrolled_courses_scope.not_of_observer_type if Account.site_admin.feature_enabled?(:observer_picker)
+        enrolled_courses_scope = enrolled_courses_scope.not_of_observer_type.or(enrolled_courses_scope.of_observer_type.where(associated_user_id: nil)) if Account.site_admin.feature_enabled?(:observer_picker)
         enrolled_course_ids = enrolled_courses_scope.select(:course_id)
         enrolled_account_ids = Course.where(id: enrolled_course_ids).distinct.pluck(:account_id)
         break true if (enrolled_account_ids & k5_account_ids).any?
@@ -3078,7 +3096,7 @@ class ApplicationController < ActionController::Base
       end
 
       # This key is also invalidated when the k5 setting is toggled at the account level or when enrollments change
-      Rails.cache.fetch_with_batched_keys(["k5_user2", course_ids].cache_key, batch_object: user, batched_keys: %i[k5_user enrollments account_users], expires_in: 12.hours) do
+      Rails.cache.fetch_with_batched_keys(["k5_user3", course_ids, Account.site_admin.feature_enabled?(:observer_picker)].cache_key, batch_object: user, batched_keys: %i[k5_user enrollments account_users], expires_in: 12.hours) do
         uncached_k5_user?(user, course_ids: course_ids)
       end
     end

@@ -188,8 +188,8 @@ describe "calendar2" do
         event = @user.calendar_events.create! title: "blah", start_at: Date.today
         get "/calendar2"
         open_edit_event_dialog
-        f("option[value=course_#{@course.id}]").click
-        submit_form("#edit_calendar_event_form")
+        click_option(edit_calendar_event_form_context, @course.name)
+        edit_calendar_event_form_submit_button.click
         wait_for_ajaximations
         expect(event.reload.context).to eq @course
         expect(f(".fc-event")).to have_class "group_course_#{@course.id}"
@@ -273,9 +273,9 @@ describe "calendar2" do
       f("#course_calendar_link").click
 
       # only the explicit context should be selected
-      expect(f("#context-list li[data-context=course_#{unrelated_course.id}].checked")).to be
-      expect(f("#context-list li[data-context=course_#{@course.id}].not-checked")).to be
-      expect(f("#context-list li[data-context=user_#{@user.id}].not-checked")).to be
+      expect(f("#calendars-context-list li[data-context=course_#{unrelated_course.id}].checked")).to be_truthy
+      expect(f("#calendars-context-list li[data-context=course_#{@course.id}].not-checked")).to be_truthy
+      expect(f("#calendars-context-list li[data-context=user_#{@user.id}].not-checked")).to be_truthy
     end
 
     it "only considers active enrollments for upcoming events list", priority: "2" do
@@ -290,8 +290,6 @@ describe "calendar2" do
     end
 
     it "graded discussion appears on all calendars", priority: "1" do
-      skip("LS-1257 - 7/29/2020")
-
       create_graded_discussion
 
       # Even though graded discussion overwrites its assignment's title, less fragile to grab discussion's title
@@ -299,8 +297,6 @@ describe "calendar2" do
     end
 
     it "event appears on all calendars", priority: "1" do
-      skip("LS-1257 - 7/29/2020")
-
       title = "loom"
       due_time = 5.minutes.from_now
       @course.calendar_events.create!(title: title, start_at: due_time)
@@ -309,8 +305,6 @@ describe "calendar2" do
     end
 
     it "assignment appears on all calendars", priority: "1" do
-      skip("LS-1257 - 7/29/2020")
-
       title = "Zak McKracken"
       due_time = 5.minutes.from_now
       @assignment = @course.assignments.create!(name: title, due_at: due_time)
@@ -319,8 +313,6 @@ describe "calendar2" do
     end
 
     it "quiz appears on all calendars", priority: "1" do
-      skip("LS-1257 - 7/29/2020")
-
       create_quiz
 
       assert_views(@quiz.title, @quiz.due_at)

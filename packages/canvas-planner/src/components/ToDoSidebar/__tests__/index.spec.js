@@ -147,7 +147,7 @@ it('invokes change dashboard view when link is clicked', () => {
   const wrapper = shallow(
     <ToDoSidebar {...defaultProps} items={items} changeDashboardView={changeDashboardView} />
   )
-  wrapper.find('Button').simulate('click')
+  wrapper.find('CondensedButton').simulate('click')
   expect(changeDashboardView).toHaveBeenCalledWith('planner')
 })
 
@@ -183,4 +183,10 @@ it('renders an error message when loading fails', () => {
   const wrapper = mount(<ToDoSidebar {...defaultProps} loadingError={error} />)
 
   expect(wrapper.text()).toContain('Failure loading the To Do list')
+})
+
+it('renders additional context title', () => {
+  const wrapper = mount(<ToDoSidebar {...defaultProps} additionalTitleContext />)
+
+  expect(wrapper.text()).toContain('Student To Do')
 })

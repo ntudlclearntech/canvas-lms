@@ -85,47 +85,19 @@ const defaultProps: FilterNavFilterProps = {
 describe('FilterNavFilter', () => {
   it('clicking delete triggers onDelete', () => {
     const onDelete = jest.fn()
-    const {getByRole} = render(<FilterNavFilter {...defaultProps} onDelete={onDelete} />)
-    userEvent.click(getByRole('button', {name: /Delete filter/}))
+    const {getByTestId} = render(<FilterNavFilter {...defaultProps} onDelete={onDelete} />)
+    userEvent.click(getByTestId('delete-filter'))
     expect(onDelete).toHaveBeenCalledTimes(1)
-  })
-
-  it('switching condition type triggers onChange', async () => {
-    const onChange = jest.fn()
-    const {getAllByRole} = render(<FilterNavFilter {...defaultProps} onChange={onChange} />)
-    userEvent.click(getAllByRole('button', {name: /Condition type/})[0])
-    userEvent.click(getAllByRole('option', {name: /Assignment Group/})[0])
-    expect(onChange).toHaveBeenCalled()
   })
 
   it('after renaming filter, focus should transfer to rename button', async () => {
     const onChange = jest.fn()
-    const {getByRole, getByPlaceholderText} = render(
+    const {getByPlaceholderText, getByTestId} = render(
       <FilterNavFilter {...defaultProps} onChange={onChange} />
     )
-    userEvent.click(getByRole('button', {name: /Rename filter/}))
-    userEvent.type(getByPlaceholderText('Name'), 'Sample filter name')
-    userEvent.click(getByRole('button', {name: /Save label/}))
-    expect(getByRole('button', {name: /Rename filter/})).toHaveFocus()
-  })
-
-  it('upon deleting second condition, focus transfers to delete button of previous condition', async () => {
-    const onChange = jest.fn()
-    const {getAllByRole} = render(<FilterNavFilter {...defaultProps} onChange={onChange} />)
-    const secondDeleteButton = getAllByRole('button', {name: /Delete condition/})[1]
-    secondDeleteButton.click()
-    const firstDeleteButton = getAllByRole('button', {name: /Delete condition/})[0]
-    expect(firstDeleteButton).toHaveFocus()
-  })
-
-  it('upon deleting first condition, focus transfers to delete button of previous condition', async () => {
-    const onChange = jest.fn()
-    const {getAllByRole, getByRole} = render(
-      <FilterNavFilter {...defaultProps} onChange={onChange} />
-    )
-    const firstDeleteButton = getAllByRole('button', {name: /Delete condition/})[0]
-    firstDeleteButton.click()
-    const renameButton = getByRole('button', {name: /Rename filter/})
-    expect(renameButton).toHaveFocus()
+    userEvent.click(getByTestId('rename-filter'))
+    userEvent.paste(getByPlaceholderText('Name'), 'Sample filter name')
+    userEvent.click(getByTestId('save-label'))
+    expect(getByTestId('rename-filter')).toHaveFocus()
   })
 })

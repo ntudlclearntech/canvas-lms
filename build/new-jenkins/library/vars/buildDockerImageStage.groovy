@@ -91,7 +91,6 @@ def jsImage() {
         "CACHE_LOAD_SCOPE=${env.IMAGE_CACHE_MERGE_SCOPE}",
         "CACHE_LOAD_FALLBACK_SCOPE=${env.IMAGE_CACHE_BUILD_SCOPE}",
         "CACHE_SAVE_SCOPE=${cacheScope}",
-        "KARMA_BUILDER_PREFIX=${env.KARMA_BUILDER_PREFIX}",
         "PATCHSET_TAG=${env.PATCHSET_TAG}",
         "RAILS_LOAD_ALL_LOCALES=${getRailsLoadAllLocales()}",
         "WEBPACK_BUILDER_IMAGE=${env.WEBPACK_BUILDER_IMAGE}",
@@ -102,7 +101,6 @@ def jsImage() {
 
       sh """
         ./build/new-jenkins/docker-with-flakey-network-protection.sh push $KARMA_RUNNER_IMAGE
-        ./build/new-jenkins/docker-with-flakey-network-protection.sh push -a $KARMA_BUILDER_PREFIX
       """
     } catch (e) {
       handleDockerBuildFailure(KARMA_RUNNER_IMAGE, e)
@@ -154,7 +152,7 @@ def premergeCacheImage() {
   }
 }
 
-def patchsetImage() {
+def patchsetImage(asyncStepsStr = '') {
   credentials.withStarlordCredentials {
     def cacheScope = configuration.isChangeMerged() ? env.IMAGE_CACHE_MERGE_SCOPE : env.IMAGE_CACHE_BUILD_SCOPE
 
@@ -175,7 +173,13 @@ def patchsetImage() {
         "YARN_RUNNER_PREFIX=${env.YARN_RUNNER_PREFIX}",
       ]) {
         try {
-          sh "build/new-jenkins/docker-build.sh $PATCHSET_TAG"
+          sh """#!/bin/bash
+          set -ex
+
+          build/new-jenkins/docker-build.sh $PATCHSET_TAG
+
+           $asyncStepsStr
+          """
         } catch (e) {
           handleDockerBuildFailure(PATCHSET_TAG, e)
         }
@@ -201,7 +205,7 @@ def patchsetImage() {
   }
 }
 
-def i18nGenerate() {
+def i18nExtract() {
   def dest = 's3://instructure-translations/sources/canvas-lms/en/en.yml'
   def roleARN = 'arn:aws:iam::307761260553:role/translations-jenkins'
 
@@ -215,7 +219,7 @@ def i18nGenerate() {
         -e COMPILE_ASSETS_BRAND_CONFIGS=0 \
         -e COMPILE_ASSETS_BUILD_JS=0 \
         $PATCHSET_TAG \
-          bundle exec rake canvas:compile_assets i18n:generate
+          bundle exec rake canvas:compile_assets i18n:extract
     """
   )
 

@@ -441,7 +441,7 @@ class DiscussionTopicsController < ApplicationController
         append_sis_data(hash)
         js_env(hash)
         js_env({
-                 DIRECT_SHARE_ENABLED: @context.is_a?(Course) && hash[:permissions][:read_as_admin]
+                 DIRECT_SHARE_ENABLED: @context.is_a?(Course) && (hash[:permissions][:manage_content] || (@context.concluded? && hash[:permissions][:read_as_admin]))
                }, true)
         set_tutorial_js_env
 
@@ -602,6 +602,7 @@ class DiscussionTopicsController < ApplicationController
       ANNOUNCEMENTS_LOCKED: announcements_locked?,
       CREATE_ANNOUNCEMENTS_UNLOCKED: @current_user.create_announcements_unlocked?,
       USAGE_RIGHTS_REQUIRED: usage_rights_required,
+      IS_MODULE_ITEM: !@topic.context_module_tags.empty?,
       PERMISSIONS: {
         manage_files: @context.grants_any_right?(@current_user, session, *RoleOverride::GRANULAR_FILE_PERMISSIONS)
       },
@@ -662,7 +663,7 @@ class DiscussionTopicsController < ApplicationController
 
     set_master_course_js_env_data(@topic, @context)
     conditional_release_js_env(@topic.assignment)
-    render :edit
+    render :edit, layout: params[:embed] == "true" ? "mobile_embed" : true
   end
 
   def show
@@ -674,6 +675,7 @@ class DiscussionTopicsController < ApplicationController
     @sequence_asset = @context_module_tag.try(:content)
     add_discussion_or_announcement_crumb
     add_crumb(@topic.title, named_context_url(@context, :context_discussion_topic_url, @topic.id))
+    @page_title = join_title(t("#titles.topic", "Topic"), @topic.title)
 
     if @topic.deleted?
       flash[:notice] = I18n.t :deleted_topic_notice, "That topic has been deleted"
@@ -753,15 +755,39 @@ class DiscussionTopicsController < ApplicationController
         )
       end
 
+      unless can_read_and_visible
+        return render_unauthorized_action unless @current_user
+
+        respond_to do |format|
+          if @topic.is_announcement
+            flash[:error] = t "You do not have access to the requested announcement."
+            format.html do
+              redirect_to named_context_url(@context, :context_announcements_url)
+              return
+            end
+          else
+            flash[:error] = t "You do not have access to the requested discussion."
+            format.html do
+              redirect_to named_context_url(@context, :context_discussion_topics_url)
+              return
+            end
+          end
+        end
+      end
+
+      edit_url = context_url(@topic.context, :edit_context_discussion_topic_url, @topic)
+      edit_url += "?embed=true" if params[:embed] == "true"
+
       js_env({
                course_id: params[:course_id] || @context.course&.id,
-               EDIT_URL: context_url(@topic.context, :edit_context_discussion_topic_url, @topic),
+               EDIT_URL: edit_url,
                PEER_REVIEWS_URL: @topic.assignment ? context_url(@topic.assignment.context, :context_assignment_peer_reviews_url, @topic.assignment.id) : nil,
                discussion_topic_id: params[:id],
                manual_mark_as_read: @current_user&.manual_mark_as_read?,
                discussion_topic_menu_tools: external_tools_display_hashes(:discussion_topic_menu),
                rce_mentions_in_discussions: @context.feature_enabled?(:react_discussions_post) && !@topic.anonymous?,
                isolated_view: Account.site_admin.feature_enabled?(:isolated_view),
+               discussion_grading_view: Account.site_admin.feature_enabled?(:discussion_grading_view),
                draft_discussions: Account.site_admin.feature_enabled?(:draft_discussions),
                discussion_anonymity_enabled: @context.feature_enabled?(:react_discussions_post),
                should_show_deeply_nested_alert: @current_user&.should_show_deeply_nested_alert?,

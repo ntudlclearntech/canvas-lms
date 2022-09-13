@@ -26,9 +26,9 @@ import moment from 'moment-timezone'
 import BulkEdit from '../BulkEdit'
 
 // grab this before fake timers replace it
-const realSetImmediate = setImmediate
+const realSetTimeout = setTimeout
 async function flushPromises() {
-  await act(() => new Promise(realSetImmediate))
+  await act(() => new Promise(realSetTimeout))
 }
 
 function standardAssignmentResponse() {
@@ -538,6 +538,56 @@ describe('Assignment Bulk Edit Dates', () => {
               due_at: '2020-04-01T07:00:00.000Z', // 16:00 in Tokyo is 07:00 UTC
               lock_at: moment.tz(lockAtDate, 'Asia/Tokyo').endOf('day').toISOString(),
               unlock_at: null
+            }
+          ]
+        }
+      ])
+    })
+
+    it('maintains defaultDueTime on new dates for due_at on blur', async () => {
+      const {getByText, getAllByLabelText} = await renderBulkEditAndWait({
+        defaultDueTime: '16:00:00'
+      })
+      const dueAtInput = getAllByLabelText('Due At')[2]
+      const dueAtDate = '2020-04-01'
+
+      changeAndBlurInput(dueAtInput, dueAtDate)
+      fireEvent.blur(dueAtInput) // Force blur to trigger handleSelectedDateChange
+      expect(dueAtInput.value).toMatch('Wed, Apr 1, 2020, 4:00 PM')
+      fireEvent.click(getByText('Save'))
+      await flushPromises()
+      const body = JSON.parse(fetch.mock.calls[1][1].body)
+      expect(body).toMatchObject([
+        {
+          id: 'assignment_2',
+          all_dates: [
+            {
+              base: true,
+              due_at: '2020-04-01T07:00:00.000Z', // 16:00 in Tokyo is 07:00 UTC
+              unlock_at: null
+            }
+          ]
+        }
+      ])
+    })
+
+    it('preserves the existing time on existing available until dates', async () => {
+      const {assignments, getByText, getAllByLabelText} = await renderBulkEditAndWait()
+      const lockAtInput = getAllByLabelText('Available Until')[0]
+      const lockAtDate = '2020-04-01'
+      const originalLockAtMoment = moment.tz(assignments[0].all_dates[0].lock_at, 'Asia/Tokyo')
+      const localTimeOffset = originalLockAtMoment.diff(originalLockAtMoment.clone().startOf('day'))
+      changeAndBlurInput(lockAtInput, lockAtDate)
+      fireEvent.click(getByText('Save'))
+      await flushPromises()
+      const body = JSON.parse(fetch.mock.calls[1][1].body)
+      expect(body).toMatchObject([
+        {
+          id: 'assignment_1',
+          all_dates: [
+            {
+              base: true,
+              lock_at: moment.tz(lockAtDate, 'Asia/Tokyo').add(localTimeOffset, 'ms').toISOString()
             }
           ]
         }

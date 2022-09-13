@@ -31,6 +31,7 @@ import RichContentEditor from '@canvas/rce/RichContentEditor'
 import unflatten from 'obj-unflatten'
 import deparam from 'deparam'
 import coupleTimeFields from '@canvas/calendar/jquery/coupleTimeFields'
+import {renderDeleteCalendarEventDialog} from '@canvas/calendar/react/DeleteCalendarEventDialog'
 import datePickerFormat from '@canvas/datetime/datePickerFormat'
 import CalendarConferenceWidget from '@canvas/calendar-conferences/react/CalendarConferenceWidget'
 import filterConferenceTypes from '@canvas/calendar-conferences/filterConferenceTypes'
@@ -62,12 +63,16 @@ export default class EditCalendarEventView extends Backbone.View {
         'start_time',
         'end_time',
         'title',
+        'new_context_code',
         'description',
         'location_name',
         'location_address',
         'duplicate',
         'web_conference',
-        'important_dates'
+        'important_dates',
+        'blackout_date',
+        'context_type',
+        'course_pacing_enabled'
       )
       if (picked_params.start_at) {
         picked_params.start_date = tz.format(
@@ -79,6 +84,10 @@ export default class EditCalendarEventView extends Backbone.View {
           $.fudgeDateForProfileTimezone(picked_params.start_date),
           'date.formats.default'
         )
+      }
+
+      if (picked_params.new_context_code) {
+        picked_params.context_code = picked_params.new_context_code
       }
 
       const attrs = this.model.parse(picked_params)
@@ -113,6 +122,11 @@ export default class EditCalendarEventView extends Backbone.View {
         if (key === 'important_dates') {
           this.$el
             .find('#calendar_event_important_dates')
+            .prop('checked', picked_params[key] === 'true')
+        }
+        if (key === 'blackout_date') {
+          this.$el
+            .find('#calendar_event_blackout_date')
             .prop('checked', picked_params[key] === 'true')
         }
         return $e.change()
@@ -180,21 +194,47 @@ export default class EditCalendarEventView extends Backbone.View {
   }
 
   destroyModel() {
-    const msg = I18n.t(
-      'confirm_delete_calendar_event',
-      'Are you sure you want to delete this calendar event?'
-    )
-    if (confirm(msg)) {
-      return this.$el.disableWhileLoading(
-        this.model.destroy({
-          success: () =>
-            this.redirectWithMessage(
-              I18n.t('event_deleted', '%{event_title} deleted successfully', {
-                event_title: this.model.get('title')
-              })
-            )
-        })
+    if (ENV.FEATURES.calendar_series) {
+      let delModalContainer = document.getElementById('delete_modal_container')
+      if (!delModalContainer) {
+        delModalContainer = document.createElement('div')
+        delModalContainer.id = 'delete_modal_container'
+        document.body.appendChild(delModalContainer)
+      }
+      renderDeleteCalendarEventDialog(delModalContainer, {
+        isOpen: true,
+        onCancel: () => {
+          ReactDOM.unmountComponentAtNode(delModalContainer)
+        },
+        onDeleting: () => {},
+        onDeleted: () => {
+          ReactDOM.unmountComponentAtNode(delModalContainer)
+          this.redirectWithMessage(
+            I18n.t('event_deleted', '%{event_title} deleted successfully', {
+              event_title: this.model.get('title')
+            })
+          )
+        },
+        delUrl: this.model.url(),
+        isRepeating: !!this.model.get('series_uuid')
+      })
+    } else {
+      const msg = I18n.t(
+        'confirm_delete_calendar_event',
+        'Are you sure you want to delete this calendar event?'
       )
+      if (window.confirm(msg)) {
+        return this.$el.disableWhileLoading(
+          this.model.destroy({
+            success: () =>
+              this.redirectWithMessage(
+                I18n.t('event_deleted', '%{event_title} deleted successfully', {
+                  event_title: this.model.get('title')
+                })
+              )
+          })
+        )
+      }
     }
   }
 
@@ -307,10 +347,21 @@ export default class EditCalendarEventView extends Backbone.View {
     )
   }
 
+  shouldShowBlackoutDatesCheckbox() {
+    const context_type = this.model.get('context_type')
+    const course_pacing_enabled = this.model.get('course_pacing_enabled') === 'true'
+    return (
+      ENV.FEATURES?.account_level_blackout_dates &&
+      ((context_type === 'account' && ENV.FEATURES?.account_calendar_events) ||
+        (context_type === 'course' && course_pacing_enabled))
+    )
+  }
+
   toJSON() {
     const result = super.toJSON(...arguments)
     result.recurringEventLimit = 200
     result.k5_course = ENV.K5_SUBJECT_COURSE || ENV.K5_HOMEROOM_COURSE
+    result.should_show_blackout_dates = this.shouldShowBlackoutDatesCheckbox()
     result.disableSectionDates =
       result.use_section_dates &&
       result.course_sections.filter(
@@ -362,6 +413,7 @@ export default class EditCalendarEventView extends Backbone.View {
     }
 
     data.important_dates = this.$el.find('#calendar_event_important_dates').prop('checked')
+    data.blackout_date = this.$el.find('#calendar_event_blackout_date').prop('checked')
     return data
   }
 

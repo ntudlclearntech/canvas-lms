@@ -25,14 +25,14 @@ import StudentHeader from './StudentHeader'
 import ScoresGrid from './ScoresGrid'
 import {studentShape, outcomeShape, studentRollupsShape} from './shapes'
 import {
-  MAX_GRID_WIDTH,
   COLUMN_WIDTH,
+  STUDENT_COLUMN_WIDTH,
   STUDENT_COLUMN_RIGHT_PADDING,
   COLUMN_PADDING,
   CELL_HEIGHT
 } from './constants'
 
-const Gradebook = ({courseId, students, outcomes, rollups}) => {
+const Gradebook = ({courseId, students, outcomes, rollups, visibleRatings}) => {
   const headerRow = useRef(null)
   const gridRef = useRef(null)
 
@@ -55,7 +55,6 @@ const Gradebook = ({courseId, students, outcomes, rollups}) => {
           as="div"
           display="flex"
           id="outcomes-header"
-          maxWidth={MAX_GRID_WIDTH}
           overflowX="hidden"
           elementRef={el => (headerRow.current = el)}
         >
@@ -68,7 +67,7 @@ const Gradebook = ({courseId, students, outcomes, rollups}) => {
         </View>
       </Flex>
       <View display="flex">
-        <View as="div" minWidth={COLUMN_WIDTH + STUDENT_COLUMN_RIGHT_PADDING}>
+        <View as="div" minWidth={STUDENT_COLUMN_WIDTH + STUDENT_COLUMN_RIGHT_PADDING}>
           {students.map(student => (
             <View
               key={student.id}
@@ -77,7 +76,7 @@ const Gradebook = ({courseId, students, outcomes, rollups}) => {
               background="primary"
               borderWidth="0 0 small 0"
               height={CELL_HEIGHT}
-              width={COLUMN_WIDTH}
+              width={STUDENT_COLUMN_WIDTH}
             >
               <StudentCell courseId={courseId} student={student} />
             </View>
@@ -89,10 +88,13 @@ const Gradebook = ({courseId, students, outcomes, rollups}) => {
           overflowY="auto"
           elementRef={el => (gridRef.current = el)}
           width={outcomes.length * COLUMN_WIDTH}
-          maxWidth={MAX_GRID_WIDTH}
-          maxHeight={CELL_HEIGHT * students.length}
         >
-          <ScoresGrid students={students} outcomes={outcomes} rollups={rollups} />
+          <ScoresGrid
+            students={students}
+            outcomes={outcomes}
+            rollups={rollups}
+            visibleRatings={visibleRatings}
+          />
         </View>
       </View>
     </>
@@ -103,7 +105,8 @@ Gradebook.propTypes = {
   courseId: PropTypes.string.isRequired,
   students: PropTypes.arrayOf(PropTypes.shape(studentShape)).isRequired,
   outcomes: PropTypes.arrayOf(PropTypes.shape(outcomeShape)).isRequired,
-  rollups: PropTypes.arrayOf(PropTypes.shape(studentRollupsShape)).isRequired
+  rollups: PropTypes.arrayOf(PropTypes.shape(studentRollupsShape)).isRequired,
+  visibleRatings: PropTypes.arrayOf(PropTypes.bool).isRequired
 }
 
 export default Gradebook

@@ -18,6 +18,34 @@
 import React from 'react'
 import {fireEvent, render, screen} from '@testing-library/react'
 import {AddressBook, USER_TYPE, CONTEXT_TYPE, BACK_BUTTON_TYPE} from '../AddressBook'
+import {AlertManagerContext} from '@canvas/alerts/react/AlertManager'
+import {ApolloProvider} from 'react-apollo'
+import {handlers} from '../../../../graphql/mswHandlers'
+import {mswClient} from '../../../../../../shared/msw/mswClient'
+import {mswServer} from '../../../../../../shared/msw/mswServer'
+
+const server = mswServer(handlers)
+beforeAll(() => {
+  // eslint-disable-next-line no-undef
+  fetchMock.dontMock()
+  server.listen()
+})
+
+afterEach(() => {
+  server.resetHandlers()
+})
+
+afterAll(() => {
+  server.close()
+  // eslint-disable-next-line no-undef
+  fetchMock.enableMocks()
+})
+
+beforeEach(() => {
+  window.ENV = {
+    current_user_id: 1
+  }
+})
 
 const demoData = {
   contextData: [
@@ -58,7 +86,13 @@ const defaultProps = {
 }
 
 const setup = props => {
-  return render(<AddressBook {...props} />)
+  return render(
+    <ApolloProvider client={mswClient}>
+      <AlertManagerContext.Provider value={{setOnFailure: jest.fn(), setOnSuccess: jest.fn()}}>
+        <AddressBook {...props} />
+      </AlertManagerContext.Provider>
+    </ApolloProvider>
+  )
 }
 
 describe('Address Book Component', () => {
@@ -189,6 +223,37 @@ describe('Address Book Component', () => {
   })
 
   describe('Tags', () => {
+    it('Should close popover after selecting one item', async () => {
+      setup({...defaultProps, open: true, isSubMenu: true})
+      const popover = await screen.findByTestId('address-book-popover')
+      const items = popover.querySelectorAll('li')
+      fireEvent.mouseDown(items[4])
+
+      expect(screen.queryByTestId('address-book-popover')).not.toBeInTheDocument()
+    })
+
+    it('Should call getTotalRecipients for All_in_context', async () => {
+      const current_filter = {
+        context: {
+          contextID: 'course_11',
+          contextName: 'Chawns Course'
+        }
+      }
+      setup({
+        ...defaultProps,
+        open: true,
+        isSubMenu: true,
+        hasSelectAllFilterOption: true,
+        currentFilter: current_filter
+      })
+      const popover = await screen.findByTestId('address-book-popover')
+      const items = popover.querySelectorAll('li')
+      fireEvent.mouseDown(items[1])
+
+      const tag = await screen.findByText('All in Chawns Course')
+      expect(tag).toBeTruthy()
+    })
+
     it('Should render tag when item is selected', async () => {
       const onSelectSpy = jest.fn()
       setup({...defaultProps, open: true, isSubMenu: true, onSelect: onSelectSpy})
@@ -201,10 +266,15 @@ describe('Address Book Component', () => {
 
     it('Should be able to select 2 tags when no limit is set', async () => {
       setup({...defaultProps, open: true, isSubMenu: true})
-      const popover = await screen.findByTestId('address-book-popover')
-      const items = popover.querySelectorAll('li')
-      fireEvent.mouseDown(items[4])
-      fireEvent.mouseDown(items[5])
+      const popover1 = await screen.findByTestId('address-book-popover')
+      const items1 = popover1.querySelectorAll('li')
+      fireEvent.mouseDown(items1[4])
+
+      setup({...defaultProps, open: true, isSubMenu: true})
+      const popover2 = await screen.findByTestId('address-book-popover')
+      const items2 = popover2.querySelectorAll('li')
+      fireEvent.mouseDown(items2[5])
+
       const tags = await screen.findAllByTestId('address-book-tag')
       expect(tags.length).toBe(2)
     })

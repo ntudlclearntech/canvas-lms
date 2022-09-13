@@ -60,6 +60,7 @@ module Api::V1::Course
     settings[:course_color] = course.course_color
     settings[:friendly_name] = course.friendly_name
     settings[:default_due_time] = course.default_due_time || "23:59:59"
+    settings[:conditional_release] = course.conditional_release?
 
     settings
   end
@@ -152,6 +153,7 @@ module Api::V1::Course
       apply_nickname(hash, course, user, prefer_friendly_name: prefer_friendly_name)
 
       hash["image_download_url"] = course.image if includes.include?("course_image")
+      hash["banner_image_download_url"] = course.banner_image if includes.include?("banner_image")
       hash["concluded"] = course.concluded? if includes.include?("concluded")
       apply_master_course_settings(hash, course, user)
       if course.root_account.feature_enabled?(:course_templates)

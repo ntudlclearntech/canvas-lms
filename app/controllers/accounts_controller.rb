@@ -293,7 +293,7 @@ require "csv"
 #     }
 
 class AccountsController < ApplicationController
-  before_action :require_user, only: %i[index help_links manually_created_courses_account]
+  before_action :require_user, only: %i[index help_links manually_created_courses_account account_calendar_settings]
   before_action :reject_student_view_student
   before_action :get_context
   before_action :rce_js_env, only: [:settings]
@@ -754,13 +754,18 @@ class AccountsController < ApplicationController
     # We only want to return the permissions for single courses and not lists of courses.
     # sections, needs_grading_count, and total_score not valid as enrollments are needed
     includes -= %w[permissions sections needs_grading_count total_scores]
-
-    # don't calculate a total count for this endpoint. total_entries: nil
     all_precalculated_permissions = nil
-    GuardRail.activate(:secondary) do
-      @courses = Api.paginate(@courses, self, api_v1_account_courses_url, { total_entries: nil })
 
-      ActiveRecord::Associations.preload(@courses, [:account, :root_account, course_account_associations: :account])
+    page_opts = { total_entries: nil }
+    if includes.include?("ui_invoked") && Setting.get("ui_invoked_count_pages", "true") == "true"
+      page_opts = {} # let Folio calculate total entries
+      includes.delete("ui_invoked")
+    end
+
+    GuardRail.activate(:secondary) do
+      @courses = Api.paginate(@courses, self, api_v1_account_courses_url, page_opts)
+
+      ActiveRecord::Associations.preload(@courses, [:account, :root_account, { course_account_associations: :account }])
       preload_teachers(@courses) if includes.include?("teachers")
       preload_teachers(@courses) if includes.include?("active_teachers")
       ActiveRecord::Associations.preload(@courses, [:enrollment_term]) if includes.include?("term") || includes.include?("concluded")
@@ -965,6 +970,10 @@ class AccountsController < ApplicationController
   # @argument account[settings][conditional_release][locked] [Boolean]
   #   Lock this setting for sub-accounts and courses
   #
+  # @argument override_sis_stickiness [boolean]
+  #   Default is true. If false, any fields containing “sticky” changes will not be updated.
+  #   See SIS CSV Format documentation for information on which fields can have SIS stickiness
+  #
   # @argument account[settings][lock_outcome_proficiency][value] [Boolean]
   #   [DEPRECATED] Restrict instructors from changing mastery scale
   #
@@ -1050,7 +1059,7 @@ class AccountsController < ApplicationController
 
         emoji_deny_list = params[:account][:settings].try(:delete, :emoji_deny_list)
         if @account.feature_allowed?(:submission_comment_emojis) &&
-           @account.root_account? &&
+           @account.primary_settings_root_account? &&
            !@account.site_admin?
           @account.settings[:emoji_deny_list] = emoji_deny_list
         end
@@ -1096,7 +1105,7 @@ class AccountsController < ApplicationController
 
         # privacy settings
         unless @account.grants_right?(@current_user, :manage_privacy_settings)
-          %w[enable_fullstory enable_google_analytics].each do |setting|
+          %w[enable_fullstory].each do |setting|
             params[:account][:settings].try(:delete, setting)
           end
         end
@@ -1705,6 +1714,19 @@ class AccountsController < ApplicationController
     @account.update_user_dashboards
   end
 
+  def account_calendar_settings
+    return unless authorized_action(@account, @current_user, :manage_account_calendar_visibility)
+
+    title = t("Account Calendars")
+    @page_title = title
+    add_crumb(title)
+    set_active_tab "account_calendars"
+    js_env ACCOUNT_ID: @account.id
+    css_bundle :account_calendar_settings
+    js_bundle :account_calendar_settings
+    render html: '<div id="account-calendar-settings-container"></div>'.html_safe, layout: true
+  end
+
   def format_avatar_count(count = 0)
     count > 99 ? "99+" : count
   end
@@ -1766,7 +1788,7 @@ class AccountsController < ApplicationController
                                    :turnitin_host, :turnitin_account_id, :users_can_edit_name,
                                    { usage_rights_required: [:value, :locked] }.freeze,
                                    :app_center_access_token, :default_dashboard_view, :force_default_dashboard_view,
-                                   :smart_alerts_threshold, :enable_fullstory, :enable_google_analytics,
+                                   :smart_alerts_threshold, :enable_fullstory,
                                    { enable_as_k5_account: [:value, :locked] }.freeze,
                                    :enable_push_notifications, :teachers_can_create_courses_anywhere,
                                    :students_can_create_courses_anywhere,
@@ -1793,7 +1815,11 @@ class AccountsController < ApplicationController
   def strong_account_params
     # i'm doing this instead of normal params because we do too much hackery to the weak params, especially in plugins
     # and it breaks when we enforce inherited weak parameters (because we're not actually editing request.parameters anymore)
-    params.require(:account).permit(*permitted_account_attributes)
+    if params[:override_sis_stickiness] && !value_to_boolean(params[:override_sis_stickiness])
+      params.require(:account).permit(*permitted_account_attributes - [*@account.stuck_sis_fields])
+    else
+      params.require(:account).permit(*permitted_account_attributes)
+    end
   end
 
   def edit_help_links_env

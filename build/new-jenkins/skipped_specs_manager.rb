@@ -34,7 +34,7 @@ class SkippedSpecsManager
 
   def determine_settings
     @path_to_specs = if @mode == "ruby"
-                       "/tmp/rspec_results"
+                       "/tmp/*_rspec_results"
                      else
                        "/tmp/js-results"
                      end
@@ -83,8 +83,11 @@ class SkippedSpecsManager
   end
 
   def write_to_file
-    puts "writing #{@updated_map.keys.count} spec(s) to '/tmp/#{FILENAME}'"
-    File.write("/tmp/#{FILENAME}", @updated_map.sort_by { |_spec_key, attrs| -attrs[:duration] }.to_h.to_json)
+    path = @mode == "ruby" ? "/usr/src/app/out/" : "/tmp/"
+    full_path = "#{path}/#{FILENAME}"
+
+    puts "writing #{@updated_map.keys.count} spec(s) to '#{full_path}'"
+    File.write(full_path, @updated_map.sort_by { |_spec_key, attrs| -attrs[:duration] }.to_h.to_json)
   end
 end
 

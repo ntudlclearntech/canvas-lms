@@ -19,6 +19,8 @@
 #
 
 require_relative "../lti_1_3_spec_helper"
+require_relative "../lib/token_scopes/last_known_accepted_scopes"
+require_relative "../lib/token_scopes/spec_helper"
 
 describe DeveloperKey do
   let(:account) { Account.create! }
@@ -346,6 +348,11 @@ describe DeveloperKey do
         it "updates tools on shard 2" do
           expect(shard_2_tool.reload.name).to eq new_title
         end
+
+        it "respects tool workflow_state" do
+          expect(shard_1_tool.reload.workflow_state).to eq "disabled"
+          expect(shard_2_tool.reload.workflow_state).to eq "disabled"
+        end
       end
 
       context "when non-site admin key" do
@@ -361,6 +368,10 @@ describe DeveloperKey do
 
         it "does not update tools on shard 2" do
           expect(shard_2_tool.reload.name).to eq "shard 2 tool"
+        end
+
+        it "respects tool workflow_state" do
+          expect(shard_1_tool.reload.workflow_state).to eq "disabled"
         end
       end
     end
@@ -515,6 +526,28 @@ describe DeveloperKey do
           scopes: ["not_a_valid_scope"]
         )
       end.to raise_exception ActiveRecord::RecordInvalid
+    end
+
+    it "rejects changes to routes.rb if it would break an existing scope" do
+      stub_const("CanvasRails::Application", TokenScopesHelper::SpecHelper::MockCanvasRails::Application)
+      all_routes = Set.new(TokenScopes.api_routes.map do |route|
+        { verb: route[:verb], path: route[:path] }
+      end)
+
+      modified_scopes = TokenScopesHelper::SpecHelper.last_known_accepted_scopes.reject do |scope|
+        all_routes.include? scope
+      end
+
+      error_message = <<~TEXT
+        These routes are used by developer key scopes, and have been changed:
+        #{modified_scopes.map { |scope| "- #{scope[:verb]}: #{scope[:path]}" }.join("\n")}
+
+        If these routes must be changed, it will require a data fixup to change
+        the scope attribute of any developer keys that refer to those routes.
+        The list of API routes used by developer keys can be changed in
+        spec/lib/token_scopes/last_known_accepted_scopes.rb.
+      TEXT
+      expect(modified_scopes).to be_empty, error_message
     end
 
     context "when api token scoping FF is enabled" do
@@ -888,6 +921,29 @@ describe DeveloperKey do
             shard2_developer_key = DeveloperKey.create!(name: "Shard 2 Key", account_id: account.id)
             expect(shard2_developer_key.account_binding_for(account)).to_not be_nil
             expect(shard2_developer_key.account_binding_for(root_account)).to be_nil
+          end
+        end
+      end
+
+      context "when the developer key and account are on different shards" do
+        it "doesn't return a binding for an developer key with the same local ID on a different shard" do
+          root_account2 = @shard2.activate { account_model }
+          developer_key = root_account_shard.activate do
+            DeveloperKey.create!(account: root_account)
+          end
+
+          @shard2.activate do
+            dk2 = DeveloperKey.create!(account: root_account2, id: developer_key.local_id)
+            DeveloperKeyAccountBinding.find_or_initialize_by(
+              account: root_account2, developer_key: dk2
+            ).update(workflow_state: :on)
+            expect(developer_key.account_binding_for(root_account2)).to be_nil
+          end
+          expect(developer_key.account_binding_for(root_account2)).to be_nil
+
+          root_account_shard.activate do
+            # specifically, this one will fail if we look up by developer key id (local id on that shard)
+            expect(developer_key.account_binding_for(root_account2)).to be_nil
           end
         end
       end

@@ -673,20 +673,20 @@ describe CoursesController do
       it "sets the 'update' attribute to true when user is the final grader" do
         user_session(@teacher)
         get "show", params: { id: @course.id }
-        expect(assignment_permissions[@assignment.id][:update]).to eq(true)
+        expect(assignment_permissions[@assignment.id][:update]).to be(true)
       end
 
       it "sets the 'update' attribute to true when user has the Select Final Grade permission" do
         user_session(@ta)
         get "show", params: { id: @course.id }
-        expect(assignment_permissions[@assignment.id][:update]).to eq(true)
+        expect(assignment_permissions[@assignment.id][:update]).to be(true)
       end
 
       it "sets the 'update' attribute to false when user does not have the Select Final Grade permission" do
         @course.account.role_overrides.create!(permission: :select_final_grade, enabled: false, role: ta_role)
         user_session(@ta)
         get "show", params: { id: @course.id }
-        expect(assignment_permissions[@assignment.id][:update]).to eq(false)
+        expect(assignment_permissions[@assignment.id][:update]).to be(false)
       end
     end
 
@@ -786,7 +786,7 @@ describe CoursesController do
 
     it "sets MSFT enabled in the JS ENV" do
       subject
-      expect(controller.js_env[:MSFT_SYNC_ENABLED]).to eq false
+      expect(controller.js_env[:MSFT_SYNC_ENABLED]).to be false
     end
 
     it "sets MSFT enrollment limits in the JS ENV" do
@@ -801,7 +801,7 @@ describe CoursesController do
 
     it "sets MSFT_SYNC_CAN_BYPASS_COOLDOWN in the JS ENV" do
       subject
-      expect(controller.js_env[:MSFT_SYNC_CAN_BYPASS_COOLDOWN]).to eq false
+      expect(controller.js_env[:MSFT_SYNC_CAN_BYPASS_COOLDOWN]).to be false
     end
 
     it "sets the external tools create url" do
@@ -823,7 +823,7 @@ describe CoursesController do
     it "sets tool creation permissions true for roles that are granted rights" do
       user_session(@teacher)
       get "settings", params: { course_id: @course.id }
-      expect(controller.js_env[:PERMISSIONS][:create_tool_manually]).to eq(true)
+      expect(controller.js_env[:PERMISSIONS][:create_tool_manually]).to be(true)
     end
 
     it "does not set tool creation permissions for roles not granted rights" do
@@ -903,7 +903,7 @@ describe CoursesController do
       get "settings", params: { course_id: @course.id }
       assert_status(401)
       expect(assigns[:unauthorized_reason]).to eq(:unpublished)
-      expect(@enrollment.reload.last_activity_at).to be(nil)
+      expect(@enrollment.reload.last_activity_at).to be_nil
     end
 
     it "assigns active course_settings_sub_navigation external tools" do
@@ -1021,7 +1021,7 @@ describe CoursesController do
       expect(response).to redirect_to(course_url(@course))
       @enrollment.reload
       expect(@enrollment.workflow_state).to eq("active")
-      expect(@enrollment.last_activity_at).to be(nil)
+      expect(@enrollment.last_activity_at).to be_nil
     end
   end
 
@@ -1538,26 +1538,96 @@ describe CoursesController do
       expect(response).to be_successful
     end
 
-    it "redirects to the xlisted course" do
-      user_session(@student)
-      @course1 = @course
-      @course2 = course_factory(active_all: true)
-      @course1.default_section.crosslist_to_course(@course2, run_jobs_immediately: true)
+    describe "redirecting to crosslisted courses" do
+      before do
+        @course1 = @course
+        @course2 = course_factory(active_all: true)
+        @student1 = @student
+      end
 
-      get "show", params: { id: @course1.id }
-      expect(response).to be_redirect
-      expect(response.location).to match(%r{/courses/#{@course2.id}})
-    end
+      context "with 'Assignments 2 Observer View' and the 'Observer Picker' enabled" do
+        before do
+          Account.site_admin.enable_feature!(:observer_picker)
+          Setting.set("assignments_2_observer_view", "true")
+        end
 
-    it "does not redirect to the xlisted course if the enrollment is deleted" do
-      user_session(@student)
-      @course1 = @course
-      @course2 = course_factory(active_all: true)
-      @course1.default_section.crosslist_to_course(@course2, run_jobs_immediately: true)
-      @user.enrollments.destroy_all
+        context "as a student" do
+          before do
+            user_session(@student1)
+          end
 
-      get "show", params: { id: @course1.id }
-      expect(response.status).to eq 401
+          it "redirects to the xlisted course when there's no enrollment in the requested course" do
+            @course1.default_section.crosslist_to_course(@course2, run_jobs_immediately: true)
+            get "show", params: { id: @course1.id }
+            expect(response).to redirect_to(course_url(@course2))
+          end
+
+          it "does not redirect to the xlisted course when there's an enrollment in the requested course" do
+            section2 = @course1.course_sections.create!(name: "section2")
+            @course1.enroll_student(@student1, section: section2, enrollment_state: "active", allow_multiple_enrollments: true)
+            @course1.default_section.crosslist_to_course(@course2, run_jobs_immediately: true)
+            get "show", params: { id: @course1.id }
+            expect(response).not_to be_redirect
+          end
+        end
+
+        context "as an observer" do
+          before do
+            @observer = course_with_observer(course: @course1, associated_user_id: @student1.id, active_all: true).user
+            user_session(@observer)
+          end
+
+          it "redirects to the xlisted course when there's no enrollment in the requested course" do
+            @course1.default_section.crosslist_to_course(@course2, run_jobs_immediately: true)
+            get "show", params: { id: @course1.id }
+            expect(response).to redirect_to(course_url(@course2))
+          end
+
+          it "does not redirect to the xlisted course when there's an unlinked enrollment in the requested course" do
+            section2 = @course1.course_sections.create!(name: "section2")
+            @course1.enroll_user(@observer, "ObserverEnrollment", section: section2, enrollment_state: :active)
+            @course1.default_section.crosslist_to_course(@course2, run_jobs_immediately: true)
+            get "show", params: { id: @course1.id }
+            expect(response).not_to be_redirect
+          end
+
+          it "does not redirect to the xlisted course when there's a linked enrollment in the requested course" do
+            section2 = @course1.course_sections.create!(name: "section2")
+            student2 = student_in_course(course: @course1, section: section2, active_all: true).user
+            course_with_observer(
+              user: @observer,
+              course: @course1,
+              section: section2,
+              associated_user_id: student2.id,
+              active_all: true,
+              allow_multiple_enrollments: true
+            )
+            @course1.default_section.crosslist_to_course(@course2, run_jobs_immediately: true)
+            get "show", params: { id: @course1.id }
+            expect(response).not_to be_redirect
+          end
+        end
+      end
+
+      context "without 'Assignments 2 Observer View' or the 'Observer Picker' enabled" do
+        it "redirects to the xlisted course" do
+          user_session(@student1)
+          @course1.default_section.crosslist_to_course(@course2, run_jobs_immediately: true)
+
+          get "show", params: { id: @course1.id }
+          expect(response).to be_redirect
+          expect(response.location).to match(%r{/courses/#{@course2.id}})
+        end
+
+        it "does not redirect to the xlisted course if the enrollment is deleted" do
+          user_session(@student1)
+          @course1.default_section.crosslist_to_course(@course2, run_jobs_immediately: true)
+          @user.enrollments.destroy_all
+
+          get "show", params: { id: @course1.id }
+          expect(response.status).to eq 401
+        end
+      end
     end
 
     context "page views enabled" do
@@ -2090,7 +2160,7 @@ describe CoursesController do
       expect(response).to be_successful
       run_jobs
       enrollment = @course.reload.teachers.find { |t| t.name == "Sam" }.enrollments.first
-      expect(enrollment.limit_privileges_to_course_section).to eq true
+      expect(enrollment.limit_privileges_to_course_section).to be true
     end
 
     it "alsoes accept a list of user tokens (instead of ye old UserList)" do
@@ -2102,6 +2172,26 @@ describe CoursesController do
       @course.reload
       expect(@course.students).to include(u1)
       expect(@course.students).to include(u2)
+    end
+
+    context "enrollment tracking" do
+      before do
+        user_session(@teacher)
+      end
+
+      it "tracks enrollments for unpaced courses" do
+        allow(InstStatsd::Statsd).to receive(:count)
+        post "enroll_users", params: { course_id: @course.id, user_list: "\"Sam\" <sam@yahoo.com>, \"Fred\" <fred@yahoo.com>" }
+        expect(InstStatsd::Statsd).to have_received(:count).with("course.unpaced.student_enrollment_count", ActiveRecord::Associations::CollectionProxy).once
+      end
+
+      it "tracks enrollments for paced courses" do
+        allow(InstStatsd::Statsd).to receive(:count)
+        @course.enable_course_paces = true
+        @course.save!
+        post "enroll_users", params: { course_id: @course.id, user_list: "\"Sam\" <sam@yahoo.com>, \"Fred\" <fred@yahoo.com>" }
+        expect(InstStatsd::Statsd).to have_received(:count).with("course.paced.student_enrollment_count", ActiveRecord::Associations::CollectionProxy).once
+      end
     end
   end
 
@@ -3030,6 +3120,16 @@ describe CoursesController do
       json = JSON.parse response.body
       expect(json["errors"].keys).to include "unparsable_content"
     end
+
+    it "doesn't overwrite stuck sis fields" do
+      user_session(@teacher)
+      init_course_name = @course.name
+
+      put "update", params: { id: @course.id, course: { name: "123456" }, override_sis_stickiness: false, format: :json }
+
+      @course.reload
+      expect(@course.name).to eq init_course_name
+    end
   end
 
   describe "POST 'unconclude'" do
@@ -3426,30 +3526,30 @@ describe CoursesController do
       controller.visibility_configuration({ course_visibility: "public" })
       course = controller.instance_variable_get(:@course)
 
-      expect(course.is_public).to eq true
+      expect(course.is_public).to be true
 
       controller.visibility_configuration({ course_visibility: "institution" })
-      expect(course.is_public).to eq false
-      expect(course.is_public_to_auth_users).to eq true
+      expect(course.is_public).to be false
+      expect(course.is_public_to_auth_users).to be true
 
       controller.visibility_configuration({ course_visibility: "course" })
-      expect(course.is_public).to eq false
-      expect(course.is_public).to eq false
+      expect(course.is_public).to be false
+      expect(course.is_public).to be false
     end
 
     it "allows setting syllabus visibility with flag" do
       controller.visibility_configuration({ course_visibility: "course", syllabus_visibility_option: "public" })
       course = controller.instance_variable_get(:@course)
 
-      expect(course.public_syllabus).to eq true
+      expect(course.public_syllabus).to be true
 
       controller.visibility_configuration({ course_visibility: "course", syllabus_visibility_option: "institution" })
-      expect(course.public_syllabus).to eq false
-      expect(course.public_syllabus_to_auth).to eq true
+      expect(course.public_syllabus).to be false
+      expect(course.public_syllabus_to_auth).to be true
 
       controller.visibility_configuration({ course_visibility: "course", syllabus_visibility_option: "course" })
-      expect(course.public_syllabus).to eq false
-      expect(course.public_syllabus_to_auth).to eq false
+      expect(course.public_syllabus).to be false
+      expect(course.public_syllabus_to_auth).to be false
     end
   end
 
@@ -4039,8 +4139,8 @@ describe CoursesController do
                                course: { course_visibility: "public", indexed: true } }
 
       course.reload
-      expect(course.is_public).to eq true
-      expect(course.indexed).to eq true
+      expect(course.is_public).to be true
+      expect(course.indexed).to be true
     end
 
     it "allows the teacher to change visibility" do
@@ -4052,8 +4152,8 @@ describe CoursesController do
                                course: { course_visibility: "public", indexed: true } }
 
       course.reload
-      expect(course.is_public).to eq true
-      expect(course.indexed).to eq true
+      expect(course.is_public).to be true
+      expect(course.indexed).to be true
     end
 
     it "does not allow a teacher without the permission to change visibility" do
@@ -4066,8 +4166,8 @@ describe CoursesController do
                                course: { course_visibility: "public", indexed: true } }
 
       course.reload
-      expect(course.is_public).not_to eq true
-      expect(course.indexed).not_to eq true
+      expect(course.is_public).not_to be true
+      expect(course.indexed).not_to be true
     end
 
     it "does not allow an account admin without the permission to change visibility" do
@@ -4079,8 +4179,8 @@ describe CoursesController do
                                course: { course_visibility: "public", indexed: true } }
 
       course.reload
-      expect(course.is_public).not_to eq true
-      expect(course.indexed).not_to eq true
+      expect(course.is_public).not_to be true
+      expect(course.indexed).not_to be true
     end
 
     it "allows a site admin to change visibility even if account admins cannot" do
@@ -4094,8 +4194,8 @@ describe CoursesController do
                                course: { course_visibility: "public", indexed: true } }
 
       course.reload
-      expect(course.is_public).to eq true
-      expect(course.indexed).to eq true
+      expect(course.is_public).to be true
+      expect(course.indexed).to be true
     end
   end
 

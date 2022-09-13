@@ -19,20 +19,38 @@
 import React, {memo} from 'react'
 import {Flex} from '@instructure/ui-flex'
 import {Text} from '@instructure/ui-text'
-import {IconAssignmentLine, IconRubricLine} from '@instructure/ui-icons'
+import {TruncateText} from '@instructure/ui-truncate-text'
+import {
+  IconAssignmentLine,
+  IconRubricLine,
+  IconQuizLine,
+  IconDiscussionLine
+} from '@instructure/ui-icons'
 import {Link} from '@instructure/ui-link'
 import {useScope as useI18nScope} from '@canvas/i18n'
 import {alignmentShape} from './propTypeShapes'
 
 const I18n = useI18nScope('AlignmentSummary')
 
-const AlignmentItem = ({id, type, title, url, moduleTitle, moduleUrl}) => {
-  const renderIcon = alignmentType =>
-    String(alignmentType).toLowerCase() === 'rubric' ? (
-      <IconRubricLine data-testid="alignment-item-rubric-icon" />
-    ) : (
-      <IconAssignmentLine data-testid="alignment-item-assignment-icon" />
-    )
+const AlignmentItem = ({
+  id,
+  contentType,
+  title,
+  url,
+  moduleTitle,
+  moduleUrl,
+  moduleWorkflowState,
+  assignmentContentType
+}) => {
+  const renderIcon = () => {
+    if (contentType === 'Rubric') return <IconRubricLine data-testid="alignment-item-rubric-icon" />
+    if (assignmentContentType === 'quiz')
+      return <IconQuizLine data-testid="alignment-item-quiz-icon" />
+    if (assignmentContentType === 'discussion')
+      return <IconDiscussionLine data-testid="alignment-item-discussion-icon" />
+    // by default we show Assignment icon
+    return <IconAssignmentLine data-testid="alignment-item-assignment-icon" />
+  }
 
   return (
     <Flex key={id} as="div" alignItems="start" padding="x-small 0 0" data-testid="alignment-item">
@@ -45,30 +63,49 @@ const AlignmentItem = ({id, type, title, url, moduleTitle, moduleUrl}) => {
             padding: '0.5rem 0 0'
           }}
         >
-          {renderIcon(type)}
+          {renderIcon()}
         </div>
       </Flex.Item>
       <Flex.Item size="50%" shouldGrow>
-        <Flex direction="column">
-          <div style={{padding: '0.25rem'}}>
+        <Flex as="div" direction="column">
+          <Flex.Item as="div" padding="xxx-small">
             <Link interaction="enabled" isWithinText={false} href={url} target="_blank">
-              <Text size="medium">{title}</Text>
+              <TruncateText>
+                <Text size="medium">{title}</Text>
+              </TruncateText>
             </Link>
-          </div>
-          <div style={{padding: '0.25rem'}}>
-            <Text size="small">{`${I18n.t('Module')}:`}</Text>
-            <span style={{paddingLeft: '0.375rem'}}>
-              {moduleTitle && moduleUrl ? (
-                <Link interaction="enabled" isWithinText={false} href={moduleUrl} target="_blank">
-                  <Text size="small">{moduleTitle}</Text>
-                </Link>
-              ) : (
-                <Text size="small" color="secondary">
-                  {I18n.t('None')}
-                </Text>
-              )}
-            </span>
-          </div>
+          </Flex.Item>
+          <Flex.Item as="div">
+            <Flex as="div" padding="xxx-small" alignItems="start">
+              <Flex.Item size="3.5rem">
+                <Text size="small">{`${I18n.t('Module')}:`}</Text>
+              </Flex.Item>
+              <Flex.Item size="50%" shouldGrow>
+                {moduleTitle && moduleUrl ? (
+                  <div style={{paddingTop: '0.14rem'}}>
+                    <Text size="small">
+                      <Link
+                        interaction="enabled"
+                        isWithinText={false}
+                        href={moduleUrl}
+                        target="_blank"
+                      >
+                        <TruncateText>
+                          {moduleWorkflowState === 'unpublished'
+                            ? I18n.t('%{moduleTitle} (unpublished)', {moduleTitle})
+                            : moduleTitle}
+                        </TruncateText>
+                      </Link>
+                    </Text>
+                  </div>
+                ) : (
+                  <Text size="small" color="secondary">
+                    {I18n.t('None')}
+                  </Text>
+                )}
+              </Flex.Item>
+            </Flex>
+          </Flex.Item>
         </Flex>
       </Flex.Item>
     </Flex>

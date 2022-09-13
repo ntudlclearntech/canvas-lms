@@ -23,6 +23,7 @@ import {Heading} from '@instructure/ui-heading'
 import {Flex} from '@instructure/ui-flex'
 import {View} from '@instructure/ui-view'
 import {Alert} from '@instructure/ui-alerts'
+import {Spinner} from '@instructure/ui-spinner'
 import {Preview} from './CreateIconMakerForm/Preview'
 import {CreateIconMakerForm} from './CreateIconMakerForm'
 import {Footer} from './CreateIconMakerForm/Footer'
@@ -36,6 +37,7 @@ import formatMessage from '../../../../format-message'
 import buildDownloadUrl from '../../shared/buildDownloadUrl'
 import {validIcon} from '../utils/iconValidation'
 import {hasChanges} from '../utils/iconMakerFormHasChanges'
+import bridge from '../../../../bridge'
 
 const INVALID_MESSAGE = formatMessage(
   'One of the following styles must be added to save an icon: Icon Color, Outline Size, Icon Text, or Image'
@@ -86,8 +88,21 @@ function renderHeader(title, settings, onKeyDown, isInvalid, onAlertDismissal, o
   )
 }
 
-function renderBody(settings, dispatch, editor, editing, allowNameChange, nameRef, rcsConfig) {
-  return (
+function renderBody(
+  settings,
+  dispatch,
+  editor,
+  editing,
+  allowNameChange,
+  nameRef,
+  rcsConfig,
+  isLoading
+) {
+  return isLoading() ? (
+    <Flex justifyItems="center">
+      <Spinner renderTitle={formatMessage('Loading...')} size="large" />
+    </Flex>
+  ) : (
     <CreateIconMakerForm
       settings={settings}
       dispatch={dispatch}
@@ -116,7 +131,7 @@ function renderFooter(status, onClose, handleSubmit, editing, replaceAll, setRep
   )
 }
 
-const closeTrayFromCancel = (initialSettings, currentSettings) => {
+const checkIfAnyUnsavedChanges = (initialSettings, currentSettings) => {
   let shouldCloseTray = true
   if (hasChanges(initialSettings, currentSettings)) {
     // RCE already uses browser's confirm dialog for unsaved changes
@@ -127,6 +142,7 @@ const closeTrayFromCancel = (initialSettings, currentSettings) => {
 
   return shouldCloseTray
 }
+
 export function IconMakerTray({editor, onUnmount, editing, rcsConfig}) {
   const nameRef = useRef()
   const applyRef = useRef()
@@ -139,14 +155,34 @@ export function IconMakerTray({editor, onUnmount, editing, rcsConfig}) {
 
   const [settings, settingsStatus, dispatch] = useSvgSettings(editor, editing, rcsConfig)
   const [status, setStatus] = useState(statuses.IDLE)
+
+  const [initialSettings, setInitialSettings] = useState({...defaultState})
+
+  // These useRef objects are needed because when the tray is closed using the escape key
+  // objects created by useState are not available, causing the comparison between
+  // initialSettings and settings to behave unexpectedly
+  const initialSettingsRef = useRef(initialSettings)
+  const settingsRef = useRef(settings)
+  useEffect(() => {
+    settingsRef.current = settings
+  }, [settings])
+  useEffect(() => {
+    initialSettingsRef.current = initialSettings
+  }, [initialSettings])
+
   const storeProps = useStoreProps()
+
   const onClose = () => {
-    if (closeTrayFromCancel(initialSettings, settings)) {
+    const shouldCloseTray = checkIfAnyUnsavedChanges(
+      initialSettingsRef.current,
+      settingsRef.current
+    )
+    if (shouldCloseTray) {
       setIsOpen(false)
     }
   }
 
-  const [initialSettings, setInitialSettings] = useState({defaultState})
+  const isLoading = () => status === statuses.LOADING
 
   const onKeyDown = event => {
     if (event.keyCode !== 9) return
@@ -184,42 +220,47 @@ export function IconMakerTray({editor, onUnmount, editing, rcsConfig}) {
     }
 
     const svg = buildSvg(settings, {isPreview: false})
-    buildStylesheet()
-      .then(stylesheet => {
-        svg.appendChild(stylesheet)
-        return storeProps.startIconMakerUpload(
-          {
-            name: `${settings.name || formatMessage('untitled')}.svg`,
-            domElement: svg
-          },
-          {
-            onDuplicate: replaceFile && 'overwrite'
-          }
-        )
-      })
+    svg.appendChild(buildStylesheet())
+    return storeProps
+      .startIconMakerUpload(
+        {
+          name: `${settings.name || formatMessage('untitled')}.svg`,
+          domElement: svg
+        },
+        {
+          onDuplicate: replaceFile && 'overwrite'
+        }
+      )
       .then(writeIconToRCE)
       .then(() => setIsOpen(false))
       .catch(() => setStatus(statuses.ERROR))
   }
 
-  const writeIconToRCE = ({url}) => {
-    const img = editor.dom.create('img')
+  const writeIconToRCE = ({url, display_name}) => {
+    const {alt, isDecorative, externalStyle, externalWidth, externalHeight} = settings
 
-    img.setAttribute('src', url)
-
-    if (settings.alt) {
-      img.setAttribute('alt', settings.alt)
+    const imageAttributes = {
+      alt_text: alt,
+      display_name,
+      height: externalHeight,
+      isDecorativeImage: isDecorative,
+      src: url,
+      // React wants this to be an object but we are just
+      // passing along a string here. Using the style attribute
+      // with all caps makes React ignore this fact
+      STYLE: externalStyle,
+      width: externalWidth
     }
 
     // Mark the image as an icon maker icon.
-    img.setAttribute(ICON_MAKER_ATTRIBUTE, true)
+    imageAttributes[ICON_MAKER_ATTRIBUTE] = true
 
     // URL to fetch the SVG from when loading the Edit tray.
     // We can't use the 'src' because Canvas will re-write the
     // source attribute to a URL that is not cross-origin friendly.
-    img.setAttribute(ICON_MAKER_DOWNLOAD_URL_ATTR, buildDownloadUrl(url))
+    imageAttributes[ICON_MAKER_DOWNLOAD_URL_ATTR] = buildDownloadUrl(url)
 
-    editor.insertContent(img.outerHTML)
+    bridge.embedImage(imageAttributes)
   }
 
   const defaultImageSettings = () => {
@@ -277,7 +318,7 @@ export function IconMakerTray({editor, onUnmount, editing, rcsConfig}) {
         renderHeader(title, settings, onKeyDown, isInvalid, handleAlertDismissal, onClose)
       }
       renderBody={() =>
-        renderBody(settings, dispatch, editor, editing, !replaceAll, nameRef, rcsConfig)
+        renderBody(settings, dispatch, editor, editing, !replaceAll, nameRef, rcsConfig, isLoading)
       }
       renderFooter={() =>
         renderFooter(status, onClose, handleSubmit, editing, replaceAll, setReplaceAll, applyRef)

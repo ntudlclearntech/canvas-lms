@@ -32,11 +32,8 @@ import {fireEvent, render, waitFor} from '@testing-library/react'
 import {MockedProvider} from '@apollo/react-testing'
 import React from 'react'
 
+jest.useFakeTimers()
 jest.mock('@canvas/rce/RichContentEditor')
-jest.mock('../utils/constants', () => ({
-  ...jest.requireActual('../utils/constants'),
-  HIGHLIGHT_TIMEOUT: 0
-}))
 jest.mock('../utils', () => ({
   ...jest.requireActual('../utils'),
   responsiveQuerySizes: () => ({desktop: {maxWidth: '1000'}}),
@@ -262,7 +259,7 @@ describe('DiscussionFullPage', () => {
 
     it('allows subscribing to the topic', async () => {
       const mocks = [
-        ...getDiscussionQueryMock(),
+        ...getDiscussionQueryMock({isGroup: false}),
         ...subscribeToDiscussionTopicMock({subscribed: true})
       ]
       mocks[0].result.data.legacyNode.subscribed = false
@@ -274,7 +271,7 @@ describe('DiscussionFullPage', () => {
 
     it('allows unsubscribing to the topic', async () => {
       const mocks = [
-        ...getDiscussionQueryMock(),
+        ...getDiscussionQueryMock({isGroup: false}),
         ...subscribeToDiscussionTopicMock({subscribed: false})
       ]
       const container = setup(mocks)
@@ -528,6 +525,7 @@ describe('DiscussionFullPage', () => {
       expect(await container.findByTestId('isHighlighted')).toBeInTheDocument()
 
       // expect the highlight to disappear
+      jest.advanceTimersByTime(6000)
       await waitFor(() => expect(container.queryByTestId('isHighlighted')).toBeNull())
 
       // should be able to highlight the topic multiple times
@@ -543,7 +541,13 @@ describe('DiscussionFullPage', () => {
       }
       const container = setup(getDiscussionQueryMock())
 
+      // expect the highlight to exist for a while
+      jest.advanceTimersByTime(3000)
       expect(await container.findByTestId('isHighlighted')).toBeInTheDocument()
+
+      // expect the highlight to disappear
+      jest.advanceTimersByTime(3000)
+      await waitFor(() => expect(container.queryByTestId('isHighlighted')).toBeNull())
     })
   })
 

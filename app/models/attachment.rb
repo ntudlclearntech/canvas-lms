@@ -20,9 +20,6 @@
 
 require "atom"
 require "crocodoc"
-require "fileutils"
-require "securerandom"
-require "rchardet"
 
 # See the uploads controller and views for examples on how to use this model.
 class Attachment < ActiveRecord::Base
@@ -273,67 +270,6 @@ class Attachment < ActiveRecord::Base
   READ_FILE_CHUNK_SIZE = 4096
   def self.read_file_chunk_size
     READ_FILE_CHUNK_SIZE
-  end
-
-  def self.convert_attachment_encoding?(file_path, file_encoding)
-    error_count = 0
-    file = File.open(file_path)
-    chunk = file.read(read_file_chunk_size)
-    encoding_converter = Encoding::Converter.new(file_encoding, Encoding::UTF_8)
-
-    converted_file = File.basename(file_path, File.extname(file_path)) + "_" + SecureRandom.hex + "." + File.extname(file_path)
-    converted_file_path = File.join(File.dirname(file_path), converted_file)
-    converted_file = File.new(converted_file_path, "w:UTF-8")
-    while chunk
-      begin
-        converted_chunk = encoding_converter.convert(chunk.dup)
-        raise EncodingError unless converted_chunk.valid_encoding?
-
-        converted_file.write(converted_chunk)
-      rescue EncodingError
-        error_count += 1
-        if !file.eof? && error_count <= 4
-          # we may have split a utf-8 character in the chunk - try to resolve it, but only to a point
-          chunk << file.read(1)
-          next
-        else
-          file.close
-          converted_file.close
-
-          File.unlink(converted_file_path)
-
-          raise
-        end
-      end
-
-      error_count = 0
-      chunk = file.read(read_file_chunk_size)
-    end
-
-    file.close
-    converted_file.close
-
-    File.unlink(file_path)
-    FileUtils.mv(converted_file_path, file_path)
-
-    true
-  rescue EncodingError
-    false
-  end
-
-  def self.get_file_encoding?(file_path)
-    content = File.open(file_path, "rb", &:read)
-    CharDet.detect(content)
-  end
-
-  def self.convert_to_utf8?(file)
-    file_path = File.absolute_path(file.to_path)
-    file_encoding = Attachment.get_file_encoding?(file_path)
-
-    return false if file_encoding["confidence"].to_d <= 0.5.to_d
-    return true if Attachment.convert_attachment_encoding?(file_path, file_encoding["encoding"])
-
-    false
   end
 
   def self.valid_utf8?(file)
@@ -1426,6 +1362,11 @@ class Attachment < ActiveRecord::Base
     end
     can :read
 
+    given do |user|
+      user && attachment_associations.joins(:submission).where(submissions: { user: user }).exists?
+    end
+    can :read
+
     given do |_user, session|
       (u = session.try(:file_access_user)) &&
         (user_can_read_through_context?(u, session) ||
@@ -1619,19 +1560,18 @@ class Attachment < ActiveRecord::Base
   # object. It will replace the attachment content with a file_removed file.
   def destroy_content_and_replace(deleted_by_user = nil)
     shard.activate do
+      file_removed_path = self.class.file_removed_path
+      new_name = File.basename(file_removed_path)
       att = root_attachment_id? ? root_attachment : self
-      return true if Purgatory.where(attachment_id: att).active.exists?
+      return true if att.display_name == new_name
 
-      att.send_to_purgatory(deleted_by_user)
+      att.send_to_purgatory(deleted_by_user) unless Purgatory.where(attachment_id: att).active.exists?
       att.destroy_content
       att.thumbnail&.destroy
 
-      file_removed_path = self.class.file_removed_path
-      new_name = File.basename(file_removed_path)
-
       if att.instfs_hosted? && InstFS.enabled?
-        # dupliciate the base file_removed file to a unique uuid
-        att.instfs_uuid = InstFS.duplicate_file(self.class.file_removed_base_instfs_uuid)
+        # duplicate the base file_removed file to a unique uuid
+        att.instfs_uuid = InstFS.duplicate_file(Attachment.file_removed_base_instfs_uuid)
       else
         Attachments::Storage.store_for_attachment(att, File.open(file_removed_path))
       end
@@ -1674,27 +1614,29 @@ class Attachment < ActiveRecord::Base
   def send_to_purgatory(deleted_by_user = nil)
     make_rootless
     new_instfs_uuid = nil
-    if Attachment.s3_storage? && s3object.exists?
-      s3object.copy_to(bucket.object(purgatory_filename))
-    elsif instfs_hosted? && InstFS.enabled?
+    if instfs_hosted? && InstFS.enabled?
       # copy to a new instfs file
       new_instfs_uuid = InstFS.duplicate_file(instfs_uuid)
+    elsif Attachment.s3_storage? && s3object.exists?
+      s3object.copy_to(bucket.object(purgatory_filename))
     elsif Attachment.local_storage?
       FileUtils.mkdir(local_purgatory_directory) unless File.exist?(local_purgatory_directory)
       FileUtils.cp full_filename, local_purgatory_file
     end
-    if Purgatory.where(attachment_id: self).exists?
-      p = Purgatory.where(attachment_id: self).take
+    if (p = Purgatory.find_by(attachment_id: self))
       p.deleted_by_user = deleted_by_user
       p.old_filename = filename
       p.old_display_name = display_name
       p.old_content_type = content_type
+      p.old_workflow_state = workflow_state
+      p.old_file_state = file_state
       p.new_instfs_uuid = new_instfs_uuid
       p.workflow_state = "active"
       p.save!
     else
-      Purgatory.create!(attachment: self, old_filename: filename, old_display_name: display_name,
-                        old_content_type: content_type, new_instfs_uuid: new_instfs_uuid, deleted_by_user: deleted_by_user)
+      Purgatory.create!(attachment: self, old_filename: filename, old_display_name: display_name, old_content_type: content_type,
+                        old_file_state: file_state, old_workflow_state: workflow_state, new_instfs_uuid: new_instfs_uuid,
+                        deleted_by_user: deleted_by_user)
     end
   end
 
@@ -1719,14 +1661,12 @@ class Attachment < ActiveRecord::Base
     write_attribute(:display_name, p.old_display_name)
     write_attribute(:content_type, p.old_content_type)
     write_attribute(:root_attachment_id, nil)
+    write_attribute(:file_state, p.old_file_state) if p.old_file_state
+    write_attribute(:workflow_state, p.old_workflow_state) if p.old_workflow_state
 
-    if InstFS.enabled?
-      if p.new_instfs_uuid
-        # just set it to the copied uuid, shouldn't get deleted when expired since we'll set p to 'restored'
-        write_attribute(:instfs_uuid, p.new_instfs_uuid)
-      else
-        raise "purgatory record was created before being fixed for inst-fs"
-      end
+    if InstFS.enabled? && p.new_instfs_uuid
+      # just set it to the copied uuid, shouldn't get deleted when expired since we'll set p to 'restored'
+      write_attribute(:instfs_uuid, p.new_instfs_uuid)
     elsif Attachment.s3_storage?
       old_s3object = bucket.object(purgatory_filename)
       raise Attachment::FileDoesNotExist unless old_s3object.exists?
@@ -1755,7 +1695,7 @@ class Attachment < ActiveRecord::Base
       self.instfs_uuid = nil
     elsif Attachment.s3_storage?
       s3object.delete unless ApplicationController.test_cluster?
-    else
+    elsif File.exist?(full_filename)
       FileUtils.rm full_filename
     end
   end

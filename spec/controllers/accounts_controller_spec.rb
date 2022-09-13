@@ -514,6 +514,20 @@ describe AccountsController do
               @student.reload.dashboard_view(@subaccount)]).to match_array(Array.new(3, "planner"))
     end
 
+    it "doesn't overwrite stuck sis fields" do
+      account_with_admin_logged_in
+      @account = @account.sub_accounts.create!
+      name = "update the name to mark it as stuck"
+      @account.update({ name: name })
+
+      new_account_name = "updated account name"
+      put "update", params: { id: @account.id, "account[name]": new_account_name, override_sis_stickiness: false }, format: "json"
+      @account.reload
+
+      expect(response.status).to eq 200
+      expect(@account.name).to eq name
+    end
+
     describe "k5 settings" do
       def toggle_k5_params(account_id, enable)
         { id: account_id,
@@ -783,9 +797,9 @@ describe AccountsController do
 
       it "is able to configure the 'passive' setting" do
         post "update", params: { id: @account.id, account: { terms_of_service: { passive: "0" } } }
-        expect(@account.reload.terms_of_service.passive).to eq false
+        expect(@account.reload.terms_of_service.passive).to be false
         post "update", params: { id: @account.id, account: { terms_of_service: { passive: "1" } } }
-        expect(@account.reload.terms_of_service.passive).to eq true
+        expect(@account.reload.terms_of_service.passive).to be true
       end
     end
 
@@ -798,7 +812,6 @@ describe AccountsController do
           account: {
             settings: {
               enable_fullstory: "0",
-              enable_google_analytics: "0",
             }
           }
         }
@@ -811,8 +824,6 @@ describe AccountsController do
           post "update", format: "json", params: { id: account.id, **payload }
         end.to change {
           account.reload.settings.fetch(:enable_fullstory, true)
-        }.from(true).to(false).and change {
-          account.reload.settings.fetch(:enable_google_analytics, true)
         }.from(true).to(false)
       end
 
@@ -823,8 +834,6 @@ describe AccountsController do
           post "update", format: "json", params: { id: Account.site_admin.id, **payload }
         end.to not_change {
           account.reload.settings.fetch(:enable_fullstory, true)
-        }.and not_change {
-          account.reload.settings.fetch(:enable_google_analytics, true)
         }
       end
 
@@ -835,8 +844,6 @@ describe AccountsController do
           post "update", format: "json", params: { id: sub_account.id, **payload }
         end.to not_change {
           account.reload.settings.fetch(:enable_fullstory, true)
-        }.and not_change {
-          account.reload.settings.fetch(:enable_google_analytics, true)
         }
       end
 
@@ -847,8 +854,6 @@ describe AccountsController do
           post "update", format: "json", params: { id: account.id, **payload }
         end.to not_change {
           account.reload.settings.fetch(:enable_fullstory, true)
-        }.and not_change {
-          account.reload.settings.fetch(:enable_google_analytics, true)
         }
       end
     end
@@ -862,7 +867,7 @@ describe AccountsController do
       post "update", params: { id: @account.id, account: {
         settings: { outgoing_email_default_name_option: "default" }
       } }
-      expect(@account.reload.settings[:outgoing_email_default_name]).to eq nil
+      expect(@account.reload.settings[:outgoing_email_default_name]).to be_nil
     end
 
     context "course_template_id" do
@@ -1004,7 +1009,7 @@ describe AccountsController do
     it "orders desc announcements" do
       account_with_admin_logged_in
       Timecop.freeze do
-        account_notification(account: @account, message: "Announcement 1", created_at: Time.zone.now - 1.minute)
+        account_notification(account: @account, message: "Announcement 1", created_at: 1.minute.ago)
         @a1 = @announcement
         account_notification(account: @account, message: "Announcement 2", created_at: Time.zone.now)
         @a2 = @announcement
@@ -1299,6 +1304,15 @@ describe AccountsController do
 
       expect(response).to be_successful
       expect(response.headers.to_a.find { |a| a.first == "Link" }.last).to_not include("last")
+    end
+
+    it "sets pagination total_pages/last page link if includes ui_invoked is set" do
+      Setting.set("ui_invoked_count_pages", "true")
+      admin_logged_in(@account)
+      get "courses_api", params: { account_id: @account.id, per_page: 1, include: ["ui_invoked"] }
+
+      expect(response).to be_successful
+      expect(response.headers.to_a.find { |a| a.first == "Link" }.last).to include("last")
     end
 
     it "properly removes sections from includes" do
@@ -1862,6 +1876,39 @@ describe AccountsController do
       get "manageable_accounts"
       expect(response).to be_successful
       expect(json_parse(response.body).length).to be 0
+    end
+  end
+
+  describe "account_calendar_settings" do
+    before :once do
+      Account.site_admin.enable_feature! :account_calendar_events
+      @account = Account.default
+    end
+
+    it "returns unauthorized if the user does not have manage_account_calendar_visibility permission" do
+      account_admin_user_with_role_changes(account: @account, role_changes: { manage_account_calendar_visibility: false })
+      user_session(@user)
+      get "account_calendar_settings", params: { account_id: @account.id }
+
+      expect(response).to be_unauthorized
+    end
+
+    it "returns unauthorized if the :account_calendar_events feature is disabled" do
+      Account.site_admin.disable_feature! :account_calendar_events
+      account_admin_user(account: @account)
+      user_session(@user)
+      get "account_calendar_settings", params: { account_id: @account.id }
+
+      expect(response).to be_unauthorized
+    end
+
+    it "renders a page and sets variables" do
+      account_admin_user(account: @account)
+      user_session(@user)
+      get "account_calendar_settings", params: { account_id: @account.id }
+
+      expect(response).to be_successful
+      expect(assigns["js_env"][:ACCOUNT_ID]).to be(@account.id)
     end
   end
 end

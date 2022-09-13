@@ -71,7 +71,6 @@ class GradebooksController < ApplicationController
     js_bundle :grade_summary, :rubric_assessment
     css_bundle :grade_summary
 
-    @google_analytics_page_title = t("Grades for Student")
     load_grade_summary_data
     render stream: can_stream_template?
   end
@@ -459,7 +458,6 @@ class GradebooksController < ApplicationController
 
       publish_to_sis_url: context_url(@context, :context_details_url, anchor: "tab-grade-publishing"),
       re_upload_submissions_url: named_context_url(@context, :submissions_upload_context_gradebook_url, "{{ assignment_id }}"),
-      remove_gradebook_student_search_delay_enabled: Account.site_admin.feature_enabled?(:remove_gradebook_student_search_delay),
       reorder_custom_columns_url: api_v1_custom_gradebook_columns_reorder_url(@context),
       sections: sections_json(visible_sections, @current_user, session, [], allow_sis_ids: true),
       setting_update_url: api_v1_course_settings_url(@context),
@@ -561,6 +559,7 @@ class GradebooksController < ApplicationController
       late_policy: @context.late_policy.as_json(include_root: false),
       login_handle_name: root_account.settings[:login_handle_name],
       has_modules: @context.has_modules?,
+      message_attachment_upload_folder_id: @current_user.conversation_attachments_folder.id.to_s,
       new_gradebook_development_enabled: new_gradebook_development_enabled?,
       outcome_gradebook_enabled: outcome_gradebook_enabled?,
       outcome_links_url: api_v1_course_outcome_group_links_url(@context, outcome_style: :full),
@@ -620,6 +619,7 @@ class GradebooksController < ApplicationController
                settings_update_url: api_v1_course_gradebook_settings_update_url(@context),
                IMPROVED_LMGB: root_account.feature_enabled?(:improved_lmgb)
              },
+             OUTCOME_AVERAGE_CALCULATION: root_account.feature_enabled?(:outcome_average_calculation),
              outcome_service_results_to_canvas: outcome_service_results_to_canvas_enabled?
            })
   end
@@ -1542,4 +1542,15 @@ class GradebooksController < ApplicationController
   def outcome_service_results_to_canvas_enabled?
     @context.feature_enabled?(:outcome_service_results_to_canvas)
   end
+
+  def mark_grades_read_a2
+    if @context.feature_enabled?(:assignments_2_student)
+      set_badge_counts_for(@context, @current_user)
+      course_submissions = @context.submissions.where(user_id: @current_user.id).except(:order).preload(:content_participations, :visible_submission_comments)
+      course_submissions.find_each do |submission|
+        submission.mark_read(@current_user)
+      end
+    end
+  end
+  helper_method :mark_grades_read_a2
 end

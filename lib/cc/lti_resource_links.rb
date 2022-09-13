@@ -121,6 +121,15 @@ module CC
             resource_link.lookup_uuid,
             name: "lookup_uuid"
           )
+          unless resource_link.url.nil?
+            extensions.lticm(
+              :property,
+              # 'url' refers to the actual target_link_uri, whereas 'launch_url'
+              #   is only used to look up the tool
+              resource_link.url,
+              name: "resource_link_url"
+            )
+          end
         end
       end
     end

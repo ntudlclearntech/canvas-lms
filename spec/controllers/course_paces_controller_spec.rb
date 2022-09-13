@@ -69,6 +69,7 @@ describe CoursePacesController, type: :controller do
                                                  start_date: "2021-10-03",
                                                  end_date: "2021-10-03"
                                                })]
+
     @course.save!
     @course.account.enable_feature!(:course_paces)
 
@@ -101,6 +102,21 @@ describe CoursePacesController, type: :controller do
 
   describe "GET #index" do
     it "populates js_env with course, enrollment, sections, blackout_dates, and course_pace details" do
+      @account_level_blackout_date = @course.account.calendar_events.create!(
+        title: "blackout dates 2",
+        start_at: "2021-10-04",
+        end_at: "2021-10-04",
+        blackout_date: true
+      )
+
+      @calendar_event_blackout_dates = [@account_level_blackout_date,
+                                        CalendarEvent.create!({
+                                                                title: "blackout dates 3",
+                                                                start_at: "2021-10-05",
+                                                                end_at: "2021-10-05",
+                                                                context: @course,
+                                                                blackout_date: true
+                                                              })]
       @section = @course.course_sections.first
       @student_enrollment = @course.enrollments.find_by(user_id: @student.id)
       @progress = @course_pace.create_publish_progress
@@ -109,7 +125,8 @@ describe CoursePacesController, type: :controller do
       expect(response).to be_successful
       expect(assigns[:js_bundles].flatten).to include(:course_paces)
       js_env = controller.js_env
-      expect(js_env[:BLACKOUT_DATES]).to eq(@course.blackout_dates.as_json(include_root: false))
+      expect(js_env[:BLACKOUT_DATES]).to eq((@course.blackout_dates).as_json(include_root: false))
+      expect(js_env[:CALENDAR_EVENT_BLACKOUT_DATES]).to eq((@calendar_event_blackout_dates).as_json(include_root: false))
       expect(js_env[:COURSE]).to match(hash_including({
                                                         id: @course.id,
                                                         name: @course.name,
@@ -236,6 +253,61 @@ describe CoursePacesController, type: :controller do
       get :api_show, params: { course_id: @course.id, id: @course_pace.id }
       expect(response).to be_successful
       expect(JSON.parse(response.body)["progress"]).to be_nil
+    end
+
+    # the show api returns all the paces with their assignable module items
+    # if the user deletes the underlying learning object (e.g. assignment, quiz, ...)
+    # it should get removed from the course_pace_module_items and
+    # no longer be in the pace. Let's test that.
+    describe "learning object deletion" do
+      it "handles assignments" do
+        a = @course.assignments.create! name: "Del this assn", workflow_state: "active"
+        @mod1.add_item id: a.id, type: "assignment"
+
+        get :api_show, params: { course_id: @course.id, id: @course_pace.id }
+        pace = JSON.parse(response.body)["course_pace"]
+        expect(pace["modules"][0]["items"].select { |item| item["assignment_title"] == "Del this assn" }.present?).to be_truthy
+
+        a.destroy!
+
+        get :api_show, params: { course_id: @course.id, id: @course_pace.id }
+        pace = JSON.parse(response.body)["course_pace"]
+        expect(pace["modules"][0]["items"].select { |item| item["assignment_title"] == "Del this assn" }.present?).to be_falsey
+      end
+
+      it "handles quizzes" do
+        q = @course.quizzes.create!({ title: "Del this quiz", quiz_type: "assignment" })
+        q.publish
+        q.save!
+        @mod1.add_item(type: "quiz", id: q.id)
+
+        get :api_show, params: { course_id: @course.id, id: @course_pace.id }
+        pace = JSON.parse(response.body)["course_pace"]
+        expect(pace["modules"][0]["items"].select { |item| item["assignment_title"] == "Del this quiz" }.present?).to be_truthy
+
+        q.destroy!
+
+        get :api_show, params: { course_id: @course.id, id: @course_pace.id }
+        pace = JSON.parse(response.body)["course_pace"]
+        expect(pace["modules"][0]["items"].select { |item| item["assignment_title"] == "Del this quiz" }.present?).to be_falsey
+      end
+
+      it "handles graded discussions" do
+        discussion_assignment = @course.assignments.create!(title: "Del this disc", workflow_state: "active")
+        d = @course.discussion_topics.create!(assignment: discussion_assignment, title: "Del this disc")
+        d.publish
+        @mod1.add_item id: d.id, type: "DiscussionTopic"
+
+        get :api_show, params: { course_id: @course.id, id: @course_pace.id }
+        pace = JSON.parse(response.body)["course_pace"]
+        expect(pace["modules"][0]["items"].select { |item| item["assignment_title"] == "Del this disc" }.present?).to be_truthy
+
+        d.destroy!
+
+        get :api_show, params: { course_id: @course.id, id: @course_pace.id }
+        pace = JSON.parse(response.body)["course_pace"]
+        expect(pace["modules"][0]["items"].select { |item| item["assignment_title"] == "Del this disc" }.present?).to be_falsey
+      end
     end
   end
 
@@ -368,6 +440,29 @@ describe CoursePacesController, type: :controller do
         expect(JSON.parse(response.body)["course_pace"]["id"]).to eq(nil)
         expect(JSON.parse(response.body)["course_pace"]["published_at"]).to eq(nil)
         expect(JSON.parse(response.body)["course_pace"]["user_id"]).to eq(@student.id)
+      end
+
+      it "returns an instantiated section pace if one is already published and the user is in that section" do
+        @course_section.enrollments << @student_enrollment
+        course_section_pace = course_pace_model(course: @course, course_section: @course_section)
+        course_section_pace.publish
+        get :new, { params: { course_id: @course.id, enrollment_id: @course.student_enrollments.first.id } }
+        expect(response).to be_successful
+        json_response = JSON.parse(response.body)
+        expect(json_response["course_pace"]["id"]).to eq(nil)
+        expect(json_response["course_pace"]["published_at"]).to eq(nil)
+        expect(json_response["course_pace"]["section_id"]).to eq(nil)
+        expect(json_response["course_pace"]["user_id"]).to eq(@student.id)
+        m1 = json_response["course_pace"]["modules"].first
+        expect(m1["items"].count).to eq(1)
+        expect(m1["items"].first["duration"]).to eq(0)
+        expect(m1["items"].first["published"]).to eq(true)
+        m2 = json_response["course_pace"]["modules"].second
+        expect(m2["items"].count).to eq(2)
+        expect(m2["items"].first["duration"]).to eq(0)
+        expect(m2["items"].first["published"]).to eq(true)
+        expect(m2["items"].second["duration"]).to eq(0)
+        expect(m2["items"].second["published"]).to eq(true)
       end
 
       it "returns an instantiated course pace if one is not already available" do

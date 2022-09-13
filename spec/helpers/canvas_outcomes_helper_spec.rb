@@ -21,6 +21,17 @@ require_relative "../spec_helper"
 require "webmock/rspec"
 
 describe CanvasOutcomesHelper do
+  def stub_get_lmgb_results(params)
+    stub_request(:get, "http://domain/api/authoritative_results?#{params}").with({
+                                                                                   headers: {
+                                                                                     Authorization: /\+*/,
+                                                                                     Accept: "*/*",
+                                                                                     "Accept-Encoding": /\+*/,
+                                                                                     "User-Agent": "Ruby"
+                                                                                   }
+                                                                                 })
+  end
+
   subject { Object.new.extend CanvasOutcomesHelper }
 
   around do |example|
@@ -219,17 +230,6 @@ describe CanvasOutcomesHelper do
       end
 
       context "with outcomes provision settings" do
-        def stub_get_lmgb_results(params)
-          stub_request(:get, "http://domain/api/authoritative_results?#{params}").with({
-                                                                                         headers: {
-                                                                                           Authorization: /\+*/,
-                                                                                           Accept: "*/*",
-                                                                                           "Accept-Encoding": /\+*/,
-                                                                                           "User-Agent": "Ruby"
-                                                                                         }
-                                                                                       })
-        end
-
         context "with outcome_service_results_to_canvas FF on" do
           let(:user1) { User.create! }
           let(:user2) { User.create! }
@@ -245,53 +245,63 @@ describe CanvasOutcomesHelper do
           end
 
           it "returns results with one assignment id" do
+            expected_json = { "results" => [{ "result" => "stuff" }] }.to_json
             stub_get_lmgb_results("associated_asset_id_list=1&associated_asset_type=assign.type&external_outcome_id_list=1&user_uuid_list=#{one_user_uuid}").to_return(status: 200, body: '{"results":[{"result":"stuff"}]}')
-            expect(subject.get_lmgb_results(@course, "1", "assign.type", "1", one_user_uuid)).to eq [{ "result" => "stuff" }]
+            expect(subject.get_lmgb_results(@course, "1", "assign.type", "1", one_user_uuid)).to eq expected_json
           end
 
           it "returns results with multiple assignment ids" do
+            expected_json = { "results" => [{ "result_one" => "stuff1" }, { "result_two" => "stuff2" }] }.to_json
             stub_get_lmgb_results("associated_asset_id_list=1,2&associated_asset_type=assign.type&external_outcome_id_list=1&user_uuid_list=#{one_user_uuid}").to_return(status: 200, body: '{"results":[{"result_one":"stuff1"},{"result_two":"stuff2"}]}')
-            expect(subject.get_lmgb_results(@course, "1,2", "assign.type", "1", one_user_uuid)).to eq [{ "result_one" => "stuff1" }, { "result_two" => "stuff2" }]
+            expect(subject.get_lmgb_results(@course, "1,2", "assign.type", "1", one_user_uuid)).to eq expected_json
           end
 
           it "returns results with one outcome id" do
+            expected_json = { "results" => [{ "result_one" => "stuff" }] }.to_json
             stub_get_lmgb_results("associated_asset_id_list=1,2&associated_asset_type=assign.type&external_outcome_id_list=1&user_uuid_list=#{one_user_uuid}").to_return(status: 200, body: '{"results":[{"result_one":"stuff"}]}')
-            expect(subject.get_lmgb_results(@course, "1,2", "assign.type", "1", one_user_uuid)).to eq [{ "result_one" => "stuff" }]
+            expect(subject.get_lmgb_results(@course, "1,2", "assign.type", "1", one_user_uuid)).to eq expected_json
           end
 
           it "returns results with multiple outcome ids" do
+            expected_json = { "results" => [{ "result_one" => "stuff1" }, { "result_two" => "stuff2" }] }.to_json
             stub_get_lmgb_results("associated_asset_id_list=1,2&associated_asset_type=assign.type&external_outcome_id_list=1,2&user_uuid_list=#{one_user_uuid}").to_return(status: 200, body: '{"results":[{"result_one":"stuff1"},{"result_two":"stuff2"}]}')
-            expect(subject.get_lmgb_results(@course, "1,2", "assign.type", "1,2", one_user_uuid)).to eq [{ "result_one" => "stuff1" }, { "result_two" => "stuff2" }]
+            expect(subject.get_lmgb_results(@course, "1,2", "assign.type", "1,2", one_user_uuid)).to eq expected_json
           end
 
           it "returns results with one user uuid" do
+            expected_json = { "results" => [{ "result_one" => "stuff1" }] }.to_json
             stub_get_lmgb_results("associated_asset_id_list=1,2&associated_asset_type=assign.type&external_outcome_id_list=1,2&user_uuid_list=#{one_user_uuid}").to_return(status: 200, body: '{"results":[{"result_one":"stuff1"}]}')
-            expect(subject.get_lmgb_results(@course, "1,2", "assign.type", "1,2", one_user_uuid)).to eq [{ "result_one" => "stuff1" }]
+            expect(subject.get_lmgb_results(@course, "1,2", "assign.type", "1,2", one_user_uuid)).to eq expected_json
           end
 
           it "returns results with multiple user uuids" do
+            expected_json = { "results" => [{ "result_one" => "stuff1" }, { "result_two" => "stuff2" }] }.to_json
             stub_get_lmgb_results("associated_asset_id_list=1,2&associated_asset_type=assign.type&external_outcome_id_list=1,2&user_uuid_list=#{multiple_user_uuids}").to_return(status: 200, body: '{"results":[{"result_one":"stuff1"},{"result_two":"stuff2"}]}')
-            expect(subject.get_lmgb_results(@course, "1,2", "assign.type", "1,2", multiple_user_uuids)).to eq [{ "result_one" => "stuff1" }, { "result_two" => "stuff2" }]
+            expect(subject.get_lmgb_results(@course, "1,2", "assign.type", "1,2", multiple_user_uuids)).to eq expected_json
           end
 
           it "returns empty array when assignment type is not matched" do
+            expected_json = { "results" => [] }.to_json
             stub_get_lmgb_results("associated_asset_id_list=1&associated_asset_type=assign.type.no.match&external_outcome_id_list=1&user_uuid_list=#{one_user_uuid}").to_return(status: 200, body: '{"results":[]}')
-            expect(subject.get_lmgb_results(@course, "1", "assign.type.no.match", "1", one_user_uuid)).to eq []
+            expect(subject.get_lmgb_results(@course, "1", "assign.type.no.match", "1", one_user_uuid)).to eq expected_json
           end
 
           it "returns empty array when assignment ids are not matched" do
+            expected_json = { "results" => [] }.to_json
             stub_get_lmgb_results("associated_asset_id_list=4,5&associated_asset_type=assign.type&external_outcome_id_list=1&user_uuid_list=#{one_user_uuid}").to_return(status: 200, body: '{"results":[]}')
-            expect(subject.get_lmgb_results(@course, "4,5", "assign.type", "1", one_user_uuid)).to eq []
+            expect(subject.get_lmgb_results(@course, "4,5", "assign.type", "1", one_user_uuid)).to eq expected_json
           end
 
           it "returns empty array when no outcome ids are matched" do
+            expected_json = { "results" => [] }.to_json
             stub_get_lmgb_results("associated_asset_id_list=1&associated_asset_type=assign.type&external_outcome_id_list=5&user_uuid_list=#{one_user_uuid}").to_return(status: 200, body: '{"results":[]}')
-            expect(subject.get_lmgb_results(@course, "1", "assign.type", "5", one_user_uuid)).to eq []
+            expect(subject.get_lmgb_results(@course, "1", "assign.type", "5", one_user_uuid)).to eq expected_json
           end
 
           it "returns empty array when no user uuids are matched" do
+            expected_json = { "results" => [] }.to_json
             stub_get_lmgb_results("associated_asset_id_list=1&associated_asset_type=assign.type&external_outcome_id_list=1&user_uuid_list=fake_no_match_uuid").to_return(status: 200, body: '{"results":[]}')
-            expect(subject.get_lmgb_results(@course, "1", "assign.type", "1", "fake_no_match_uuid")).to eq []
+            expect(subject.get_lmgb_results(@course, "1", "assign.type", "1", "fake_no_match_uuid")).to eq expected_json
           end
         end
 
@@ -303,6 +313,37 @@ describe CanvasOutcomesHelper do
           it "returns nil when FF is off" do
             expect(subject.get_lmgb_results(@course, "1", "assign.type", "1", one_user_uuid)).to eq nil
           end
+        end
+      end
+    end
+  end
+
+  describe "#get_lmgb_results by account" do
+    context "with outcomes provision settings" do
+      let(:user1) { User.create! }
+      let(:one_user_uuid) { user1.uuid }
+
+      before do
+        settings = { consumer_key: "key", jwt_secret: "secret", domain: "domain" }
+        account.settings[:provision] = { "outcomes" => settings }
+        account.save!
+      end
+
+      context "with outcome_service_results_to_canvas FF off" do
+        it "returns nil when FF is off" do
+          expect(subject.get_lmgb_results(account, "1", "assign.type", "1", one_user_uuid)).to eq nil
+        end
+      end
+
+      context "with outcome_service_results_to_canvas FF on" do
+        before do
+          account.enable_feature!(:outcome_service_results_to_canvas)
+        end
+
+        it "returns results with one assignment id" do
+          expected_json = { "results" => [{ "result" => "stuff" }] }.to_json
+          stub_get_lmgb_results("associated_asset_id_list=1&associated_asset_type=assign.type&external_outcome_id_list=1&user_uuid_list=#{one_user_uuid}").to_return(status: 200, body: '{"results":[{"result":"stuff"}]}')
+          expect(subject.get_lmgb_results(account, "1", "assign.type", "1", one_user_uuid)).to eq expected_json
         end
       end
     end

@@ -21,7 +21,7 @@
   module_item ||= module_item_next
   item_data ||= { published_status: 'unpublished' }
   completion_criteria ||= nil
-  can_direct_share = can_do(@context, @current_user, :read_as_admin)
+  can_direct_share = can_do(@context, @current_user, :manage_content) || (@context.concluded? && can_do(@context, @current_user, :read_as_admin))
   criterion = completion_criteria && completion_criteria.find{|c| c[:id] == module_item.id}
 
   @module_item_image_tags ||= {
@@ -86,7 +86,7 @@
 
     <span class="type_icon" title="<%= module_item_translated_content_type(module_item, @is_student) %>" role="none">
       <span class="screenreader-only"><%= module_item_translated_content_type(module_item, @is_student) %></span>
-      <span class="ig-type-icon">
+      <span class="ig-type-icon" aria-hidden="true">
         <i class="icon-document"></i>
         <i class="icon-paperclip"></i>
         <i class="icon-discussion"></i>

@@ -230,6 +230,7 @@ describe "dashcards" do
       end
 
       it "customizes dashcard color by selecting from color palette", priority: "1" do
+        skip("LS-3282 07/15/2022")
         # Gets the default background color
         old_color = @user.reload.custom_colors.fetch("course_#{@course.id}")
 
@@ -257,6 +258,7 @@ describe "dashcards" do
       end
 
       it "customizes dashcard color", priority: "1" do
+        skip("LS-3282 07/15/2022")
         hex = random_hex_color
         expect(f(".ColorPicker__Container")).to be_displayed
         replace_content(f("#ColorPickerCustomInput-#{@course.asset_string}"), hex)
@@ -299,9 +301,9 @@ describe "dashcards" do
 
   def select_color_palette_from_calendar_page
     get "/calendar"
-    raise "Not the right course" unless f("#context-list li:nth-of-type(2)").text.include? @course1.name
+    raise "Not the right course" unless f("#calendars-context-list li:nth-of-type(2)").text.include? @course1.name
 
-    f("#context-list li:nth-of-type(2) .ContextList__MoreBtn").click
+    f("#calendars-context-list li:nth-of-type(2) .ContextList__MoreBtn").click
     wait_for_ajaximations
     expect(f(".ColorPicker__Container")).to be_displayed
   end

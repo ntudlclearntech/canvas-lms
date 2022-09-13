@@ -39,6 +39,14 @@ draft_discussions:
     in the discussions redesign
   applies_to: SiteAdmin
 
+discussion_grading_view:
+  state: hidden
+  beta: true
+  display_name: Discussion Redesign Grading View
+  description: |-
+    Will allow for graders to grade assigned discussions without leaving discussion page
+  applies_to: SiteAdmin
+
 isolated_view:
   state: hidden
   display_name: Discussions Redesign - Isolated View
@@ -54,6 +62,13 @@ discussion_create:
     This feature flag enables the use of the updated
     discussion create/edit page
   applies_to: RootAccount
+
+bbb_modal_update:
+  state: hidden
+  display_name: BBB Modal Update
+  description: |-
+    This update will allow more options for BBB conferences
+  applies_to: SiteAdmin
 
 react_inbox:
   state: hidden
@@ -82,3 +97,10 @@ apollo_caching:
   description: |-
     Allow for Apollo to cache graphQL queries on a users browser to speed up their experience
   applies_to: SiteAdmin
+
+react_people_page:
+  state: hidden
+  display_name: People Page Upgrade
+  description: |-
+    This feature flag enables the React/InstUI and GraphQL People page upgrade.
+  applies_to: RootAccount

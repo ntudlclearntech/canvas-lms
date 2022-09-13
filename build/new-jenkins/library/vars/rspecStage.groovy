@@ -21,7 +21,6 @@ import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
 
 @Field static final SUCCESS_NOT_BUILT = [buildResult: 'SUCCESS', stageResult: 'NOT_BUILT']
 @Field static final SUCCESS_UNSTABLE = [buildResult: 'SUCCESS', stageResult: 'UNSTABLE']
-@Field static final RSPEC_NODE_REQUIREMENTS = [label: 'canvas-docker']
 
 def createDistribution(nestedStages) {
   def rspecqNodeTotal = configuration.getInteger('rspecq-ci-node-total')
@@ -57,7 +56,7 @@ def createDistribution(nestedStages) {
   extendedStage('RSpecQ Reporter for Rspec')
     .envVars(rspecqEnvVars)
     .hooks(buildSummaryReportHooks.call() + [onNodeAcquired: setupNodeHook])
-    .nodeRequirements(RSPEC_NODE_REQUIREMENTS)
+    .nodeRequirements([label: configuration.nodeLabel()])
     .timeout(15)
     .queue(nestedStages, this.&runReporter)
 
@@ -65,7 +64,7 @@ def createDistribution(nestedStages) {
     extendedStage("RSpecQ Test Set ${(index + 1).toString().padLeft(2, '0')}")
       .envVars(rspecqEnvVars + ["CI_NODE_INDEX=$index"])
       .hooks(buildSummaryReportHooks.call() + [onNodeAcquired: setupNodeHook, onNodeReleasing: { tearDownNode() }])
-      .nodeRequirements(RSPEC_NODE_REQUIREMENTS)
+      .nodeRequirements([label: configuration.nodeLabel()])
       .timeout(15)
       .queue(nestedStages, this.&runRspecqSuite)
   }
@@ -114,6 +113,8 @@ def tearDownNode() {
     docker cp ${srcDir}/log/results ${destDir}_rspec_results/ || true
     docker cp ${srcDir}/log/spec_failures ${destDir}/spec_failures/ || true
 
+    tar cvfz ${destDir}/rspec_results.tgz ${destDir}_rspec_results/
+
     if [[ "\$COVERAGE" == "1" ]]; then
       docker cp ${srcDir}/coverage ${destDir}/coverage/ || true
     fi
@@ -135,10 +136,6 @@ def tearDownNode() {
 
   archiveArtifacts allowEmptyArchive: true, artifacts: "$destDir/**/*"
 
-  if (env.ENABLE_AXE_SELENIUM == '1' || env.COVERAGE == '1') {
-    archiveArtifacts allowEmptyArchive: true, artifacts: "${destDir}_rspec_results/**/*"
-  }
-
   findFiles(glob: "$destDir/spec_failures/**/index.html").each { file ->
     // tmp/node_18/spec_failures/Initial/spec/selenium/force_failure_spec.rb:20/index
     // split on the 5th to give us the rerun category (Initial, Rerun_1, Rerun_2...)
@@ -157,8 +154,6 @@ def tearDownNode() {
       buildSummaryReport.setFailureCategoryUnlessExists(specTitle, buildSummaryReport.FAILURE_TYPE_TEST_PASSED_ON_RETRY)
     }
   }
-
-  junit allowEmptyResults: true, testResults: "${destDir}_rspec_results/**/*.xml", skipMarkingBuildUnstable: true
 }
 
 def runRspecqSuite() {

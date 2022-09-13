@@ -110,6 +110,12 @@ def postFn(status) {
         gerrit.submitVerified((status == 'SUCCESS' ? '+1' : '-1'), "${env.BUILD_URL}/build-summary-report/")
       }
     }
+
+    build(job: "/Canvas/helpers/junit-uploader", parameters: [
+      string(name: 'GERRIT_REFSPEC', value: "${env.GERRIT_REFSPEC}"),
+      string(name: 'GERRIT_EVENT_TYPE', value: "${env.GERRIT_EVENT_TYPE}"),
+      string(name: 'SOURCE', value: "${env.JOB_NAME}/${env.BUILD_NUMBER}"),
+    ], propagate: false, wait: false)
   } finally {
     if (status == 'SUCCESS') {
       maybeSlackSendSuccess()
@@ -145,24 +151,11 @@ def maybeRetrigger() {
 
 def maybeSlackSendFailure() {
   if (configuration.isChangeMerged()) {
-    def branchSegment = env.GERRIT_BRANCH ? "[$env.GERRIT_BRANCH]" : ''
-    def authorSlackId = env.GERRIT_EVENT_ACCOUNT_EMAIL ? slackUserIdFromEmail(email: env.GERRIT_EVENT_ACCOUNT_EMAIL, botUser: true, tokenCredentialId: 'slack-user-id-lookup') : ''
-    def authorSlackMsg = authorSlackId ? "<@$authorSlackId>" : env.GERRIT_EVENT_ACCOUNT_NAME
-    def authorSegment = "Patchset <${env.GERRIT_CHANGE_URL}|#${env.GERRIT_CHANGE_NUMBER}> by ${authorSlackMsg} failed against ${branchSegment}"
     def extra = 'Oh no! Your build failed the post-merge checks. If you have a test failure not related to your build, please reach out to the owning team and ask them to skip or fix the failed test. Spec flakiness can be investigated <https://inst.splunkcloud.com/en-US/app/search/canvas_spec_tracker|here>. Otherwise, tag our @ oncall for help in diagnosing the build issue if it is unclear.'
-
-    slackSend(
-      channel: getSlackChannel(),
-      color: 'danger',
-      message: "${authorSegment}. Build <${getSummaryUrl()}|#${env.BUILD_NUMBER}>\n\n$extra"
-    )
+    slackHelpers.sendSlackFailureWithMsg(getSlackChannel(), extra, true)
+  } else {
+    slackHelpers.sendSlackFailureWithDuration('#canvas_builds-noisy')
   }
-
-  slackSend(
-    channel: '#canvas_builds-noisy',
-    color: 'danger',
-    message: "${env.JOB_NAME} <${getSummaryUrl()}|#${env.BUILD_NUMBER}> failed. Patchset <${env.GERRIT_CHANGE_URL}|#${env.GERRIT_CHANGE_NUMBER}>. (${currentBuild.durationString})"
-  )
 }
 
 def maybeSlackSendSuccess() {
@@ -289,7 +282,6 @@ pipeline {
     BASE_RUNNER_PREFIX = configuration.buildRegistryPath('base-runner')
     CASSANDRA_PREFIX = configuration.buildRegistryPath('cassandra-migrations')
     DYNAMODB_PREFIX = configuration.buildRegistryPath('dynamodb-migrations')
-    KARMA_BUILDER_PREFIX = configuration.buildRegistryPath('karma-builder')
     KARMA_RUNNER_PREFIX = configuration.buildRegistryPath('karma-runner')
     LINTERS_RUNNER_PREFIX = configuration.buildRegistryPath('linters-runner')
     POSTGRES_PREFIX = configuration.buildRegistryPath('postgres-migrations')
@@ -415,7 +407,7 @@ pipeline {
                   buildParameters += string(name: 'CANVAS_LMS_REFSPEC', value: env.CANVAS_LMS_REFSPEC)
                 }
 
-                extendedStage('Builder').nodeRequirements(label: 'canvas-docker', podTemplate: null).obeysAllowStages(false).reportTimings(false).queue(rootStages) {
+                extendedStage('Builder').nodeRequirements(label: configuration.nodeLabel(), podTemplate: null).obeysAllowStages(false).reportTimings(false).queue(rootStages) {
                   extendedStage('Setup')
                     .hooks(buildSummaryReportHooks.call())
                     .obeysAllowStages(false)
@@ -433,7 +425,7 @@ pipeline {
                     .hooks(buildSummaryReportHooks.call())
                     .obeysAllowStages(false)
                     .timeout(2)
-                    .execute(filesChangedStage.&call)
+                    .execute(filesChangedStage.&preBuild)
 
                   extendedStage('Build Docker Image (Pre-Merge)')
                     .hooks(buildSummaryReportHooks.call())
@@ -446,7 +438,39 @@ pipeline {
                     .hooks(buildSummaryReportHooks.call())
                     .obeysAllowStages(false)
                     .timeout(20)
-                    .execute(buildDockerImageStage.&patchsetImage)
+                    .execute {
+                      def startStep = '''
+                        docker run -dt --name general-build-container --volume $(pwd)/$LOCAL_WORKDIR/.git:$DOCKER_WORKDIR/.git -e RAILS_ENV=test $PATCHSET_TAG bash -c "sleep infinity"
+                        docker exec -dt general-build-container bin/rails graphql:schema
+                      '''
+
+                      def crystalballStep = '''
+                        diffFrom=$(git --git-dir $LOCAL_WORKDIR/.git rev-parse $GERRIT_PATCHSET_REVISION^1)
+                        docker exec -dt \
+                                        -e CRYSTALBALL_DIFF_FROM=$diffFrom \
+                                        -e CRYSTALBALL_DIFF_TO=$GERRIT_PATCHSET_REVISION \
+                                        -e CRYSTALBALL_REPO_PATH=$DOCKER_WORKDIR \
+                                        general-build-container bundle exec crystalball --dry-run
+                      '''
+
+                      def finalStep = '''
+                        docker exec -t general-build-container ps aww
+                      '''
+
+                      def asyncSteps = [
+                        startStep,
+                        !configuration.isChangeMerged() && env.GERRIT_REFSPEC != 'refs/heads/master' ? crystalballStep : '',
+                        finalStep
+                      ]
+
+                      buildDockerImageStage.patchsetImage(asyncSteps.join("\n"))
+                    }
+
+                  extendedStage(filesChangedStage.STAGE_NAME_POST_BUILD)
+                    .hooks(buildSummaryReportHooks.call())
+                    .obeysAllowStages(false)
+                    .timeout(2)
+                    .execute(filesChangedStage.&postBuild)
 
                   extendedStage(RUN_MIGRATIONS_STAGE)
                     .hooks(buildSummaryReportHooks.call())
@@ -462,14 +486,14 @@ pipeline {
                     .execute {
                       try {
                         /* groovylint-disable-next-line GStringExpressionWithinString */
-                        sh '''
-                          diffFrom=\$(git --git-dir $LOCAL_WORKDIR/.git rev-parse ${GERRIT_PATCHSET_REVISION}^1)
-                          docker run --name=crystal --volume \$(pwd)/$LOCAL_WORKDIR/.git:$DOCKER_WORKDIR/.git \
-                                     -e CRYSTALBALL_DIFF_FROM=${diffFrom} \
-                                     -e CRYSTALBALL_DIFF_TO=${GERRIT_PATCHSET_REVISION} \
-                                     -e CRYSTALBALL_REPO_PATH=$DOCKER_WORKDIR \
-                                     $PATCHSET_TAG bundle exec crystalball --dry-run
-                          docker cp \$(docker ps -qa -f name=crystal):/usr/src/app/crystalball_spec_list.txt ./tmp/crystalball_spec_list.txt
+                        sh '''#!/bin/bash
+                          set -ex
+
+                          while docker exec -t general-build-container ps aww | grep crystalball; do
+                            sleep 0.1
+                          done
+
+                          docker cp \$(docker ps -qa -f name=general-build-container):/usr/src/app/crystalball_spec_list.txt ./tmp/crystalball_spec_list.txt
                         '''
                         archiveArtifacts allowEmptyArchive: true, artifacts: 'tmp/crystalball_spec_list.txt'
 
@@ -513,18 +537,30 @@ pipeline {
                       sh 'build/new-jenkins/consumer-smoke-test.sh'
                     }
 
+                    def shouldRunJS = configuration.isChangeMerged() ||
+                      (!configuration.isChangeMerged() && (filesChangedStage.hasGraphqlFiles(buildConfig) || filesChangedStage.hasJsFiles(buildConfig)))
+
                     extendedStage(JS_BUILD_IMAGE_STAGE)
                       .hooks(buildSummaryReportHooks.call())
+                      .required(shouldRunJS)
                       .queue(stages, buildDockerImageStage.&jsImage)
 
                     extendedStage(LINTERS_BUILD_IMAGE_STAGE)
                       .hooks(buildSummaryReportHooks.call())
                       .queue(stages, buildDockerImageStage.&lintersImage)
 
-                    extendedStage('Run i18n:generate')
+                    extendedStage('Run i18n:extract')
                       .hooks(buildSummaryReportHooks.call())
                       .required(configuration.isChangeMerged())
-                      .queue(stages, buildDockerImageStage.&i18nGenerate)
+                      .queue(stages, buildDockerImageStage.&i18nExtract)
+
+                    def shouldRunGraphQL = (configuration.isChangeMerged() && filesChangedStage.hasGraphqlFiles(buildConfig)) || configuration.apolloForceGraphqlSchemaCheck()
+
+                    extendedStage('GraphQL Post-Merge Schema Check')
+                      .hooks(buildSummaryReportHooks.call())
+                      .required(shouldRunGraphQL)
+                      .timeout(2)
+                      .queue(stages, graphqlSchemaCheckStage.&call)
 
                     parallel(stages)
                   }
@@ -555,19 +591,18 @@ pipeline {
 
                 extendedStage('Linters (Waiting for Dependencies)').obeysAllowStages(false).waitsFor(LINTERS_BUILD_IMAGE_STAGE, 'Builder').queue(rootStages) { stageConfig, buildConfig ->
                   extendedStage('Linters - Dependency Check')
-                    .nodeRequirements(label: 'canvas-docker', podTemplate: dependencyCheckStage.nodeRequirementsTemplate(), container: 'dependency-check')
+                    .nodeRequirements(label: configuration.nodeLabel(), podTemplate: dependencyCheckStage.nodeRequirementsTemplate(), container: 'dependency-check')
                     .required(configuration.isChangeMerged())
                     .execute(dependencyCheckStage.queueTestStage())
 
                   extendedStage('Linters')
                     .hooks([onNodeReleasing: lintersStage.tearDownNode()])
-                    .nodeRequirements(label: 'canvas-docker', podTemplate: lintersStage.nodeRequirementsTemplate())
+                    .nodeRequirements(label: configuration.nodeLabel(), podTemplate: lintersStage.nodeRequirementsTemplate())
                     .required(!configuration.isChangeMerged() && env.GERRIT_CHANGE_ID != '0')
                     .execute {
                       def nestedStages = [:]
 
                       callableWithDelegate(lintersStage.codeStage(nestedStages))()
-                      callableWithDelegate(lintersStage.featureFlagStage(nestedStages, buildConfig))()
                       callableWithDelegate(lintersStage.groovyStage(nestedStages, buildConfig))()
                       callableWithDelegate(lintersStage.masterBouncerStage(nestedStages))()
                       callableWithDelegate(lintersStage.yarnStage(nestedStages, buildConfig))()

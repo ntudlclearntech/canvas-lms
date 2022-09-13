@@ -110,6 +110,47 @@ describe AssignmentOverride do
     expect(@override2.set).to eq [@student]
   end
 
+  describe "#notify_change?" do
+    before :once do
+      course_factory(active_all: true)
+      student_in_course(course: @course, active_all: true)
+    end
+
+    it "does not notify of change for deleted assignment override due to enrollment removal" do
+      due_date_timestamp = DateTime.now.iso8601
+      assignment = assignment_model(course: @course)
+      override = assignment.assignment_overrides.create!(
+        due_at: due_date_timestamp,
+        due_at_overridden: true
+      )
+      override.assignment_override_students.create!(user: @student)
+      assignment.update(due_at: nil, only_visible_to_overrides: true, created_at: Time.now - 4.hours)
+      expect(override.notify_change?).to be true
+      @student.destroy
+      expect(override.reload.notify_change?).to be false
+    end
+  end
+
+  describe "#adhoc?" do
+    let(:override) { AssignmentOverride.new }
+
+    it "returns true if the override is an ad hoc override" do
+      override.set_type = "ADHOC"
+      expect(override).to be_adhoc
+    end
+
+    it "returns false if the override is not an ad hoc override" do
+      aggregate_failures do
+        override.set_type = "CourseSection"
+        expect(override).not_to be_adhoc
+        override.set_type = "Group"
+        expect(override).not_to be_adhoc
+        override.set_type = "Noop"
+        expect(override).not_to be_adhoc
+      end
+    end
+  end
+
   context "#mastery_paths?" do
     let(:override) do
       described_class.new({
@@ -598,7 +639,15 @@ describe AssignmentOverride do
           override.lock_at = 10.minutes.ago
         end
 
-        it { is_expected.to be(true) }
+        it "returns false if the override is ad hoc" do
+          override.set_type = "ADHOC"
+          expect(subject).to be(false)
+        end
+
+        it "returns true if the override is not ad hoc" do
+          override.set_type = "CourseSection"
+          expect(subject).to be(true)
+        end
       end
     end
   end

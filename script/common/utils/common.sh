@@ -138,13 +138,6 @@ function confirm_command {
 }
 
 function docker_compose_up {
-  if [ "${IS_MUTAGEN:-false}" = true ]; then
-    start_spinner "Starting mutagen containers..."
-    _canvas_lms_track_with_log mutagen-compose up --no-start web
-    _canvas_lms_track_with_log mutagen-compose run -u root --rm web chown docker:docker /usr/src/app
-    stop_spinner
-  fi
-
   start_spinner "Starting docker containers..."
   _canvas_lms_track_with_log $DOCKER_COMMAND up -d web
   stop_spinner
@@ -222,6 +215,22 @@ function os_setup {
   fi
 }
 
+function detect_local_canvas {
+  if [ -f "log/development.log" ] && [ -f "config/database.yml" ]; then
+    echo "
+It looks like you've run Canvas outside of Docker from this workspace.
+If you continue with this script, your local Canvas configuration will be
+overwritten and this workspace will be usable only inside Docker.
+If that's not what you want, please check out a separate copy of Canvas
+to use inside Docker.
+"
+    prompt "Continue setting up Dockerized Canvas here? [y/n]" confirm
+    if [[ ${confirm:-n} != 'y' ]]; then
+      exit 1
+    fi
+  fi
+}
+
 function print_canvas_intro {
   # shellcheck disable=1004
   echo '
@@ -236,17 +245,4 @@ function print_canvas_intro {
 
 Welcome! This script will guide you through the process of setting up a
 Canvas development environment.'
-}
-
-function print_mutagen_intro {
-  # shellcheck disable=2016
-  echo '
-______  ___      _____
-___   |/  /___  ___  /______ _______ ____________
-__  /|_/ /_  / / /  __/  __ `/_  __ `/  _ \_  __ \
-_  /  / / / /_/ // /_ / /_/ /_  /_/ //  __/  / / /
-/_/  /_/  \__,_/ \__/ \__,_/ _\__, / \___//_/ /_/
-                             /____/
-
-'
 }

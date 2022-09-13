@@ -47,9 +47,17 @@ export const handlers = [
         _id: '9',
         id: 'VXNlci05',
         conversationsConnection: {
-          nodes: [],
+          nodes: [
+            {
+              ...ConversationParticipant.mock(),
+              conversation: Conversation.mock()
+            }
+          ],
           pageInfo: PageInfo.mock({hasNextPage: false}),
           __typename: 'ConversationParticipantConnection'
+        },
+        conversationParticipantsConnection: {
+          nodes: []
         },
         __typename: 'User'
       }
@@ -212,6 +220,15 @@ export const handlers = [
         ]
     }
     return res(ctx.data(data))
+  }),
+
+  graphql.query('GetTotalRecipients', (req, res, ctx) => {
+    if (req.variables.context === null) {
+      return res(
+        ctx.data({legacyNode: {id: 'WXNlci0x', totalRecipients: null, __typename: 'User'}})
+      )
+    }
+    return res(ctx.data({legacyNode: {id: 'VXNlci0x', totalRecipients: 2, __typename: 'User'}}))
   }),
 
   graphql.query('GetConversationMessagesQuery', (req, res, ctx) => {
@@ -386,6 +403,7 @@ export const handlers = [
 
     if (req.variables.context) {
       const recipients = {
+        sendMessagesAll: true,
         contextsConnection: {
           nodes: [],
           pageInfo: PageInfo.mock({hasNextPage: false}),
@@ -426,6 +444,7 @@ export const handlers = [
       data.legacyNode.recipients = recipients
     } else if (req.variables.search === 'Fred') {
       const recipients = {
+        sendMessagesAll: true,
         contextsConnection: {
           nodes: [],
           pageInfo: PageInfo.mock({hasNextPage: false}),
@@ -466,6 +485,7 @@ export const handlers = [
       data.legacyNode.recipients = recipients
     } else {
       const recipients = {
+        sendMessagesAll: true,
         contextsConnection: {
           nodes: [
             {
@@ -608,23 +628,54 @@ export const handlers = [
   }),
 
   graphql.mutation('AddConversationMessage', (req, res, ctx) => {
-    const data = {
+    const CONV_ID_WITH_CONCLUDED_TEACHER_ERROR = '3'
+    let data = {
       addConversationMessage: {
         conversationMessage: ConversationMessage.mock({body: req.variables.body}),
         errors: null,
         __typename: 'AddConversationMessagePayload'
       }
     }
+
+    if (req.variables.conversationId === CONV_ID_WITH_CONCLUDED_TEACHER_ERROR) {
+      data = {
+        addConversationMessage: {
+          conversationMessage: ConversationMessage.mock({body: req.variables.body}),
+          errors: [
+            {
+              attribute: 'message',
+              message:
+                'The following recipients have no active enrollment in the course, ["Student 2"], unable to send messages',
+              __typename: 'ValidationError'
+            }
+          ],
+          __typename: 'AddConversationMessagePayload'
+        }
+      }
+    }
+
     return res(ctx.data(data))
   }),
 
   graphql.mutation('CreateSubmissionComment', (req, res, ctx) => {
+    const SUBMISSION_ID_THAT_RETURNS_ERROR = '440'
     const data = {
       createSubmissionComment: {
         submissionComment: SubmissionComment.mock({comment: req.variables.body}),
         errors: null,
         __typename: 'CreateSubmissionCommentPayload'
       }
+    }
+
+    if (req.variables.submissionId === SUBMISSION_ID_THAT_RETURNS_ERROR) {
+      data.submissionComment = null
+      data.errors = [
+        {
+          attribute: 'message',
+          message: 'Some Generic Submission reply error',
+          __typename: 'ValidationError'
+        }
+      ]
     }
     return res(ctx.data(data))
   }),

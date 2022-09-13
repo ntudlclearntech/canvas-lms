@@ -234,15 +234,15 @@ module Lti
                        COURSE_GUARD,
                        default_name: "com_instructure_user_observees"
 
-    # Returns an array of the section names that the user is enrolled in, if the
+    # Returns an array of the section names in a JSON-escaped format that the user is enrolled in, if the
     # context of the tool launch is within a course.
     #
     # @example
     #   ```
-    #   [ "Section 1", "Section 5", "TA Section"]
+    #   [\"Section 1, M-T\", \"Section 2, W-Th\", \"TA Section\"]
     #   ```
     register_expansion "com.instructure.User.sectionNames", [],
-                       -> { @context.enrollments.active.joins(:course_section).where(user_id: @current_user.id).pluck(:name)&.join(",") },
+                       -> { @context.enrollments.active.joins(:course_section).where(user_id: @current_user.id).pluck(:name)&.to_json },
                        ENROLLMENT_GUARD,
                        default_name: "com_instructure_user_section_names"
 
@@ -1400,9 +1400,9 @@ module Lti
                        -> { @assignment.due_at.utc.iso8601 },
                        -> { @assignment && @assignment.due_at.present? }
 
-    # Returns a comma-separated list of all due dates of
-    # the assignment that was launched. If the assignment is
-    # assigned to anyone without a due date, an empty string
+    # In Canvas, users, sections and groups can have distinct due dates for the same assignment.
+    # This returns all possible `due_at` dates of the assignment that was launched.
+    # If the assignment is assigned to anyone without a due date, an empty string
     # will be present in the list (hence the ",," in the example)
     #
     # Only available when launched as an assignment.

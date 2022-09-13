@@ -524,7 +524,7 @@ class Submission < ActiveRecord::Base
   def observer?(user)
     assignment.context.observer_enrollments.where(
       user_id: user.id,
-      associated_user_id: self.user.id,
+      associated_user_id: user_id,
       workflow_state: "active"
     ).exists?
   end
@@ -541,7 +541,7 @@ class Submission < ActiveRecord::Base
     return false unless grants_right?(user, :read)
     return true unless assignment.anonymize_students?
 
-    user == self.user || peer_reviewer?(user) || Account.site_admin.grants_right?(user, :update)
+    user == self.user || peer_reviewer?(user) || observer?(user) || Account.site_admin.grants_right?(user, :update)
   end
 
   def can_view_plagiarism_report(type, user, session)
@@ -565,7 +565,7 @@ class Submission < ActiveRecord::Base
     end
     plagData &&
       (user_can_read_grade?(user, session, for_plagiarism: true) || (type_can_peer_review && user_can_peer_review_plagiarism?(user))) &&
-      (assignment.context.grants_right?(user, session, :manage_grades) ||
+      (assignment.context.grants_any_right?(user, session, :manage_grades, :view_all_grades) ||
         case settings[:originality_report_visibility]
         when "immediate" then true
         when "after_grading" then current_submission_graded?
@@ -678,7 +678,7 @@ class Submission < ActiveRecord::Base
   end
 
   def update_quiz_submission
-    return true if @saved_by == :quiz_submission || !quiz_submission_id || score == quiz_submission.kept_score
+    return true if @saved_by == :quiz_submission || !quiz_submission_id || entered_score == quiz_submission.kept_score
 
     quiz_submission.set_final_score(score)
     true
@@ -1425,6 +1425,10 @@ class Submission < ActiveRecord::Base
     end
   end
 
+  def infer_review_needed?
+    (submission_type == "online_quiz" && quiz_submission.try(:latest_submitted_attempt).try(:pending_review?)) || lti_result&.reload&.needs_review?
+  end
+
   def inferred_workflow_state
     inferred_state = workflow_state
 
@@ -1434,7 +1438,7 @@ class Submission < ActiveRecord::Base
     inferred_state = Submission.workflow_states.submitted if unsubmitted? && submitted_at
     inferred_state = Submission.workflow_states.unsubmitted if submitted? && !has_submission?
     inferred_state = Submission.workflow_states.graded if grade && score && grade_matches_current_submission
-    inferred_state = Submission.workflow_states.pending_review if submission_type == "online_quiz" && quiz_submission.try(:latest_submitted_attempt).try(:pending_review?)
+    inferred_state = Submission.workflow_states.pending_review if infer_review_needed?
 
     inferred_state
   end
@@ -1605,7 +1609,7 @@ class Submission < ActiveRecord::Base
   def score_late_or_none(late_policy, points_possible, grading_type)
     raw_score = score_changed? || @regraded ? score : entered_score
     deducted = late_points_deducted(raw_score, late_policy, points_possible, grading_type)
-    new_score = raw_score && (raw_score - deducted)
+    new_score = raw_score && (deducted > raw_score ? [0.0, raw_score].min : raw_score - deducted)
     self.points_deducted = late? ? deducted : nil
     self.score = new_score
   end
@@ -1808,10 +1812,12 @@ class Submission < ActiveRecord::Base
     attachment_ids_by_submission_and_index = group_attachment_ids_by_submission_and_index(submissions)
     bulk_attachment_ids = attachment_ids_by_submission_and_index.values.flatten
 
-    attachments_by_id = if bulk_attachment_ids.empty?
+    attachments_by_id = if bulk_attachment_ids.empty? || submissions.none?
                           {}
                         else
-                          Attachment.where(id: bulk_attachment_ids).preload(preloads).group_by(&:id)
+                          submissions.first.shard.activate do
+                            Attachment.where(id: bulk_attachment_ids).preload(preloads).group_by(&:id)
+                          end
                         end
 
     submissions.each_with_index do |s, index|
@@ -2010,7 +2016,6 @@ class Submission < ActiveRecord::Base
   def grade_change_audit(force_audit: false)
     # grade or graded status changed
     grade_changed = (saved_changes.keys & %w[grade score excused]).present? || (saved_change_to_workflow_state? && workflow_state == "graded")
-
     # any auditable conditions
     perform_audit = force_audit || grade_changed || assignment_changed_not_sub || saved_change_to_posted_at?
 
@@ -2020,7 +2025,7 @@ class Submission < ActiveRecord::Base
       end
       self.class.connection.after_transaction_commit do
         Auditors::GradeChange.record(submission: self, skip_insert: !grade_changed)
-        queue_conditional_release_grade_change_handler if grade_changed
+        queue_conditional_release_grade_change_handler if grade_changed || (force_audit && posted_at.present?)
       end
     end
   end
@@ -2440,7 +2445,7 @@ class Submission < ActiveRecord::Base
 
     def time_of_submission
       time = submitted_at || Time.zone.now
-      time -= 60.seconds if submission_type == "online_quiz" || assignment.quiz_lti?
+      time -= 60.seconds if submission_type == "online_quiz" || cached_quiz_lti?
       time
     end
     private :time_of_submission
@@ -2928,7 +2933,7 @@ class Submission < ActiveRecord::Base
   def update_provisional_grade(pg, scorer, attrs = {})
     # Adding a comment calls update_provisional_grade, but will not have the
     # grade or score keys included.
-    if (attrs.key?(:grade) || attrs.key?(:score)) && pg.selection.present?
+    if (attrs.key?(:grade) || attrs.key?(:score)) && pg.selection.present? && pg.scorer_id != assignment.final_grader_id
       raise Assignment::GradeError, error_code: Assignment::GradeError::PROVISIONAL_GRADE_MODIFY_SELECTED
     end
 

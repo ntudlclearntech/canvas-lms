@@ -254,7 +254,7 @@ describe('RCEWrapper', () => {
     it('calls focus on its tinyMCE instance', () => {
       element = createBasicElement({textareaId: 'myOtherUniqId'})
       element.focus()
-      assert(editorCommandSpy.withArgs('mceFocus', false, 'myOtherUniqId', undefined).called)
+      assert(editorCommandSpy.withArgs('mceFocus', false).called)
     })
 
     it('calls handleUnmount when destroyed', () => {

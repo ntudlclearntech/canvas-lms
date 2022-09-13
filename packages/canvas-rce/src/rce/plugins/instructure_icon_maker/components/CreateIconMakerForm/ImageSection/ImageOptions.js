@@ -34,7 +34,13 @@ import {ImageCropperSettingsPropTypes} from '../ImageCropper/propTypes'
 
 function renderImagePreview({image, loading}) {
   return (
-    <PreviewIcon variant="large" testId="selected-image-preview" image={image} loading={loading} />
+    <PreviewIcon
+      variant="large"
+      testId="selected-image-preview"
+      image={image}
+      loading={loading}
+      checkered
+    />
   )
 }
 
@@ -48,22 +54,16 @@ function renderImageName({imageName}) {
   )
 }
 
-function renderImageActionButtons(
-  {mode, collectionOpen},
-  setOpenCropModal,
-  dispatch,
-  setFocus,
-  ref
-) {
+function renderImageActionButtons({mode, collectionOpen}, dispatch, setFocus, ref) {
+  const showCropButton =
+    [modes.uploadImages.type, modes.courseImages.type].includes(mode) && !collectionOpen
   return (
     <>
-      {mode === modes.courseImages.type && !collectionOpen && (
+      {showCropButton && (
         <IconButton
           margin="0 small 0 0"
           screenReaderLabel={formatMessage('Crop image')}
-          onClick={() => {
-            setOpenCropModal(true)
-          }}
+          onClick={() => dispatch({type: actions.SET_CROPPER_OPEN.type, payload: true})}
         >
           <IconCropLine />
         </IconButton>
@@ -92,20 +92,13 @@ export const ImageOptions = ({state, dispatch, rcsConfig}) => {
   )
 
   const {image} = state
-  const [openCropModal, setOpenCropModal] = useState(false)
   return (
     <Flex padding="small">
       <Flex.Item margin="0 small 0 0">{renderImagePreview(state)}</Flex.Item>
       <Flex.Item>{renderImageName(state)}</Flex.Item>
       <Flex.Item margin="0 0 0 auto">
         {image ? (
-          renderImageActionButtons(
-            state,
-            setOpenCropModal,
-            dispatch,
-            setIsImageActionFocused,
-            imageActionRef
-          )
+          renderImageActionButtons(state, dispatch, setIsImageActionFocused, imageActionRef)
         ) : (
           <ModeSelect
             dispatch={dispatch}
@@ -115,10 +108,10 @@ export const ImageOptions = ({state, dispatch, rcsConfig}) => {
             rcsConfig={rcsConfig}
           />
         )}
-        {openCropModal && (
+        {state.cropperOpen && (
           <ImageCropperModal
-            open={openCropModal}
-            onClose={() => setOpenCropModal(false)}
+            open={state.cropperOpen}
+            onClose={() => dispatch({type: actions.SET_CROPPER_OPEN.type, payload: false})}
             onSubmit={(settings, generatedImage) => {
               dispatch({
                 type: actions.SET_IMAGE.type,
@@ -144,6 +137,7 @@ ImageOptions.propTypes = {
     imageName: PropTypes.string.isRequired,
     mode: PropTypes.string.isRequired,
     loading: PropTypes.bool.isRequired,
+    cropperOpen: PropTypes.bool.isRequired,
     cropperSettings: ImageCropperSettingsPropTypes
   }).isRequired,
   dispatch: PropTypes.func.isRequired,

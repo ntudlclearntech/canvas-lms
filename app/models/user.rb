@@ -434,7 +434,8 @@ class User < ActiveRecord::Base
                     .merge(enrollment_scope.except(:joins))
                     .where(enrollments: { associated_user_id: associated_user.id })
     else
-      join = associated_user == self ? :non_observer_enrollments : :all_enrollments
+      enrollments_association = Account.site_admin.feature_enabled?(:observer_picker) ? :enrollments_excluding_linked_observers : :non_observer_enrollments
+      join = associated_user == self ? enrollments_association : :all_enrollments
       scope = Course.active.joins(join).merge(enrollment_scope.except(:joins)).distinct
     end
 
@@ -1765,15 +1766,15 @@ class User < ActiveRecord::Base
     set_preference(:unread_submission_annotations, submission.global_id, nil)
   end
 
-  def unread_rubric_comments?(submission)
+  def unread_rubric_assessments?(submission)
     !!get_preference(:unread_rubric_comments, submission.global_id)
   end
 
-  def mark_rubric_comments_unread!(submission)
+  def mark_rubric_assessments_unread!(submission)
     set_preference(:unread_rubric_comments, submission.global_id, true)
   end
 
-  def mark_rubric_comments_read!(submission)
+  def mark_rubric_assessments_read!(submission)
     # this will delete the user_preference_value
     set_preference(:unread_rubric_comments, submission.global_id, nil)
   end
@@ -2408,7 +2409,7 @@ class User < ActiveRecord::Base
     Rails.cache.fetch_with_batched_keys(["course_ids_for_observed_user", self, observed_user].cache_key, batch_object: self, batched_keys: :enrollments, expires_in: 1.day) do
       enrollments
         .shard(in_region_associated_shards)
-        .active_by_date
+        .active_or_pending_by_date
         .of_observer_type
         .where(associated_user_id: observed_user)
         .pluck(:course_id)
@@ -2650,8 +2651,11 @@ class User < ActiveRecord::Base
   end
 
   def eportfolios_enabled?
-    accounts = associated_root_accounts.reject(&:site_admin?)
-    accounts.empty? || accounts.any? { |a| a.settings[:enable_eportfolios] != false }
+    # For jobs/rails consoles/specs where domain root account is not set
+    return true unless Account.current_domain_root_account
+
+    associated_root_accounts.empty? ||
+      (associated_root_accounts.include?(Account.current_domain_root_account) && Account.current_domain_root_account.settings[:enable_eportfolios] != false)
   end
 
   def initiate_conversation(users, private = nil, options = {})

@@ -401,7 +401,7 @@ class CoursesController < ApplicationController
   # @argument exclude_blueprint_courses [Boolean]
   #   When set, only return courses that are not configured as blueprint courses.
   #
-  # @argument include[] [String, "needs_grading_count"|"syllabus_body"|"public_description"|"total_scores"|"current_grading_period_scores"|"grading_periods"|"term"|"account"|"course_progress"|"sections"|"storage_quota_used_mb"|"total_students"|"passback_status"|"favorites"|"teachers"|"observed_users"|"course_image"|"concluded"]
+  # @argument include[] [String, "needs_grading_count"|"syllabus_body"|"public_description"|"total_scores"|"current_grading_period_scores"|"grading_periods"|"term"|"account"|"course_progress"|"sections"|"storage_quota_used_mb"|"total_students"|"passback_status"|"favorites"|"teachers"|"observed_users"|"course_image"|"banner_image"|"concluded"]
   #   - "needs_grading_count": Optional information to include with each Course.
   #     When needs_grading_count is given, and the current user has grading
   #     rights, the total number of submissions needing grading for all
@@ -487,8 +487,11 @@ class CoursesController < ApplicationController
   #   - "tabs": Optional information to include with each Course.
   #     Will include the list of tabs configured for each course.  See the
   #     {api:TabsController#index List available tabs API} for more information.
-  #   - "course_image": Optional course image data for when there is a course image
-  #     and the course image feature flag has been enabled
+  #   - "course_image": Optional information to include with each Course. Returns course
+  #     image url if a course image has been set.
+  #   - "banner_image": Optional information to include with each Course. Returns course
+  #     banner image url if the course is a Canvas for Elementary subject and a banner
+  #     image has been set.
   #   - "concluded": Optional information to include with each Course. Indicates whether
   #     the course has been concluded, taking course and term dates into account.
   #
@@ -585,7 +588,7 @@ class CoursesController < ApplicationController
   # @API List courses for a user
   # Returns a paginated list of active courses for this user. To view the course list for a user other than yourself, you must be either an observer of that user or an administrator.
   #
-  # @argument include[] [String, "needs_grading_count"|"syllabus_body"|"public_description"|"total_scores"|"current_grading_period_scores"|"grading_periods"|term"|"account"|"course_progress"|"sections"|"storage_quota_used_mb"|"total_students"|"passback_status"|"favorites"|"teachers"|"observed_users"|"course_image"|"concluded"]
+  # @argument include[] [String, "needs_grading_count"|"syllabus_body"|"public_description"|"total_scores"|"current_grading_period_scores"|"grading_periods"|term"|"account"|"course_progress"|"sections"|"storage_quota_used_mb"|"total_students"|"passback_status"|"favorites"|"teachers"|"observed_users"|"course_image"|"banner_image"|"concluded"]
   #   - "needs_grading_count": Optional information to include with each Course.
   #     When needs_grading_count is given, and the current user has grading
   #     rights, the total number of submissions needing grading for all
@@ -658,8 +661,11 @@ class CoursesController < ApplicationController
   #   - "tabs": Optional information to include with each Course.
   #     Will include the list of tabs configured for each course.  See the
   #     {api:TabsController#index List available tabs API} for more information.
-  #   - "course_image": Optional course image data for when there is a course image
-  #     and the course image feature flag has been enabled
+  #   - "course_image": Optional information to include with each Course. Returns course
+  #     image url if a course image has been set.
+  #   - "banner_image": Optional information to include with each Course. Returns course
+  #     banner image url if the course is a Canvas for Elementary subject and a banner
+  #     image has been set.
   #   - "concluded": Optional information to include with each Course. Indicates whether
   #     the course has been concluded, taking course and term dates into account.
   #
@@ -1611,7 +1617,7 @@ class CoursesController < ApplicationController
   # @argument allow_student_discussion_reporting [Boolean]
   #   Let students report offensive discussion content
   #
-  # @argument allow_student_anonymous_discussion_topics
+  # @argument allow_student_anonymous_discussion_topics [Boolean]
   #   Let students create anonymous discussion topics
   #
   # @argument filter_speed_grader_by_student_group [Boolean]
@@ -1673,6 +1679,9 @@ class CoursesController < ApplicationController
       @course.default_due_time = normalize_due_time(default_due_time)
     end
 
+    # Remove the conditional release param if the account is locking the feature
+    params[:conditional_release] = nil if params.key?(:conditional_release) && @course.account.conditional_release[:locked]
+
     @course.attributes = params.permit(
       :allow_final_grade_override,
       :allow_student_discussion_topics,
@@ -1703,10 +1712,10 @@ class CoursesController < ApplicationController
     )
     changes = changed_settings(@course.changes, @course.settings, old_settings)
 
-    conditional_release_after_change_hook if changes[:conditional_release]&.last == false
-
     @course.delay_if_production(priority: Delayed::LOW_PRIORITY)
            .touch_content_if_public_visibility_changed(changes)
+
+    disable_conditional_release if changes[:conditional_release]&.last == false
 
     DueDateCacher.with_executing_user(@current_user) do
       if @course.save
@@ -2044,8 +2053,15 @@ class CoursesController < ApplicationController
   def check_for_xlist
     return false unless @current_user.present? && @context_enrollment.blank?
 
-    xlist_enrollment = @current_user.enrollments.active.joins(:course_section)
-                                    .where(course_sections: { nonxlist_course_id: @context }).first
+    xlist_enrollment_scope = @current_user.enrollments.active.joins(:course_section)
+                                          .where(course_sections: { nonxlist_course_id: @context })
+
+    if observee_selected?
+      xlist_enrollment_scope = xlist_enrollment_scope.where(associated_user_id: @selected_observed_user)
+    end
+
+    xlist_enrollment = xlist_enrollment_scope.first
+
     if xlist_enrollment.present?
       redirect_params = {}
       redirect_params[:invitation] = params[:invitation] if params[:invitation].present?
@@ -2065,14 +2081,15 @@ class CoursesController < ApplicationController
   #
   # Accepts the same include[] parameters as the list action plus:
   #
-  # @argument include[] [String, "needs_grading_count"|"syllabus_body"|"public_description"|"total_scores"|"current_grading_period_scores"|"term"|"account"|"course_progress"|"sections"|"storage_quota_used_mb"|"total_students"|"passback_status"|"favorites"|"teachers"|"observed_users"|"all_courses"|"permissions"|"course_image"|"concluded"]
+  # @argument include[] [String, "needs_grading_count"|"syllabus_body"|"public_description"|"total_scores"|"current_grading_period_scores"|"term"|"account"|"course_progress"|"sections"|"storage_quota_used_mb"|"total_students"|"passback_status"|"favorites"|"teachers"|"observed_users"|"all_courses"|"permissions"|"course_image"|"banner_image"|"concluded"]
   #   - "all_courses": Also search recently deleted courses.
   #   - "permissions": Include permissions the current user has
   #     for the course.
-  #   - "observed_users": include observed users in the enrollments
-  #   - "course_image": Optional course image data for when there is a course image
-  #     and the course image feature flag has been enabled
-  #   - "concluded": Optional information to include with each Course. Indicates whether
+  #   - "observed_users": Include observed users in the enrollments
+  #   - "course_image": Include course image url if a course image has been set
+  #   - "banner_image": Include course banner image url if the course is a Canvas for
+  #     Elementary subject and a banner image has been set
+  #   - "concluded": Optional information to include with Course. Indicates whether
   #     the course has been concluded, taking course and term dates into account.
   #
   # @argument teacher_limit [Integer]
@@ -2126,9 +2143,11 @@ class CoursesController < ApplicationController
       if @context && @current_user
         if Account.site_admin.feature_enabled?(:observer_picker) && Setting.get("assignments_2_observer_view", "false") == "true"
           observed_users(@current_user, session, @context.id) # sets @selected_observed_user
-          @context_enrollment = @context.enrollments
-                                        .where(user_id: @current_user, associated_user_id: @selected_observed_user)
-                                        .first
+          context_enrollment_scope = @context.enrollments.where(user_id: @current_user)
+          if observee_selected?
+            context_enrollment_scope = context_enrollment_scope.where(associated_user_id: @selected_observed_user)
+          end
+          @context_enrollment = context_enrollment_scope.first
           js_env({ OBSERVER_OPTIONS: {
                    OBSERVED_USERS_LIST: observed_users(@current_user, session, @context.id),
                    CAN_ADD_OBSERVEE: @current_user
@@ -2301,7 +2320,7 @@ class CoursesController < ApplicationController
           css_bundle :new_assignments
           add_body_class("hide-content-while-scripts-not-loaded", "with_item_groups")
         when "syllabus"
-          js_bundle :syllabus
+          deferred_js_bundle :syllabus
           css_bundle :syllabus, :tinymce
         when "k5_dashboard"
           embed_mode = value_to_boolean(params[:embed])
@@ -2529,6 +2548,7 @@ class CoursesController < ApplicationController
         end
       if !@context.concluded? && (@enrollments = EnrollmentsFromUserList.process(list, @context, enrollment_options))
         ActiveRecord::Associations.preload(@enrollments, [:course_section, { user: [:communication_channel, :pseudonym] }])
+        InstStatsd::Statsd.count("course.#{@context.enable_course_paces ? "paced" : "unpaced"}.student_enrollment_count", @context.student_enrollments)
         json = @enrollments.map do |e|
           { "enrollment" =>
             { "associated_user_id" => e.associated_user_id,
@@ -2896,6 +2916,10 @@ class CoursesController < ApplicationController
   # @argument course[conditional_release] [Boolean]
   #   Enable or disable individual learning paths for students based on assessment
   #
+  # @argument override_sis_stickiness [boolean]
+  #   Default is true. If false, any fields containing “sticky” changes will not be updated.
+  #   See SIS CSV Format documentation for information on which fields can have SIS stickiness
+  #
   # @example_request
   #   curl https://<canvas>/api/v1/courses/<course_id> \
   #     -X PUT \
@@ -3132,14 +3156,14 @@ class CoursesController < ApplicationController
         end
 
         if (mc_restrictions = params[:course][:blueprint_restrictions])
-          template.default_restrictions = mc_restrictions.to_unsafe_h.map { |k, v| [k.to_sym, value_to_boolean(v)] }.to_h
+          template.default_restrictions = mc_restrictions.to_unsafe_h.to_h { |k, v| [k.to_sym, value_to_boolean(v)] }
         end
 
         if (mc_restrictions_by_type = params[:course][:blueprint_restrictions_by_object_type])
           parsed_restrictions_by_type = {}
           mc_restrictions_by_type.to_unsafe_h.each do |type, restrictions|
             class_name = type == "quiz" ? "Quizzes::Quiz" : type.camelcase
-            parsed_restrictions_by_type[class_name] = restrictions.map { |k, v| [k.to_sym, value_to_boolean(v)] }.to_h
+            parsed_restrictions_by_type[class_name] = restrictions.to_h { |k, v| [k.to_sym, value_to_boolean(v)] }
           end
           template.default_restrictions_by_type = parsed_restrictions_by_type
         end
@@ -3149,6 +3173,10 @@ class CoursesController < ApplicationController
 
           @course.errors.add(:master_course_restrictions, t("Invalid restrictions")) unless template.save
         end
+      end
+
+      if params[:override_sis_stickiness] && !value_to_boolean(params[:override_sis_stickiness])
+        params_for_update -= [*@course.stuck_sis_fields]
       end
 
       @course.attributes = params_for_update
@@ -3935,6 +3963,10 @@ class CoursesController < ApplicationController
   helper_method :visible_self_enrollment_option
 
   private
+
+  def observee_selected?
+    @selected_observed_user.present? && @selected_observed_user != @current_user
+  end
 
   def update_grade_passback_setting(grade_passback_setting)
     valid_states = Setting.get("valid_grade_passback_settings", "nightly_sync,disabled").split(",")

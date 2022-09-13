@@ -25,7 +25,7 @@ import datePickerFormat from '@canvas/datetime/datePickerFormat'
 import '@canvas/datetime'
 import '@canvas/forms/jquery/jquery.instructure_forms'
 import '@canvas/jquery/jquery.instructure_misc_helpers'
-import 'date'
+import 'date-js'
 import fcUtil from '@canvas/calendar/jquery/fcUtil.coffee'
 import commonEventFactory from '@canvas/calendar/jquery/CommonEvent/index'
 import ValidatedFormView from '@canvas/forms/backbone/views/ValidatedFormView.coffee'
@@ -97,7 +97,14 @@ export default class EditPlannerNoteDetails extends ValidatedFormView {
   }
 
   activate() {
-    return this.$el.find('select.context_id').change()
+    const availableContexts = this.event.plannerNoteContexts()?.map(context => context.name)
+    if (!this.event.contextInfo || !availableContexts?.includes(this.event.contextInfo.name)) {
+      this.setContext(availableContexts[0])
+      this.currentContextInfo =
+        this.event.possibleContexts().find(context => context.name === availableContexts[0]) || null
+      this.event.contextInfo = this.currentContextInfo
+      this.contextChangeCB(this.currentContextInfo.asset_string)
+    }
   }
 
   setContext(newContext) {

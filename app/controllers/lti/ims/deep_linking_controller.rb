@@ -48,7 +48,7 @@ module Lti
         # * not reload the page
         unless create_resources_from_content_items?
           lti_resource_links.each do |content_item|
-            resource_link = Lti::ResourceLink.create_with(context, tool, content_item[:custom])
+            resource_link = Lti::ResourceLink.create_with(context, tool, content_item[:custom], content_item[:url])
             content_item[:lookup_uuid] = resource_link&.lookup_uuid
           end
 
@@ -94,7 +94,7 @@ module Lti
           return
         end
 
-        # creating only assignments from the assigments page should:
+        # creating only assignments from the assignments page should:
         # * not create a new module
         # * reload the page
         if for_placement?(:course_assignments_menu) && allow_line_items? && lti_resource_links.all? { |item| item.key?(:lineItem) }
@@ -136,6 +136,7 @@ module Lti
       def render_content_items(items: content_items, reload_page: true)
         js_env({
                  deep_link_response: {
+                   placement: params[:placement],
                    content_items: items,
                    msg: messaging_value("msg"),
                    log: messaging_value("log"),

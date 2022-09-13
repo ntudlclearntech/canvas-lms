@@ -49,11 +49,6 @@ describe "teacher shared rubric specs" do
   it "rounds to an integer when splitting" do
     should_round_to_an_integer_when_splitting
   end
-
-  it "picks the lower value when splitting without room for an integer" do
-    skip("fragile - need to refactor split_ratings method")
-    should_pick_the_lower_value_when_splitting_without_room_for_an_integer
-  end
 end
 
 describe "course rubrics" do
@@ -282,6 +277,7 @@ describe "course rubrics" do
     assignment_model
     rubric_model(context: @course)
     course_with_student(course: @course, active_all: true)
+    @course.offer!
     @association = @rubric.associate_with(@assignment, @course, purpose: "grading", use_for_grading: true)
     @assessment = @association.assess({
                                         user: @student,
@@ -306,6 +302,7 @@ describe "course rubrics" do
     assignment_model
     rubric_model(context: @course)
     course_with_student(course: @course, active_all: true)
+    @course.offer!
     @association = @rubric.associate_with(@assignment, @course, purpose: "grading", use_for_grading: true)
     @assessment = @association.assess({
                                         user: @student,

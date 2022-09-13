@@ -147,6 +147,18 @@ describe MicrosoftSync::SyncerSteps do
       end
     end
 
+    unless options[:except_404] || options[:except_group_not_found]
+      context "on GroupNotFound" do
+        it "goes back to step_generate_diff with a delay" do
+          expect(graph_service.http).to receive(:request).and_raise \
+            MicrosoftSync::Errors::GroupNotFound
+          expect_retry(
+            subject, error_class: MicrosoftSync::Errors::GroupNotFound, **retry_args
+          )
+        end
+      end
+    end
+
     unless options[:except_throttled]
       context "when the Microsoft API returns a 429 with a retry-after header" do
         it "returns a Retry object with that retry-after time" do
@@ -419,12 +431,18 @@ describe MicrosoftSync::SyncerSteps do
     it_behaves_like "a step that returns retry on intermittent error"
 
     context "when Microsoft's API returns success" do
+      let(:mock_users_uluvs_to_aads) do
+        # ULUV "abc@def.com" -> AAD "abc-mail-aad"
+        lambda do |remote_attr, uluvs|
+          uluvs.index_with { |uluv| uluv.gsub(/@.*/, "-#{remote_attr}-aad") }
+        end
+      end
+
       before do
         allow(graph_service_helpers).to receive(:users_uluvs_to_aads) do |remote_attr, uluvs|
           raise "max batchsize stubbed at #{batch_size}" if uluvs.length > batch_size
 
-          # ULUV "abc@def.com" -> AAD "abc-mail-aad"
-          uluvs.index_with { |uluv| uluv.gsub(/@.*/, "-#{remote_attr}-aad") }
+          mock_users_uluvs_to_aads.call(remote_attr, uluvs)
         end
       end
 
@@ -447,7 +465,38 @@ describe MicrosoftSync::SyncerSteps do
             .at_least(:once).and_return({})
           expect { subject }.to_not \
             change { MicrosoftSync::UserMapping.count }.from(0)
+        end
+      end
+
+      context "when some users don't have ULUVs and some don't have Microsoft AADs" do
+        let(:mock_users_uluvs_to_aads) do
+          # ULUV "abc@def.com" -> AAD "abc-mail-aad"
+          lambda do |remote_attr, uluvs|
+            uluvs
+              .grep(/[12]/)
+              .index_with { |uluv| uluv.gsub(/@.*/, "-#{remote_attr}-aad") }
+          end
+        end
+
+        before do
+          students[1].communication_channels.delete_all
+        end
+
+        it "adds only mappings for those who have ULUVs and AADs for those ULUVs" do
           expect_next_step(subject, :step_generate_diff)
+          expect(mappings.pluck(:user_id, :aad_id).sort).to contain_exactly(
+            [students[2].id, "student2-mail-aad"],
+            [teachers[1].id, "teacher1-mail-aad"]
+          )
+        end
+
+        it "removes any possible stale mappings for those without ULUVs or AADs" do
+          expected_user_ids = course.enrollments.map(&:user_id) - [students[2].id, teachers[1].id]
+          expect(MicrosoftSync::UserMapping).to receive(:delete_if_needs_updating).with(
+            course.root_account.id,
+            a_collection_containing_exactly(*expected_user_ids)
+          )
+          subject
         end
       end
 
@@ -1008,7 +1057,7 @@ describe MicrosoftSync::SyncerSteps do
           # to trigger requests that can cause an intermittent error
 
           it_behaves_like "a step that returns retry on intermittent error",
-                          except_throttled: true do
+                          except_throttled: true, except_group_not_found: true do
             context "when a request is throttled" do
               before do
                 allow(graph_service.http).to receive(:request)
@@ -1025,6 +1074,25 @@ describe MicrosoftSync::SyncerSteps do
                 subject
                 expect(InstStatsd::Statsd).to have_received(:increment)
                   .with("microsoft_sync.syncer_steps.partial_into_full_throttled")
+              end
+            end
+
+            context "when a group does not exist" do
+              before do
+                allow(graph_service.groups).to receive(:remove_users_ignore_missing)
+                allow(graph_service.groups).to receive(:add_users_ignore_duplicates)
+                  .and_raise(MicrosoftSync::Errors::GroupNotFound)
+              end
+
+              it "retries but with a GracefulCancelError so it will eventually quietly fail" do
+                expect_retry(
+                  subject, error_class: MicrosoftSync::Errors::GroupNotFoundGracefulCancelError,
+                           delay_amount: [15, 60, 300]
+                )
+                expect(MicrosoftSync::Errors::GroupNotFoundGracefulCancelError.superclass).to \
+                  eq(MicrosoftSync::Errors::GracefulCancelError)
+                expect(MicrosoftSync::Errors::GroupNotFoundGracefulCancelError.public_message).to \
+                  include("The Microsoft 365 Group created by sync no longer exists")
               end
             end
           end

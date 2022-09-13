@@ -134,7 +134,8 @@ class Quizzes::QuizzesController < ApplicationController
           # TODO: remove this since it's set in application controller
           # Will need to update consumers of this in the UI to bring down
           # this permissions check as well
-          DIRECT_SHARE_ENABLED: can_manage || @context.grants_right?(@current_user, session, :read_as_admin),
+          DIRECT_SHARE_ENABLED: @context.grants_right?(@current_user, session, :manage_content) ||
+                                (@context.is_a?(Course) && @context.concluded? && @context.grants_right?(@current_user, session, :read_as_admin)),
         },
         quiz_menu_tools: external_tools_display_hashes(:quiz_menu),
         quiz_index_menu_tools: (if @domain_root_account&.feature_enabled?(:commons_favorites)
@@ -360,7 +361,8 @@ class Quizzes::QuizzesController < ApplicationController
         VALID_DATE_RANGE: CourseDateRange.new(@context),
         HAS_GRADING_PERIODS: @context.grading_periods?,
         MAX_NAME_LENGTH_REQUIRED_FOR_ACCOUNT: max_name_length_required_for_account,
-        MAX_NAME_LENGTH: max_name_length
+        MAX_NAME_LENGTH: max_name_length,
+        IS_MODULE_ITEM: @quiz.is_module_item?
       }
 
       if @context.grading_periods?
@@ -759,7 +761,6 @@ class Quizzes::QuizzesController < ApplicationController
                   !check_lockdown_browser(:medium, named_context_url(@context, "context_quiz_history_url", @quiz.to_param, viewing: "1", version: params[:version]))
 
         js_bundle :quiz_history
-        @google_analytics_page_title = @quiz.survey? ? "User's Survey History" : "User's Quiz History"
         render stream: can_stream_template?
       end
     end

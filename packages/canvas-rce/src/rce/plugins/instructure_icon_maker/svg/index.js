@@ -16,29 +16,27 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import {BASE_SIZE, DEFAULT_OPTIONS, DEFAULT_SETTINGS, STROKE_WIDTH} from './constants'
-import {createSvgElement, convertFileToBase64} from './utils'
+import {BASE_SIZE, DEFAULT_SETTINGS, STROKE_WIDTH} from './constants'
+import {createSvgElement} from './utils'
 import {buildMetadata} from './metadata'
 import {buildShape} from './shape'
 import {buildImage} from './image'
 import {buildClipPath} from './clipPath'
 import {buildText, buildTextBackground, getContainerWidth, getContainerHeight} from './text'
+import base64EncodedFont from './font'
 
-export function buildSvg(settings, options = DEFAULT_OPTIONS) {
+export function buildSvg(settings, options = {}) {
   settings = {...DEFAULT_SETTINGS, ...settings}
 
-  const mainContainer = buildSvgContainer(settings)
+  const mainContainer = buildSvgContainer(settings, options)
   const shapeWrapper = buildSvgWrapper(settings)
 
-  if (options.isPreview) {
-    const checkerboard = buildCheckerboard()
-    shapeWrapper.appendChild(checkerboard)
-  } else {
+  if (!options.isPreview) {
     const metadata = buildMetadata(settings)
     mainContainer.appendChild(metadata)
   }
 
-  const g = buildGroup(settings, options) // The shape group. Sets the controls the fill color
+  const g = buildGroup(settings) // The shape group. Sets the controls the fill color
   const clipPath = buildClipPath(settings) // A clip path used to crop the image
   const shape = buildShape(settings) // The actual path of the shape being built
   const image = buildImage(settings) // The embedded image. Cropped by clipPath
@@ -65,17 +63,11 @@ export function buildSvg(settings, options = DEFAULT_OPTIONS) {
 }
 
 export function buildStylesheet() {
-  const url = '/fonts/lato/extended/Lato-Bold.woff2'
-  return new Promise(resolve => resolve(fetch(url)))
-    .then(data => data.blob())
-    .then(blob => convertFileToBase64(blob))
-    .then(base64String => {
-      const stylesheet = document.createElement('style')
-      const css = `@font-face {font-family: "Lato Extended";font-weight: bold;src: url(${base64String});}`
-      stylesheet.setAttribute('type', 'text/css')
-      stylesheet.appendChild(document.createTextNode(css))
-      return stylesheet
-    })
+  const stylesheet = document.createElement('style')
+  const css = `@font-face {font-family: "Lato Extended";font-weight: bold;src: url(${base64EncodedFont()});}`
+  stylesheet.setAttribute('type', 'text/css')
+  stylesheet.appendChild(document.createTextNode(css))
+  return stylesheet
 }
 
 export function buildSvgWrapper(settings) {
@@ -89,43 +81,26 @@ export function buildSvgWrapper(settings) {
   })
 }
 
-export function buildSvgContainer(settings) {
+export function buildSvgContainer(settings, options) {
   const containerWidth = getContainerWidth(settings)
   const containerHeight = getContainerHeight(settings)
-  return createSvgElement('svg', {
+  const attributes = {
     fill: 'none',
     width: `${containerWidth}px`,
     height: `${containerHeight}px`,
     viewBox: `0 0 ${containerWidth} ${containerHeight}`,
     xmlns: 'http://www.w3.org/2000/svg'
-  })
+  }
+  if (options.isPreview) attributes.style = 'padding: 16px'
+  return createSvgElement('svg', attributes)
 }
 
-export function buildGroup({color, outlineColor, outlineSize}, options = DEFAULT_OPTIONS) {
-  const fill = color || (options.isPreview ? 'url(#checkerboard)' : 'none')
+export function buildGroup({color, outlineColor, outlineSize}) {
+  const fill = color || 'none'
   const g = createSvgElement('g', {fill})
   if (outlineColor) {
     g.setAttribute('stroke', outlineColor)
     g.setAttribute('stroke-width', STROKE_WIDTH[outlineSize])
   }
   return g
-}
-
-export function buildCheckerboard() {
-  const pattern = createSvgElement('pattern', {
-    id: 'checkerboard',
-    x: '0',
-    y: '0',
-    width: '16',
-    height: '16',
-    patternUnits: 'userSpaceOnUse'
-  })
-
-  const children = [
-    createSvgElement('rect', {fill: '#d9d9d9', x: '0', width: '8', height: '8', y: '0'}),
-    createSvgElement('rect', {fill: '#d9d9d9', x: '8', width: '8', height: '8', y: '8'})
-  ]
-  children.forEach(child => pattern.appendChild(child))
-
-  return pattern
 }
