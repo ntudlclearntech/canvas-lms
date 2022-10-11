@@ -95,18 +95,18 @@ function getMenuItems(ed) {
   } else {
     items = [
       {
-        text: formatMessage('External Link'),
+        text: formatMessage('External Links'),
         value: 'instructureLinkCreate'
       }
     ]
     if (contextType === 'course') {
       items.push({
-        text: formatMessage('Course Link'),
+        text: formatMessage('Course Links'),
         value: 'instructure_course_links'
       })
     } else if (contextType === 'group') {
       items.push({
-        text: formatMessage('Group Link'),
+        text: formatMessage('Group Links'),
         value: 'instructure_group_links'
       })
     }
