@@ -9958,6 +9958,8 @@ zh-Hant:
       post_at: 發佈於
       save: 儲存
       saving: 正在儲存...
+      publish: 發佈
+      publishing: 正在發佈...
       sort_by_likes: 依按讚數排序
       topic_title: 主題標題
       until: 關閉時間
