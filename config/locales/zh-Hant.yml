@@ -13774,7 +13774,7 @@ zh-Hant:
   have_not_been_graded_df2a5fd2: 尚未評分
   have_not_yet_submitted_57e6a58b: 尚未提交
   haven_t_been_graded_d7dee5bb: 尚未評分
-  haven_t_submitted_yet_e63834db: 尚未提交
+  haven_t_submitted_yet_e63834db: 尚未繳交
   he_him_99aea1a8: 他
   he_him_a64fe27e: 他
   heads_up_a_valid_salesforce_account_id_should_be_a_999cbf7d: "注意！有效的 Salesforce 帳戶 ID 應該是一組連續 15 到 18 個英數字元。"
@@ -18897,7 +18897,7 @@ zh-Hant:
   no_subject_58b7941c: 無主題
   no_subject_970aad80: 無主題
   no_submission_fb131a40: 無提交項目
-  no_submission_for_assignment_a9cb6fe2: "無 %{assignment} 的提交項目"
+  no_submission_for_assignment_a9cb6fe2: "無 %{assignment} 的繳交項目"
   no_submission_for_assignmenttitle_243bd1f4: "無 %{assignmentTitle} 的提交項目"
   no_submissions_164cea23: 沒有提交項目
   no_submissions_have_been_uploaded_2fb02710: 尚未上傳提交項目
