@@ -334,8 +334,8 @@
   "preformatted_d0670862": { "message": "已預先格式化" },
   "pretty_html_editor_28748756": { "message": "美觀 HTML 編輯器" },
   "preview_53003fd2": { "message": "預覽" },
-  "preview_in_overlay_ed772c46": { "message": "覆蓋預覽" },
-  "preview_inline_9787330": { "message": "預覽內嵌" },
+  "preview_in_overlay_ed772c46": { "message": "以預覽模式開啟檔案" },
+  "preview_inline_9787330": { "message": "內嵌在RCE中" },
   "previous_page_928fc112": { "message": "上一頁" },
   "protocol_must_be_ftp_http_https_mailto_skype_tel_o_73beb4f8": {
     "message": "協議必須為 ftp、http、https、mailto、skype、tel 或忽略此項"
