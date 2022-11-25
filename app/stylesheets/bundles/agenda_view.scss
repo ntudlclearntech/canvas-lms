@@ -299,7 +299,7 @@ span.agendaView--no-assignments {
 .rs-section {
   border: none;
   padding: 0;
-  margin: 0 0 $ic-sp*2;
+  margin: 0 0 $ic-sp*3;
   &:last-of-type { margin-bottom: 0; }
 }
 
@@ -348,39 +348,6 @@ span.agendaView--no-assignments {
 #undated-events-button,
 #other-calendars-toggle-button {
   text-transform: uppercase;
-}
-
-#other-calendar-actions-row {
-  .element_toggler {
-    float: direction(left);
-  }
-  div.manage-accounts-wrapper{
-    float: direction(right);
-    max-width: 24rem;
-    line-height: 1;
-    .new-feature-pill{
-      max-width: 12rem;
-      float: direction(left);
-      color: var(--ic-brand-primary);
-      border-radius: 0.5rem;
-      border: 1px solid var(--ic-brand-primary);
-      font-size:0.8rem;
-      text-transform: uppercase;
-      padding: 0.1rem 0.25rem;
-    }
-    .manage-accounts-btn{
-      float: direction(right);
-      text-decoration: none;
-      color: inherit;
-      cursor: pointer;
-      width: 1.5rem;
-      height: 1rem;
-      text-align: center;
-      font-size: 1.5rem;
-      font-weight: 400;
-      line-height: 1rem;
-    }
-  }
 }
 
 #undated-events {

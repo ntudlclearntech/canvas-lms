@@ -531,7 +531,12 @@ class CalendarEventsApiController < ApplicationController
       params_for_create[:description] = process_incoming_html_content(params_for_create[:description])
     end
     if params_for_create.key?(:web_conference)
-      params_for_create[:web_conference] = find_or_initialize_conference(@context, params_for_create[:web_conference])
+      web_conference_params = params_for_create[:web_conference]
+      unless web_conference_params.empty?
+        web_conference_params[:start_at] = params_for_create[:start_at]
+        web_conference_params[:end_at] = params_for_create[:end_at]
+      end
+      params_for_create[:web_conference] = find_or_initialize_conference(@context, web_conference_params)
     end
 
     @event = @context.calendar_events.build(params_for_create)
@@ -756,7 +761,12 @@ class CalendarEventsApiController < ApplicationController
         params_for_update[:description] = process_incoming_html_content(params_for_update[:description])
       end
       if params_for_update.key?(:web_conference)
-        web_conference = find_or_initialize_conference(@event.context, params_for_update[:web_conference])
+        web_conference_params = params_for_update[:web_conference]
+        unless web_conference_params.empty?
+          web_conference_params[:start_at] = params_for_update[:start_at]
+          web_conference_params[:end_at] = params_for_update[:end_at]
+        end
+        web_conference = find_or_initialize_conference(@event.context, web_conference_params)
         return unless authorize_user_for_conference(@current_user, web_conference)
 
         params_for_update[:web_conference] = web_conference
@@ -1212,10 +1222,15 @@ class CalendarEventsApiController < ApplicationController
   # @API Save enabled account calendars
   #
   #  Creates and updates the enabled_account_calendars and mark_feature_as_seen user preferences
-  #  @argument mark_feature_as_seen [Optional, Boolean]
-  #    Flag to mark account calendars feature as seen
-  #  @argument enabled_account_calendars[] [Optional, Array]
-  #    An array of account Ids to remember in the calendars list of the user
+  #
+  # @argument mark_feature_as_seen [Optional, Boolean]
+  #   Flag to mark account calendars feature as seen
+  #
+  # @argument enabled_account_calendars[] [Optional, Array]
+  #   An array of account Ids to remember in the calendars list of the user
+  #
+  # @example_request
+  #
   #   curl 'https://<canvas>/api/v1/calendar_events/save_enabled_account_calendars' \
   #        -X POST \
   #        -F 'mark_feature_as_seen=true' \
@@ -1224,7 +1239,11 @@ class CalendarEventsApiController < ApplicationController
   #        -H "Authorization: Bearer <token>"
   def save_enabled_account_calendars
     @current_user.set_preference(:account_calendar_events_seen, value_to_boolean(params[:mark_feature_as_seen])) if params.key?(:mark_feature_as_seen)
-    @current_user.set_preference(:enabled_account_calendars, params[:enabled_account_calendars]) if params.key?(:enabled_account_calendars)
+
+    if params.key?(:enabled_account_calendars)
+      @current_user.set_preference(:enabled_account_calendars, params[:enabled_account_calendars])
+      InstStatsd::Statsd.count("account_calendars.modal.enabled_calendars", params[:enabled_account_calendars].length)
+    end
 
     render json: { status: "ok" }
   end
@@ -1437,13 +1456,13 @@ class CalendarEventsApiController < ApplicationController
     @type ||= params[:type] == "assignment" ? :assignment : :event
 
     @context ||= user
-
+    include_accounts = Account.site_admin.feature_enabled?(:account_calendar_events)
     # only get pertinent contexts if there is a user
     if user
       joined_codes = codes&.join(",")
       get_all_pertinent_contexts(
         include_groups: true,
-        include_accounts: Account.site_admin.feature_enabled?(:account_calendar_events),
+        include_accounts: include_accounts,
         cross_shard: true,
         only_contexts: joined_codes,
         include_contexts: joined_codes
@@ -1461,6 +1480,7 @@ class CalendarEventsApiController < ApplicationController
         context = Context.find_by_asset_string(c)
         @public_to_auth = true if context.is_a?(Course) && user && (context.public_syllabus_to_auth || context.public_syllabus || context.is_public || context.is_public_to_auth_users)
         @contexts.push context if context.is_a?(Course) && (context.is_public || context.public_syllabus || @public_to_auth)
+        @contexts.push context if include_accounts && context.is_a?(Account) && user.associated_accounts.active.where(id: context.id, account_calendar_visible: true).exists?
       end
 
       # filter the contexts to only the requested contexts

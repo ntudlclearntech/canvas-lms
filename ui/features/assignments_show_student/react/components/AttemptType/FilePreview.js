@@ -34,17 +34,18 @@ import {Text} from '@instructure/ui-text'
 import theme from '@instructure/canvas-theme'
 import {Table} from '@instructure/ui-table'
 import {Link} from '@instructure/ui-link'
+import {getOriginalityData} from '@canvas/grading/originalityReportHelper'
 
 const I18n = useI18nScope('assignments_2')
 
 export default class FilePreview extends Component {
   static propTypes = {
     submission: Submission.shape,
-    originalityReportsForA2: bool
+    isOriginalityReportVisible: bool,
   }
 
   state = {
-    selectedFile: 0
+    selectedFile: 0,
   }
 
   translateMimeClass(mimeClass) {
@@ -95,13 +96,17 @@ export default class FilePreview extends Component {
 
   renderThumbnail = (file, index) => {
     return (
-      <Button variant="icon" size="large" onClick={() => this.selectFile(index)}>
+      <IconButton
+        onClick={() => this.selectFile(index)}
+        size="large"
+        screenReaderLabel={file.displayName}
+        withBorder={false}
+      >
         <img
           alt={I18n.t('%{filename} preview', {filename: file.displayName})}
           src={file.thumbnailUrl}
         />
-        <ScreenReaderContent>{file.displayName}</ScreenReaderContent>
-      </Button>
+      </IconButton>
     )
   }
 
@@ -120,7 +125,6 @@ export default class FilePreview extends Component {
 
   renderFileIcons = () => {
     const cellTheme = {background: theme.variables.colors.backgroundLight}
-
     return (
       <Table caption={I18n.t('Uploaded files')} data-testid="uploaded_files_table">
         <Table.Head>
@@ -156,11 +160,13 @@ export default class FilePreview extends Component {
                 {file.size}
               </Table.Cell>
               <Table.Cell theme={cellTheme}>
-                {this.props.submission.turnitinData &&
-                  this.props.submission.turnitinData.length !== 0 &&
-                  this.props.originalityReportsForA2 && (
+                {this.props.submission.originalityData &&
+                  this.props.isOriginalityReportVisible &&
+                  getOriginalityData(this.props.submission, index) && (
                     <Flex.Item>
-                      <OriginalityReport turnitinData={this.props.submission.turnitinData[index]} />
+                      <OriginalityReport
+                        originalityData={getOriginalityData(this.props.submission, index)}
+                      />
                     </Flex.Item>
                   )}
               </Table.Cell>
@@ -186,7 +192,7 @@ export default class FilePreview extends Component {
               ${theme.variables.spacing.medium}
               0
               ${theme.variables.spacing.medium}
-            `
+            `,
           }}
         >
           <Text size="large">{message}</Text>
@@ -200,7 +206,7 @@ export default class FilePreview extends Component {
       maxWidth: '1366px',
       height: '0',
       paddingBottom: '130%',
-      position: 'relative'
+      position: 'relative',
     }
 
     const iframeStyle = {
@@ -208,7 +214,7 @@ export default class FilePreview extends Component {
       width: '100%',
       height: '100%',
       position: 'absolute',
-      borderLeft: `1px solid ${theme.variables.colors.borderMedium}`
+      borderLeft: `1px solid ${theme.variables.colors.borderMedium}`,
     }
 
     const selectedFile = this.props.submission.attachments[this.state.selectedFile]
@@ -218,7 +224,7 @@ export default class FilePreview extends Component {
           style={{
             textAlign: 'center',
             padding: `${theme.variables.spacing.medium} 0 0 0`,
-            borderLeft: `1px solid ${theme.variables.colors.borderMedium}`
+            borderLeft: `1px solid ${theme.variables.colors.borderMedium}`,
           }}
         >
           <div style={{display: 'block'}}>

@@ -17,22 +17,89 @@
  */
 
 import {
+  assignmentSearchMatcher,
   confirmViewUngradedAsZero,
-  getStudentGradeForColumn,
-  getGradeAsPercent,
-  onGridKeyDown,
-  getDefaultSettingKeyForColumnType,
-  sectionList,
-  getCustomColumnId,
+  doesSubmissionNeedGrading,
+  doFiltersMatch,
+  findFilterValuesOfType,
   getAssignmentColumnId,
   getAssignmentGroupColumnId,
-  findConditionValuesOfType,
-  doFilterConditionsMatch
+  getCustomColumnId,
+  getDefaultSettingKeyForColumnType,
+  getGradeAsPercent,
+  getStudentGradeForColumn,
+  onGridKeyDown,
+  sectionList,
 } from '../Gradebook.utils'
 import {isDefaultSortOrder, localeSort} from '../Gradebook.sorting'
 import {createGradebook} from './GradebookSpecHelper'
 import {fireEvent, screen, waitFor} from '@testing-library/dom'
-import type {Filter} from '../gradebook.d'
+import type {FilterPreset} from '../gradebook.d'
+import type {Submission} from '../../../../../api.d'
+
+const unsubmittedSubmission: Submission = {
+  anonymous_id: 'dNq5T',
+  assignment_id: '32',
+  attempt: 1,
+  cached_due_date: null,
+  drop: undefined,
+  entered_grade: null,
+  entered_score: null,
+  excused: false,
+  grade: null,
+  gradeLocked: false,
+  grade_matches_current_submission: true,
+  gradingType: 'points',
+  grading_period_id: '2',
+  has_postable_comments: false,
+  has_originality_report: false,
+  hidden: false,
+  id: '160',
+  late: false,
+  late_policy_status: null,
+  missing: false,
+  points_deducted: null,
+  posted_at: null,
+  rawGrade: null,
+  redo_request: false,
+  score: null,
+  seconds_late: 0,
+  submission_type: 'online_text_entry',
+  submitted_at: new Date(),
+  url: null,
+  user_id: '28',
+  workflow_state: 'unsubmitted',
+}
+
+const ungradedSubmission: Submission = {
+  ...unsubmittedSubmission,
+  attempt: 1,
+  workflow_state: 'submitted',
+}
+
+const zeroGradedSubmission: Submission = {
+  ...unsubmittedSubmission,
+  attempt: 1,
+  entered_grade: '0',
+  entered_score: 0,
+  grade: '0',
+  grade_matches_current_submission: true,
+  rawGrade: '0',
+  score: 0,
+  workflow_state: 'graded',
+}
+
+const gradedSubmission: Submission = {
+  ...unsubmittedSubmission,
+  attempt: 1,
+  entered_grade: '5',
+  entered_score: 5,
+  grade: '5',
+  grade_matches_current_submission: true,
+  rawGrade: '5',
+  score: 5,
+  workflow_state: 'graded',
+}
 
 describe('getGradeAsPercent', () => {
   it('returns a percent for a grade with points possible', () => {
@@ -78,12 +145,12 @@ describe('onGridKeyDown', () => {
   beforeEach(() => {
     columns = [
       {id: 'student', type: 'student'},
-      {id: 'assignment_2301', type: 'assignment'}
+      {id: 'assignment_2301', type: 'assignment'},
     ]
     grid = {
       getColumns() {
         return columns
-      }
+      },
     }
   })
 
@@ -217,16 +284,12 @@ describe('getDefaultSettingKeyForColumnType', () => {
   it('relies on localeSort when rows have equal sorting criteria results', () => {
     const gradebook = createGradebook()
     gradebook.gridData.rows = [
-      // @ts-expect-error
       {id: '3', sortable_name: 'Z Lastington', someProperty: false},
-      // @ts-expect-error
-      {id: '4', sortable_name: 'A Firstington', someProperty: true}
+      {id: '4', sortable_name: 'A Firstington', someProperty: true},
     ]
 
     const value = 0
-    // @ts-expect-error
     gradebook.gridData.rows[0].someProperty = value
-    // @ts-expect-error
     gradebook.gridData.rows[1].someProperty = value
     const sortFn = row => row.someProperty
     gradebook.sortRowsWithFunction(sortFn)
@@ -239,8 +302,11 @@ describe('getDefaultSettingKeyForColumnType', () => {
 
 describe('sectionList', () => {
   const sections = {
-    2: {id: '2', name: 'Hello &lt;script>while(1);&lt;/script> world!'},
-    1: {id: '1', name: 'Section 1'}
+    2: {
+      id: '2',
+      name: 'Hello &lt;script>while(1);&lt;/script> world!',
+    },
+    1: {id: '1', name: 'Section 1', course_id: '1'},
   }
 
   it('sorts by id', () => {
@@ -274,85 +340,119 @@ describe('getAssignmentGroupColumnId', () => {
 })
 
 describe('findConditionValuesOfType', () => {
-  const filters: Filter[] = [
+  const filterPreset: FilterPreset[] = [
     {
       id: '1',
       name: 'Filter 1',
-      conditions: [
+      filters: [
         {id: '1', type: 'module', value: '1', created_at: ''},
         {id: '2', type: 'assignment-group', value: '2', created_at: ''},
         {id: '3', type: 'assignment-group', value: '7', created_at: ''},
-        {id: '4', type: 'module', value: '3', created_at: ''}
+        {id: '4', type: 'module', value: '3', created_at: ''},
       ],
-      created_at: '2019-01-01T00:00:00Z'
+      created_at: '2019-01-01T00:00:00Z',
+      updated_at: '2019-01-01T00:00:00Z',
     },
     {
       id: '2',
       name: 'Filter 2',
-      conditions: [
+      filters: [
         {id: '1', type: 'module', value: '4', created_at: ''},
         {id: '2', type: 'assignment-group', value: '5', created_at: ''},
-        {id: '3', type: 'module', value: '6', created_at: ''}
+        {id: '3', type: 'module', value: '6', created_at: ''},
       ],
-      created_at: '2019-01-01T00:00:01Z'
-    }
+      created_at: '2019-01-01T00:00:01Z',
+      updated_at: '2019-01-01T00:00:00Z',
+    },
   ]
 
   it('returns module condition values', () => {
-    expect(findConditionValuesOfType('module', filters[0].conditions)).toStrictEqual(['1', '3'])
+    expect(findFilterValuesOfType('module', filterPreset[0].filters)).toStrictEqual(['1', '3'])
   })
 
   it('returns assignment-group condition values', () => {
-    expect(findConditionValuesOfType('assignment-group', filters[1].conditions)).toStrictEqual([
-      '5'
-    ])
+    expect(findFilterValuesOfType('assignment-group', filterPreset[1].filters)).toStrictEqual(['5'])
   })
 })
 
-describe('doFilterConditionsMatch', () => {
-  const filters: Filter[] = [
+describe('doFiltersMatch', () => {
+  const filterPreset: FilterPreset[] = [
     {
       id: '1',
       name: 'Filter 1',
-      conditions: [
+      filters: [
         {id: '1', type: 'module', value: '1', created_at: ''},
         {id: '2', type: 'assignment-group', value: '2', created_at: ''},
         {id: '3', type: 'assignment-group', value: '7', created_at: ''},
-        {id: '4', type: 'module', value: '3', created_at: ''}
+        {id: '4', type: 'module', value: '3', created_at: ''},
       ],
-      created_at: '2019-01-01T00:00:00Z'
+      created_at: '2019-01-01T00:00:00Z',
+      updated_at: '2019-01-01T00:00:00Z',
     },
     {
       id: '2',
       name: 'Filter 2',
-      conditions: [
+      filters: [
         {id: '1', type: 'module', value: '4', created_at: ''},
         {id: '2', type: 'assignment-group', value: '5', created_at: ''},
-        {id: '3', type: 'module', value: '6', created_at: ''}
+        {id: '3', type: 'module', value: '6', created_at: ''},
       ],
-      created_at: '2019-01-01T00:00:01Z'
+      created_at: '2019-01-01T00:00:01Z',
+      updated_at: '2019-01-01T00:00:00Z',
     },
     {
       id: '3',
       name: 'Filter 3',
-      conditions: [
+      filters: [
         {id: '1', type: 'module', value: '4', created_at: ''},
         {id: '2', type: 'assignment-group', value: '5', created_at: ''},
-        {id: '3', type: 'module', value: '6', created_at: ''}
+        {id: '3', type: 'module', value: '6', created_at: ''},
       ],
-      created_at: '2019-01-01T00:00:01Z'
-    }
+      created_at: '2019-01-01T00:00:01Z',
+      updated_at: '2019-01-01T00:00:00Z',
+    },
   ]
 
   it('returns false if filter conditions are different', () => {
-    expect(doFilterConditionsMatch(filters[0].conditions, filters[1].conditions)).toStrictEqual(
-      false
-    )
+    expect(doFiltersMatch(filterPreset[0].filters, filterPreset[1].filters)).toStrictEqual(false)
   })
 
   it('returns true if filter conditions are the same', () => {
-    expect(doFilterConditionsMatch(filters[1].conditions, filters[2].conditions)).toStrictEqual(
-      true
-    )
+    expect(doFiltersMatch(filterPreset[1].filters, filterPreset[2].filters)).toStrictEqual(true)
+  })
+})
+
+describe('doesSubmissionNeedGrading', () => {
+  it('unsubmitted submission does not need grading', () => {
+    expect(doesSubmissionNeedGrading(unsubmittedSubmission)).toStrictEqual(false)
+  })
+
+  it('submitted but ungraded submission needs grading', () => {
+    expect(doesSubmissionNeedGrading(ungradedSubmission)).toStrictEqual(true)
+  })
+
+  it('zero-graded submission does not need grading', () => {
+    expect(doesSubmissionNeedGrading(zeroGradedSubmission)).toStrictEqual(false)
+  })
+
+  it('none-zero graded submission does not needs grading', () => {
+    expect(doesSubmissionNeedGrading(gradedSubmission)).toStrictEqual(false)
+  })
+})
+
+describe('assignmentSearchMatcher', () => {
+  it('returns true if the search term is a substring of the assignment name (case insensitive)', () => {
+    const option = {id: '122', label: 'Science Lab II'}
+    expect(assignmentSearchMatcher(option, 'lab')).toStrictEqual(true)
+  })
+
+  test('returns false if the search term is not a substring of the assignment name', () => {
+    const option = {id: '122', label: 'Science Lab II'}
+    expect(assignmentSearchMatcher(option, 'Lib')).toStrictEqual(false)
+  })
+
+  test('does not treat the search term as a regular expression', () => {
+    const option = {id: '122', label: 'Science Lab II'}
+    expect(assignmentSearchMatcher(option, 'Science.*II')).toStrictEqual(false)
   })
 })

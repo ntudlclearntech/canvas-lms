@@ -33,7 +33,7 @@ import validateURL from '../../instructure_links/validateURL'
 import UrlPanel from '../../shared/Upload/UrlPanel'
 
 export default function ImageOptionsTray(props) {
-  const {imageOptions, onEntered, onExited, onRequestClose, onSave, open} = props
+  const {imageOptions, onEntered, onExited, onRequestClose, onSave, open, isIconMaker} = props
 
   const {naturalHeight, naturalWidth, isLinked} = imageOptions
   const currentHeight = imageOptions.appliedHeight || naturalHeight
@@ -109,6 +109,11 @@ export default function ImageOptionsTray(props) {
   }
 
   useEffect(() => {
+    if (isIconMaker) {
+      setShowUrlField(false)
+      return
+    }
+
     let isValidURL
     try {
       isValidURL = validateURL(url)
@@ -117,7 +122,8 @@ export default function ImageOptionsTray(props) {
     } finally {
       setShowUrlField(isValidURL ? isExternalUrl(url) : true)
     }
-  }, [])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [url])
 
   const messagesForSize = []
   if (imageSize !== CUSTOM) {
@@ -127,41 +133,50 @@ export default function ImageOptionsTray(props) {
     })
   }
 
-  const saveDisabled =
+  const disableForIcons = isIconMaker && !isDecorativeImage && altText === ''
+  const disableForImages =
     url === '' ||
     (displayAs === 'embed' &&
       ((!isDecorativeImage && altText === '') ||
         (imageSize === CUSTOM && !dimensionsState?.isValid)))
+  const saveDisabled = isIconMaker ? disableForIcons : disableForImages
+
+  const trayLabel = isIconMaker
+    ? formatMessage('Icon Options Tray')
+    : formatMessage('Image Options Tray')
+  const trayHeading = isIconMaker ? formatMessage('Icon Options') : formatMessage('Image Options')
 
   return (
     <Tray
-      data-mce-component
-      label={formatMessage('Image Options Tray')}
+      data-mce-component={true}
+      label={trayLabel}
       onDismiss={onRequestClose}
       onEntered={onEntered}
       onExited={onExited}
       open={open}
       placement="end"
-      shouldCloseOnDocumentClick
-      shouldContainFocus
-      shouldReturnFocus
+      shouldCloseOnDocumentClick={true}
+      shouldContainFocus={true}
+      shouldReturnFocus={true}
     >
       <Flex direction="column" height={getTrayHeight()}>
         <Flex.Item as="header" padding="medium">
           <Flex direction="row">
-            <Flex.Item grow shrink>
-              <Heading as="h2">{formatMessage('Image Options')}</Heading>
+            <Flex.Item shouldGrow={true} shouldShrink={true}>
+              <Heading as="h2">{trayHeading}</Heading>
             </Flex.Item>
 
             <Flex.Item>
-              <CloseButton placemet="static" variant="icon" onClick={onRequestClose}>
-                {formatMessage('Close')}
-              </CloseButton>
+              <CloseButton
+                color="primary"
+                onClick={onRequestClose}
+                screenReaderLabel={formatMessage('Close')}
+              />
             </Flex.Item>
           </Flex>
         </Flex.Item>
 
-        <Flex.Item as="form" grow margin="none" shrink>
+        <Flex.Item as="form" shouldGrow={true} margin="none" shouldShrink={true}>
           <Flex justifyItems="space-between" direction="column" height="100%">
             <Flex direction="column">
               {showUrlField && (
@@ -182,6 +197,7 @@ export default function ImageOptionsTray(props) {
                 handleDisplayAsChange={handleDisplayAsChange}
                 handleImageSizeChange={handleImageSizeChange}
                 messagesForSize={messagesForSize}
+                isIconMaker={isIconMaker}
               />
             </Flex>
             <Flex.Item
@@ -190,7 +206,7 @@ export default function ImageOptionsTray(props) {
               padding="small medium"
               textAlign="end"
             >
-              <Button disabled={saveDisabled} onClick={handleSave} variant="primary">
+              <Button disabled={saveDisabled} onClick={handleSave} color="primary">
                 {formatMessage('Done')}
               </Button>
             </Flex.Item>
@@ -215,10 +231,12 @@ ImageOptionsTray.propTypes = {
   onExited: func,
   onRequestClose: func.isRequired,
   onSave: func.isRequired,
-  open: bool.isRequired
+  open: bool.isRequired,
+  isIconMaker: bool
 }
 
 ImageOptionsTray.defaultProps = {
   onEntered: null,
-  onExited: null
+  onExited: null,
+  isIconMaker: false
 }

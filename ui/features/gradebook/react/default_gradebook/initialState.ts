@@ -18,17 +18,26 @@
 
 import studentRowHeaderConstants from './constants/studentRowHeaderConstants'
 import StudentDatastore from './stores/StudentDatastore'
-import type {InitialActionStates, CourseContent, ContentLoadStates} from './gradebook.d'
-import type {GridDisplaySettings} from './grid.d'
+import type {
+  ContentLoadStates,
+  CourseContent,
+  GradebookOptions,
+  GradebookSettings,
+  InitialActionStates,
+} from './gradebook.d'
+import type {GridDisplaySettings, FilterColumnsOptions} from './grid.d'
 import {camelize} from 'convert-case'
 
 export function getInitialGradebookContent(options) {
   return {
-    customColumns: options.teacher_notes ? [options.teacher_notes] : []
+    customColumns: options.teacher_notes ? [options.teacher_notes] : [],
   }
 }
 
-export function getInitialGridDisplaySettings(settings, colors): GridDisplaySettings {
+export function getInitialGridDisplaySettings(
+  settings: GradebookSettings,
+  colors
+): GridDisplaySettings {
   const selectedPrimaryInfo = studentRowHeaderConstants.primaryInfoKeys.includes(
     settings.student_column_display_as
   )
@@ -38,20 +47,20 @@ export function getInitialGridDisplaySettings(settings, colors): GridDisplaySett
   const sortRowsByColumnId = settings.sort_rows_by_column_id || 'student'
   const sortRowsBySettingKey = settings.sort_rows_by_setting_key || 'sortable_name'
   const sortRowsByDirection = settings.sort_rows_by_direction || 'ascending'
-  const filterColumnsBy = {
+  const filterColumnsBy: FilterColumnsOptions = {
     assignmentGroupId: null,
     contextModuleId: null,
     gradingPeriodId: null,
     submissions: null,
-    start_date: null,
-    end_date: null
+    startDate: null,
+    endDate: null,
   }
   if (settings.filter_columns_by != null) {
     Object.assign(filterColumnsBy, camelize(settings.filter_columns_by))
   }
   const filterRowsBy = {
     sectionId: null,
-    studentGroupId: null
+    studentGroupId: null,
   }
   if (settings.filter_rows_by != null) {
     Object.assign(filterRowsBy, camelize(settings.filter_rows_by))
@@ -68,25 +77,25 @@ export function getInitialGridDisplaySettings(settings, colors): GridDisplaySett
     selectedViewOptionsFilters: settings.selected_view_options_filters || [],
     showEnrollments: {
       concluded: false,
-      inactive: false
+      inactive: false,
     },
     sortRowsBy: {
       columnId: sortRowsByColumnId, // the column controlling the sort
       settingKey: sortRowsBySettingKey, // the key describing the sort criteria
-      direction: sortRowsByDirection // the direction of the sort
+      direction: sortRowsByDirection, // the direction of the sort
     },
     submissionTray: {
       open: false,
-      studentId: null,
-      assignmentId: null,
+      studentId: '',
+      assignmentId: '',
       comments: [],
       commentsLoaded: false,
       commentsUpdating: false,
-      editedCommentId: null
+      editedCommentId: null,
     },
     showUnpublishedAssignments: settings.show_unpublished_assignments === 'true',
     showSeparateFirstLastNames: settings.show_separate_first_last_names === 'true',
-    viewUngradedAsZero: settings.view_ungraded_as_zero === 'true'
+    viewUngradedAsZero: settings.view_ungraded_as_zero === 'true',
   }
 }
 
@@ -101,19 +110,19 @@ export function getInitialContentLoadStates(options): ContentLoadStates {
     studentIdsLoaded: false,
     studentsLoaded: false,
     submissionsLoaded: false,
-    teacherNotesColumnUpdating: false
+    teacherNotesColumnUpdating: false,
   }
 }
 
-export function getInitialCourseContent(options): CourseContent {
+export function getInitialCourseContent(options: GradebookOptions): CourseContent {
   const courseGradingScheme = options.grading_standard
     ? {
-        data: options.grading_standard
+        data: options.grading_standard,
       }
     : null
   const defaultGradingScheme = options.default_grading_standard
     ? {
-        data: options.default_grading_standard
+        data: options.default_grading_standard,
       }
     : null
   return {
@@ -125,13 +134,13 @@ export function getInitialCourseContent(options): CourseContent {
     assignmentStudentVisibility: {},
     latePolicy: options.late_policy ? camelize(options.late_policy) : undefined,
     students: new StudentDatastore({}, {}),
-    modulesById: {}
+    modulesById: {},
   }
 }
 
 export function getInitialActionStates(): InitialActionStates {
   return {
-    pendingGradeInfo: []
+    pendingGradeInfo: [],
   }
 }
 
@@ -139,20 +148,19 @@ export const columnWidths = {
   assignment: {
     min: 10,
     default_max: 200,
-    max: 400
+    max: 400,
   },
   assignmentGroup: {
     min: 35,
     default_max: 200,
-    max: 400
+    max: 400,
   },
   total: {
-    // min: 95, This is adjusted to fit in the custom reminder popover in ui/features/gradebook/react/default_gradebook/GradebookGrid/headers/TotalGradeColumnHeader.js
-    min: 140,
-    max: 400
+    min: 95,
+    max: 400,
   },
   total_grade_override: {
     min: 95,
-    max: 400
-  }
+    max: 400,
+  },
 }

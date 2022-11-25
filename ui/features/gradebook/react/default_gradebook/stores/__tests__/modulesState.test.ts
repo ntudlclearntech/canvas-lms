@@ -21,10 +21,10 @@ import {NetworkFake, setPaginationLinkHeader} from '@canvas/network/NetworkFake/
 import store from '../index'
 
 const exampleData = {
-  contextModules: [{id: '2601'}, {id: '2602 '}, {id: '2603'}]
+  contextModules: [{id: '2601'}, {id: '2602 '}, {id: '2603'}],
 }
 
-describe('useModules', () => {
+describe('modulesState', () => {
   const url = '/api/v1/courses/1/modules'
   let network
 
@@ -46,7 +46,7 @@ describe('useModules', () => {
   describe('when sending the initial request', () => {
     it('sets the `per_page` parameter to the configured per page maximum', async () => {
       store.setState({
-        performanceControls: new PerformanceControls({contextModulesPerPage: 45})
+        performanceControls: new PerformanceControls({contextModulesPerPage: 45}),
       })
       store.getState().fetchModules()
       await network.allRequestsReady()

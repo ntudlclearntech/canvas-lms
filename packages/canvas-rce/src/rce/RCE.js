@@ -25,7 +25,6 @@ import editorLanguage from './editorLanguage'
 import normalizeLocale from './normalizeLocale'
 import wrapInitCb from './wrapInitCb'
 import tinyRCE from './tinyRCE'
-import defaultTinymceConfig from '../defaultTinymceConfig'
 import getTranslations from '../getTranslations'
 import '@instructure/canvas-theme'
 
@@ -56,6 +55,7 @@ const RCE = forwardRef(function RCE(props, rceRef) {
     textareaClassName,
     rcsProps,
     use_rce_icon_maker,
+    features,
     onFocus,
     onBlur,
     onInit,
@@ -96,11 +96,13 @@ const RCE = forwardRef(function RCE(props, rceRef) {
       textareaClassName,
       trayProps: rcsProps,
       use_rce_icon_maker,
-      editorOptions: Object.assign(editorOptions, {
-        selector: `#${textareaId}`,
+      features,
+      editorOptions: {
+        ...editorOptions,
+        selector: editorOptions.selector || `#${textareaId}`,
         height,
         language: editorLanguage(props.language)
-      })
+      }
     }
     wrapInitCb(mirroredAttrs, iProps.editorOptions)
 
@@ -190,6 +192,12 @@ RCE.propTypes = {
   rcsProps: trayPropTypes,
   // enable the custom icon maker feature (temporary until the feature is forced on)
   use_rce_icon_maker: bool,
+  // record of feature statuses from containing page
+  features: objectOf(bool),
+  // configurable default timeout value for flash alerts
+  flashAlertTimeout: number,
+  // user's timezone
+  timezone: string,
   // event handlers
   onFocus: func, // f(RCEWrapper component)
   onBlur: func, // f(event)
@@ -200,7 +208,7 @@ RCE.propTypes = {
 RCE.defaultProps = {
   autosave: {enabled: false, maxAge: 3600000},
   defaultContent: '',
-  editorOptions: {...defaultTinymceConfig},
+  editorOptions: {},
   renderKBShortcutModal: true,
   highContrastCSS: [],
   instRecordDisabled: false,

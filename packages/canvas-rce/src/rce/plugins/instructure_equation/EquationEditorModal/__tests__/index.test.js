@@ -21,6 +21,8 @@ import {act, fireEvent, render, screen, waitFor} from '@testing-library/react'
 import EquationEditorModal from '../index'
 import mathml from '../mathml'
 import advancedPreference from '../advancedPreference'
+import RCEGlobals from '../../../../RCEGlobals'
+import {MathfieldElement} from 'mathlive'
 
 jest.useFakeTimers()
 
@@ -78,11 +80,7 @@ describe('EquationEditorModal', () => {
   let editor, mockFn
 
   beforeAll(() => {
-    ENV = {
-      FEATURES: {
-        new_equation_editor: true
-      }
-    }
+    RCEGlobals.setFeatures({new_equation_editor: true})
 
     MathfieldElement.prototype.getValue = jest.fn().mockImplementation(function () {
       if (this.tagName === 'MATH-FIELD') {
@@ -96,6 +94,10 @@ describe('EquationEditorModal', () => {
         this.innerHTML = value
       }
     })
+  })
+
+  afterAll(() => {
+    jest.resetAllMocks()
   })
 
   beforeEach(() => {
@@ -161,7 +163,7 @@ describe('EquationEditorModal', () => {
         })
       })
 
-      it.skip('loads an advanced formula in the advanced editor', async () => {
+      it('loads an advanced formula in the advanced editor', async () => {
         editor.selection.getContent = () => '\\(\\displaystyle\\)'
         renderModal({editor})
         await waitFor(() => {
@@ -184,7 +186,7 @@ describe('EquationEditorModal', () => {
         })
       })
 
-      it.skip('loads an advanced formula in the advanced editor', async () => {
+      it('loads an advanced formula in the advanced editor', async () => {
         editor.selection.getContent = () => 'non-latex-content'
         editor.selection.getNode = () => ({
           tagName: 'IMG',

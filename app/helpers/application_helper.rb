@@ -493,12 +493,7 @@ module ApplicationHelper
   def show_user_create_course_button(user, account = nil)
     return true if account&.grants_any_right?(user, session, :manage_courses, :create_courses)
 
-    @domain_root_account.manually_created_courses_account.grants_any_right?(
-      user,
-      session,
-      :manage_courses,
-      :create_courses
-    )
+    user&.sub_account_for_course_creation(@domain_root_account)&.grants_any_right?(user, session, :manage_courses, :create_courses)
   end
 
   # Public: Create HTML for a sidebar button w/ icon.
@@ -560,13 +555,13 @@ module ApplicationHelper
           )
       end
     end
-
     {
       equellaEnabled: !!equella_enabled?,
       disableGooglePreviews: !service_enabled?(:google_docs_previews),
       logPageViews: !@body_class_no_headers,
       editorButtons: editor_buttons,
-      pandaPubSettings: CanvasPandaPub::Client.config.try(:slice, "push_url", "application_id")
+      pandaPubSettings: CanvasPandaPub::Client.config.try(:slice, "push_url", "application_id"),
+      unsplashEnabled: PluginSetting.settings_for_plugin(:unsplash)&.dig("access_key")&.present?
     }.each do |key, value|
       # dont worry about keys that are nil or false because in javascript: if (INST.featureThatIsUndefined ) { //won't happen }
       global_inst_object[key] = value if value
@@ -576,6 +571,9 @@ module ApplicationHelper
   end
 
   def editor_buttons
+    # called outside of Lti::ContextToolFinder to make sure that
+    # @context is non-nil and also a type of Context that would have
+    # tools in it (ie Course/Account/Group/User)
     contexts = ContextExternalTool.contexts_to_search(@context)
     return [] if contexts.empty?
 
@@ -583,13 +581,7 @@ module ApplicationHelper
       Rails
       .cache
       .fetch((["editor_buttons_for2"] + contexts.uniq).cache_key) do
-        tools =
-          ContextExternalTool
-          .shard(@context.shard)
-          .active
-          .having_setting("editor_button")
-          .where(context: contexts)
-          .order(:id)
+        tools = Lti::ContextToolFinder.new(@context, type: :editor_button).all_tools_scope_union.to_unsorted_array.sort_by(&:id)
 
         # force the YAML to be deserialized before caching, since it's expensive
         tools.each(&:settings)

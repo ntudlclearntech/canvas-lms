@@ -530,9 +530,7 @@ describe DeveloperKey do
 
     it "rejects changes to routes.rb if it would break an existing scope" do
       stub_const("CanvasRails::Application", TokenScopesHelper::SpecHelper::MockCanvasRails::Application)
-      all_routes = Set.new(TokenScopes.api_routes.map do |route|
-        { verb: route[:verb], path: route[:path] }
-      end)
+      all_routes = Set.new(TokenScopes.api_routes.pluck(:verb, :path))
 
       modified_scopes = TokenScopesHelper::SpecHelper.last_known_accepted_scopes.reject do |scope|
         all_routes.include? scope
@@ -540,7 +538,7 @@ describe DeveloperKey do
 
       error_message = <<~TEXT
         These routes are used by developer key scopes, and have been changed:
-        #{modified_scopes.map { |scope| "- #{scope[:verb]}: #{scope[:path]}" }.join("\n")}
+        #{modified_scopes.map { |scope| "- #{scope[0]}: #{scope[1]}" }.join("\n")}
 
         If these routes must be changed, it will require a data fixup to change
         the scope attribute of any developer keys that refer to those routes.

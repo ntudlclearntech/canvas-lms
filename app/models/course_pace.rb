@@ -52,6 +52,7 @@ class CoursePace < ActiveRecord::Base
   scope :not_deleted, -> { where.not(workflow_state: "deleted") }
   scope :unpublished, -> { where(workflow_state: "unpublished") }
   scope :published, -> { where(workflow_state: "active").where.not(published_at: nil) }
+  scope :section_paces, -> { where.not(course_section_id: nil) }
 
   workflow do
     state :unpublished
@@ -97,30 +98,33 @@ class CoursePace < ActiveRecord::Base
     course_pace
   end
 
-  def create_publish_progress(run_at: Setting.get("course_pace_publish_interval", "300").to_i.seconds.from_now)
+  def create_publish_progress(run_at: Setting.get("course_pace_publish_interval", "300").to_i.seconds.from_now, enrollment_ids: nil)
     progress = Progress.create!(context: self, tag: "course_pace_publish")
     progress.process_job(self, :publish, {
                            run_at: run_at,
                            singleton: "course_pace_publish:#{id}",
                            on_conflict: :overwrite
-                         })
+                         }, { enrollment_ids: enrollment_ids })
     progress
   end
 
-  def publish(progress = nil)
+  def publish(progress = nil, enrollment_ids: nil)
+    raise "Course pace is deleted" if deleted?
+
+    enrollments = enrollment_ids ? course.student_enrollments.where(id: enrollment_ids) : student_enrollments
     Time.use_zone(course.time_zone) do
       assignments_to_refresh = Set.new
       Assignment.suspend_due_date_caching do
         Assignment.suspend_grading_period_grade_recalculation do
-          progress&.calculate_completion!(0, student_enrollments.size)
-          ordered_module_items = course_pace_module_items.not_deleted
-                                                         .sort_by { |ppmi| ppmi.module_item.position }
-                                                         .group_by { |ppmi| ppmi.module_item.context_module }
-                                                         .sort_by { |context_module, _items| context_module.position }
-                                                         .to_h.values.flatten
-          student_enrollments.each do |enrollment|
+          progress&.calculate_completion!(0, enrollments.size)
+          enrollments.each do |enrollment|
+            compressed_module_items = compress_dates(start_date: nil, enrollment: enrollment)
+                                      .sort_by { |ppmi| ppmi.module_item.position }
+                                      .group_by { |ppmi| ppmi.module_item.context_module }
+                                      .sort_by { |context_module, _items| context_module.position }
+                                      .to_h.values.flatten
             dates =
-              CoursePaceDueDatesCalculator.new(self).get_due_dates(ordered_module_items, enrollment)
+              CoursePaceDueDatesCalculator.new(self).get_due_dates(compressed_module_items, enrollment)
             course_pace_module_items.each do |course_pace_module_item|
               content_tag = course_pace_module_item.module_item
               assignment = content_tag.assignment
@@ -149,7 +153,7 @@ class CoursePace < ActiveRecord::Base
                 )
 
               # If the assignment has already been submitted we are going to log that and continue
-              if assignment.submissions.find_by(user_id: user_id).submitted?
+              if assignment.submissions.find_by(user_id: user_id)&.submitted?
                 InstStatsd::Statsd.increment("course_pacing.submitted_assignment_date_change")
               end
 
@@ -190,16 +194,41 @@ class CoursePace < ActiveRecord::Base
       Assignment.clear_cache_keys(assignments_to_refresh, :availability)
       DueDateCacher.recompute_course(course, assignments: assignments_to_refresh, update_grades: true)
 
+      # Maintain the weights of the module items
+      course_pace_module_items.each(&:restore_attributes)
+
       # Mark as published
       log_module_items_count
       update(workflow_state: "active", published_at: DateTime.current)
     end
   end
 
-  def compress_dates(save: true, start_date: self.start_date)
+  def republish_paces_for_affected_enrollments
+    raise "Course pace is not deleted" unless deleted?
+
+    grouped_paces_and_enrollments = student_enrollments.group_by do |enrollment|
+      student_section_ids = enrollment.user.student_enrollments.where(course: course).where.not(workflow_state: "deleted").pluck(:course_section_id)
+      pace = course.course_paces.published.where(course_section_id: student_section_ids).last
+      pace || course.course_paces.published.primary.take
+    end
+    grouped_paces_and_enrollments.each do |pace, enrollments|
+      pace.create_publish_progress(enrollment_ids: enrollments.pluck(:id))
+    end
+  end
+
+  def published?
+    active?
+  end
+
+  def primary?
+    !deleted? && course_section_id.nil? && user_id.nil?
+  end
+
+  def compress_dates(save: false, start_date: self.start_date, enrollment: nil)
     CoursePaceHardEndDateCompressor.compress(
       self,
       course_pace_module_items,
+      enrollment: enrollment,
       save: save,
       start_date: start_date
     )

@@ -73,6 +73,7 @@ class ApplicationController < ActionController::Base
   before_action :initiate_session_from_token
   before_action :fix_xhr_requests
   before_action :init_body_classes
+  before_action :manage_robots_meta
   # multiple actions might be called on a single controller instance in specs
   before_action :clear_js_env if Rails.env.test?
 
@@ -212,6 +213,7 @@ class ApplicationController < ActionController::Base
           current_user_is_student: @context.respond_to?(:user_is_student?) && @context.user_is_student?(@current_user),
           current_user_types: @current_user.try { |u| u.account_users.active.map { |au| au.role.name } },
           current_user_disabled_inbox: @current_user&.disabled_inbox?,
+          current_user_visited_tabs: @current_user&.get_preference(:visited_tabs),
           discussions_reporting: @context.respond_to?(:feature_enabled?) && @context.feature_enabled?(:react_discussions_post),
           files_domain: HostUrl.file_host(@domain_root_account || Account.default, request.host_with_port),
           DOMAIN_ROOT_ACCOUNT_ID: @domain_root_account&.global_id,
@@ -316,7 +318,7 @@ class ApplicationController < ActionController::Base
   # put feature checks on Account.site_admin and @domain_root_account that we're loading for every page in here
   # so altogether we can get them faster the vast majority of the time
   JS_ENV_SITE_ADMIN_FEATURES = %i[
-    featured_help_links word_count_in_speed_grader observer_picker
+    featured_help_links observer_picker
     lti_platform_storage scale_equation_images new_equation_editor buttons_and_icons_cropper course_paces_for_sections
     calendar_series account_level_blackout_dates account_calendar_events rce_ux_improvements render_both_to_do_lists
   ].freeze
@@ -324,7 +326,7 @@ class ApplicationController < ActionController::Base
     product_tours files_dnd usage_rights_discussion_topics
     granular_permissions_manage_users create_course_subaccount_picker
     lti_deep_linking_module_index_menu_modal lti_multiple_assignment_deep_linking buttons_and_icons_root_account
-    extended_submission_state wrap_calendar_event_titles
+    extended_submission_state wrap_calendar_event_titles scheduled_page_publication
   ].freeze
   JS_ENV_BRAND_ACCOUNT_FEATURES = [
     :embedded_release_notes
@@ -367,13 +369,17 @@ class ApplicationController < ActionController::Base
   helper_method :render_js_env
 
   # add keys to JS environment necessary for the RCE at the given risk level
-  def rce_js_env(domain: request.host_with_port)
-    rce_env_hash = Services::RichContent.env_for(
+  def rce_js_env_base(domain: request.host_with_port)
+    Services::RichContent.env_for(
       user: @current_user,
       domain: domain,
       real_user: @real_current_user,
       context: @context
     )
+  end
+
+  def rce_js_env(domain: request.host_with_port)
+    rce_env_hash = rce_js_env_base
     if @context.is_a?(Course)
       rce_env_hash[:RICH_CONTENT_FILES_TAB_DISABLED] = !@context.grants_right?(@current_user, session, :read_as_admin) &&
                                                        !tab_enabled?(@context.class::TAB_FILES, no_render: true)
@@ -414,9 +420,9 @@ class ApplicationController < ActionController::Base
 
     context = context.account if context.is_a?(User)
     tools = GuardRail.activate(:secondary) do
-      ContextExternalTool.all_tools_for(context, { placements: type,
-                                                   root_account: @domain_root_account, current_user: @current_user,
-                                                   tool_ids: tool_ids }).to_a
+      Lti::ContextToolFinder.all_tools_for(context, { placements: type,
+                                                      root_account: @domain_root_account, current_user: @current_user,
+                                                      tool_ids: tool_ids }).to_a
     end
 
     tools.select! do |tool|
@@ -1186,7 +1192,7 @@ class ApplicationController < ActionController::Base
 
       if opts[:include_accounts]
         account_ids = @current_user.get_preference(:enabled_account_calendars) || []
-        accounts = Account.where(id: account_ids)
+        accounts = @current_user.associated_accounts.active.where(id: account_ids, account_calendar_visible: true)
       end
 
       if opts[:favorites_first]
@@ -1476,6 +1482,10 @@ class ApplicationController < ActionController::Base
                                         else
                                           "no-store"
                                         end
+  end
+
+  def manage_robots_meta
+    @allow_robot_indexing = true if @domain_root_account&.enable_search_indexing? || Setting.get("enable_search_indexing", "false") == "true"
   end
 
   def set_page_view
@@ -1937,6 +1947,7 @@ class ApplicationController < ActionController::Base
         render "context_modules/url_show"
       end
     elsif tag.content_type == "ContextExternalTool"
+      timing_start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
       @tag = tag
 
       if tag.locked_for? @current_user
@@ -2004,7 +2015,8 @@ class ApplicationController < ActionController::Base
                                                         content_tag: @module_tag || tag,
                                                         assignment: @assignment,
                                                         launch: @lti_launch,
-                                                        tool: @tool
+                                                        tool: @tool,
+                                                        launch_url: @resource_url
                                                       })
 
         adapter = if @tool.use_1_3?
@@ -2062,6 +2074,9 @@ class ApplicationController < ActionController::Base
         flash[:error] = t "#application.errors.invalid_external_tool", "Couldn't find valid settings for this link"
         redirect_to named_context_url(context, error_redirect_symbol)
       end
+      timing_end = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      tags = @tool ? { lti_version: @tool.lti_version } : {}
+      InstStatsd::Statsd.timing("lti.content_tag_redirect_time", timing_end - timing_start, tags: tags)
     else
       flash[:error] = t "#application.errors.invalid_tag_type", "Didn't recognize the item type for this tag"
       redirect_to named_context_url(context, error_redirect_symbol)

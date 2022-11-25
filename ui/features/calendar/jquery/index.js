@@ -100,7 +100,8 @@ export default class Calendar {
     this.agenda = new AgendaView({
       el: $('.agenda-wrapper'),
       dataSource: this.dataSource,
-      calendar: this
+      calendar: this,
+      contextObjects: this.contexts
     })
 
     const fullCalendarParams = this.initializeFullCalendarParams()
@@ -367,7 +368,7 @@ export default class Calendar {
     const startDate = event.startDate()
     const endDate = event.endDate()
     const timeString = (() => {
-      if (!endDate || +startDate === +endDate) {
+      if (!endDate || +startDate === +endDate || event.blackout_date) {
         startDate.locale(calendarDefaults.lang)
         return startDate.format('LT')
       } else {
@@ -572,6 +573,11 @@ export default class Calendar {
       return
     }
 
+    if (!this.hasValidContexts()) {
+      // Don't create the event if there are no active contexts
+      return
+    }
+
     // create a new dummy event
     event = commonEventFactory(null, this.activeContexts())
     event.date = this.getCurrentDate()
@@ -596,11 +602,31 @@ export default class Calendar {
       return
     }
 
+    if (!this.hasValidContexts()) {
+      // Don't create the event if there are no active contexts
+      return
+    }
+
     // create a new dummy event
     const event = commonEventFactory(null, this.activeContexts())
     event.date = date
     event.allDay = !date.hasTime()
     return new EditEventDetailsDialog(event, this.useScheduler).show()
+  }
+
+  hasValidContexts = () => {
+    const activeCtxs = this.activeContexts()
+    if (activeCtxs.length === 0) {
+      const alertContainer = $('.flashalert-message')
+      if (alertContainer.length === 0) {
+        showFlashAlert({
+          message: I18n.t('You must select at least one calendar to create an event.'),
+          type: 'info'
+        })
+      }
+      return false
+    }
+    return true
   }
 
   updateFragment(opts) {
@@ -1099,6 +1125,19 @@ export default class Calendar {
     this.agenda.viewingGroup = null
     this.header.showSchedulerTitle()
     return this.schedulerNavigator.hide()
+  }
+
+  syncNewContexts = additionalContexts => {
+    if (additionalContexts?.length > 0) {
+      additionalContexts.forEach(additionalContext => {
+        const context = this.contexts.find(c => c.asset_string === additionalContext.asset_string)
+        if (!context) {
+          this.contexts.push(additionalContext)
+          this.contextCodes.push(additionalContext.asset_string)
+        }
+      })
+      this.colorizeContexts()
+    }
   }
 
   colorizeContexts = () => {

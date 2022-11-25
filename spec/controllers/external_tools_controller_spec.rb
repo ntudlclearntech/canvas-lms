@@ -155,6 +155,7 @@ describe ExternalToolsController do
             lti_message_hint
             canvas_region
             client_id
+            lti_storage_target
           ]
         end
 
@@ -1853,6 +1854,16 @@ describe ExternalToolsController do
       expect(json["errors"]["config_url"][0]["message"]).to eq "Invalid URL"
     end
 
+    it "stores placement config using string key" do
+      expect(CanvasHttp).to receive(:insecure_host?).with("localhost").and_return(true)
+      user_session(@teacher)
+
+      post "create", params: { course_id: @course.id, external_tool: { name: "tool name", url: "http://example.com",
+                                                                       consumer_key: "key", shared_secret: "secret", config_type: "by_url",
+                                                                       config_url: "http://localhost:9001", course_navigation: { enabled: true } } }, format: "json"
+      expect(assigns[:tool].settings).to have_key "course_navigation"
+    end
+
     context "navigation tabs caching" do
       it "does not clear the navigation tabs cache for non navigtaion tools" do
         enable_cache do
@@ -2273,56 +2284,114 @@ describe ExternalToolsController do
     context "with 1.3 tool" do
       include_context "lti_1_3_spec_helper"
 
-      let(:params) { { course_id: @course.id, id: tool.id } }
       let(:tool) do
         t = tool_configuration.new_external_tool(@course)
         t.save!
         t
       end
-
-      let(:account) { @course.account }
-
-      before do
-        @backup_controller_access_token = controller.instance_variable_get(:@access_token)
+      let(:rl) do
+        Lti::ResourceLink.create!(
+          context_external_tool: tool,
+          context: @course,
+          custom: { abc: "def", expans: "$Canvas.user.id" },
+          url: "http://www.example.com/launch"
+        )
       end
+      let(:params) { { course_id: @course.id, id: tool.id } }
+      let(:account) { @course.account }
+      let(:access_token) { login_pseudonym.user.access_tokens.create(purpose: "test") }
 
-      after { controller.instance_variable_set :@access_token, @backup_controller_access_token }
+      before { controller.instance_variable_set :@access_token, access_token }
 
-      it "returns the lti 1.3 launch url with a session token" do
-        controller.instance_variable_set :@access_token, login_pseudonym.user.access_tokens.create(purpose: "test")
+      it "returns the lti 1.3 launch url with a session token when not given url or lookup_id" do
         get :generate_sessionless_launch, params: params
         expect(response).to be_successful
+
         json = JSON.parse(response.body)
         url = URI.parse(json["url"])
+        token = SessionToken.parse(CGI.parse(url.query)["session_token"].first)
+
         expect(url.path).to eq("#{course_external_tools_path(@course)}/#{tool.id}")
         expect(url.query).to match(/^display=borderless&session_token=[0-9a-zA-Z_\-]+$/)
+        expect(token.pseudonym_id).to eq(login_pseudonym.global_id)
+      end
+
+      it "returns the lti 1.3 launch url with a session token when given a url and tool id" do
+        get :generate_sessionless_launch, params: params.merge(url: "http://lti13testtool.docker/deep_link")
+        expect(response).to be_successful
+
+        json = JSON.parse(response.body)
+        url = URI.parse(json["url"])
+        query_params = URI.decode_www_form(url.query).to_h
         token = SessionToken.parse(CGI.parse(url.query)["session_token"].first)
+
+        expect(url.path).to eq("#{course_external_tools_path(@course)}/#{tool.id}")
+        expect(query_params).to have_key("display")
+        expect(query_params).to have_key("launch_url")
+        expect(query_params).to have_key("session_token")
         expect(token.pseudonym_id).to eq(login_pseudonym.global_id)
       end
 
       it "returns the specified launch url for a deep link" do
-        controller.instance_variable_set :@access_token, login_pseudonym.user.access_tokens.create(purpose: "test")
-        get :generate_sessionless_launch, params: params.merge(url: "http://lti13testtool.docker/deep_link")
+        get :generate_sessionless_launch, params: params.merge(id: tool.id, url: "http://lti13testtool.docker/deep_link")
         expect(response).to be_successful
         json = JSON.parse(response.body)
         url = URI.parse(json["url"])
         expect(CGI.parse(url.query)["launch_url"]).to eq ["http://lti13testtool.docker/deep_link"]
       end
 
-      it "doesn't work when there is no access token (non-API access)" do
-        get :generate_sessionless_launch, params: params
-        expect(response).to_not be_successful
-        expect(response.code.to_i).to eq(401)
+      context "when not passing tool_id" do
+        let(:params) { { course_id: @course.id } }
+
+        it "returns the lti 1.3 resource link lookup uuid with a session token when given a lookup_uuid" do
+          get :generate_sessionless_launch, params: params.merge(resource_link_lookup_uuid: rl.lookup_uuid)
+          expect(response).to be_successful
+
+          json = JSON.parse(response.body)
+          url = URI.parse(json["url"])
+          query_params = URI.decode_www_form(url.query).to_h
+          token = SessionToken.parse(CGI.parse(url.query)["session_token"].first)
+
+          expect(url.path).to eq("#{course_external_tools_path(@course)}/retrieve")
+          expect(query_params).to have_key("display")
+          expect(query_params).to have_key("resource_link_lookup_uuid")
+          expect(query_params).to have_key("session_token")
+          expect(token.pseudonym_id).to eq(login_pseudonym.global_id)
+        end
+
+        it "returns the lti 1.3 launch url with a session token when given a url and a lookup_id" do
+          get :generate_sessionless_launch, params: params.merge(url: "http://lti13testtool.docker/deep_link", resource_link_lookup_uuid: rl.lookup_uuid)
+          expect(response).to be_successful
+
+          json = JSON.parse(response.body)
+          url = URI.parse(json["url"])
+          query_params = URI.decode_www_form(url.query).to_h
+          token = SessionToken.parse(CGI.parse(url.query)["session_token"].first)
+
+          expect(url.path).to eq("#{course_external_tools_path(@course)}/retrieve")
+          expect(query_params).to have_key("display")
+          expect(query_params).to have_key("resource_link_lookup_uuid")
+          expect(query_params).to have_key("session_token")
+          expect(token.pseudonym_id).to eq(login_pseudonym.global_id)
+        end
+      end
+
+      context "when there is no access to token (non-API access)" do
+        let(:access_token) { nil }
+
+        it "returns a 401" do
+          get :generate_sessionless_launch, params: params
+          expect(response).to_not be_successful
+          expect(response.code.to_i).to eq(401)
+        end
       end
 
       context "when the developer key requires scopes" do
-        before { DeveloperKey.default.update!(require_scopes: true) }
+        before do
+          access_token.developer_key.update!(require_scopes: true)
+        end
 
         it 'responds with "unauthorized" if developer key requires scopes' do
-          controller.instance_variable_set(
-            :@access_token,
-            login_pseudonym.user.access_tokens.create(purpose: "test")
-          )
           get :generate_sessionless_launch, params: params
           expect(response).to be_unauthorized
         end
@@ -2358,7 +2427,6 @@ describe ExternalToolsController do
           tool_root_account.account_domains.create!(host: tool_host)
           account.account_domains.create!(host: account_host)
           user_session(user)
-          controller.instance_variable_set :@access_token, access_token
           request.host = account_host
         end
 
@@ -2396,7 +2464,7 @@ describe ExternalToolsController do
         end
 
         context "when an API token is not used" do
-          before { controller.instance_variable_set :@access_token, nil }
+          let(:access_token) { nil }
 
           it "does not return a sessionless launch URI" do
             @shard2.activate { get :generate_sessionless_launch, params: params }
@@ -2416,39 +2484,16 @@ describe ExternalToolsController do
 
       context "with an assignment launch" do
         before do
-          controller.instance_variable_set(
-            :@access_token,
-            login_pseudonym.user.access_tokens.create(purpose: "test")
-          )
           assignment.update!(
             external_tool_tag: content_tag,
             submission_types: "external_tool"
           )
-          external_tool
         end
 
         let(:assignment) { assignment_model(course: @course) }
-        let(:launch_url) { "https://www.my-tool.com/login" }
+        let(:launch_url) { tool.url }
         let(:params) { { course_id: @course.id, launch_type: :assessment, assignment_id: assignment.id } }
-        let(:content_tag) do
-          ContentTag.create!(
-            context: assignment,
-            content_type: "ContextExternalTool",
-            url: launch_url
-          )
-        end
-        let(:external_tool) do
-          tool = external_tool_model(
-            context: assignment.course,
-            opts: {
-              url: launch_url,
-              developer_key: DeveloperKey.create!
-            }
-          )
-          tool.settings[:use_1_3] = true
-          tool.save!
-          tool
-        end
+        let(:content_tag) { ContentTag.create!(context: assignment, content: tool, url: launch_url) }
 
         it "returns an assignment launch URL" do
           get :generate_sessionless_launch, params: params
@@ -2482,47 +2527,44 @@ describe ExternalToolsController do
           json_parse["url"]
         end
 
-        before do
-          controller.instance_variable_set(
-            :@access_token,
-            login_pseudonym.user.access_tokens.create(purpose: "test")
-          )
-
-          external_tool
-        end
-
-        let(:course) { @course }
-        let(:launch_url) { "https://www.my-tool.com/login" }
+        let(:launch_url) { tool.url }
         let(:params) { { course_id: @course.id, launch_type: :module_item, module_item_id: module_item.id } }
         let(:context_module) do
           ContextModule.create!(
-            context: course,
+            context: @course,
             name: "External Tools"
           )
         end
         let(:module_item) do
           ContentTag.create!(
-            context: course,
+            context: @course,
             context_module: context_module,
-            content_type: "ContextExternalTool",
+            content: tool,
             url: launch_url
           )
         end
-        let(:external_tool) do
-          tool = external_tool_model(
-            context: course,
-            opts: { url: launch_url }
-          )
-          tool.settings[:use_1_3] = true
-          tool.save!
-          tool
-        end
 
-        it { is_expected.to include "http://test.host/courses/#{course.id}/modules/items/#{module_item.id}" }
+        it { is_expected.to include "http://test.host/courses/#{@course.id}/modules/items/#{module_item.id}" }
 
         it { is_expected.to include "display=borderless" }
 
         it { is_expected.to match(/session_token=\w+/) }
+      end
+
+      context "when there is a URL but no launch_type or ID" do
+        before do
+          get :generate_sessionless_launch, params: { course_id: @course.id, url: tool.url }
+        end
+
+        it "generates a retrieve URL with the url" do
+          expect(json_parse["url"]).to start_with("http://test.host/courses/#{@course.id}/external_tools/retrieve?")
+          expect(json_parse["url"]).to include("display=borderless")
+          expect(json_parse["url"]).to include("url=#{CGI.escape tool.url}")
+        end
+
+        it "finds the tool" do
+          expect(json_parse["id"]).to eq(tool.id)
+        end
       end
     end
   end

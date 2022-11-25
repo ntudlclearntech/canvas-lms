@@ -71,19 +71,21 @@ class PeriodicJobs
 end
 
 def with_each_job_cluster(klass, method, *args, jitter: nil, local_offset: false)
-  DatabaseServer.send_in_each_region(PeriodicJobs,
-                                     :with_each_shard_by_database_in_region,
-                                     {
-                                       singleton: "periodic:region: #{klass}.#{method}",
-                                     }, klass, method, *args, jitter: jitter, local_offset: local_offset, connection_class: Delayed::Backend::ActiveRecord::AbstractJob)
+  DatabaseServer.send_in_each_region(
+    PeriodicJobs,
+    :with_each_shard_by_database_in_region,
+    { singleton: "periodic:region: #{klass}.#{method}" },
+    klass, method, *args, jitter: jitter, local_offset: local_offset, connection_class: Delayed::Backend::ActiveRecord::AbstractJob
+  )
 end
 
 def with_each_shard_by_database(klass, method, *args, jitter: nil, local_offset: false)
-  DatabaseServer.send_in_each_region(PeriodicJobs,
-                                     :with_each_shard_by_database_in_region,
-                                     {
-                                       singleton: "periodic:region: #{klass}.#{method}",
-                                     }, klass, method, *args, jitter: jitter, local_offset: local_offset, connection_class: ActiveRecord::Base)
+  DatabaseServer.send_in_each_region(
+    PeriodicJobs,
+    :with_each_shard_by_database_in_region,
+    { singleton: "periodic:region: #{klass}.#{method}" },
+    klass, method, *args, jitter: jitter, local_offset: local_offset, connection_class: ActiveRecord::Base
+  )
 end
 
 Rails.configuration.after_initialize do
@@ -196,20 +198,47 @@ Rails.configuration.after_initialize do
     )
   end
 
-  Delayed::Periodic.cron "Auditors::ActiveRecord::Partitioner", "0 0 * * *" do
+  # Partitioner jobs
+  # process and/or create once a day at midnight
+  # prune every Saturday, but only after the first Thursday of the month
+  Delayed::Periodic.cron "Auditors::ActiveRecord::Partitioner.process", "0 0 * * *" do
     with_each_shard_by_database(Auditors::ActiveRecord::Partitioner, :process, jitter: 30.minutes, local_offset: true)
+  end
+
+  Delayed::Periodic.cron "Auditors::ActiveRecord::Partitioner.prune", "0 0 * * 6" do
+    if Time.now.day >= 3
+      with_each_shard_by_database(
+        Auditors::ActiveRecord::Partitioner, :prune, jitter: 30.minutes, local_offset: true
+      )
+    end
   end
 
   Delayed::Periodic.cron "Quizzes::QuizSubmissionEventPartitioner.process", "0 0 * * *" do
     with_each_shard_by_database(Quizzes::QuizSubmissionEventPartitioner, :process, jitter: 30.minutes, local_offset: true)
   end
 
-  Delayed::Periodic.cron "SimplyVersioned::Partitioner.process", "0 0 * * *" do
-    with_each_shard_by_database(SimplyVersioned::Partitioner, :process, jitter: 30.minutes, local_offset: true)
+  Delayed::Periodic.cron "Quizzes::QuizSubmissionEventPartitioner.prune", "0 0 * * 6" do
+    if Time.now.day >= 3
+      with_each_shard_by_database(
+        Quizzes::QuizSubmissionEventPartitioner, :prune, jitter: 30.minutes, local_offset: true
+      )
+    end
   end
 
   Delayed::Periodic.cron "Messages::Partitioner.process", "0 0 * * *" do
     with_each_shard_by_database(Messages::Partitioner, :process, jitter: 30.minutes, local_offset: true)
+  end
+
+  Delayed::Periodic.cron "Messages::Partitioner.prune", "0 0 * * 6" do
+    if Time.now.day >= 3
+      with_each_shard_by_database(
+        Messages::Partitioner, :prune, jitter: 30.minutes, local_offset: true
+      )
+    end
+  end
+
+  Delayed::Periodic.cron "SimplyVersioned::Partitioner.process", "0 0 * * *" do
+    with_each_shard_by_database(SimplyVersioned::Partitioner, :process, jitter: 30.minutes, local_offset: true)
   end
 
   if AuthenticationProvider::SAML.enabled?

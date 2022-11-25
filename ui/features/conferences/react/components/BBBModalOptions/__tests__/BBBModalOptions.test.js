@@ -17,8 +17,9 @@
  */
 
 import React from 'react'
-import {fireEvent, render} from '@testing-library/react'
+import {render} from '@testing-library/react'
 import BBBModalOptions from '../BBBModalOptions'
+import {SETTINGS_TAB, ATTENDEES_TAB} from '../../../../util/constants'
 
 describe('BBBModalOptions', () => {
   const setName = jest.fn()
@@ -27,6 +28,7 @@ describe('BBBModalOptions', () => {
   const setDescription = jest.fn()
   const setInvitationOptions = jest.fn()
   const setAttendeesOptions = jest.fn()
+  const setAddToCalendar = jest.fn()
 
   const defaultProps = {
     name: 'Conference 1',
@@ -46,7 +48,10 @@ describe('BBBModalOptions', () => {
       'send_public_chat',
       'send_private_chat'
     ],
-    setAttendeesOptions
+    setAttendeesOptions,
+    setAddToCalendar,
+    addToCalendar: false,
+    tab: SETTINGS_TAB
   }
 
   const setup = (props = {}) => {
@@ -64,6 +69,12 @@ describe('BBBModalOptions', () => {
         onSetInvitationOptions={props.setInvitationOptions}
         attendeesOptions={props.attendeesOptions}
         onSetAttendeesOptions={props.setAttendeesOptions}
+        showCalendar={props.showCalendar}
+        startDate={props.startDate}
+        endDate={props.endDate}
+        setAddToCalendar={props.setAddToCalendar}
+        addToCalendar={props.addToCalendar}
+        tab={props.tab}
       />
     )
   }
@@ -75,6 +86,8 @@ describe('BBBModalOptions', () => {
     setDescription.mockClear()
     setInvitationOptions.mockClear()
     setAttendeesOptions.mockClear()
+
+    window.ENV.bbb_recording_enabled = true
   })
 
   it('should render', () => {
@@ -85,13 +98,81 @@ describe('BBBModalOptions', () => {
   it('should render with default props', () => {
     const container = setup(defaultProps)
     expect(container.getByLabelText('Name')).toHaveValue(defaultProps.name)
-    expect(container.getByLabelText('Duration in Minutes')).toHaveValue(
-      defaultProps.duration.toString()
-    )
+    expect(container.getByLabelText('Duration in Minutes')).toHaveValue('')
     expect(container.getByLabelText('Enable recording for this conference').checked).toBeTruthy()
+    expect(container.getByLabelText('Enable recording for this conference').disabled).toBeFalsy()
     expect(container.getByLabelText('Description')).toHaveValue(defaultProps.description)
+  })
 
-    fireEvent.click(container.getByText('Attendees'))
+  it('should render attendees tab', () => {
+    const container = setup({...defaultProps, tab: ATTENDEES_TAB})
     expect(container.getByLabelText('Share webcam').checked).toBeTruthy()
+  })
+
+  it('it should set default calendar dates when provided', () => {
+    const customProps = defaultProps
+    customProps.showCalendar = true
+    const container = setup(customProps)
+
+    const startInput = container.getByLabelText('Start Date')
+    const endInput = container.getByLabelText('End Date')
+
+    expect(startInput).toBeTruthy()
+    expect(endInput).toBeTruthy()
+  })
+
+  it('it should not render calendar when prop is false', () => {
+    const customProps = defaultProps
+    customProps.showCalendar = false
+    const container = setup(customProps)
+
+    const startInput = container.queryByLabelText('Start Date')
+    const endInput = container.queryByLabelText('End Date')
+
+    expect(startInput).toBeFalsy()
+    expect(endInput).toBeFalsy()
+  })
+
+  it('should disable recording if setting is disabled', () => {
+    window.ENV.bbb_recording_enabled = false
+    const container = setup(defaultProps)
+    expect(container.getByLabelText('Enable recording for this conference').disabled).toBeTruthy()
+  })
+
+  it('should lock Invitation Options & set inviteAll equal to true if add_to_calendar is checked', () => {
+    const customProps = defaultProps
+    customProps.options.push('add_to_calendar')
+    customProps.addToCalendar = true
+
+    const container = setup({...customProps, tab: ATTENDEES_TAB})
+    expect(container.getByLabelText('Invite all course members').checked).toBeTruthy()
+    expect(container.getByLabelText('Invite all course members').disabled).toBeTruthy()
+    expect(container.getByLabelText('Remove all course observer members').disabled).toBeTruthy()
+    expect(container.getByLabelText('Remove all course observer members').checked).toBeFalsy()
+    expect(container.getAllByTestId('inviteAll-tooltip')).toBeTruthy()
+  })
+
+  it('should lock Remove Observers if Invite All is not checked', () => {
+    const customProps = defaultProps
+    customProps.invitationOption = []
+
+    const container = setup({...customProps, tab: ATTENDEES_TAB})
+    expect(container.getByLabelText('Remove all course observer members').disabled).toBeTruthy()
+  })
+
+  it('does not show add to calendar when context is group', () => {
+    window.ENV.context_asset_string = 'group_1'
+    const customProps = defaultProps
+    const container = setup({...customProps})
+
+    expect(container.queryByText('Add to Calendar')).not.toBeInTheDocument()
+  })
+
+  it('shows add to calendar when context and can_manage_calendar', () => {
+    window.ENV.context_asset_string = 'course_1'
+    window.ENV.can_manage_calendar = true
+    const customProps = defaultProps
+    const container = setup({...customProps})
+    expect(container.queryByText('Add to Calendar')).toBeInTheDocument()
   })
 })

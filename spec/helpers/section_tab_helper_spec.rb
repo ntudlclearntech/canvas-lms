@@ -129,6 +129,21 @@ describe SectionTabHelper do
           end
         end
 
+        context "template course" do
+          let_once(:template_current_user) { account_admin_user }
+          let_once(:template_course) { Course.create!(account: domain_root_account, template: true) }
+          let(:tabs_available) do
+            SectionTabHelperSpec::AvailableSectionTabs.new(
+              template_course, template_current_user, domain_root_account, session
+            )
+          end
+
+          it "does not include TAB_PEOPLE if template?" do
+            template_course.update!(template: true)
+            expect(tabs_available.to_a.pluck(:id)).to_not include(Course::TAB_PEOPLE)
+          end
+        end
+
         context "and tabs include TAB_COLLABORATIONS" do
           it "includes TAB_COLLABORATIONS if Collaboration.any_collaborations_configured?" do
             allow(Collaboration).to receive(:any_collaborations_configured?).and_return(true)
@@ -384,9 +399,27 @@ describe SectionTabHelper do
           expect(html.attributes).not_to include("title")
         end
       end
+
+      context "new tabs" do
+        let(:string) do
+          SectionTabHelperSpec::SectionTabTag.new(
+            tab_assignments.merge, course
+          ).a_tag
+        end
+
+        it "includes a new-tab-indicator span for new tabs" do
+          stub_const("SectionTabHelper::SectionTabTag::NEW_TABS", %w[assignments])
+          expect(string).to include("new-tab-indicator")
+        end
+
+        it "does not include the new-tab-indicator for tabs not marked as new" do
+          stub_const("SectionTabHelper::SectionTabTag::NEW_TABS", %w[other_stuff])
+          expect(string).not_to include("new-tab-indicator")
+        end
+      end
     end
 
-    describe "#li_classess" do
+    describe "#li_classes" do
       it "returns an array including element `section`" do
         tag = SectionTabHelperSpec::SectionTabTag.new(
           tab_assignments, course

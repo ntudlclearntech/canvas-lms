@@ -492,6 +492,12 @@ describe Course do
       expect(@course.syllabus_visibility_option).to eq("public")
     end
 
+    it "defaults public_syllabus to false" do
+      @course.update_attribute(:is_public, nil)
+      @course.update_attribute(:settings, @course.settings.except(:public_syllabus))
+      expect(@course.public_syllabus).to be false
+    end
+
     it "returns offline web export flag" do
       expect(@course.enable_offline_web_export?).to eq false
       account = Account.default
@@ -2888,14 +2894,6 @@ describe Course do
         }]
         tab_ids = @course.tabs_available(@user).pluck(:id)
         expect(tab_ids).to be_include(Course::TAB_PEOPLE)
-      end
-
-      it "doesn't include the people tab if it's a template" do
-        admin = account_admin_user
-        course = course_factory
-        course.update!(template: true)
-        tab_ids = course.tabs_available(admin).pluck(:id)
-        expect(tab_ids).not_to include(Course::TAB_PEOPLE)
       end
 
       it "enables the home tab and puts it first if it was hidden" do
@@ -5824,12 +5822,31 @@ describe Course do
     end
 
     it "can be read by a nil user if public and available" do
-      expect(@course.check_policy(nil)).to eq %i[read read_outcomes read_syllabus]
+      expect(@course.check_policy(nil)).to eq %i[read read_outcomes read_syllabus read_files]
     end
 
     it "cannot be read by a nil user if public but not available" do
       @course.write_attribute(:workflow_state, "created")
       expect(@course.check_policy(nil)).to eq []
+    end
+
+    describe "when course is unpublished" do
+      before do
+        @course.write_attribute(:workflow_state, "claimed")
+        @course.write_attribute(:is_public, false)
+      end
+
+      let_once(:user) { user_model }
+
+      it "does not allow students to read files" do
+        user.student_enrollments.create!(workflow_state: "active", course: @course)
+        expect(@course.check_policy(user)).to_not include :read_files
+      end
+
+      it "allows teachers to read files" do
+        user.teacher_enrollments.create!(workflow_state: "active", course: @course)
+        expect(@course.check_policy(user)).to include :read_files
+      end
     end
 
     describe "when course is not public" do
@@ -5849,7 +5866,7 @@ describe Course do
 
       it "can be read by a prior user" do
         user.student_enrollments.create!(workflow_state: "completed", course: @course)
-        expect(@course.check_policy(user).sort).to eq %i[read read_announcements read_forum read_grades read_outcomes]
+        expect(@course.check_policy(user).sort).to eq %i[read read_announcements read_as_member read_files read_forum read_grades read_outcomes read_syllabus]
       end
 
       it "can have its forum read by an observer" do
@@ -7354,7 +7371,6 @@ describe Course do
         @course.offer!
 
         expect(InstStatsd::Statsd).to have_received(:increment).with("course.paced.paced_courses").once
-        expect(InstStatsd::Statsd).not_to have_received(:decrement).with("course.unpaced.paced_courses")
       end
 
       it "does not increment when only option is updated" do
@@ -7368,7 +7384,6 @@ describe Course do
         @course.offer!
 
         expect(InstStatsd::Statsd).to have_received(:increment).with("course.unpaced.paced_courses").once
-        expect(InstStatsd::Statsd).not_to have_received(:decrement).with("course.paced.paced_courses")
       end
 
       it "increments paced count on already published course from when going from unpaced to paced" do
@@ -7377,20 +7392,173 @@ describe Course do
         @course.save!
 
         expect(InstStatsd::Statsd).to have_received(:increment).with("course.paced.paced_courses").once
-        expect(InstStatsd::Statsd).to have_received(:decrement).with("course.unpaced.paced_courses").once
       end
 
       it "increments paced count on already published course from when going from paced to unpaced" do
         @course.enable_course_paces = true
         @course.save!
         @course.offer!
+        expect(InstStatsd::Statsd).to have_received(:increment).with("course.paced.paced_courses").once
 
         @course.enable_course_paces = false
         @course.save!
 
-        expect(InstStatsd::Statsd).to have_received(:increment).with("course.paced.paced_courses").once
         expect(InstStatsd::Statsd).to have_received(:increment).with("course.unpaced.paced_courses").once
-        expect(InstStatsd::Statsd).to have_received(:decrement).with("course.paced.paced_courses").once
+      end
+
+      it "increments the appropriate bucket when republishing" do
+        @course.enable_course_paces = true
+        @course.save!
+        @course.offer!
+        expect(InstStatsd::Statsd).to have_received(:increment).with("course.paced.paced_courses").once
+        expect(InstStatsd::Statsd).not_to have_received(:increment).with("course.unpaced.paced_courses")
+
+        @course.claim!
+
+        @course.enable_course_paces = false
+        @course.save!
+        expect(InstStatsd::Statsd).not_to have_received(:increment).with("course.unpaced.paced_courses")
+
+        @course.offer!
+        expect(InstStatsd::Statsd).to have_received(:increment).with("course.unpaced.paced_courses").once
+      end
+    end
+
+    context "course format logging" do
+      before do
+        Account.default.enable_feature!(:course_paces)
+        allow(InstStatsd::Statsd).to receive(:increment)
+        allow(InstStatsd::Statsd).to receive(:decrement)
+        @course = Course.create!
+      end
+
+      it "increments the course format count for unset when unpaced course published for the first time" do
+        @course.course_format = nil
+        @course.save!
+        @course.offer!
+
+        expect(InstStatsd::Statsd).to have_received(:increment).with("course.unpaced.unset").once
+      end
+
+      it "increments the course format count for unset when paced course published for the first time" do
+        @course.course_format = nil
+        @course.enable_course_paces = true
+        @course.save!
+        @course.offer!
+
+        expect(InstStatsd::Statsd).to have_received(:increment).with("course.paced.unset").once
+      end
+
+      it "increments the course format count for blended when unpaced course published for the first time" do
+        @course.course_format = "blended"
+        @course.save!
+        @course.offer!
+
+        expect(InstStatsd::Statsd).to have_received(:increment).with("course.unpaced.blended").once
+        expect(InstStatsd::Statsd).not_to have_received(:decrement).with("course.unpaced.blended")
+      end
+
+      it "increments the course format count for blended when paced course published for the first time" do
+        @course.course_format = "blended"
+        @course.enable_course_paces = true
+        @course.save!
+        @course.offer!
+
+        expect(InstStatsd::Statsd).to have_received(:increment).with("course.paced.blended").once
+      end
+
+      it "increments the course format count for on_campus when unpaced course published for the first time" do
+        @course.course_format = "on_campus"
+        @course.save!
+        @course.offer!
+
+        expect(InstStatsd::Statsd).to have_received(:increment).with("course.unpaced.on_campus").once
+      end
+
+      it "increments the course format count for on_campus when paced course published for the first time" do
+        @course.course_format = "on_campus"
+        @course.enable_course_paces = true
+        @course.save!
+        @course.offer!
+
+        expect(InstStatsd::Statsd).to have_received(:increment).with("course.paced.on_campus").once
+      end
+
+      it "increments the course format count for online when unpaced course published for the first time" do
+        @course.course_format = "online"
+        @course.save!
+        @course.offer!
+
+        expect(InstStatsd::Statsd).to have_received(:increment).with("course.unpaced.online").once
+      end
+
+      it "increments the course format count for online when paced course published for the first time" do
+        @course.course_format = "online"
+        @course.enable_course_paces = true
+        @course.save!
+        @course.offer!
+
+        expect(InstStatsd::Statsd).to have_received(:increment).with("course.paced.online").once
+      end
+
+      it "does not increment unpaced stat when only option is updated and not published" do
+        @course.course_format = nil
+        @course.save!
+
+        expect(InstStatsd::Statsd).not_to have_received(:increment).with("course.unpaced.unset")
+      end
+
+      it "does not increment paced stat when only option is updated and not published" do
+        @course.course_format = nil
+        @course.enable_course_paces = true
+        @course.save!
+
+        expect(InstStatsd::Statsd).not_to have_received(:increment).with("course.paced.unset")
+      end
+
+      it "increments unset count on already published unpaced course" do
+        @course.offer!
+        @course.enable_course_paces = true
+        @course.save!
+
+        expect(InstStatsd::Statsd).to have_received(:increment).with("course.unpaced.unset").once
+        expect(InstStatsd::Statsd).to have_received(:increment).with("course.paced.unset").once
+      end
+
+      it "increments change to online on unpaced course" do
+        @course.offer!
+        @course.course_format = "online"
+        @course.save!
+
+        expect(InstStatsd::Statsd).to have_received(:increment).with("course.unpaced.unset").once
+        expect(InstStatsd::Statsd).to have_received(:increment).with("course.unpaced.online").once
+      end
+
+      it "increments blended count on already published paced course" do
+        @course.enable_course_paces = true
+        @course.save!
+        @course.offer!
+        @course.course_format = "blended"
+        @course.save!
+
+        expect(InstStatsd::Statsd).to have_received(:increment).with("course.paced.unset").once
+        expect(InstStatsd::Statsd).to have_received(:increment).with("course.paced.blended").once
+      end
+
+      it "paced course starts blended goes to unpaced and format unset" do
+        @course.enable_course_paces = true
+        @course.course_format = "blended"
+        @course.save!
+        expect(InstStatsd::Statsd).not_to have_received(:increment).with("course.paced.blended")
+
+        @course.offer!
+        expect(InstStatsd::Statsd).to have_received(:increment).with("course.paced.blended").once
+
+        @course.course_format = nil
+        @course.enable_course_paces = false
+        @course.save!
+
+        expect(InstStatsd::Statsd).to have_received(:increment).with("course.unpaced.unset").once
       end
     end
   end

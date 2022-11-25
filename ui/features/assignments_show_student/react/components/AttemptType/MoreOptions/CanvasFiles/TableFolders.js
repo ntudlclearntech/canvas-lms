@@ -27,7 +27,7 @@ import {
   IconCheckMarkIndeterminateLine,
   IconFolderLine,
   IconPublishSolid,
-  IconUnpublishedLine
+  IconUnpublishedLine,
 } from '@instructure/ui-icons'
 import {ScreenReaderContent} from '@instructure/ui-a11y-content'
 import {TruncateText} from '@instructure/ui-truncate-text'
@@ -104,11 +104,11 @@ const renderParentFolder = (folder, handleFolderSelect, columnWidths) => {
         tip="../"
       >
         {renderSRContents({name: I18n.t('return to parent folder')})}
-        <Flex aria-hidden>
+        <Flex aria-hidden={true}>
           <Flex.Item padding="xx-small" size={columnWidths.thumbnailWidth}>
             <IconFolderLine size="small" />
           </Flex.Item>
-          <Flex.Item padding="xx-small" size={columnWidths.nameWidth} grow>
+          <Flex.Item padding="xx-small" size={columnWidths.nameWidth} shouldGrow={true}>
             {renderFolderName('../')}
           </Flex.Item>
           <Flex.Item padding="xx-small" size={columnWidths.dateCreatedWidth}>
@@ -150,11 +150,11 @@ const TableFolders = props => {
             tip={folder.name}
           >
             {renderSRContents(folder)}
-            <Flex aria-hidden>
+            <Flex aria-hidden={true}>
               <Flex.Item padding="xx-small" size={props.columnWidths.thumbnailWidth}>
                 <IconFolderLine size="small" />
               </Flex.Item>
-              <Flex.Item padding="xx-small" size={props.columnWidths.nameWidth} grow>
+              <Flex.Item padding="xx-small" size={props.columnWidths.nameWidth} shouldGrow={true}>
                 {renderFolderName(folder.name)}
               </Flex.Item>
               <Flex.Item padding="xx-small" size={props.columnWidths.dateCreatedWidth}>
@@ -189,11 +189,11 @@ TableFolders.propTypes = {
     dateModifiedWidth: string,
     modifiedByWidth: string,
     fileSizeWidth: string,
-    publishedWidth: string
+    publishedWidth: string,
   }),
   folders: object,
   handleFolderSelect: func,
-  selectedFolderID: string
+  selectedFolderID: string,
 }
 
 export default TableFolders

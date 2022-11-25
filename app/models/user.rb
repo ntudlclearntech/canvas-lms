@@ -104,6 +104,7 @@ class User < ActiveRecord::Base
   has_many :current_group_memberships, -> { eager_load(:group).where("group_memberships.workflow_state = 'accepted' AND groups.workflow_state<>'deleted'") }, class_name: "GroupMembership"
   has_many :current_groups, through: :current_group_memberships, source: :group
   has_many :user_account_associations
+  has_many :unordered_associated_accounts, source: :account, through: :user_account_associations
   has_many :associated_accounts, -> { order("user_account_associations.depth") }, source: :account, through: :user_account_associations
   has_many :associated_root_accounts, -> { merge(Account.root_accounts.active) }, source: :account, through: :user_account_associations, multishard: true
   has_many :developer_keys
@@ -1232,27 +1233,30 @@ class User < ActiveRecord::Base
 
   set_policy do
     given { |user| user == self }
-    can :read and
-      can :read_grades and
-      can :read_profile and
-      can :read_as_admin and
-      can :manage and
-      can :manage_content and
-      can :manage_course_content_add and
-      can :manage_course_content_edit and
-      can :manage_course_content_delete and
-      can :manage_files_add and
-      can :manage_files_edit and
-      can :manage_files_delete and
-      can :manage_calendar and
-      can :send_messages and
-      can :update_avatar and
-      can :view_feature_flags and
-      can :manage_feature_flags and
-      can :api_show_user and
-      can :read_email_addresses and
-      can :view_user_logins and
-      can :generate_observer_pairing_code
+    can %i[
+      read
+      read_grades
+      read_profile
+      read_files
+      read_as_admin
+      manage
+      manage_content
+      manage_course_content_add
+      manage_course_content_edit
+      manage_course_content_delete
+      manage_files_add
+      manage_files_edit
+      manage_files_delete
+      manage_calendar
+      send_messages
+      update_avatar
+      view_feature_flags
+      manage_feature_flags
+      api_show_user
+      read_email_addresses
+      view_user_logins
+      generate_observer_pairing_code
+    ]
 
     given { |user| user == self && user.user_can_edit_name? }
     can :rename
@@ -1287,7 +1291,7 @@ class User < ActiveRecord::Base
     can :read_profile and can :read_reports and can :read_grades
 
     given { |user| check_accounts_right?(user, :manage_user_logins) }
-    can :read and can :read_reports and can :read_profile and can :api_show_user and can :terminate_sessions
+    can %i[read read_reports read_profile api_show_user terminate_sessions read_files]
 
     given { |user| check_accounts_right?(user, :read_roster) }
     can :read_full_profile and can :api_show_user
@@ -1329,7 +1333,7 @@ class User < ActiveRecord::Base
     can :reset_mfa
 
     given { |user| user && user.as_observer_observation_links.where(user_id: id).exists? }
-    can :read and can :read_as_parent
+    can %i[read read_as_parent read_files]
 
     given { |user| check_accounts_right?(user, :moderate_user_content) }
     can :moderate_user_content
@@ -1779,6 +1783,11 @@ class User < ActiveRecord::Base
     set_preference(:unread_rubric_comments, submission.global_id, nil)
   end
 
+  def add_to_visited_tabs(tab_class)
+    visited_tabs = get_preference(:visited_tabs) || []
+    set_preference(:visited_tabs, [*visited_tabs, tab_class]) unless visited_tabs.include? tab_class
+  end
+
   def prefers_high_contrast?
     !!feature_enabled?(:high_contrast)
   end
@@ -1898,6 +1907,12 @@ class User < ActiveRecord::Base
 
   def account
     pseudonym.account rescue Account.default
+  end
+
+  def sub_account_for_course_creation(domain_root_account)
+    Rails.cache.fetch_with_batched_keys(["sub_account_for_course_creation", domain_root_account].cache_key, batch_object: self, batched_keys: %i[account_users]) do
+      account_users.active.detect { |au| break au if au.root_account_id == domain_root_account.id }&.account || domain_root_account.manually_created_courses_account
+    end
   end
 
   def courses_with_primary_enrollment(association = :current_and_invited_courses, enrollment_uuid = nil, options = {})
@@ -2650,6 +2665,11 @@ class User < ActiveRecord::Base
     end
   end
 
+  def root_admin_for?(root_account)
+    root_ids = [root_account.id, Account.site_admin.id]
+    account_users.any? { |au| root_ids.include?(au.account_id) }
+  end
+
   def eportfolios_enabled?
     # For jobs/rails consoles/specs where domain root account is not set
     return true unless Account.current_domain_root_account
@@ -3202,8 +3222,7 @@ class User < ActiveRecord::Base
 
     if account_users.any?
       roles << "admin"
-      root_ids = [root_account.id, Account.site_admin.id]
-      roles << "root_admin" if account_users.any? { |au| root_ids.include?(au.account_id) }
+      roles << "root_admin" if root_admin_for?(root_account)
       roles << "consortium_admin" if account_users.any? { |au| au.shard != root_account.shard }
     end
     roles

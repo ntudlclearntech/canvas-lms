@@ -688,16 +688,13 @@ describe AssignmentsController do
         end
 
         let(:external_tool) do
-          tool = external_tool_model(
+          external_tool_1_3_model(
             context: assignment.course,
             opts: {
               url: launch_url,
               developer_key: key
             }
           )
-          tool.settings[:use_1_3] = true
-          tool.save!
-          tool
         end
 
         before do
@@ -1052,7 +1049,7 @@ describe AssignmentsController do
             expect(assigns[:js_env][:peer_display_name]).to eq @reviewee.name
           end
 
-          it "sets peer_review_available value to 'Anonymous student' when anonymous_peer_reviews is true" do
+          it "sets peer_display_name value to 'Anonymous student' when anonymous_peer_reviews is true" do
             @assignment.update_attribute(:anonymous_peer_reviews, true)
             @assignment.submit_homework(@student, submission_type: "online_url", url: "http://www.google.com")
             @assignment.submit_homework(@reviewee, submission_type: "online_url", url: "http://www.google.com")
@@ -1060,6 +1057,24 @@ describe AssignmentsController do
             user_session(@student)
             get "show", params: { course_id: @course.id, id: @assignment.id, anonymous_asset_id: @reviewee_submission.anonymous_id }
             expect(assigns[:js_env][:peer_display_name]).to eq "Anonymous student"
+          end
+
+          it "sets the reviewee_id value when peer_review_mode_enabled is true and reviewee_id is present" do
+            user_session(@student)
+            get "show", params: { course_id: @course.id, id: @assignment.id, reviewee_id: @reviewee.id }
+            expect(assigns[:js_env][:reviewee_id]).to eq @reviewee.id.to_s
+          end
+
+          it "sets the anonymous_asset_id value when peer_review_mode_enabled is true and anonymous_asset_id is present" do
+            user_session(@student)
+            get "show", params: { course_id: @course.id, id: @assignment.id, anonymous_asset_id: @reviewee_submission.anonymous_id }
+            expect(assigns[:js_env][:anonymous_asset_id]).to eq @reviewee_submission.anonymous_id
+          end
+
+          it "sets the REVIEWER_SUBMISSION_ID value when peer_review_mode_enabled is true" do
+            user_session(@student)
+            get "show", params: { course_id: @course.id, id: @assignment.id, reviewee_id: @reviewee.id }
+            expect(assigns[:js_env][:REVIEWER_SUBMISSION_ID]).to eq @student_submission_id
           end
         end
       end
@@ -1682,6 +1697,26 @@ describe AssignmentsController do
       user_session(@student)
       get "syllabus", params: { course_id: @course.id }
       expect(assigns[:syllabus_body]).not_to be_nil
+    end
+
+    context "assigning @course_home_sub_navigation" do
+      before :once do
+        @tool = external_tool_model(context: @course, opts: { course_home_sub_navigation: { enabled: true, visibility: "admins" } })
+      end
+
+      it "shows admin-level course_home_sub_navigation external tools for teachers" do
+        user_session(@teacher)
+
+        get "syllabus", params: { course_id: @course.id }
+        expect(assigns[:course_home_sub_navigation_tools].size).to eq 1
+      end
+
+      it "rejects admin-level course_home_sub_navigation external tools for students" do
+        user_session(@student)
+
+        get "syllabus", params: { course_id: @course.id }
+        expect(assigns[:course_home_sub_navigation_tools].size).to eq 0
+      end
     end
   end
 

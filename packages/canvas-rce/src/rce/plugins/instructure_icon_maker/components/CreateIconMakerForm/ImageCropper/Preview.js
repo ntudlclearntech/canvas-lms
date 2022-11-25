@@ -16,15 +16,17 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import React, {useRef, useEffect} from 'react'
+import React, {useEffect, createRef} from 'react'
 import PropTypes from 'prop-types'
 import formatMessage from '../../../../../../format-message'
 import {ImageCropperSettingsPropTypes} from './propTypes'
 import {buildSvg} from './svg'
 import {PREVIEW_WIDTH, PREVIEW_HEIGHT, BACKGROUND_SQUARE_SIZE} from './constants'
 import {useMouseWheel} from './useMouseWheel'
-import {useArrowKeys} from './useArrowKeys'
+import {useKeyMouseEvents} from './useKeyMouseEvents'
 import checkerboardStyle from '../../../../shared/CheckerboardStyling'
+import {View} from '@instructure/ui-view'
+import {getBrowser} from '../../../../../getBrowser'
 
 /**
  * Remove the node contents and append the svg element.
@@ -47,10 +49,22 @@ function getTransformValue({translateX, translateY, rotation, scaleRatio}) {
 }
 
 export const Preview = ({settings, dispatch}) => {
-  const shapeRef = useRef(null)
+  const previewRef = createRef()
+  const shapeRef = createRef()
+  const imgRef = createRef()
   const {image, shape, rotation, scaleRatio, translateX, translateY} = settings
   const [tempScaleRatio, onWheelCallback] = useMouseWheel(scaleRatio, dispatch)
-  const [tempTranslateX, tempTranslateY] = useArrowKeys(translateX, translateY, dispatch)
+  const [tempTranslateX, tempTranslateY, onMouseDownCallback] = useKeyMouseEvents(
+    translateX,
+    translateY,
+    dispatch,
+    imgRef
+  )
+
+  useEffect(() => {
+    imgRef.current.ondragstart = () => false
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   useEffect(() => {
     const svg = buildSvg(shape)
@@ -61,51 +75,69 @@ export const Preview = ({settings, dispatch}) => {
     translateX: tempTranslateX,
     translateY: tempTranslateY,
     rotation,
-    scaleRatio: tempScaleRatio
+    scaleRatio: tempScaleRatio,
   })
+
+  // Clip is not supported in Safari until v16.
+  // It's needed here to prevent a strange screenreader
+  // behavior that makes the cropper look bad. 'hidden'
+  // suffices when clip is not available, although it's not perfect
+  // TODO: remove when Safari versions >= 16 are more commonplace
+  const {name, version} = getBrowser()
+  const overflow = name === 'Safari' && parseFloat(version) < 16 ? 'hidden' : 'clip'
 
   return (
     <div
-      id="cropper-preview"
       style={{
-        position: 'relative',
-        width: `${PREVIEW_WIDTH}px`,
-        height: `${PREVIEW_HEIGHT}px`,
-        top: 0,
-        left: 0,
-        overflow: 'hidden',
-        ...checkerboardStyle(BACKGROUND_SQUARE_SIZE)
+        justifyContent: 'center',
+        overflow,
+        ...checkerboardStyle(BACKGROUND_SQUARE_SIZE),
       }}
-      onWheel={onWheelCallback}
     >
-      <img
-        src={image}
-        alt={formatMessage('Image to crop')}
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          height: '100%',
-          width: '100%',
-          objectFit: 'contain',
-          textAlign: 'center',
-          transform: transformValue
-        }}
-      />
-      <div
-        id="cropShapeContainer"
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0
-        }}
-        ref={shapeRef}
-      />
+      <View
+        as="div"
+        tabIndex={0}
+        id="cropper-preview"
+        ref={previewRef}
+        height={PREVIEW_HEIGHT}
+        width={PREVIEW_WIDTH}
+        position="relative"
+        focusPosition="inset"
+        insetInlineStart="0"
+        insetBlockStart="0"
+        textAlign="center"
+        shouldAnimateFocus={false}
+        onWheel={onWheelCallback}
+      >
+        {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
+        <img
+          src={image}
+          ref={imgRef}
+          alt={formatMessage('Image to crop')}
+          style={{
+            height: '100%',
+            objectFit: 'contain',
+            textAlign: 'center',
+            transform: transformValue,
+          }}
+          onMouseDown={onMouseDownCallback}
+        />
+        <div
+          id="cropShapeContainer"
+          ref={shapeRef}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            pointerEvents: 'none',
+          }}
+        />
+      </View>
     </div>
   )
 }
 
 Preview.propTypes = {
   settings: ImageCropperSettingsPropTypes.isRequired,
-  dispatch: PropTypes.func.isRequired
+  dispatch: PropTypes.func.isRequired,
 }

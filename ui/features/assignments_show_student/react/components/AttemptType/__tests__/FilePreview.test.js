@@ -30,7 +30,7 @@ const files = [
     submissionPreviewUrl: '/preview_url',
     thumbnailUrl: '/thumbnail_url',
     url: '/url',
-    size: '670 Bytes'
+    size: '670 Bytes',
   },
   {
     _id: '2',
@@ -40,31 +40,47 @@ const files = [
     submissionPreviewUrl: null,
     thumbnailUrl: null,
     url: '/url',
-    size: '107 GB'
-  }
-]
-
-const turnitin_data = [
-  {
-    score: 75,
-    state: 'problem',
-    reportUrl: 'http://example.com',
-    status: 'scored'
+    size: '107 GB',
   },
   {
-    score: 10,
-    state: 'acceptable',
-    reportUrl: 'http://example.com',
-    status: 'scored'
-  }
+    _id: '3',
+    displayName: 'file_2.zip',
+    id: '3',
+    mimeClass: 'file',
+    submissionPreviewUrl: null,
+    thumbnailUrl: null,
+    url: '/url',
+    size: '10 GB',
+  },
 ]
+
+const originalityData = {
+  attachment_1: {
+    similarity_score: 75,
+    state: 'problem',
+    report_url: 'http://example.com',
+    status: 'scored',
+  },
+  attachment_2: {
+    similarity_score: null,
+    state: 'error',
+    report_url: 'http://example.com',
+    status: 'error',
+  },
+  attachment_3: {
+    similarity_score: 10,
+    state: 'acceptable',
+    report_url: 'http://example.com',
+    status: 'scored',
+  },
+}
 
 describe('FilePreview', () => {
   it('renders a message if there are no files to display', async () => {
     const props = {
       submission: await mockSubmission({
-        Submission: {attachments: []}
-      })
+        Submission: {attachments: []},
+      }),
     }
     const {getByText} = render(<FilePreview {...props} />)
     expect(getByText('No Submission')).toBeInTheDocument()
@@ -73,8 +89,8 @@ describe('FilePreview', () => {
   it('renders the appropriate file icons', async () => {
     const props = {
       submission: await mockSubmission({
-        Submission: {attachments: files}
-      })
+        Submission: {attachments: files},
+      }),
     }
     const {container, getByTestId} = render(<FilePreview {...props} />)
     expect(getByTestId('uploaded_files_table')).toBeInTheDocument()
@@ -93,8 +109,8 @@ describe('FilePreview', () => {
   it('does not render the file icons if there is only one file', async () => {
     const props = {
       submission: await mockSubmission({
-        Submission: {attachments: [files[0]]}
-      })
+        Submission: {attachments: [files[0]]},
+      }),
     }
     const {queryByTestId} = render(<FilePreview {...props} />)
     expect(queryByTestId('assignments_2_file_icons')).not.toBeInTheDocument()
@@ -103,9 +119,9 @@ describe('FilePreview', () => {
   it('renders orignality reports for each file if turnitin data exists and there is more than one attachment', async () => {
     const props = {
       submission: await mockSubmission({
-        Submission: {attachments: files, turnitinData: turnitin_data}
+        Submission: {attachments: files, originalityData, submissionType: 'online_upload'},
       }),
-      originalityReportsForA2: true
+      isOriginalityReportVisible: true,
     }
     const {getAllByTestId} = render(<FilePreview {...props} />)
     const reports = getAllByTestId('originality_report')
@@ -118,21 +134,21 @@ describe('FilePreview', () => {
   it('does not render orignality reports if only one attachment exists', async () => {
     const props = {
       submission: await mockSubmission({
-        Submission: {attachments: [files[0]], turnitinData: turnitin_data}
+        Submission: {attachments: [files[0]], originalityData, submissionType: 'online_upload'},
       }),
-      originalityReportsForA2: true
+      isOriginalityReportVisible: true,
     }
     const {queryByTestId} = render(<FilePreview {...props} />)
 
     expect(queryByTestId('originality_report')).not.toBeInTheDocument()
   })
 
-  it('does not render orignality reports if FF prop is not enabled', async () => {
+  it('does not render orignality reports if the reports are not visible to the student', async () => {
     const props = {
       submission: await mockSubmission({
-        Submission: {attachments: files, turnitinData: turnitin_data}
+        Submission: {attachments: files, originalityData, submissionType: 'online_upload'},
       }),
-      originalityReportsForA2: false
+      isOriginalityReportVisible: false,
     }
     const {queryByTestId} = render(<FilePreview {...props} />)
 
@@ -142,8 +158,8 @@ describe('FilePreview', () => {
   it('renders the size of each file being uploaded', async () => {
     const props = {
       submission: await mockSubmission({
-        Submission: {attachments: files}
-      })
+        Submission: {attachments: files},
+      }),
     }
     const {getAllByTestId} = render(<FilePreview {...props} />)
 
@@ -156,8 +172,8 @@ describe('FilePreview', () => {
   it('renders the file preview', async () => {
     const props = {
       submission: await mockSubmission({
-        Submission: {attachments: [files[0]]}
-      })
+        Submission: {attachments: [files[0]]},
+      }),
     }
     const {getByTestId} = render(<FilePreview {...props} />)
     expect(getByTestId('assignments_2_submission_preview')).toBeInTheDocument()
@@ -166,8 +182,8 @@ describe('FilePreview', () => {
   it('renders no preview available if the given file has no preview url', async () => {
     const props = {
       submission: await mockSubmission({
-        Submission: {attachments: [files[1]]}
-      })
+        Submission: {attachments: [files[1]]},
+      }),
     }
     const {getByText} = render(<FilePreview {...props} />)
     expect(getByText('Preview Unavailable')).toBeInTheDocument()
@@ -176,8 +192,8 @@ describe('FilePreview', () => {
   it('renders a download button for files without canvadoc preview', async () => {
     const props = {
       submission: await mockSubmission({
-        Submission: {attachments: [files[1]]}
-      })
+        Submission: {attachments: [files[1]]},
+      }),
     }
     const {container, getByText} = render(<FilePreview {...props} />)
     expect(getByText('Preview Unavailable')).toBeInTheDocument()
@@ -187,8 +203,8 @@ describe('FilePreview', () => {
   it('changes the preview when a different file icon is clicked', async () => {
     const props = {
       submission: await mockSubmission({
-        Submission: {attachments: files}
-      })
+        Submission: {attachments: files},
+      }),
     }
     const {container, getByTestId, getByText} = render(<FilePreview {...props} />)
     expect(getByTestId('assignments_2_submission_preview')).toBeInTheDocument()

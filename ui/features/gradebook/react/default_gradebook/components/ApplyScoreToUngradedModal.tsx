@@ -79,7 +79,7 @@ const ApplyScoreToUngradedModal: React.FC<Props> = ({assignmentGroup, onApply, o
       assignmentGroupId: assignmentGroup?.id,
       markAsMissing,
       onlyPastDue: artifactScope === APPLY_TO_PAST_DUE,
-      value: percent.toUpperCase() === 'EX' ? ('excused' as const) : parsedValue
+      value: percent.toUpperCase() === 'EX' ? ('excused' as const) : parsedValue,
     }
 
     onApply(args)
@@ -88,9 +88,13 @@ const ApplyScoreToUngradedModal: React.FC<Props> = ({assignmentGroup, onApply, o
   return (
     <Modal label={I18n.t('Apply Score to Ungraded')} open={open} size="small">
       <Modal.Header>
-        <CloseButton placement="end" offset="medium" variant="icon" onClick={onClose}>
-          {I18n.t('Close')}
-        </CloseButton>
+        <CloseButton
+          placement="end"
+          offset="medium"
+          color="primary"
+          onClick={onClose}
+          screenReaderLabel={I18n.t('Close')}
+        />
         <Heading>{I18n.t('Apply Score to Ungraded')}</Heading>
       </Modal.Header>
       <Modal.Body>
@@ -152,9 +156,9 @@ export default ApplyScoreToUngradedModal
 ApplyScoreToUngradedModal.propTypes = {
   assignmentGroup: shape({
     id: string.isRequired,
-    name: string.isRequired
+    name: string.isRequired,
   }),
   onApply: func.isRequired,
   onClose: func.isRequired,
-  open: bool.isRequired
+  open: bool.isRequired,
 }

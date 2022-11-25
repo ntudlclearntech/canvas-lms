@@ -34,7 +34,6 @@ module PactConfig
     # common consumer
     CANVAS_API_VERSION = "1.0"
     CANVAS_LMS_API = "Canvas LMS API"
-    QUIZ_LTI = "Quiz LTI"
     SISTEMIC = "Sistemic"
     ANDROID = "android"
     CANVAS_IOS = "canvas-ios"
@@ -43,9 +42,7 @@ module PactConfig
 
   # Add new Live Events consumers to this module
   module LiveEventConsumers
-    CATALOG = "Catalog"
     OUTCOMES = "Outcomes"
-    QUIZ_LTI = "Quiz LTI"
   end
 
   class << self

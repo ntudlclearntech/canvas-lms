@@ -23,7 +23,7 @@ import {fireEvent, render} from '@testing-library/react'
 describe('ApplyScoreToUngradedModal', () => {
   const assignmentGroup = {
     id: '100',
-    name: 'My Assignment Group'
+    name: 'My Assignment Group',
   }
 
   let onApply: jest.Mock<any, any>
@@ -36,7 +36,7 @@ describe('ApplyScoreToUngradedModal', () => {
 
   function renderComponent(overrides = {}) {
     return render(
-      <ApplyScoreToUngradedModal onApply={onApply} onClose={onClose} open {...overrides} />
+      <ApplyScoreToUngradedModal onApply={onApply} onClose={onClose} open={true} {...overrides} />
     )
   }
 

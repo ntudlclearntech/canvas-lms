@@ -31,7 +31,6 @@ QUnit.module('Gradebook > DataLoader > AssignmentGroupsLoader', suiteHooks => {
   let gradebook
   let network
   let performanceControls
-  let loadAssignmentsByGradingPeriod
   let requestCharacterLimit
 
   suiteHooks.beforeEach(() => {
@@ -48,7 +47,7 @@ QUnit.module('Gradebook > DataLoader > AssignmentGroupsLoader', suiteHooks => {
         muted: false,
         omit_from_final_grade: false,
         published: true,
-        submission_types: ['online_text_entry']
+        submission_types: ['online_text_entry'],
       },
 
       {
@@ -63,18 +62,18 @@ QUnit.module('Gradebook > DataLoader > AssignmentGroupsLoader', suiteHooks => {
         muted: false,
         omit_from_final_grade: false,
         published: true,
-        submission_types: ['online_text_entry']
-      }
+        submission_types: ['online_text_entry'],
+      },
     ]
 
     exampleData = {
       assignmentGroups: [
         {id: '2201', position: 1, name: 'Assignments', assignments: assignments.slice(0, 1)},
         {id: '2202', position: 2, name: 'Homework', assignments: assignments.slice(1, 2)},
-        {id: '2203', position: 3, name: 'Extra Credit', assignments: []}
+        {id: '2203', position: 3, name: 'Extra Credit', assignments: []},
       ],
 
-      assignments
+      assignments,
     }
   })
 
@@ -83,11 +82,10 @@ QUnit.module('Gradebook > DataLoader > AssignmentGroupsLoader', suiteHooks => {
       network = new NetworkFake()
       dispatch = new RequestDispatch()
       performanceControls = new PerformanceControls()
-      loadAssignmentsByGradingPeriod = true
       requestCharacterLimit = 8000
 
       gradebook = createGradebook({
-        context_id: '1201'
+        context_id: '1201',
       })
       sinon.stub(gradebook, 'updateAssignmentGroups')
     })
@@ -101,8 +99,7 @@ QUnit.module('Gradebook > DataLoader > AssignmentGroupsLoader', suiteHooks => {
         dispatch,
         gradebook,
         performanceControls,
-        loadAssignmentsByGradingPeriod,
-        requestCharacterLimit
+        requestCharacterLimit,
       })
 
       return dataLoader.loadAssignmentGroups()
@@ -149,8 +146,8 @@ QUnit.module('Gradebook > DataLoader > AssignmentGroupsLoader', suiteHooks => {
             3: ['1', '8', '12'],
             19: ['4', '77', '99'],
             66: ['3'],
-            68: []
-          }
+            68: [],
+          },
         })
       })
 
@@ -185,14 +182,6 @@ QUnit.module('Gradebook > DataLoader > AssignmentGroupsLoader', suiteHooks => {
         strictEqual(requests.length, 1)
       })
 
-      test('makes one request if a grading period is selected and release flag is disabled', async () => {
-        loadAssignmentsByGradingPeriod = false
-        loadAssignmentGroups()
-        await network.allRequestsReady()
-        const requests = getRequests()
-        strictEqual(requests.length, 1)
-      })
-
       test('makes one request to get assignments for the current grading period', async () => {
         loadAssignmentGroups()
         await network.allRequestsReady()
@@ -211,8 +200,8 @@ QUnit.module('Gradebook > DataLoader > AssignmentGroupsLoader', suiteHooks => {
         gradebook.gotGradingPeriodAssignments({
           grading_period_assignments: {
             3: ['1', '2'],
-            19: ['2', '3']
-          }
+            19: ['2', '3'],
+          },
         })
         loadAssignmentGroups()
         await network.allRequestsReady()
@@ -226,8 +215,8 @@ QUnit.module('Gradebook > DataLoader > AssignmentGroupsLoader', suiteHooks => {
             3: ['1', '2'],
             19: ['3', '4'],
             22: ['4', '5'],
-            89: ['5', '6', '7']
-          }
+            89: ['5', '6', '7'],
+          },
         })
         loadAssignmentGroups()
         await network.allRequestsReady()

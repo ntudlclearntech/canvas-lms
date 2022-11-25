@@ -49,7 +49,7 @@ def getDockerWorkDir() {
     return "/usr/src/app/vendor/${env.GERRIT_PROJECT}"
   }
 
-  return env.GERRIT_PROJECT == 'canvas-lms' ? '/usr/src/app' : "/usr/src/app/gems/plugins/${env.GERRIT_PROJECT}"
+  return env.GERRIT_PROJECT == 'canvas-lms' ? '/usr/src/app/' : "/usr/src/app/gems/plugins/${env.GERRIT_PROJECT}/"
 }
 
 def getLocalWorkDir() {
@@ -203,7 +203,7 @@ def getChangeId() {
 // =========
 
 def getSlackChannel() {
-  return env.GERRIT_EVENT_TYPE == 'change-merged' ? '#canvas_builds' : '#devx-bots'
+  return env.SLACK_CHANNEL_OVERRIDE ?: env.GERRIT_EVENT_TYPE == 'change-merged' ? '#canvas_builds' : '#devx-bots'
 }
 
 @groovy.transform.Field final static CANVAS_BUILDS_REFSPEC_REGEX = /\[canvas\-builds\-refspec=(.+?)\]/
@@ -288,6 +288,7 @@ pipeline {
     RUBY_RUNNER_PREFIX = configuration.buildRegistryPath('ruby-runner')
     YARN_RUNNER_PREFIX = configuration.buildRegistryPath('yarn-runner')
     WEBPACK_BUILDER_PREFIX = configuration.buildRegistryPath('webpack-builder')
+    WEBPACK_ASSETS_PREFIX = configuration.buildRegistryPath('webpack-assets')
     WEBPACK_CACHE_PREFIX = configuration.buildRegistryPath('webpack-cache')
 
     IMAGE_CACHE_BUILD_SCOPE = configuration.gerritChangeNumber()
@@ -298,7 +299,7 @@ pipeline {
     DYNAMODB_IMAGE_TAG = "$DYNAMODB_PREFIX:$IMAGE_CACHE_UNIQUE_SCOPE"
     POSTGRES_IMAGE_TAG = "$POSTGRES_PREFIX:$IMAGE_CACHE_UNIQUE_SCOPE"
     WEBPACK_BUILDER_IMAGE = "$WEBPACK_BUILDER_PREFIX:$IMAGE_CACHE_UNIQUE_SCOPE"
-    WEBPACK_CACHE_IMAGE = "$WEBPACK_CACHE_PREFIX:$IMAGE_CACHE_UNIQUE_SCOPE"
+    WEBPACK_ASSETS_IMAGE = "$WEBPACK_ASSETS_PREFIX:$IMAGE_CACHE_UNIQUE_SCOPE"
 
     CASSANDRA_MERGE_IMAGE = "$CASSANDRA_PREFIX:$IMAGE_CACHE_MERGE_SCOPE-${env.RSPEC_PROCESSES ?: '4'}"
     DYNAMODB_MERGE_IMAGE = "$DYNAMODB_PREFIX:$IMAGE_CACHE_MERGE_SCOPE-${env.RSPEC_PROCESSES ?: '4'}"
@@ -331,6 +332,11 @@ pipeline {
         script {
           lock(label: 'canvas_build_global_mutex', quantity: 1) {
             timeout(60) {
+              // Skip translation builds for patchsets uploaded by svc.cloudjenkins
+              if (env.GERRIT_PATCHSET_UPLOADER_EMAIL == 'svc.cloudjenkins@instructure.com' && env.GERRIT_CHANGE_SUBJECT =~ /translation$/) {
+                return
+              }
+
               node('master') {
                 // For builds like Rails 6.1 prototype, we want to be able to see the build link, but
                 // not have Gerrit vote on it. This isn't currently supported through the Gerrit Trigger
@@ -340,12 +346,6 @@ pipeline {
                 // https://issues.jenkins.io/browse/JENKINS-28339
                 if (configuration.getBoolean('emulate-build-start', 'false')) {
                   gerrit.submitReview("", "Build Started ${RUN_DISPLAY_URL}")
-                }
-
-                // Skip builds for patchsets uploaded by svc.cloudjenkins, these are usually translation updates.
-                if (env.GERRIT_PATCHSET_UPLOADER_EMAIL == 'svc.cloudjenkins@instructure.com' && !configuration.isChangeMerged()) {
-                  currentBuild.result = 'ABORTED'
-                  error('No pre-merge builds for Service Cloud Jenkins user.')
                 }
 
                 if (configuration.skipCi()) {
@@ -412,7 +412,10 @@ pipeline {
                     .hooks(buildSummaryReportHooks.call())
                     .obeysAllowStages(false)
                     .timeout(2)
-                    .execute { setupStage() }
+                    .execute {
+                      buildDockerImageStage.preloadCacheImagesAsync()
+                      setupStage()
+                    }
 
                   extendedStage('Rebase')
                     .hooks(buildSummaryReportHooks.call())

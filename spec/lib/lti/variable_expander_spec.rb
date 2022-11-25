@@ -52,6 +52,7 @@ module Lti
       allow(m).to receive(:shard).and_return(shard_mock)
       allow(m).to receive(:opaque_identifier_for).and_return("6cd2e0d65bd5aef3b5ee56a64bdcd595e447bc8f")
       allow(m).to receive(:use_1_3?).and_return(false)
+      allow(m).to receive(:launch_url).and_return("http://example.com/launch")
       m
     end
     let(:available_canvas_resources) do
@@ -64,6 +65,7 @@ module Lti
     let(:controller) do
       request_mock = double("request")
       allow(request_mock).to receive(:url).and_return("https://localhost")
+      allow(request_mock).to receive(:host_with_port).and_return("https://localhost")
       allow(request_mock).to receive(:host).and_return("/my/url")
       allow(request_mock).to receive(:scheme).and_return("https")
       allow(request_mock).to receive(:parameters).and_return(
@@ -222,6 +224,58 @@ module Lti
       )
       expect(expanded.count).to eq 1
       expect(expanded[:some_name]).to eq "my variables $variable1 is buried 2 in here $test_expan can you find them?"
+    end
+
+    context "launch_url" do
+      subject { variable_expander.instance_variable_get(:@launch_url) }
+
+      context "when no options are provided" do
+        let(:launch_url) { "default" }
+
+        before do
+          allow(tool).to receive(:launch_url).with(extension_type: nil).and_return(launch_url)
+        end
+
+        it { is_expected.to eq launch_url }
+      end
+
+      context "when placement is provided" do
+        let(:launch_url) { "placement" }
+        let(:placement) { "test" }
+
+        let(:variable_expander_opts) do
+          super().merge({ placement: placement })
+        end
+
+        before do
+          allow(tool).to receive(:launch_url).with(extension_type: anything).and_return(launch_url)
+        end
+
+        it "passes placement to tool's url method" do
+          subject
+          expect(tool).to have_received(:launch_url).with(extension_type: placement)
+        end
+
+        it { is_expected.to eq launch_url }
+      end
+
+      context "when launch_url is provided" do
+        let(:launch_url) { "launch" }
+        let(:variable_expander_opts) do
+          super().merge({ launch_url: launch_url })
+        end
+
+        before do
+          allow(tool).to receive(:launch_url)
+        end
+
+        it "uses it as launch_url without asking the tool" do
+          subject
+          expect(tool).not_to have_received(:launch_url)
+        end
+
+        it { is_expected.to eq launch_url }
+      end
     end
 
     describe "#self.expansion_keys" do
@@ -799,6 +853,12 @@ module Lti
           variable_expander.expand_variables!(exp_hash)
           expect(exp_hash[:test]).to eq "$ToolProxyBinding.memberships.url"
         end
+
+        it "does not substitute $Context.sourcedId when the context is not a course" do
+          exp_hash = { test: "$Context.sourcedId" }
+          variable_expander.expand_variables!(exp_hash)
+          expect(exp_hash[:test]).to eq "$Context.sourcedId"
+        end
       end
 
       context "when launching from a group assignment" do
@@ -1081,14 +1141,14 @@ module Lti
           it "has a substitution for com.instructure.User.sectionNames" do
             exp_hash = { test: "$com.instructure.User.sectionNames" }
             variable_expander.expand_variables!(exp_hash)
-            expect(JSON.parse(exp_hash[:test])).to eq ["section one"]
+            expect(JSON.parse(exp_hash[:test])).to match_array ["section one"]
           end
 
           it "works with a user enrolled in both sections" do
             create_enrollment(course, user, { section: course.course_sections.find_by(name: "section two") })
             exp_hash = { test: "$com.instructure.User.sectionNames" }
             variable_expander.expand_variables!(exp_hash)
-            expect(JSON.parse(exp_hash[:test])).to eq ["section one", "section two"]
+            expect(JSON.parse(exp_hash[:test])).to match_array ["section one", "section two"]
           end
         end
 
@@ -1158,6 +1218,35 @@ module Lti
             end
 
             it { is_expected.to eq app_host }
+          end
+        end
+
+        describe "$com.instructure.RCS.service_jwt" do
+          subject do
+            allow(controller).to receive(:rce_js_env_base).with(any_args).and_return(JWT: "service-jwt")
+            exp_hash = { test: "$com.instructure.RCS.service_jwt" }
+            variable_expander.expand_variables!(exp_hash)
+            exp_hash[:test]
+          end
+
+          context "when tool is an internal service" do
+            before do
+              allow(tool).to receive(:internal_service?).with(any_args).and_return(true)
+            end
+
+            it { is_expected.to eq("service-jwt") }
+
+            context "when controller is not set" do
+              let(:variable_expander) { VariableExpander.new(root_account, course, nil, tool: tool) }
+
+              it { is_expected.to eq("") }
+            end
+          end
+
+          context "when tool is NOT an internal service" do
+            before { allow(tool).to receive(:internal_service?).with(any_args).and_return(false) }
+
+            it { is_expected.to eq("$com.instructure.RCS.service_jwt") }
           end
         end
 
@@ -1278,7 +1367,7 @@ module Lti
           create_enrollment(course, user, { section: second_section })
           exp_hash = { test: "$com.instructure.User.sectionNames" }
           variable_expander.expand_variables!(exp_hash)
-          expect(JSON.parse(exp_hash[:test])).to eq ["Section 1, M-T", "Section 2, W-Th"]
+          expect(JSON.parse(exp_hash[:test])).to match_array ["Section 1, M-T", "Section 2, W-Th"]
         end
 
         it "has substitution for $Canvas.xapi.url" do
@@ -1447,7 +1536,7 @@ module Lti
             shared_secret: "secret",
             url: "https://www.tool.com/launch",
             developer_key: developer_key,
-            settings: { use_1_3: true }
+            lti_version: "1.3"
           )
         end
 
@@ -2015,6 +2104,34 @@ module Lti
             exp_hash = { test: "$User.username" }
             variable_expander.expand_variables!(exp_hash)
             expect(exp_hash[:test]).to eq "username"
+          end
+
+          context "when in the :user_navigation placement" do
+            let(:variable_expander_opts) { super().merge({ placement: :user_navigation }) }
+
+            before do
+              pseudonym.sis_user_id = "1a2b3c"
+            end
+
+            context "when the context is a User" do
+              let(:variable_expander_opts) { super().merge({ context: user }) }
+
+              it "has substitution for $Context.sourcedId" do
+                exp_hash = { test: "$Context.sourcedId" }
+                variable_expander.expand_variables!(exp_hash)
+                expect(exp_hash[:test]).to eq "1a2b3c"
+              end
+            end
+
+            context "when the context is not a User" do
+              let(:variable_expander_opts) { super().merge({ context: account }) }
+
+              it "does not have substitution for $Context.sourcedId" do
+                exp_hash = { test: "$Context.sourcedId" }
+                variable_expander.expand_variables!(exp_hash)
+                expect(exp_hash[:test]).to eq "$Context.sourcedId"
+              end
+            end
           end
         end
 

@@ -8,10 +8,14 @@ function add_log {
   echo "$1" >> tmp/docker-build.log
 }
 
+function compute_hash {
+  echo "$@" | md5sum | cut -d' ' -f1
+}
+
 function compute_tags {
   local tags=$1; shift
   local cachePrefix=$1; shift
-  local cacheId=$(echo "$@" | md5sum | cut -d' ' -f1)
+  local cacheId=$(compute_hash $@)
 
   compute_tags_from_hash $tags $cachePrefix $cacheId
 }
@@ -40,6 +44,34 @@ function has_remote_tags {
   done
 
   return 0
+}
+
+function image_label_eq {
+  local imageName=$1; shift
+  local labelName=$1; shift
+  local expectedValue=$1; shift
+  local actualValue=$(docker inspect $imageName --format "{{ .Config.Labels.$labelName }}")
+
+  if [[ "$actualValue" != "$expectedValue" ]]; then
+    return 1
+  fi
+
+  return 0
+}
+
+function load_image_if_label_eq  {
+  local imageName=$1; shift
+  local labelName=$1; shift
+  local expectedValue=$1; shift
+  local outputImageName=$1; shift
+
+  ./build/new-jenkins/docker-with-flakey-network-protection.sh pull $imageName
+
+  if ! image_label_eq $imageName $labelName $expectedValue; then
+    return 1
+  fi
+
+  tag_many $imageName $outputImageName
 }
 
 function pull_first_tag {

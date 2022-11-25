@@ -27,7 +27,7 @@ import {Flex} from '@instructure/ui-flex'
 import {
   IconCheckMarkIndeterminateLine,
   IconPublishSolid,
-  IconUnpublishedLine
+  IconUnpublishedLine,
 } from '@instructure/ui-icons'
 import {ScreenReaderContent} from '@instructure/ui-a11y-content'
 import {TruncateText} from '@instructure/ui-truncate-text'
@@ -59,7 +59,7 @@ const FileButton = props => {
 
 class TableFiles extends React.Component {
   state = {
-    selectedFileID: null
+    selectedFileID: null,
   }
 
   formattedDateTime = dateTime => {
@@ -92,7 +92,7 @@ class TableFiles extends React.Component {
     if (file.hasOwnProperty('updated_at')) {
       description.push(
         I18n.t('date modified: %{modifiedAt}', {
-          modifiedAt: this.formattedDateTime(file.updated_at)
+          modifiedAt: this.formattedDateTime(file.updated_at),
         })
       )
     }
@@ -160,11 +160,15 @@ class TableFiles extends React.Component {
                 tip={file.display_name}
               >
                 {this.renderSRContents(file)}
-                <Flex aria-hidden>
+                <Flex aria-hidden={true}>
                   <Flex.Item padding="xx-small" size={this.props.columnWidths.thumbnailWidth}>
                     {getFileThumbnail(file, 'small')}
                   </Flex.Item>
-                  <Flex.Item padding="xx-small" size={this.props.columnWidths.nameWidth} grow>
+                  <Flex.Item
+                    padding="xx-small"
+                    size={this.props.columnWidths.nameWidth}
+                    shouldGrow={true}
+                  >
                     {this.renderFileName(file.display_name)}
                   </Flex.Item>
                   <Flex.Item padding="xx-small" size={this.props.columnWidths.dateCreatedWidth}>
@@ -206,16 +210,16 @@ TableFiles.propTypes = {
     dateModifiedWidth: string,
     modifiedByWidth: string,
     fileSizeWidth: string,
-    publishedWidth: string
+    publishedWidth: string,
   }),
   files: object,
   folders: object,
   handleCanvasFileSelect: func,
-  selectedFolderID: string
+  selectedFolderID: string,
 }
 
 TableFiles.defaultProps = {
-  allowedExtensions: []
+  allowedExtensions: [],
 }
 
 export default TableFiles

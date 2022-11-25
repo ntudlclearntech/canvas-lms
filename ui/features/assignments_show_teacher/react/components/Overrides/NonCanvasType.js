@@ -45,18 +45,18 @@ export default class NonCanvasType extends React.Component {
     value: string.isRequired,
     options: arrayOf(SubmitOptionShape).isRequired,
     onDelete: func,
-    initialSelection: string
+    initialSelection: string,
   }
 
   static defaultProps = {
-    readOnly: false
+    readOnly: false,
   }
 
   constructor(props) {
     super(props)
 
     this.state = {
-      selectedOption: this.props.initialSelection
+      selectedOption: this.props.initialSelection,
     }
   }
 
@@ -110,7 +110,7 @@ export default class NonCanvasType extends React.Component {
               </Flex.Item>
             )}
             {this.props.readOnly ? null : (
-              <Flex.Item margin="0 0 0 small" grow textAlign="end">
+              <Flex.Item margin="0 0 0 small" shouldGrow={true} textAlign="end">
                 <Button renderIcon={IconTrashLine} onClick={this.onDelete}>
                   <ScreenReaderContent>{I18n.t('Delete this submission type')}</ScreenReaderContent>
                 </Button>

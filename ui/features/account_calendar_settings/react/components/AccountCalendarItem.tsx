@@ -29,14 +29,14 @@ import {View} from '@instructure/ui-view'
 import {useScope as useI18nScope} from '@canvas/i18n'
 
 import {accountListTheme} from '../theme'
-import {VisibilityChange, CollectionChild} from '../types'
+import {Account, VisibilityChange} from '../types'
 
 const I18n = useI18nScope('account_calendar_settings_account_calendar_item')
 
 const CALENDAR_ICON_SIZE = '1.25rem'
 
 type ComponentProps = {
-  readonly item: CollectionChild
+  readonly item: Account
   readonly visibilityChanges: VisibilityChange[]
   readonly onAccountToggled: (id: number, visible: boolean) => void
   readonly padding?: string
@@ -55,7 +55,7 @@ export const AccountCalendarItem: React.FC<ComponentProps> = ({
 }) => (
   <ApplyTheme theme={accountListTheme}>
     <View as="div" padding={padding} borderWidth={`${showTopSeparator ? 'small' : '0'} 0 0 0`}>
-      <Flex as="div" alignItems="center">
+      <Flex data-testid="flex-calendar-item" as="div" alignItems="center">
         <FlexItem>
           <Checkbox
             label={
@@ -63,7 +63,7 @@ export const AccountCalendarItem: React.FC<ComponentProps> = ({
                 {I18n.t('Show account calendar for %{name}', {name: item.name})}
               </ScreenReaderContent>
             }
-            inline
+            inline={true}
             checked={
               visibilityChanges.find(change => change.id === item.id)
                 ? visibilityChanges.find(change => change.id === item.id)!.visible
@@ -76,7 +76,7 @@ export const AccountCalendarItem: React.FC<ComponentProps> = ({
           <IconCalendarMonthLine width={CALENDAR_ICON_SIZE} height={CALENDAR_ICON_SIZE} />
         </FlexItem>
         <FlexItem>
-          <Text>{item.name}</Text>
+          <Text data-testid="account-calendar-name">{item.name}</Text>
         </FlexItem>
       </Flex>
     </View>

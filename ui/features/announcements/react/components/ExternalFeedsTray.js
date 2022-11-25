@@ -21,7 +21,8 @@ import React, {Component} from 'react'
 import {string} from 'prop-types'
 
 import {Tray} from '@instructure/ui-tray'
-import {Button, CloseButton} from '@instructure/ui-buttons'
+import {Link} from '@instructure/ui-link'
+import {CloseButton} from '@instructure/ui-buttons'
 import {Text} from '@instructure/ui-text'
 import {Heading} from '@instructure/ui-heading'
 import {View} from '@instructure/ui-view'
@@ -29,8 +30,6 @@ import {IconRssLine} from '@instructure/ui-icons'
 
 import {ConnectedAddExternalFeed} from './AddExternalFeed'
 import propTypes from '../propTypes'
-
-import {Link} from '@instructure/ui-link'
 
 const I18n = useI18nScope('announcements_v2')
 
@@ -74,7 +73,7 @@ export default class ExternalFeedsTray extends Component {
         <View margin="medium" as="div" textAlign="start">
           <Link
             id="rss-feed-link"
-            linkRef={link => {
+            elementRef={link => {
               this.rssFeedLink = link
             }}
             href={this.props.atomFeedUrl}
@@ -114,15 +113,18 @@ export default class ExternalFeedsTray extends Component {
   render() {
     return (
       <View display="block" textAlign="end">
-        <Button
+        <Link
+          as="button"
           id="external_feed"
+          isWithinText={false}
           aria-haspopup="dialog"
           elementRef={link => (this.externalFeedRef = link)}
-          onClick={() => this.setState({open: !this.state.open})}
-          variant="link"
+          onClick={() => {
+            this.setState(oldState => ({open: !oldState.open}))
+          }}
         >
           {I18n.t('External Feeds')}
-        </Button>
+        </Link>
         <Tray
           label={I18n.t('External Feeds')}
           open={this.state.open}

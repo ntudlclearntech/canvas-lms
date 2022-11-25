@@ -118,6 +118,9 @@ module SectionTabHelper
             !WebConference.config(context: @context)
           elsif quiz_lti_tab?(tab)
             !new_quizzes_navigation_placements_enabled?(context)
+          elsif tab_is?(tab, "TAB_PEOPLE")
+            # can't manage people in template courses
+            context.is_a?(Course) && context.template?
           end
         end
       end
@@ -211,6 +214,7 @@ module SectionTabHelper
 
     def a_tag
       content_tag(:a, a_attributes) do
+        concat(indicate_new)
         concat(@tab.label)
         concat(indicate_hidden)
       end
@@ -224,6 +228,16 @@ module SectionTabHelper
       return unless @tab.hide? || @tab.unused?
 
       "<i class='nav-icon icon-off' aria-hidden='true' role='presentation'></i>".html_safe
+    end
+
+    # include the css_class of tabs here to show a "new" pill in the nav
+    # hide the "new" pill by adding the css_class to the :visited_tabs user preference
+    NEW_TABS = %w[account_calendars].freeze
+
+    def indicate_new
+      return unless NEW_TABS.include? @tab.css_class
+
+      "<span class='new-tab-indicator nav-icon' data-tabname='#{@tab.css_class}'></span>".html_safe
     end
 
     def to_html

@@ -29,17 +29,20 @@ export function Embed({onSubmit, onDismiss}) {
 
   return (
     <Modal
-      data-mce-component
+      data-mce-component={true}
       label={formatMessage('Embed')}
       size="medium"
       onDismiss={onDismiss}
-      open
+      open={true}
       shouldCloseOnDocumentClick={false}
     >
       <Modal.Header>
-        <CloseButton onClick={onDismiss} offset="medium" placement="end">
-          {formatMessage('Close')}
-        </CloseButton>
+        <CloseButton
+          onClick={onDismiss}
+          offset="medium"
+          placement="end"
+          screenReaderLabel={formatMessage('Close')}
+        />
         <Heading>{formatMessage('Embed')}</Heading>
       </Modal.Header>
       <Modal.Body>
@@ -60,7 +63,7 @@ export function Embed({onSubmit, onDismiss}) {
             onSubmit(embedCode)
             onDismiss()
           }}
-          variant="primary"
+          color="primary"
           type="submit"
           disabled={!embedCode}
         >

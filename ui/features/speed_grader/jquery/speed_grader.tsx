@@ -30,8 +30,7 @@ import type {
 import React from 'react'
 import ReactDOM from 'react-dom'
 import * as Alerts from '@instructure/ui-alerts'
-import {Button} from '@instructure/ui-buttons'
-import {ScreenReaderContent} from '@instructure/ui-a11y-content'
+import {IconButton} from '@instructure/ui-buttons'
 import iframeAllowances from '@canvas/external-apps/iframeAllowances'
 import OutlierScoreHelper from '@canvas/grading/OutlierScoreHelper'
 import quizzesNextSpeedGrading from '../quizzesNextSpeedGrading'
@@ -42,7 +41,7 @@ import GradeFormatHelper from '@canvas/grading/GradeFormatHelper'
 import AssessmentAuditButton from '../react/AssessmentAuditTray/components/AssessmentAuditButton'
 import AssessmentAuditTray from '../react/AssessmentAuditTray/index'
 import CommentArea from '../react/CommentArea'
-import originalityReportSubmissionKey from '@canvas/grading/originalityReportSubmissionKey'
+import {originalityReportSubmissionKey} from '@canvas/grading/originalityReportHelper'
 import PostPolicies from '../react/PostPolicies/index'
 import SpeedGraderProvisionalGradeSelector from '../react/SpeedGraderProvisionalGradeSelector'
 import SpeedGraderPostGradesMenu from '../react/SpeedGraderPostGradesMenu'
@@ -73,7 +72,6 @@ import {showFlashError} from '@canvas/alerts/react/FlashAlert'
 import round from 'round'
 import _ from 'underscore'
 import INST from 'browser-sniffer'
-// @ts-ignore
 import {useScope as useI18nScope} from '@canvas/i18n'
 import natcompare from '@canvas/util/natcompare'
 import qs from 'qs'
@@ -707,10 +705,13 @@ function renderProgressIcon(attachment) {
   } else {
     const {icon, tip} = iconAndTipMap[attachment.upload_status] || iconAndTipMap.default
     const tooltip = (
-      <Tooltip tip={tip} on={['click', 'hover', 'focus']}>
-        <Button variant="icon" icon={icon}>
-          <ScreenReaderContent>toggle tooltip</ScreenReaderContent>
-        </Button>
+      <Tooltip renderTip={tip} on={['click', 'hover', 'focus']}>
+        <IconButton
+          renderIcon={icon}
+          withBorder={false}
+          withBackground={false}
+          screenReaderLabel={I18n.t('Toggle tooltip')}
+        />
       </Tooltip>
     )
     ReactDOM.render(tooltip, mountPoint)
@@ -723,7 +724,9 @@ function renderHiddenSubmissionPill(submission) {
 
   if (isPostable(submission)) {
     ReactDOM.render(
-      <Pill variant="warning" text={I18n.t('Hidden')} margin="0 0 small" />,
+      <Pill color="warning" margin="0 0 small">
+        {I18n.t('Hidden')}
+      </Pill>,
       mountPoint
     )
   } else {
@@ -1048,15 +1051,20 @@ function initGroupAssignmentMode() {
   }
 }
 
-function refreshGrades(callback) {
+function refreshGrades(
+  callback: (submission: Submission) => void,
+  retry?: (submission: Submission, originalSubmission: Submission, numRequests: number) => boolean,
+  retryDelay?: number
+) {
   const courseId = ENV.course_id
-  const assignmentId = EG.currentStudent.submission.assignment_id
-  const studentId = EG.currentStudent.submission[anonymizableUserId]
+  const originalSubmission = {...EG.currentStudent.submission}
+  const assignmentId = originalSubmission.assignment_id
+  const studentId = originalSubmission[anonymizableUserId]
   const resourceSegment = isAnonymous ? 'anonymous_submissions' : 'submissions'
   const params = {'include[]': 'submission_history'}
   const url = `/api/v1/courses/${courseId}/assignments/${assignmentId}/${resourceSegment}/${studentId}.json`
   const currentStudentIDAsOfAjaxCall = EG.currentStudent[anonymizableId]
-  $.getJSON(url, params, submission => {
+  const onSuccess = submission => {
     const studentToRefresh = window.jsonData.studentMap[currentStudentIDAsOfAjaxCall]
     EG.setOrUpdateSubmission(submission)
 
@@ -1068,7 +1076,21 @@ function refreshGrades(callback) {
     if (callback) {
       callback(submission)
     }
-  })
+  }
+
+  let numRequests = 0
+  const fetchSubmission = () => {
+    numRequests += 1
+    $.getJSON(url, params, submission => {
+      if (retry?.(submission, originalSubmission, numRequests)) {
+        retryDelay ? setTimeout(fetchSubmission, retryDelay) : fetchSubmission()
+      } else {
+        onSuccess(submission)
+      }
+    })
+  }
+
+  fetchSubmission()
 }
 
 $.extend(INST, {
@@ -2169,7 +2191,7 @@ EG = {
 
   updateWordCount(wordCount) {
     if (
-      ENV.FEATURES?.word_count_in_speed_grader &&
+      this.currentStudent.submission?.submission_type &&
       !['basic_lti_launch', 'external_tool'].includes(
         this.currentStudent.submission.submission_type
       )
@@ -2523,8 +2545,8 @@ EG = {
         return {
           value: i,
           late_policy_status: EG.currentStudent.submission.late_policy_status,
-          late: EG.currentStudent.submission.late,
-          missing: EG.currentStudent.submission.missing,
+          late: s.late,
+          missing: s.missing,
           excused: EG.currentStudent.submission.excused,
           selected: selectedIndex === i,
           submittedAt: $.datetimeString(s.submitted_at) || noSubmittedAt,

@@ -53,6 +53,16 @@ describe "calendar2" do
         expect(edit_event_dialog).to be_displayed
       end
 
+      it "displays a flash alert if no calendar is selected when trying to create an event" do
+        @user.set_preference(:selected_calendar_contexts, "[]")
+        get "/calendar2"
+        wait_for_ajaximations
+
+        f("#create_new_event_link").click
+        flash_holder = f(".flashalert-message")
+        expect(flash_holder.text).to include("You must select at least one calendar to create an event.")
+      end
+
       it "creates an event with a location name" do
         event_name = "event with location"
         create_middle_day_event(event_name, with_location: true)
@@ -259,11 +269,34 @@ describe "calendar2" do
         expect(@course.calendar_events.last.important_dates).to be_truthy
       end
 
+      context "with account level calendars" do
+        before do
+          Account.site_admin.enable_feature! :account_calendar_events # if needed
+          account = Account.default # or (Account.create!)
+          account.account_calendar_visible = true
+          account.save!
+        end
+
+        it "users can switch between an account calendar and a user calendar with the same name" do
+          @course.account.name = "nobody+1@example.com"
+          @course.account.save!
+          enable_course_account_calendar
+          calendar_create_event_button.click
+          replace_content(edit_calendar_event_form_title, "Pandamonium")
+          edit_calendar_event_form_context.click
+          edit_calendar_event_form_context.send_keys(:down)
+          edit_calendar_event_form_context.send_keys(:return)
+          edit_calendar_event_form_submit_button.click
+          wait_for_ajaximations
+          expect(@user.calendar_events.last).to be_nil
+          expect(@course.account.calendar_events.last.title).to eq("Pandamonium")
+        end
+      end
+
       context "with course pacing" do
         before do
           Account.site_admin.enable_feature! :account_level_blackout_dates
           Account.site_admin.enable_feature! :course_paces
-          @course.enroll_student(@user).accept! # We need to use this case where the teacher is also a student until calendar events are reenabled for teachers for course pacing courses.
           @course.enable_course_paces = true
           @course.save!
         end

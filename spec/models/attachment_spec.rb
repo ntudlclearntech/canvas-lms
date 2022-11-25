@@ -251,7 +251,7 @@ describe Attachment do
         end
       end
 
-      expect(created_jobs.size).to eq attempts
+      expect(created_jobs.count { |job| job.tag == "Attachment#submit_to_crocodoc" }).to eq attempts
     end
 
     it "submits to canvadocs if crocodoc fails to convert" do
@@ -536,7 +536,7 @@ describe Attachment do
       end
 
       expect(MediaObject.count).to eq 0
-      job = created_jobs.first
+      job = created_jobs.find { |j| j.tag == "MediaObject.add_media_files" }
       expect(job.tag).to eq "MediaObject.add_media_files"
       expect(job.run_at.to_i).to eq (now + 25.seconds).to_i
     end
@@ -1039,6 +1039,48 @@ describe Attachment do
     end
   end
 
+  describe "computed_visibility_level" do
+    let_once(:user) { user_model }
+    let_once(:course) do
+      course_model
+      @course.offer
+      @course.update_attribute(:is_public, false)
+      @course
+    end
+    let_once(:student) do
+      course.enroll_student(user_model).accept
+      @user
+    end
+    let_once(:attachment) do
+      attachment_model(context: course)
+    end
+
+    it "always returns 'context' if the Course is not published" do
+      course.claim
+      expect(attachment.computed_visibility_level).to eq("context")
+      attachment.update!(visibility_level: "public")
+      expect(attachment.computed_visibility_level).to eq("context")
+    end
+
+    it "returns the Course setting if 'inherit'" do
+      attachment.update(visibility_level: "inherit")
+
+      course.apply_custom_visibility_configuration("files", "course")
+      course.save!
+      expect(attachment.computed_visibility_level).to eq("context")
+
+      course.apply_custom_visibility_configuration("files", "institution")
+      course.save!
+      attachment.reload
+      expect(attachment.computed_visibility_level).to eq("institution")
+
+      course.apply_custom_visibility_configuration("files", "public")
+      course.save!
+      attachment.reload
+      expect(attachment.computed_visibility_level).to eq("public")
+    end
+  end
+
   context "adheres_to_policy" do
     let_once(:user) { user_model }
     let_once(:course) do
@@ -1056,15 +1098,20 @@ describe Attachment do
     end
 
     it "does not allow unauthorized users to read files" do
-      a = attachment_model(context: course_model)
+      a = attachment_model(context: course_model, visibility_level: "context")
       @course.update_attribute(:is_public, false)
       expect(a.grants_right?(user, :read)).to eql(false)
     end
 
-    it "allows anonymous access for public contexts" do
-      a = attachment_model(context: course_model)
-      @course.update_attribute(:is_public, true)
+    it "disallows anonymous access for unpublished public contexts" do
+      a = attachment_model(context: course_model, visibility_level: "public")
       expect(a.grants_right?(user, :read)).to eql(false)
+    end
+
+    it "allows anonymous access for public contexts" do
+      a = attachment_model(context: course_model, visibility_level: "public")
+      @course.offer
+      expect(a.grants_right?(user, :read)).to eql(true)
     end
 
     it "allows students to read files" do
@@ -2656,10 +2703,6 @@ describe Attachment do
     end
 
     describe "word count" do
-      before(:once) do
-        Account.site_admin.enable_feature!(:word_count_in_speed_grader)
-      end
-
       it "updates the word count for a PDF" do
         attachment_model(filename: "test.pdf", uploaded_data: fixture_file_upload("example.pdf", "application/pdf"))
         @attachment.update_word_count

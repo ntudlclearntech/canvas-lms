@@ -104,12 +104,22 @@ RSpec.describe Mutations::AddConversationMessage do
 
   it "adds a message" do
     conversation
+    attachment = @user.conversation_attachments_folder.attachments.create!(filename: "somefile.doc", context: @user, uploaded_data: StringIO.new("test"))
     @student.media_objects.where(media_id: "m-whatever", media_type: "video/mp4").first_or_create!
-    result = run_mutation(conversation_id: @conversation.conversation_id, body: "This is a neat message", recipients: [@teacher.id.to_s], media_comment_id: "m-whatever", media_comment_type: "video")
+    result = run_mutation(
+      conversation_id: @conversation.conversation_id,
+      body: "This is a neat message",
+      recipients: [@teacher.id.to_s],
+      media_comment_id: "m-whatever",
+      media_comment_type: "video",
+      attachment_ids: [attachment.id]
+    )
 
     expect(InstStatsd::Statsd).to have_received(:increment).with("inbox.message.sent.isReply.react")
+    expect(InstStatsd::Statsd).to have_received(:increment).with("inbox.message.sent.react")
     expect(InstStatsd::Statsd).to have_received(:count).with("inbox.message.sent.recipients.react", 1)
     expect(InstStatsd::Statsd).to have_received(:increment).with("inbox.message.sent.media.react")
+    expect(InstStatsd::Statsd).to have_received(:increment).with("inbox.message.sent.attachment.react")
     expect(result["errors"]).to be nil
     expect(result.dig("data", "addConversationMessage", "errors")).to be nil
     expect(
@@ -204,14 +214,15 @@ RSpec.describe Mutations::AddConversationMessage do
     ).to eq "Course concluded, unable to send messages"
   end
 
-  it "allows new messages in concluded courses for teachers" do
+  it "does not allow new messages in concluded courses for teachers" do
     conversation(users: [@teacher])
     @course.update!(workflow_state: "completed")
 
     result = run_mutation({ conversation_id: @conversation.conversation_id, body: "I have the power", recipients: [@teacher.id.to_s, @student.id.to_s] }, @teacher)
     expect(result["errors"]).to be nil
+    expect(result.dig("data", "addConversationMessage", "conversationMessage")).to be nil
     expect(
-      result.dig("data", "addConversationMessage", "conversationMessage", "body")
-    ).to eq "I have the power"
+      result.dig("data", "addConversationMessage", "errors", 0, "message")
+    ).to eq "Unauthorized, unable to add messages to conversation"
   end
 end

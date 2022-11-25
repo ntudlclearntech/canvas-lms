@@ -64,6 +64,7 @@ const AlignmentOutcomeItem = ({title, description, alignments}) => {
                   withBorder={false}
                   interaction="enabled"
                   onClick={onClickHandler}
+                  data-testid="alignment-summary-outcome-expand-toggle"
                 >
                   <div style={{display: 'flex', alignSelf: 'center', fontSize: '0.875rem'}}>
                     {truncated ? (
@@ -79,7 +80,7 @@ const AlignmentOutcomeItem = ({title, description, alignments}) => {
         </Flex.Item>
         <Flex.Item size="50%" shouldGrow>
           <div style={{padding: '0.625rem 0'}}>
-            <Heading level="h4">
+            <Heading level="h4" as="h3">
               <div style={{overflowWrap: 'break-word'}}>{addZeroWidthSpace(title)}</div>
             </Heading>
           </div>
@@ -115,7 +116,7 @@ const AlignmentOutcomeItem = ({title, description, alignments}) => {
             )}
 
             {!truncated && alignmentsCount > 0 && (
-              <View as="div" padding="0 small small 0">
+              <View as="div" padding="0 small small 0" data-testid="outcome-alignments-list">
                 {alignments.map(
                   ({
                     _id,
@@ -161,7 +162,7 @@ const AlignmentOutcomeItem = ({title, description, alignments}) => {
                 flexFlow: 'row-reverse nowrap'
               }}
             >
-              <Text size="medium" weight="bold">
+              <Text size="medium" weight="bold" data-testid="outcome-alignments">
                 {alignmentsCount}
               </Text>
               <View padding="0 xxx-small 0 0">

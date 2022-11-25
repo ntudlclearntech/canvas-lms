@@ -28,14 +28,11 @@ import {px} from '@instructure/ui-utils'
 import {ProgressBar} from '@instructure/ui-progress'
 import {Text} from '@instructure/ui-text'
 
-import {
-  RCS_MAX_BODY_SIZE,
-  RCS_REQUEST_SIZE_BUFFER
-} from '@instructure/canvas-rce/src/rce/plugins/shared/Upload/constants'
 import {ACCEPTED_FILE_TYPES} from './acceptedMediaFileTypes'
 import LoadingIndicator from './shared/LoadingIndicator'
 import saveMediaRecording, {saveClosedCaptions} from './saveMediaRecording'
 import translationShape from './translationShape'
+import {CC_FILE_MAX_BYTES} from './shared/constants'
 
 const ComputerPanel = React.lazy(() => import('./ComputerPanel'))
 const MediaRecorder = React.lazy(() => import('./MediaRecorder'))
@@ -178,7 +175,7 @@ export default class UploadMedia extends React.Component {
             data.mediaObject.media_object.media_id,
             this.state.subtitles,
             this.props.rcsConfig,
-            RCS_MAX_BODY_SIZE - RCS_REQUEST_SIZE_BUFFER
+            CC_FILE_MAX_BYTES
           )
         }
         this.props.onUploadComplete && this.props.onUploadComplete(null, data, captions?.data)
@@ -196,19 +193,20 @@ export default class UploadMedia extends React.Component {
   componentDidUpdate(prevProps, prevState) {
     this.setBodySize(prevState)
 
-    // If the specified tabs have not changed, don't attempt
-    // to set the selected panel state (this would trigger
-    // and endless loop).
-    if (isEqual(prevProps.tabs, this.props.tabs)) return
-
     const invalidPanelSelected = () =>
       (this.state.selectedPanel === PANELS.COMPUTER && !this.props.tabs.upload) ||
       (this.state.selectedPanel === PANELS.RECORD && !this.props.tabs.record)
 
+    // If the specified tabs have not changed and the selected panel is valid,
+    // don't attempt to set the selected panel state (this would trigger an
+    // endless loop).
+    if (isEqual(prevProps.tabs, this.props.tabs) && !invalidPanelSelected()) return
+
     if (prevState.selectedPanel === -1 || invalidPanelSelected()) {
       // The tabs prop has changed and the selectedPanel was
-      // never set in the constructor. Attempt to infer the
-      // selected panel based on the new tabs list
+      // never set in the constructor, or the selectedPanel is invalid
+      // given the available tabs. Attempt to infer the selected panel
+      // based on the new tabs list
       this.setState({selectedPanel: this.inferSelectedPanel(this.props.tabs)})
     }
   }
@@ -247,7 +245,11 @@ export default class UploadMedia extends React.Component {
       <Tabs
         maxWidth="large"
         onRequestTabChange={(_, {index}) => {
-          this.setState({selectedPanel: index})
+          const {tabs} = this.props
+          // You can only change tabs if more than one tab is available
+          if (tabs.upload && tabs.record) {
+            this.setState({selectedPanel: index})
+          }
         }}
       >
         {this.props.tabs.upload && (
@@ -299,7 +301,7 @@ export default class UploadMedia extends React.Component {
   onModalClose = () => {
     this.setState({
       hasUploadedFile: false,
-      selectedPanel: 0,
+      selectedPanel: this.inferSelectedPanel(this.props.tabs),
       computerFile: null
     })
     this.props.onDismiss()

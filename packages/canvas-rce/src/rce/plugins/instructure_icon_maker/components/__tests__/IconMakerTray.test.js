@@ -85,7 +85,9 @@ describe('RCE "Icon Maker" Plugin > IconMakerTray', () => {
   })
 
   afterEach(async () => {
-    await act(async() => { jest.runOnlyPendingTimers() })
+    await act(async () => {
+      jest.runOnlyPendingTimers()
+    })
   })
 
   it('renders the create view', () => {
@@ -140,7 +142,7 @@ describe('RCE "Icon Maker" Plugin > IconMakerTray', () => {
     })
 
     beforeEach(() => {
-      window.HTMLElement.prototype.focus = jest.fn().mockImplementation(function (args) {
+      window.HTMLElement.prototype.focus = jest.fn().mockImplementation(function (_args) {
         focusedElement = this
       })
     })
@@ -209,6 +211,25 @@ describe('RCE "Icon Maker" Plugin > IconMakerTray', () => {
             >
               <g
                 fill="#000000"
+              >
+                <clippath
+                  id="clip-path-for-embed"
+                >
+                  <rect
+                    height="114"
+                    width="114"
+                    x="4"
+                    y="4"
+                  />
+                </clippath>
+                <rect
+                  height="114"
+                  width="114"
+                  x="4"
+                  y="4"
+                />
+              </g>
+              <g
                 stroke="#000000"
                 stroke-width="0"
               >
@@ -244,7 +265,7 @@ describe('RCE "Icon Maker" Plugin > IconMakerTray', () => {
     })
 
     it('with overwrite if "replace all" is checked', async () => {
-      const {getByTestId} = render(<IconMakerTray {...defaults} editing />)
+      const {getByTestId} = render(<IconMakerTray {...defaults} editing={true} />)
 
       setIconColor('#000000')
 
@@ -338,7 +359,7 @@ describe('RCE "Icon Maker" Plugin > IconMakerTray', () => {
 
   describe('the "replace all instances" checkbox', () => {
     it('disables the name field when checked', async () => {
-      const {getByTestId} = render(<IconMakerTray {...defaults} editing />)
+      const {getByTestId} = render(<IconMakerTray {...defaults} editing={true} />)
 
       act(() => getByTestId('cb-replace-all').click())
 
@@ -346,7 +367,7 @@ describe('RCE "Icon Maker" Plugin > IconMakerTray', () => {
     })
 
     it('does not disable the name field when not checked', async () => {
-      const {getByTestId} = render(<IconMakerTray {...defaults} editing />)
+      const {getByTestId} = render(<IconMakerTray {...defaults} editing={true} />)
 
       await waitFor(() => expect(getByTestId('icon-name')).not.toBeDisabled())
     })
@@ -429,7 +450,7 @@ describe('RCE "Icon Maker" Plugin > IconMakerTray', () => {
       render(
         <IconMakerTray
           onClose={jest.fn()}
-          editing
+          editing={true}
           editor={ed}
           rcsConfig={{
             contextType: 'course',
@@ -442,24 +463,20 @@ describe('RCE "Icon Maker" Plugin > IconMakerTray', () => {
     beforeEach(() => {
       fetchMock.mock('*', {
         body: `
-          <svg height="100" width="100">
-            <metadata>
-              {
-                "alt":"a test image",
-                "shape":"triangle",
-                "size":"large",
-                "color":"#FF2717",
-                "outlineColor":"#06A3B7",
-                "outlineSize":"small",
-                "text":"Some Text",
-                "textSize":"medium",
-                "textColor":"#009606",
-                "textBackgroundColor":"#E71F63",
-                "textPosition":"below"
-              }
-            </metadata>
-            <circle cx="50" cy="50" r="40" stroke="black" stroke-width="3" fill="red"/>
-          </svg>`
+          {
+            "name":"Test Icon.svg",
+            "alt":"a test image",
+            "shape":"triangle",
+            "size":"large",
+            "color":"#FF2717",
+            "outlineColor":"#06A3B7",
+            "outlineSize":"small",
+            "text":"Some Text",
+            "textSize":"medium",
+            "textColor":"#009606",
+            "textBackgroundColor":"#E71F63",
+            "textPosition":"below"
+          }`
       })
     })
 

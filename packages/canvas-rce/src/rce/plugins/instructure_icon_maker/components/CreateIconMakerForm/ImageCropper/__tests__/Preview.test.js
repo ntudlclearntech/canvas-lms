@@ -48,7 +48,7 @@ describe('Preview', () => {
       <img
         alt="Image to crop"
         src="https://www.fillmurray.com/640/480"
-        style="position: absolute; top: 0px; left: 0px; height: 100%; width: 100%; object-fit: contain; text-align: center;"
+        style="height: 100%; object-fit: contain; text-align: center;"
       />
     `)
     })
@@ -95,7 +95,7 @@ describe('Preview', () => {
     it('when zoom in', async () => {
       const {container} = render(<Preview settings={settings} dispatch={dispatch} />)
       const event = {deltaY: -25}
-      fireEvent.wheel(container.firstChild, event)
+      fireEvent.wheel(container.firstChild.firstChild, event)
       await waitFor(() => {
         expect(dispatch).toHaveBeenCalledWith({type: 'SetScaleRatio', payload: 1.13})
       })
@@ -105,7 +105,7 @@ describe('Preview', () => {
       settings.scaleRatio = 2
       const {container} = render(<Preview settings={settings} dispatch={dispatch} />)
       const event = {deltaY: 25}
-      fireEvent.wheel(container.firstChild, event)
+      fireEvent.wheel(container.firstChild.firstChild, event)
       await waitFor(() => {
         expect(dispatch).toHaveBeenCalledWith({type: 'SetScaleRatio', payload: 1.88})
       })
@@ -116,7 +116,7 @@ describe('Preview', () => {
     it('when zoom in', async () => {
       const {container} = render(<Preview settings={settings} dispatch={dispatch} />)
       const event = {deltaY: -25}
-      fireEvent.wheel(container.firstChild, event)
+      fireEvent.wheel(container.firstChild.firstChild, event)
       await waitFor(() => {
         const img = container.querySelector('img')
         expect(img.style.transform).toEqual('scale(1.13)')
@@ -127,7 +127,7 @@ describe('Preview', () => {
       settings.scaleRatio = 2
       const {container} = render(<Preview settings={settings} dispatch={dispatch} />)
       const event = {deltaY: 25}
-      fireEvent.wheel(container.firstChild, event)
+      fireEvent.wheel(container.firstChild.firstChild, event)
       await waitFor(() => {
         const img = container.querySelector('img')
         expect(img.style.transform).toEqual('scale(1.88)')
@@ -213,6 +213,64 @@ describe('Preview', () => {
         await waitFor(() => {
           const img = container.querySelector('img')
           expect(img.style.transform).toEqual('translateY(1px)')
+        })
+      })
+    })
+  })
+
+  describe('listens mouse dragging', () => {
+    let container, target, mouseDownEvent, mouseMoveEvent, mouseUpEvent
+
+    beforeAll(() => {
+      mouseDownEvent = {target}
+      mouseMoveEvent = {clientX: 15, clientY: 30}
+      mouseUpEvent = {target}
+    })
+
+    beforeEach(() => {
+      const component = render(<Preview settings={settings} dispatch={dispatch} />)
+      container = component.container
+      target = container.querySelector('img')
+
+      fireEvent.mouseDown(target, mouseDownEvent)
+      fireEvent.mouseMove(target, mouseMoveEvent)
+      fireEvent.mouseUp(target, mouseUpEvent)
+    })
+
+    describe('calls dispatch', () => {
+      it('when dragging once', async () => {
+        await waitFor(() => {
+          expect(dispatch).toHaveBeenCalledWith({type: 'SetTranslateX', payload: 15})
+          expect(dispatch).toHaveBeenCalledWith({type: 'SetTranslateY', payload: 30})
+        })
+      })
+
+      it('when dragging and reuses previous position', async () => {
+        fireEvent.mouseDown(target, mouseDownEvent)
+        fireEvent.mouseMove(target, mouseMoveEvent)
+        fireEvent.mouseUp(target, mouseUpEvent)
+
+        await waitFor(() => {
+          expect(dispatch).toHaveBeenCalledWith({type: 'SetTranslateX', payload: 30})
+          expect(dispatch).toHaveBeenCalledWith({type: 'SetTranslateY', payload: 60})
+        })
+      })
+    })
+
+    describe('sets translate style', () => {
+      it('when dragging once', async () => {
+        await waitFor(() => {
+          expect(target.style.transform).toEqual('translateX(15px) translateY(30px)')
+        })
+      })
+
+      it('when dragging and reuses previous position', async () => {
+        fireEvent.mouseDown(target, mouseDownEvent)
+        fireEvent.mouseMove(target, mouseMoveEvent)
+        fireEvent.mouseUp(target, mouseUpEvent)
+
+        await waitFor(() => {
+          expect(target.style.transform).toEqual('translateX(30px) translateY(60px)')
         })
       })
     })

@@ -19,6 +19,7 @@
 import {Assignment} from '@canvas/assignments/graphql/student/Assignment'
 import AttemptSelect from './AttemptSelect'
 import AssignmentDetails from './AssignmentDetails'
+import PeerReviewsCounter from './PeerReviewsCounter'
 import {Button} from '@instructure/ui-buttons'
 import {Flex} from '@instructure/ui-flex'
 import GradeDisplay from './GradeDisplay'
@@ -42,6 +43,10 @@ import {Text} from '@instructure/ui-text'
 import {Tooltip} from '@instructure/ui-tooltip'
 import {View} from '@instructure/ui-view'
 import CommentsTray from './CommentsTray/index'
+import {
+  getOriginalityData,
+  isOriginalityReportVisible,
+} from '@canvas/grading/originalityReportHelper'
 
 const I18n = useI18nScope('assignments_2_student_header')
 
@@ -50,11 +55,13 @@ class Header extends React.Component {
     allSubmissions: arrayOf(Submission.shape),
     assignment: Assignment.shape,
     onChangeSubmission: func,
-    submission: Submission.shape
+    submission: Submission.shape,
+    reviewerSubmission: Submission.shape,
   }
 
   static defaultProps = {
-    onChangeSubmission: () => {}
+    onChangeSubmission: () => {},
+    reviewerSubmission: null,
   }
 
   isPeerReviewModeEnabled = () => {
@@ -63,7 +70,10 @@ class Header extends React.Component {
 
   state = {
     commentsTrayOpen:
-      !!this.props.submission?.unreadCommentCount || !!this.isPeerReviewModeEnabled()
+      !!this.props.submission?.unreadCommentCount ||
+      (!!this.isPeerReviewModeEnabled() &&
+        this.props.assignment.env.peerReviewAvailable &&
+        !this.props.assignment.rubric),
   }
 
   isSubmissionLate = () => {
@@ -74,6 +84,19 @@ class Header extends React.Component {
       this.props.submission.latePolicyStatus === 'late' ||
       this.props.submission.submissionStatus === 'late'
     )
+  }
+
+  currentAssessmentIndex = () => {
+    const userId = this.props.assignment.env.revieweeId
+    const anonymousId = this.props.assignment.env.anonymousAssetId
+    const value =
+      this.props.reviewerSubmission?.assignedAssessments?.findIndex(assessment => {
+        return (
+          (userId && userId === assessment.anonymizedUser._id) ||
+          (anonymousId && assessment.anonymousId === anonymousId)
+        )
+      }) || 0
+    return value + 1
   }
 
   openCommentsTray = () => {
@@ -136,7 +159,7 @@ class Header extends React.Component {
       defaultValue: I18n.t('N/A'),
       formatType: 'points_out_of_fraction',
       gradingType: assignment.gradingType,
-      pointsPossible: assignment.pointsPossible
+      pointsPossible: assignment.pointsPossible,
     })
 
     const textProps =
@@ -161,10 +184,7 @@ class Header extends React.Component {
     )
   }
 
-  renderViewFeedbackButton = addCommentsDisabled => {
-    const popoverMessage = I18n.t(
-      'After the first attempt, you cannot leave comments until you submit the assignment.'
-    )
+  renderViewFeedbackButton = (addCommentsDisabled, popoverMessage) => {
     return (
       <>
         <div>
@@ -217,11 +237,41 @@ class Header extends React.Component {
     const lockAssignment =
       this.props.assignment.env.modulePrereq || this.props.assignment.env.unlockDate
 
+    const {peerReviewModeEnabled, peerReviewAvailable} = this.props.assignment.env
+    const shouldDisplayPeerReviewEmptyState = peerReviewModeEnabled && !peerReviewAvailable
+
     /* In the case where the current attempt is backed by a submission draft after the first,
      students are not able to leave comments. Disabling the add comments button and adding
      an info button will help make this clear. */
     const addCommentsDisabled =
-      this.props.submission?.attempt > 1 && this.props.submission.state === 'unsubmitted'
+      shouldDisplayPeerReviewEmptyState ||
+      (!peerReviewModeEnabled &&
+        this.props.submission?.attempt > 1 &&
+        this.props.submission.state === 'unsubmitted')
+
+    const unsubmittedDraftMessage = I18n.t(
+      'After the first attempt, you cannot leave comments until you submit the assignment.'
+    )
+    const unavailablePeerReviewMessage = I18n.t(
+      'You cannot leave comments until reviewer and reviewee submits the assignment.'
+    )
+    const popoverMessage = shouldDisplayPeerReviewEmptyState
+      ? unavailablePeerReviewMessage
+      : unsubmittedDraftMessage
+
+    let topRightComponent
+    if (this.isPeerReviewModeEnabled()) {
+      topRightComponent = (
+        <Flex.Item margin="0 small 0 0">
+          <PeerReviewsCounter
+            current={this.currentAssessmentIndex()}
+            total={this.props.reviewerSubmission?.assignedAssessments?.length || 0}
+          />
+        </Flex.Item>
+      )
+    } else {
+      topRightComponent = <Flex.Item>{this.renderLatestGrade()}</Flex.Item>
+    }
 
     return (
       <>
@@ -249,16 +299,16 @@ class Header extends React.Component {
                       submissionStatus={this.props.submission.submissionStatus}
                     />
                   </Flex.Item>
-                  {!this.isPeerReviewModeEnabled() && (
-                    <Flex.Item>{this.renderLatestGrade()}</Flex.Item>
-                  )}
+                  {topRightComponent}
                 </Flex>
 
                 <CommentsTray
                   submission={this.props.submission}
+                  reviewerSubmission={this.props.reviewerSubmission}
                   assignment={this.props.assignment}
                   open={this.state.commentsTrayOpen}
                   closeTray={this.closeCommentsTray}
+                  isPeerReviewEnabled={this.isPeerReviewModeEnabled()}
                 />
               </Flex.Item>
             )}
@@ -289,11 +339,18 @@ class Header extends React.Component {
                     !lockAssignment &&
                     (this.props.submission.submissionType === 'online_text_entry' ||
                       this.props.submission.attachments.length === 1) &&
-                    this.props.submission.turnitinData &&
-                    this.props.submission.turnitinData.length !== 0 &&
-                    this.props.assignment.env.originalityReportsForA2Enabled && (
+                    this.props.submission.originalityData &&
+                    this.props.assignment.env.originalityReportsForA2Enabled &&
+                    isOriginalityReportVisible(
+                      this.props.assignment.originalityReportVisibility,
+                      this.props.assignment.dueAt,
+                      this.props.submission.gradingStatus
+                    ) &&
+                    getOriginalityData(this.props.submission, 0) && (
                       <Flex.Item>
-                        <OriginalityReport turnitinData={this.props.submission.turnitinData[0]} />
+                        <OriginalityReport
+                          originalityData={getOriginalityData(this.props.submission, 0)}
+                        />
                       </Flex.Item>
                     )}
                 </Flex>
@@ -308,7 +365,7 @@ class Header extends React.Component {
                     <Flex.Item margin="0 small 0 0">{this.selectedSubmissionGrade()}</Flex.Item>
                   )}
                 <Flex.Item margin="0 small 0 0">
-                  {this.renderViewFeedbackButton(addCommentsDisabled)}
+                  {this.renderViewFeedbackButton(addCommentsDisabled, popoverMessage)}
                 </Flex.Item>
               </Flex>
             </Flex.Item>

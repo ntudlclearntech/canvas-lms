@@ -33,6 +33,9 @@ const userList = [
   {displayName: 'Omar Soto Fortuno', id: '4'}
 ]
 
+const startCalendarDate = new Date().toISOString()
+const endCalendarDate = new Date().toISOString()
+
 describe('VideoConferenceModal', () => {
   const onDismiss = jest.fn()
   const onSubmit = jest.fn()
@@ -40,10 +43,12 @@ describe('VideoConferenceModal', () => {
   const setup = (props = {}) => {
     return render(
       <VideoConferenceModal
-        open
+        open={true}
         availableAttendeesList={userList}
         onDismiss={onDismiss}
         onSubmit={onSubmit}
+        startCalendarDate={startCalendarDate}
+        endCalendarDate={endCalendarDate}
         {...props}
       />
     )
@@ -62,6 +67,8 @@ describe('VideoConferenceModal', () => {
         contexts: null
       }
     ]
+    window.ENV.bbb_recording_enabled = true
+    window.ENV.context_name = 'Amazing Course'
   })
 
   it('should render', () => {
@@ -78,7 +85,8 @@ describe('VideoConferenceModal', () => {
 
   it('do not submit without a conference name', () => {
     const container = setup()
-
+    expect(container.getByLabelText('Name')).toHaveValue('Amazing Course Conference')
+    userEvent.clear(container.getByLabelText('Name'))
     fireEvent.click(container.getByTestId('submit-button'))
     expect(onSubmit).not.toHaveBeenCalled()
   })
@@ -86,6 +94,7 @@ describe('VideoConferenceModal', () => {
   it('submit when correct fields are filled', () => {
     const container = setup()
 
+    userEvent.clear(container.getByLabelText('Name'))
     userEvent.type(container.getByLabelText('Name'), 'A great video conference name')
     userEvent.type(container.getByLabelText('Description'), 'A great video conference description')
     fireEvent.click(container.getByTestId('submit-button'))
@@ -94,7 +103,8 @@ describe('VideoConferenceModal', () => {
     expect(onSubmit.mock.calls[0][1]).toStrictEqual({
       name: 'A great video conference name',
       duration: 60,
-      options: ['recording_enabled', 'no_time_limit', 'enable_waiting_room'],
+      options: ['recording_enabled'],
+      conferenceType: 'BigBlueButton',
       description: 'A great video conference description',
       invitationOptions: ['invite_all'],
       attendeesOptions: [
@@ -103,7 +113,10 @@ describe('VideoConferenceModal', () => {
         'share_microphone',
         'send_public_chat',
         'send_private_chat'
-      ]
+      ],
+      selectedAttendees: [],
+      startCalendarDate,
+      endCalendarDate
     })
   })
 
@@ -132,6 +145,16 @@ describe('VideoConferenceModal', () => {
 
     fireEvent.click(container.getByText('Attendees'))
     expect(container.getByText('Invite all course members')).toBeInTheDocument()
+    expect(container.getByText('Remove all course observer members')).toBeInTheDocument()
+  })
+
+  it('shows correct group options in attendees tab', () => {
+    window.ENV.context_asset_string = 'group_1'
+    const container = setup()
+
+    fireEvent.click(container.getByText('Attendees'))
+    expect(container.getByText('Invite all group members')).toBeInTheDocument()
+    expect(container.queryByText('Remove all course observer members')).not.toBeInTheDocument()
   })
 
   it('shows New Video Conference and Create button when not on editing mode', () => {
@@ -162,5 +185,23 @@ describe('VideoConferenceModal', () => {
 
     fireEvent.click(container.getByText('Attendees'))
     expect(container.getByLabelText('Share webcam').checked).toBeTruthy()
+  })
+
+  it('doesnt call onSubmit when there is an error and you are on the Attendees tab', () => {
+    const container = setup({
+      isEditing: true,
+      name: '',
+      duration: 45,
+      options: ['recording_enabled'],
+      description: '',
+      invitationOptions: [],
+      attendeesOptions: ['share_webcam'],
+      type: 'BigBlueButton'
+    })
+
+    fireEvent.click(container.getByText('Attendees'))
+    fireEvent.click(container.getByTestId('submit-button'))
+
+    expect(onSubmit).not.toHaveBeenCalled()
   })
 })

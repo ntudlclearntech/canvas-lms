@@ -32,8 +32,9 @@ declare global {
 
   declare interface JQuery {
     confirmDelete: any
-    fillWindowWithMe: (options?: {onResize: () => void}) => void
+    fillWindowWithMe: (options?: {onResize: () => void}) => JQuery<HTMLElement>
     fixDialogButtons: () => void
+    keycodes: any
     live: any
     mediaComment: any
     showIf: (boolean) => void

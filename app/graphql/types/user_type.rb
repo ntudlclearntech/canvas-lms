@@ -194,12 +194,16 @@ module Types
                                   InstStatsd::Statsd.increment("inbox.visit.scope.unread.pages_loaded.react")
                                   object.conversations.unread
                                 when "starred"
+                                  InstStatsd::Statsd.increment("inbox.visit.scope.starred.pages_loaded.react")
                                   object.starred_conversations
                                 when "sent"
+                                  InstStatsd::Statsd.increment("inbox.visit.scope.sent.pages_loaded.react")
                                   object.all_conversations.sent
                                 when "archived"
+                                  InstStatsd::Statsd.increment("inbox.visit.scope.archived.pages_loaded.react")
                                   object.conversations.archived
                                 else
+                                  InstStatsd::Statsd.increment("inbox.visit.scope.inbox.pages_loaded.react")
                                   object.conversations.default
                                 end
 
@@ -391,6 +395,7 @@ module Types
         submission_ids = StreamItem.where(id: shard_stream_items.map(&:stream_item_id)).pluck(:asset_id)
         submissions += Submission.where(id: submission_ids)
       end
+      InstStatsd::Statsd.increment("inbox.visit.scope.submission_comments.pages_loaded.react")
       submissions.sort_by { |t| t.last_comment_at || t.created_at }.reverse
     rescue
       []

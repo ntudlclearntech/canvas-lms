@@ -54,23 +54,37 @@ function TrayContent(props) {
 
   return (
     <Suspense fallback={<LoadingIndicator />}>
-      <CommentsTrayBody assignment={props.assignment} submission={props.submission} />
+      <CommentsTrayBody
+        assignment={props.assignment}
+        submission={props.submission}
+        isPeerReviewEnabled={props.isPeerReviewEnabled}
+        reviewerSubmission={props.reviewerSubmission}
+      />
     </Suspense>
   )
 }
 
 TrayContent.propTypes = {
   assignment: Assignment.shape.isRequired,
-  submission: Submission.shape.isRequired
+  submission: Submission.shape.isRequired,
+  reviewerSubmission: Submission.shape,
+  isPeerReviewEnabled: bool,
+}
+
+TrayContent.defaultProps = {
+  isPeerReviewEnabled: false,
 }
 
 export default function CommentsTray(props) {
   // attempts 0 and 1 get combined into a single attempt
   const attempt = props.submission?.attempt || 1
+  const label = props.isPeerReviewEnabled
+    ? I18n.t('Peer Review Comments')
+    : I18n.t('Attempt %{attempt} Feedback', {attempt})
 
   return (
     <Tray
-      label={I18n.t('Attempt %{attempt} Feedback', {attempt})}
+      label={label}
       open={props.open}
       onDismiss={props.closeTray}
       size="regular"
@@ -81,8 +95,8 @@ export default function CommentsTray(props) {
           <Flex.Item>
             <View as="div" padding="medium">
               <Flex>
-                <Flex.Item shouldGrow shouldShrink>
-                  <Heading>{I18n.t('Attempt %{attempt} Feedback', {attempt})}</Heading>
+                <Flex.Item shouldGrow={true} shouldShrink={true}>
+                  <Heading>{label}</Heading>
                 </Flex.Item>
 
                 <Flex.Item>
@@ -99,8 +113,13 @@ export default function CommentsTray(props) {
             </View>
           </Flex.Item>
 
-          <Flex.Item grow>
-            <TrayContent assignment={props.assignment} submission={props.submission} />
+          <Flex.Item shouldGrow={true}>
+            <TrayContent
+              isPeerReviewEnabled={props.isPeerReviewEnabled}
+              assignment={props.assignment}
+              submission={props.submission}
+              reviewerSubmission={props.reviewerSubmission}
+            />
           </Flex.Item>
         </Flex>
       </div>
@@ -111,6 +130,12 @@ export default function CommentsTray(props) {
 CommentsTray.propTypes = {
   assignment: Assignment.shape.isRequired,
   submission: Submission.shape.isRequired,
+  reviewerSubmission: Submission.shape,
   closeTray: func.isRequired,
-  open: bool.isRequired
+  open: bool.isRequired,
+  isPeerReviewEnabled: bool,
+}
+
+CommentsTray.defaultProps = {
+  isPeerReviewEnabled: false,
 }

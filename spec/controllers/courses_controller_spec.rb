@@ -2182,7 +2182,7 @@ describe CoursesController do
       it "tracks enrollments for unpaced courses" do
         allow(InstStatsd::Statsd).to receive(:count)
         post "enroll_users", params: { course_id: @course.id, user_list: "\"Sam\" <sam@yahoo.com>, \"Fred\" <fred@yahoo.com>" }
-        expect(InstStatsd::Statsd).to have_received(:count).with("course.unpaced.student_enrollment_count", ActiveRecord::Associations::CollectionProxy).once
+        expect(InstStatsd::Statsd).to have_received(:count).with("course.unpaced.student_enrollment_count", 3).once
       end
 
       it "tracks enrollments for paced courses" do
@@ -2190,7 +2190,7 @@ describe CoursesController do
         @course.enable_course_paces = true
         @course.save!
         post "enroll_users", params: { course_id: @course.id, user_list: "\"Sam\" <sam@yahoo.com>, \"Fred\" <fred@yahoo.com>" }
-        expect(InstStatsd::Statsd).to have_received(:count).with("course.paced.student_enrollment_count", ActiveRecord::Associations::CollectionProxy).once
+        expect(InstStatsd::Statsd).to have_received(:count).with("course.paced.student_enrollment_count", 3).once
       end
     end
   end
@@ -2318,6 +2318,14 @@ describe CoursesController do
                lock_all_announcements: true
              }
            }
+    end
+
+    it "correctly checks a sub-account admin's permission" do
+      @sub_account = Account.create!(name: "sub_account", parent_account: @account)
+      @sub_admin = account_admin_user(account: @sub_account)
+      user_session @sub_admin
+      expect(Auditors::Course).to receive(:record_created)
+      post "create", params: { course: { name: "whatever" } }
     end
 
     it "sets the visibility settings when we have permission" do
@@ -3519,7 +3527,7 @@ describe CoursesController do
     let(:controller) { CoursesController.new }
 
     before do
-      controller.instance_variable_set(:@course, Course.new)
+      controller.instance_variable_set(:@course, Course.new(root_account: Account.default))
     end
 
     it "allows setting course visibility with flag" do
