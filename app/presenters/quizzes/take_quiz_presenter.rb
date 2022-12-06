@@ -249,3 +249,6 @@ class Quizzes::TakeQuizPresenter
     end.compact
   end
 end
+
+# a method patch from COOL
+Quizzes::TakeQuizPresenter.include(Quizzes::TakeQuizPresenterCool)
