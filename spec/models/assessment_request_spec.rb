@@ -202,4 +202,53 @@ describe AssessmentRequest do
       expect(@request).to be_active_rubric_association
     end
   end
+
+  describe "#available?" do
+    it "available should be true when both user and assessor have submitted homework" do
+      assessment_request = AssessmentRequest.create!(
+        asset: @assignment.submit_homework(@submission_student, body: "hi"),
+        user: @submission_student,
+        assessor: @review_student,
+        assessor_asset: @assignment.submit_homework(@review_student, body: "hi")
+      )
+      expect(assessment_request.available?).to eq true
+    end
+
+    it "available should be false when only user has submitted homework" do
+      assessment_request = AssessmentRequest.create!(
+        asset: @assignment.submit_homework(@submission_student, body: "hi"),
+        user: @submission_student,
+        assessor: @review_student,
+        assessor_asset: @assignment.submission_for_student(@review_student)
+      )
+      expect(assessment_request.available?).to eq false
+    end
+
+    it "available should be false when only accessor has submitted homework" do
+      assessment_request = AssessmentRequest.create!(
+        asset: @assignment.submission_for_student(@submission_student),
+        user: @submission_student,
+        assessor: @review_student,
+        assessor_asset: @assignment.submit_homework(@review_student, body: "hi")
+      )
+      expect(assessment_request.available?).to eq false
+    end
+  end
+
+  describe "#for_active_users" do
+    it "excludes users that aren't active" do
+      course = @assignment.course
+      course.enrollments.find_by(user: @submission_student).destroy
+      user_ids = AssessmentRequest.for_active_users(course).pluck(:user_id)
+
+      expect(user_ids).not_to include @submission_student.id
+    end
+
+    it "includes users that are active" do
+      course = @assignment.course
+      user_ids = AssessmentRequest.for_active_users(course).pluck(:user_id)
+
+      expect(user_ids).to include @submission_student.id
+    end
+  end
 end

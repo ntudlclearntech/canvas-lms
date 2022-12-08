@@ -73,6 +73,14 @@ export const ImageSection = ({settings, onChange, editing, editor, rcsConfig}) =
   const isMetadataLoaded = useRef(false)
 
   useEffect(() => {
+    dispatch({
+      type: actions.SET_CROPPER_SETTINGS.type,
+      payload: {...state.cropperSettings, shape: settings.shape}
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settings.shape])
+
+  useEffect(() => {
     const transform = transformForShape(settings.shape, settings.size)
 
     // Set Q1 crop defaults
@@ -109,12 +117,16 @@ export const ImageSection = ({settings, onChange, editing, editor, rcsConfig}) =
   }, [onChange, settings.shape, settings.size])
 
   useEffect(() => {
-    if (editing && !!settings.encodedImage) {
+    if (
+      (editing && !!settings.encodedImage) ||
+      (!!settings.encodedImage && settings.encodedImage !== state.image)
+    ) {
       dispatch({
         type: actions.SET_IMAGE.type,
         payload: settings.encodedImage
       })
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editing, settings.encodedImage])
 
   useEffect(() => {
@@ -191,7 +203,7 @@ export const ImageSection = ({settings, onChange, editing, editor, rcsConfig}) =
   const ImageSelector = allowedModes[state.mode]
 
   return (
-    <Group as="section" defaultExpanded summary={formatMessage('Image')}>
+    <Group as="section" defaultExpanded={true} summary={formatMessage('Image')}>
       <Flex as="section" justifyItems="space-between" direction="column" id={IMAGE_SECTION_ID}>
         <Flex.Item>
           <Flex direction="column">
@@ -199,7 +211,12 @@ export const ImageSection = ({settings, onChange, editing, editor, rcsConfig}) =
               <Text weight="bold">{formatMessage('Current Image')}</Text>
             </Flex.Item>
             <Flex.Item>
-              <ImageOptions state={state} dispatch={dispatch} rcsConfig={rcsConfig} />
+              <ImageOptions
+                state={state}
+                dispatch={dispatch}
+                rcsConfig={rcsConfig}
+                trayDispatch={onChange}
+              />
             </Flex.Item>
           </Flex>
         </Flex.Item>
@@ -218,6 +235,7 @@ export const ImageSection = ({settings, onChange, editing, editor, rcsConfig}) =
                 dispatch={dispatch}
                 editor={editor}
                 data={state}
+                onChange={onChange}
                 onLoading={scrollToBottom}
                 onLoaded={scrollToBottom}
               />
@@ -232,7 +250,7 @@ export const ImageSection = ({settings, onChange, editing, editor, rcsConfig}) =
               name="single-color-image-fill"
               onChange={color => dispatch({type: actions.SET_ICON_FILL_COLOR.type, payload: color})}
               popoverMountNode={getImageSection}
-              requireColor
+              requireColor={true}
             />
           </Flex.Item>
         )}

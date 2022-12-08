@@ -48,7 +48,8 @@ export default function LinkOptionsTray(props) {
   const [isValidURL, setIsValidURL] = useState(false)
   const [autoOpenPreview, setAutoOpenPreview] = useState(content.displayAs === DISPLAY_AS_EMBED)
   const [disableInlinePreview, setDisableInlinePreview] = useState(
-    content.displayAs === DISPLAY_AS_EMBED_DISABLED || content.displayAs === DISPLAY_AS_DOWNLOAD_LINK
+    content.displayAs === DISPLAY_AS_EMBED_DISABLED ||
+      content.displayAs === DISPLAY_AS_DOWNLOAD_LINK
   )
   const [displayOptionSelection, setDisplayOptionSelection] = useState(
     initialPreviewSelection(content)
@@ -86,10 +87,13 @@ export default function LinkOptionsTray(props) {
 
     props.onSave(linkAttrs)
   }
-  function initialPreviewSelection(content) {
-    if (content.displayAs === DISPLAY_AS_DOWNLOAD_LINK) {
+  function initialPreviewSelection(previewContent) {
+    if (previewContent.displayAs === DISPLAY_AS_DOWNLOAD_LINK) {
       return 'disable'
-    } else if (content.displayAs === DISPLAY_AS_EMBED || content.displayAs === DISPLAY_AS_LINK) {
+    } else if (
+      previewContent.displayAs === DISPLAY_AS_EMBED ||
+      previewContent.displayAs === DISPLAY_AS_LINK
+    ) {
       return 'inline'
     } else {
       return 'overlay'
@@ -143,35 +147,43 @@ export default function LinkOptionsTray(props) {
   return (
     <Tray
       data-testid="RCELinkOptionsTray"
-      data-mce-component
+      data-mce-component={true}
       label={formatMessage('Link Options')}
       onDismiss={props.onRequestClose}
       onEntered={props.onEntered}
       onExited={props.onExited}
       open={props.open}
       placement="end"
-      shouldCloseOnDocumentClick
-      shouldContainFocus
-      shouldReturnFocus
+      shouldCloseOnDocumentClick={true}
+      shouldContainFocus={true}
+      shouldReturnFocus={true}
     >
       <Flex direction="column" height={getTrayHeight()}>
         <Flex.Item as="header" padding="medium">
           <Flex direction="row">
-            <Flex.Item grow shrink>
+            <Flex.Item shouldGrow={true} shouldShrink={true}>
               <Heading as="h2">{formatMessage('Link Options')}</Heading>
             </Flex.Item>
 
             <Flex.Item>
-              <CloseButton placement="static" variant="icon" onClick={props.onRequestClose}>
-                {formatMessage('Close')}
-              </CloseButton>
+              <CloseButton
+                color="primary"
+                onClick={props.onRequestClose}
+                screenReaderLabel={formatMessage('Close')}
+              />
             </Flex.Item>
           </Flex>
         </Flex.Item>
 
-        <Flex.Item as="form" grow margin="none" shrink onSubmit={handleSave}>
+        <Flex.Item
+          as="form"
+          shouldGrow={true}
+          margin="none"
+          shouldShrink={true}
+          onSubmit={handleSave}
+        >
           <Flex justifyItems="space-between" direction="column" height="100%">
-            <Flex.Item grow padding="small" shrink>
+            <Flex.Item shouldGrow={true} padding="small" shouldShrink={true}>
               <input type="submit" style={{display: 'none'}} />
               <Flex direction="column">
                 {showText && (
@@ -214,7 +226,7 @@ export default function LinkOptionsTray(props) {
               <Button
                 disabled={(showText && !text) || !(url && isValidURL)}
                 onClick={handleSave}
-                variant="primary"
+                color="primary"
               >
                 {formatMessage('Done')}
               </Button>

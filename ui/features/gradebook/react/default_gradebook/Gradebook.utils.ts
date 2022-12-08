@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 - present Instructure, Inc.
+ * Copyright (C) 2022 - present Instructure, Inc.
  *
  * This file is part of Canvas.
  *
@@ -19,32 +19,41 @@
 import React from 'react'
 import ReactDOM from 'react-dom'
 import assignmentHelper from '../shared/helpers/assignmentHelper'
+import LongTextEditor from '../../jquery/slickgrid.long_text_editor'
 import {showConfirmationDialog} from '@canvas/feature-flags/react/ConfirmationDialog'
+import getTextWidth from '../shared/helpers/TextMeasure'
 import {useScope as useI18nScope} from '@canvas/i18n'
 import _ from 'lodash'
 import htmlEscape from 'html-escape'
+import filterTypes from './constants/filterTypes'
+import type {
+  CustomColumn,
+  ColumnSizeSettings,
+  Filter,
+  FilterType,
+  FilterPreset,
+  GradebookFilterApiRequest,
+  GradebookFilterApiResponse,
+  PartialFilterPreset,
+  SubmissionFilterValue,
+} from './gradebook.d'
 import type {
   Assignment,
   AssignmentGroup,
-  Filter,
-  FilterCondition,
-  FilterConditionType,
-  GradebookFilterApiRequest,
-  GradebookFilterApiResponse,
   GradingPeriod,
   Module,
-  PartialFilter,
   Section,
-  SectionMap,
   StudentGroup,
   StudentGroupCategory,
-  StudentGroupCategoryMap,
+  StudentMap,
   Submission,
-  SubmissionFilterConditionValue
-} from './gradebook.d'
-import filterConditionTypes from './constants/filterConditionTypes'
+} from '../../../../api.d'
+import type {GridColumn} from './grid'
+import {columnWidths} from './initialState'
 
 const I18n = useI18nScope('gradebook')
+
+const ASSIGNMENT_KEY_REGEX = /^assignment_(?!group)/
 
 export function compareAssignmentDueDates(assignment1, assignment2) {
   return assignmentHelper.compareByDueDate(assignment1.object, assignment2.object)
@@ -59,11 +68,10 @@ export function ensureAssignmentVisibility(assignment: Assignment, submission: S
   }
 }
 
-export function forEachSubmission(students, fn) {
+export function forEachSubmission(students: StudentMap, fn) {
   Object.keys(students).forEach(function (studentIdx) {
     const student = students[studentIdx]
     Object.keys(student).forEach(function (key) {
-      const ASSIGNMENT_KEY_REGEX = /^assignment_(?!group)/
       if (key.match(ASSIGNMENT_KEY_REGEX)) {
         fn(student[key])
       }
@@ -80,13 +88,13 @@ export function getAssignmentGroupPointsPossible(assignmentGroup) {
 export function getCourseFeaturesFromOptions(options) {
   return {
     finalGradeOverrideEnabled: options.final_grade_override_enabled,
-    allowViewUngradedAsZero: !!options.allow_view_ungraded_as_zero
+    allowViewUngradedAsZero: !!options.allow_view_ungraded_as_zero,
   }
 }
 
 export function getCourseFromOptions(options) {
   return {
-    id: options.context_id
+    id: options.context_id,
   }
 }
 
@@ -143,7 +151,7 @@ export async function confirmViewUngradedAsZero({currentValue, onAccepted}) {
       ),
       confirmText: I18n.t('OK'),
       label: I18n.t('View Ungraded as Zero'),
-      confirmColor: undefined
+      confirmColor: undefined,
     })
 
   // If the setting was already enabled, no need to show the confirmation
@@ -158,6 +166,18 @@ export function hiddenStudentIdsForAssignment(studentIds: string[], assignment: 
   return _.difference(studentIds, assignment.assignment_visibility)
 }
 
+export function getColumnTypeForColumnId(columnId: string): string {
+  if (columnId.match(/^custom_col/)) {
+    return 'custom_column'
+  } else if (columnId.match(ASSIGNMENT_KEY_REGEX)) {
+    return 'assignment'
+  } else if (columnId.match(/^assignment_group/)) {
+    return 'assignment_group'
+  } else {
+    return columnId
+  }
+}
+
 export function getDefaultSettingKeyForColumnType(columnType: string) {
   if (
     columnType === 'assignment' ||
@@ -165,13 +185,13 @@ export function getDefaultSettingKeyForColumnType(columnType: string) {
     columnType === 'total_grade'
   ) {
     return 'grade'
-  } else if (columnType === 'student') {
-    return 'sortable_name'
   }
+  // default value for other column types
+  return 'sortable_name'
 }
 
-export function sectionList(sections: SectionMap) {
-  const x: Section[] = _.values(sections)
+export function sectionList(sections: {[id: string]: Pick<Section, 'name' | 'id'>}) {
+  const x: Pick<Section, 'name' | 'id'>[] = _.values(sections)
   return x
     .sort((a, b) => a.id.localeCompare(b.id))
     .map(section => {
@@ -191,132 +211,225 @@ export function getAssignmentGroupColumnId(assignmentGroupId: string) {
   return `assignment_group_${assignmentGroupId}`
 }
 
-export function findConditionValuesOfType(
-  type: FilterConditionType,
-  appliedConditions: FilterCondition[]
-) {
-  return appliedConditions.reduce(
-    (values: string[], condition: FilterCondition) =>
-      condition.type === type && condition.value ? values.concat(condition.value) : values,
+export function findFilterValuesOfType(type: FilterType, appliedFilters: Filter[]) {
+  return appliedFilters.reduce(
+    (values: string[], filter: Filter) =>
+      filter.type === type && filter.value ? values.concat(filter.value) : values,
     []
   )
 }
 
-export function findSubmissionConditionValue(appliedConditions: FilterCondition[]) {
-  const conditions = findConditionValuesOfType('submissions', appliedConditions)
+export function findSubmissionFilterValue(appliedFilters: Filter[]) {
+  const values = findFilterValuesOfType('submissions', appliedFilters)
   return (
-    conditions.length && ['has-ungraded-submissions', 'has-submissions'].includes(conditions[0])
-      ? conditions[0]
+    values.length && ['has-ungraded-submissions', 'has-submissions'].includes(values[0])
+      ? values[0]
       : undefined
-  ) as SubmissionFilterConditionValue
+  ) as SubmissionFilterValue
 }
 
 // Extra normalization; comes from jsonb payload
-export const deserializeFilter = (json: GradebookFilterApiResponse): Filter => {
-  const filter = json.gradebook_filter
-  if (!filter.id || typeof filter.id !== 'string') throw new Error('invalid filter id')
-  if (!Array.isArray(filter.payload.conditions)) throw new Error('invalid filter conditions')
-  const conditions = filter.payload.conditions
-    .filter(c => c && (typeof c.type === 'undefined' || filterConditionTypes.includes(c.type)))
+export const deserializeFilter = (json: GradebookFilterApiResponse): FilterPreset => {
+  const filterPreset = json.gradebook_filter
+  if (!filterPreset.id || typeof filterPreset.id !== 'string') throw new Error('invalid filter id')
+  if (!Array.isArray(filterPreset.payload.conditions))
+    throw new Error('invalid filter preset filters (conditions)')
+  const filters = filterPreset.payload.conditions
+    .filter(c => c && (typeof c.type === 'undefined' || filterTypes.includes(c.type)))
     .map(c => ({
       id: c.id,
       type: c.type,
       value: c.value,
-      created_at: String(c.created_at)
+      created_at: String(c.created_at),
     }))
   return {
-    id: filter.id,
-    name: String(filter.name),
-    conditions,
-    created_at: String(filter.created_at)
+    id: filterPreset.id,
+    name: String(filterPreset.name),
+    filters,
+    created_at: String(filterPreset.created_at),
+    updated_at: String(filterPreset.updated_at),
   }
 }
 
-export const serializeFilter = (filter: PartialFilter): GradebookFilterApiRequest => {
+export const serializeFilter = (filterPreset: PartialFilterPreset): GradebookFilterApiRequest => {
   return {
-    name: filter.name,
+    name: filterPreset.name,
     payload: {
-      conditions: filter.conditions
-    }
+      conditions: filterPreset.filters,
+    },
   }
 }
 
-export const compareFilterByDate = (a: Filter, b: Filter) =>
-  new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+export const compareFilterSetByUpdatedDate = (a: FilterPreset, b: FilterPreset) =>
+  new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
 
-export const getLabelForFilterCondition = (
-  condition: FilterCondition,
+export const getLabelForFilter = (
+  filter: Filter,
   assignmentGroups: Pick<AssignmentGroup, 'id' | 'name'>[],
   gradingPeriods: Pick<GradingPeriod, 'id' | 'title'>[],
   modules: Pick<Module, 'id' | 'name'>[],
   sections: Pick<Section, 'id' | 'name'>[],
-  studentGroupCategories: StudentGroupCategoryMap
+  studentGroupCategories: StudentGroupCategory[]
 ) => {
-  if (!condition.type) throw new Error('missing condition type')
+  if (!filter.type) throw new Error('missing condition type')
 
-  if (condition.type === 'section') {
-    return sections.find(s => s.id === condition.value)?.name || I18n.t('Section')
-  } else if (condition.type === 'module') {
-    return modules.find(m => m.id === condition.value)?.name || I18n.t('Module')
-  } else if (condition.type === 'assignment-group') {
-    return assignmentGroups.find(a => a.id === condition.value)?.name || I18n.t('Assignment Group')
-  } else if (condition.type === 'grading-period') {
-    return gradingPeriods.find(g => g.id === condition.value)?.title || I18n.t('Grading Period')
-  } else if (condition.type === 'student-group') {
+  if (filter.type === 'section') {
+    return sections.find(s => s.id === filter.value)?.name || I18n.t('Section')
+  } else if (filter.type === 'module') {
+    return modules.find(m => m.id === filter.value)?.name || I18n.t('Module')
+  } else if (filter.type === 'assignment-group') {
+    return assignmentGroups.find(a => a.id === filter.value)?.name || I18n.t('Assignment Group')
+  } else if (filter.type === 'grading-period') {
+    return gradingPeriods.find(g => g.id === filter.value)?.title || I18n.t('Grading Period')
+  } else if (filter.type === 'student-group') {
     const studentGroups: StudentGroup[] = Object.values(studentGroupCategories)
       .map((c: StudentGroupCategory) => c.groups)
       .flat()
     return (
-      studentGroups.find((g: StudentGroup) => g.id === condition.value)?.name ||
+      studentGroups.find((g: StudentGroup) => g.id === filter.value)?.name ||
       I18n.t('Student Group')
     )
-  } else if (condition.type === 'submissions') {
-    if (condition.value === 'has-ungraded-submissions') {
+  } else if (filter.type === 'submissions') {
+    if (filter.value === 'has-ungraded-submissions') {
       return I18n.t('Has ungraded submissions')
-    } else if (condition.value === 'has-submissions') {
+    } else if (filter.value === 'has-submissions') {
       return I18n.t('Has submissions')
     } else {
-      throw new Error('invalid submissions condition value')
+      throw new Error('invalid submissions filter value')
     }
-  } else if (condition.type === 'start-date') {
+  } else if (filter.type === 'start-date') {
     const options: any = {
       year: 'numeric',
       month: 'numeric',
-      day: 'numeric'
+      day: 'numeric',
     }
-    if (typeof condition.value !== 'string') throw new Error('invalid start-date value')
-    const value = Intl.DateTimeFormat(I18n.currentLocale(), options).format(
-      new Date(condition.value)
-    )
+    if (typeof filter.value !== 'string') throw new Error('invalid start-date value')
+    const value = Intl.DateTimeFormat(I18n.currentLocale(), options).format(new Date(filter.value))
     return I18n.t('Start Date %{value}', {value})
-  } else if (condition.type === 'end-date') {
+  } else if (filter.type === 'end-date') {
     const options: any = {
       year: 'numeric',
       month: 'numeric',
-      day: 'numeric'
+      day: 'numeric',
     }
-    if (typeof condition.value !== 'string') throw new Error('invalid end-date value')
-    const value = Intl.DateTimeFormat(I18n.currentLocale(), options).format(
-      new Date(condition.value)
-    )
+    if (typeof filter.value !== 'string') throw new Error('invalid end-date value')
+    const value = Intl.DateTimeFormat(I18n.currentLocale(), options).format(new Date(filter.value))
     return I18n.t('End Date %{value}', {value})
   }
 
   // unrecognized types should have been filtered out by deserializeFilter
-  throw new Error('invalid condition type')
+  throw new Error('invalid filter type')
 }
 
-export function doFilterConditionsMatch(
-  conditions1: FilterCondition[],
-  conditions2: FilterCondition[]
-) {
-  const conditionsWithValues1 = conditions1.filter(c => c.value)
-  const conditionsWithValues2 = conditions2.filter(c => c.value)
+export const isFilterNotEmpty = (filter: Filter) => {
+  return filter.value && filter.value !== '__EMPTY__'
+}
+
+export function doFiltersMatch(filters1: Filter[], filters2: Filter[]) {
+  const filtersWithValues1 = filters1.filter(isFilterNotEmpty)
+  const filtersWithValues2 = filters2.filter(isFilterNotEmpty)
   return (
-    conditionsWithValues1.length > 0 &&
-    conditionsWithValues1.length === conditionsWithValues2.length &&
-    conditionsWithValues1.every(c1 =>
-      conditionsWithValues2.some(c2 => c2.type === c1.type && c2.value === c1.value)
+    filtersWithValues1.length > 0 &&
+    filtersWithValues1.length === filtersWithValues2.length &&
+    filtersWithValues1.every(c1 =>
+      filtersWithValues2.some(c2 => c2.type === c1.type && c2.value === c1.value)
     )
   )
+}
+
+// logic taken from needs_grading_conditions in submission.rb
+export function doesSubmissionNeedGrading(s: Submission) {
+  if (s.excused) return false
+
+  if (s.workflow_state === 'pending_review') return true
+
+  if (!['submitted', 'graded'].includes(s.workflow_state)) return false
+
+  if (!s.grade_matches_current_submission) return true
+
+  return typeof s.score !== 'number'
+}
+
+export function assignmentSearchMatcher(
+  option: {
+    label: string
+  },
+  searchTerm: string
+): boolean {
+  const term = searchTerm?.toLowerCase() || ''
+  const assignmentName = option.label?.toLowerCase() || ''
+  return assignmentName.includes(term)
+}
+
+export function buildStudentColumn(
+  columnId: string,
+  gradebookColumnSizeSetting: string,
+  defaultWidth: number
+): GridColumn {
+  const studentColumnWidth = gradebookColumnSizeSetting
+    ? parseInt(gradebookColumnSizeSetting, 10)
+    : defaultWidth
+  return {
+    id: columnId,
+    type: columnId,
+    width: studentColumnWidth,
+    cssClass: 'meta-cell primary-column student',
+    headerCssClass: 'primary-column student',
+    resizable: true,
+  }
+}
+
+export function buildCustomColumn(customColumn: CustomColumn): GridColumn {
+  const columnId = getCustomColumnId(customColumn.id)
+  return {
+    id: columnId,
+    type: 'custom_column',
+    field: `custom_col_${customColumn.id}`,
+    width: 100,
+    cssClass: `meta-cell custom_column ${columnId}`,
+    headerCssClass: `custom_column ${columnId}`,
+    resizable: true,
+    editor: LongTextEditor,
+    customColumnId: customColumn.id,
+    autoEdit: false,
+    maxLength: 255,
+  }
+}
+
+export const buildAssignmentGroupColumnFn =
+  (gradebookColumnSizeSettings: ColumnSizeSettings) =>
+  (assignmentGroup: Pick<AssignmentGroup, 'id' | 'name'>): GridColumn => {
+    let width
+    const columnId = getAssignmentGroupColumnId(assignmentGroup.id)
+    const fieldName = `assignment_group_${assignmentGroup.id}`
+    if (gradebookColumnSizeSettings && gradebookColumnSizeSettings[fieldName]) {
+      width = parseInt(gradebookColumnSizeSettings[fieldName], 10)
+    } else {
+      width = testWidth(
+        assignmentGroup.name,
+        columnWidths.assignmentGroup.min,
+        columnWidths.assignmentGroup.default_max
+      )
+    }
+    return {
+      id: columnId,
+      field: fieldName,
+      toolTip: assignmentGroup.name,
+      object: assignmentGroup,
+      minWidth: columnWidths.assignmentGroup.min,
+      maxWidth: columnWidths.assignmentGroup.max,
+      width,
+      cssClass: `meta-cell assignment-group-cell ${columnId}`,
+      headerCssClass: `assignment_group ${columnId}`,
+      type: 'assignment_group',
+      assignmentGroupId: assignmentGroup.id,
+    }
+  }
+
+const HEADER_START_AND_END_WIDTHS_IN_PIXELS = 36
+export function testWidth(text: string, minWidth: number, maxWidth: number) {
+  const padding = HEADER_START_AND_END_WIDTHS_IN_PIXELS * 2
+  const textWidth = getTextWidth(text) || 0
+  const width = Math.max(textWidth + padding, minWidth)
+  return Math.min(width, maxWidth)
 }

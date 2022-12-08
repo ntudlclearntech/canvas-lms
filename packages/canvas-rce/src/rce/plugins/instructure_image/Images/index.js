@@ -32,8 +32,16 @@ import {
 import ImageList from '../ImageList'
 import formatMessage from '../../../../format-message'
 
+function hasFiles(images) {
+  return images.files.length > 0
+}
+
+function isEmpty(images) {
+  return !hasFiles(images) && !images.hasMore && !images.isLoading
+}
 export default function Images(props) {
-  const {fetchInitialImages, fetchNextImages, contextType, sortBy, searchString} = props
+  const {fetchInitialImages, fetchNextImages, contextType, sortBy, searchString, isIconMaker} =
+    props
   const images = props.images[contextType]
   const {hasMore, isLoading, error, files} = images
   const lastItemRef = useRef(null)
@@ -54,11 +62,16 @@ export default function Images(props) {
     <View as="div" data-testid="instructure_links-ImagesPanel">
       <Flex alignItems="center" direction="column" justifyItems="space-between" height="100%">
         <Flex.Item overflowY="visible" width="100%">
-          <ImageList images={files} lastItemRef={lastItemRef} onImageClick={props.onImageEmbed} />
+          <ImageList
+            images={files}
+            lastItemRef={lastItemRef}
+            onImageClick={props.onImageEmbed}
+            isIconMaker={isIconMaker}
+          />
         </Flex.Item>
 
         {loader.isLoading && (
-          <Flex.Item as="div" grow>
+          <Flex.Item as="div" shouldGrow={true}>
             <LoadingIndicator loader={loader} />
           </Flex.Item>
         )}
@@ -75,6 +88,12 @@ export default function Images(props) {
       {error && (
         <View as="div" role="alert" margin="medium">
           <Text color="danger">{formatMessage('Loading failed.')}</Text>
+        </View>
+      )}
+
+      {isEmpty(images) && (
+        <View as="div" padding="medium">
+          {formatMessage('No results.')}
         </View>
       )}
     </View>
@@ -99,5 +118,10 @@ Images.propTypes = {
     order: oneOf(['asc', 'desc']).isRequired
   }),
   searchString: string,
-  onImageEmbed: func.isRequired
+  onImageEmbed: func.isRequired,
+  isIconMaker: bool
+}
+
+Images.defaultProps = {
+  isIconMaker: false
 }

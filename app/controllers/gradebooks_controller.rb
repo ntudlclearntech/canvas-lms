@@ -442,7 +442,6 @@ class GradebooksController < ApplicationController
       group_weighting_scheme: @context.group_weighting_scheme,
       has_modules: @context.has_modules?,
       late_policy: @context.late_policy.as_json(include_root: false),
-      load_assignments_by_grading_period_enabled: Account.site_admin.feature_enabled?(:gradebook_load_assignments_by_grading_period),
       login_handle_name: root_account.settings[:login_handle_name],
       message_attachment_upload_folder_id: @current_user.conversation_attachments_folder.id.to_s,
       new_gradebook_development_enabled: new_gradebook_development_enabled?,
@@ -646,8 +645,7 @@ class GradebooksController < ApplicationController
         COURSE_URL: named_context_url(@context, :context_url),
         COURSE_IS_CONCLUDED: @context.is_a?(Course) && @context.completed?,
         OUTCOME_GRADEBOOK_ENABLED: outcome_gradebook_enabled?,
-        OVERRIDE_GRADES_ENABLED: @context.try(:allow_final_grade_override?) &&
-          Account.site_admin.feature_enabled?(:final_grade_override_in_gradebook_history)
+        OVERRIDE_GRADES_ENABLED: @context.try(:allow_final_grade_override?)
       )
 
       render html: "", layout: true
@@ -788,9 +786,7 @@ class GradebooksController < ApplicationController
         include: { submission_history: { methods: %i[late missing], except: omitted_field } },
         except: [omitted_field, :submission_comments]
       }
-      if @domain_root_account.feature_enabled?(:word_count_in_speed_grader)
-        json_params[:include][:submission_history][:methods] << :word_count
-      end
+      json_params[:include][:submission_history][:methods] << :word_count
       json = submission.as_json(Submission.json_serialization_full_parameters.merge(json_params))
 
       json[:submission].tap do |submission_json|
@@ -1092,7 +1088,7 @@ class GradebooksController < ApplicationController
   def update_final_grade_overrides
     return unless authorized_action(@context, @current_user, :manage_grades)
 
-    unless @context.allow_final_grade_override? && Account.site_admin.feature_enabled?(:import_override_scores_in_gradebook)
+    unless @context.allow_final_grade_override?
       render_unauthorized_action and return
     end
 

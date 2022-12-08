@@ -70,7 +70,6 @@ describe('OutcomeManagementPanel', () => {
     handleFileDropMock = jest.fn()
     setTargetGroupIdsToRefetchMock = jest.fn()
     setImportsTargetGroupMock = jest.fn()
-
     window.ENV = {
       PERMISSIONS: {
         manage_outcomes: true
@@ -89,6 +88,14 @@ describe('OutcomeManagementPanel', () => {
         title: 'Course folder 0',
         description: 'Course folder 0 group description',
         groupId: '200',
+        contextType: 'Course',
+        contextId: '2',
+        withMorePage: false
+      }),
+      ...groupDetailMocks({
+        title: 'Course folder 1',
+        description: 'Course folder 1 group description',
+        groupId: '2',
         contextType: 'Course',
         contextId: '2',
         withMorePage: false
@@ -296,6 +303,14 @@ describe('OutcomeManagementPanel', () => {
       ...groupDetailMocks({
         title: 'Course folder 0',
         groupId: '200',
+        contextType: 'Course',
+        contextId: '2',
+        withMorePage: false
+      }),
+      ...groupDetailMocks({
+        title: 'Course folder 1',
+        description: 'Course folder 1 group description',
+        groupId: '2',
         contextType: 'Course',
         contextId: '2',
         withMorePage: false
@@ -989,7 +1004,7 @@ describe('OutcomeManagementPanel', () => {
       const selectedOutcomesLink = getByText('2 Outcomes Selected').closest('button')
       fireEvent.click(selectedOutcomesLink)
       fireEvent.click(getByText('Clear all'))
-      expect(selectedOutcomesLink).toBeDisabled()
+      expect(selectedOutcomesLink.getAttribute('aria-disabled')).toBe('true')
       expect(selectedOutcomesLink.getAttribute('aria-expanded')).toBe('false')
       expect(getByText('0 Outcomes Selected')).toBeInTheDocument()
     })

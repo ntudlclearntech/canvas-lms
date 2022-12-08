@@ -26,7 +26,7 @@ import {Img} from '@instructure/ui-img'
 import {Spinner} from '@instructure/ui-spinner'
 import {Alert} from '@instructure/ui-alerts'
 import {Pagination} from '@instructure/ui-pagination'
-import {Button} from '@instructure/ui-buttons'
+import {Link} from '@instructure/ui-link'
 import {debounce} from 'lodash'
 import formatMessage from '../../../../format-message'
 import {StyleSheet, css} from '../../../../common/aphroditeExtensions'
@@ -113,19 +113,12 @@ function Attribution({name, avatarUrl, profileUrl}) {
   return (
     <Flex>
       <Flex.Item margin="xx-small">
-        <Avatar name={name} src={avatarUrl} size="small" data-fs-exclude />
+        <Avatar name={name} src={avatarUrl} size="small" data-fs-exclude={true} />
       </Flex.Item>
-      <Flex.Item margin="xx-small" shrink>
-        <Button
-          size="small"
-          variant="link-inverse"
-          href={profileUrl}
-          target="_blank"
-          rel="noopener"
-          fluidWidth
-        >
+      <Flex.Item margin="xx-small" shouldShrink={true}>
+        <Link color="link-inverse" href={profileUrl} target="_blank" rel="noopener" display="block">
           {name}
-        </Button>
+        </Link>
       </Flex.Item>
     </Flex>
   )
@@ -144,7 +137,7 @@ function renderAlert(term, hasLoaded, totalResults, results, page, liveRegion) {
       <Alert
         variant="info"
         transition="none"
-        screenReaderOnly
+        screenReaderOnly={true}
         liveRegion={liveRegion}
         timeout={1000}
       >
@@ -212,9 +205,9 @@ export default function UnsplashPanel({source, setUnsplashData, brandColor, live
                   className={css(hoverStyles.imageWrapper, styles.imageWrapper)}
                   key={resultImage.id}
                 >
-                  <Button
-                    variant="link"
-                    fluidWidth
+                  <Link
+                    as="button"
+                    display="block"
                     theme={{
                       mediumPaddingHorizontal: '0'
                     }}
@@ -242,7 +235,7 @@ export default function UnsplashPanel({source, setUnsplashData, brandColor, live
                         <Alert
                           variant="info"
                           transition="none"
-                          screenReaderOnly
+                          screenReaderOnly={true}
                           liveRegion={liveRegion}
                           timeout={1000}
                         >
@@ -260,7 +253,7 @@ export default function UnsplashPanel({source, setUnsplashData, brandColor, live
                         height="10em"
                       />
                     </div>
-                  </Button>
+                  </Link>
                   <div className={css(styles.imageAttribution)}>
                     <Attribution
                       name={resultImage.user.name}

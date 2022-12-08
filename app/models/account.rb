@@ -373,6 +373,8 @@ class Account < ActiveRecord::Base
 
   add_setting :default_due_time, inheritable: true
   add_setting :conditional_release, default: false, boolean: true, inheritable: true
+  add_setting :enable_search_indexing, boolean: true, root_only: true, default: false
+  add_setting :allow_additional_email_at_registration, boolean: true, root_only: true, default: false
 
   def settings=(hash)
     if hash.is_a?(Hash) || hash.is_a?(ActionController::Parameters)
@@ -1004,7 +1006,7 @@ class Account < ActiveRecord::Base
     chain
   end
 
-  def self.account_chain_ids(starting_account_id, include_federated_parent_id: false)
+  def self.account_chain_ids(starting_account_id)
     block = lambda do |_name|
       original_shard = Shard.current
       Shard.shard_for(starting_account_id).activate do
@@ -1031,9 +1033,7 @@ class Account < ActiveRecord::Base
       end
     end
     key = Account.cache_key_for_id(starting_account_id, :account_chain)
-    result = key ? Rails.cache.fetch(["account_chain_ids", key], &block) : block.call(nil)
-    Account.add_federated_parent_id_to_chain!(result) if include_federated_parent_id
-    result
+    key ? Rails.cache.fetch(["account_chain_ids", key], &block) : block.call(nil)
   end
 
   def self.multi_account_chain_ids(starting_account_ids)
@@ -1086,7 +1086,14 @@ class Account < ActiveRecord::Base
   end
 
   def account_chain_ids(include_federated_parent_id: false)
-    @cached_account_chain_ids ||= Account.account_chain_ids(self, include_federated_parent_id: include_federated_parent_id)
+    @cached_account_chain_ids ||= Account.account_chain_ids(self).freeze
+
+    if include_federated_parent_id
+      return @cached_account_chain_ids_with_federated_parent ||=
+               Account.add_federated_parent_id_to_chain!(@cached_account_chain_ids.dup).freeze
+    end
+
+    @cached_account_chain_ids
   end
 
   def account_chain_loop
@@ -1371,7 +1378,7 @@ class Account < ActiveRecord::Base
     end
 
     given { |user| !cached_account_users_for(user).empty? }
-    can :read and can :read_as_admin and can :manage and can :update and can :delete and can :read_outcomes and can :read_terms
+    can %i[read read_as_admin manage update delete read_outcomes read_terms read_files]
 
     given { |user| root_account? && cached_all_account_users_for(user).any? }
     can :read_terms
@@ -1393,7 +1400,7 @@ class Account < ActiveRecord::Base
 
     # any user with an admin enrollment in one of the courses can read
     given { |user| user && courses.where(id: user.enrollments.active.admin.pluck(:course_id)).exists? }
-    can :read
+    can [:read, :read_files]
 
     given { |user| !site_admin? && primary_settings_root_account? && grants_right?(user, :manage_site_settings) }
     can :manage_privacy_settings
@@ -1807,8 +1814,8 @@ class Account < ActiveRecord::Base
   TAB_RELEASE_NOTES = 17
 
   def external_tool_tabs(opts, user)
-    tools = ContextExternalTool.active.find_all_for(self, :account_navigation)
-                               .select { |t| t.permission_given?(:account_navigation, user, self) }
+    tools = Lti::ContextToolFinder.new(self, type: :account_navigation).all_tools_scope_union.to_unsorted_array
+                                  .select { |t| t.permission_given?(:account_navigation, user, self) }
     Lti::ExternalToolTab.new(self, :account_navigation, tools, opts[:language]).tabs
   end
 
@@ -2295,8 +2302,8 @@ class Account < ActiveRecord::Base
 
   def get_rce_favorite_tool_ids
     rce_favorite_tool_ids[:value] ||
-      ContextExternalTool.all_tools_for(self, placements: [:editor_button]) # TODO: remove after datafixup and the is_rce_favorite column is removed
-                         .where(is_rce_favorite: true).pluck(:id).map { |id| Shard.global_id_for(id) }
+      Lti::ContextToolFinder.all_tools_for(self, placements: [:editor_button]) # TODO: remove after datafixup and the is_rce_favorite column is removed
+                            .where(is_rce_favorite: true).pluck(:id).map { |id| Shard.global_id_for(id) }
   end
 
   def effective_course_template

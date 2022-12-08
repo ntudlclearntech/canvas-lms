@@ -237,20 +237,6 @@ describe GradebookExporter do
           actual_headers = CSV.parse(exporter.to_csv, headers: true).headers
           expect(actual_headers).not_to include("Override Grade")
         end
-
-        describe "read-only indicator for Override Score" do
-          let(:parsed_csv) { CSV.parse(exporter.to_csv, headers: true) }
-          let(:read_only_row) { parsed_csv[0] }
-
-          it "is omitted if importing override scores is enabled" do
-            Account.site_admin.enable_feature!(:import_override_scores_in_gradebook)
-            expect(read_only_row["Override Score"]).to eq nil
-          end
-
-          it "is included if importing override scores is not enabled" do
-            expect(read_only_row["Override Score"]).to eq "(read only)"
-          end
-        end
       end
 
       context "when Final Grade Override is not enabled on the course" do
@@ -713,6 +699,42 @@ describe GradebookExporter do
           expect(exported_headers).to include("my group Current Score (present day, present time)")
           expect(exported_headers).not_to include("my group Current Score")
         end
+      end
+    end
+
+    describe "update_completion" do
+      before(:once) do
+        student_in_course(course: @course, active_all: true)
+        @first_group = @course.assignment_groups.create!(name: "first group", position: 1)
+        @last_group = @course.assignment_groups.create!(name: "last group", position: 3)
+        @second_group = @course.assignment_groups.create!(name: "second group", position: 2)
+
+        @assignments = []
+        @first_group_assignment = @course.assignments.create!(name: "First group assignment", assignment_group: @first_group)
+        @assignments[0] = @first_group_assignment
+        @last_group_assignment = @course.assignments.create!(name: "last group assignment", assignment_group: @last_group)
+        @assignments[2] = @last_group_assignment
+        @second_group_assignment = @course.assignments.create!(name: "second group assignment", assignment_group: @second_group)
+        @assignments[1] = @second_group_assignment
+      end
+
+      it "updates progress.completion to 90 when finished" do
+        progress = Progress.create!(context: @course, tag: "gradebook_to_csv")
+        exporter_options = {
+          progress: progress
+        }
+        GradebookExporter.new(@course, @teacher, exporter_options).to_csv
+        expect(progress.reload.completion).to eql(90.0)
+      end
+
+      it "does early return if progress workflow_state has been set to failed" do
+        progress = Progress.create!(context: @course, tag: "gradebook_to_csv")
+        progress.update!(workflow_state: "failed")
+        exporter_options = {
+          progress: progress
+        }
+        GradebookExporter.new(@course, @teacher, exporter_options).to_csv
+        expect(progress.reload.completion).to eql(50.0)
       end
     end
   end

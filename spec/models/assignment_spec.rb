@@ -9487,6 +9487,27 @@ describe Assignment do
     end
   end
 
+  describe "allowed attempts when updating submission types" do
+    before(:once) do
+      @assignment = @course.assignments.create!(submission_types: "online_text_entry", allowed_attempts: 3)
+    end
+
+    it "sets allowed_attempts to nil when the submission type is updated to no submission" do
+      @assignment.update!(submission_types: "none")
+      expect(@assignment.allowed_attempts).to eq(nil)
+    end
+
+    it "sets allowed_attempts is set to nil when the submission type is updated to a on paper submission" do
+      @assignment.update!(submission_types: "on_paper")
+      expect(@assignment.allowed_attempts).to eq(nil)
+    end
+
+    it "does not change allowed_attempts when the updated submission type allows for multiple submission attempts" do
+      @assignment.update!(submission_types: "external_tool")
+      expect(@assignment.allowed_attempts).to eq 3
+    end
+  end
+
   describe "after create callbacks" do
     subject(:event) { AnonymousOrModerationEvent.where(assignment: assignment).last }
 
@@ -9758,7 +9779,7 @@ describe Assignment do
           shared_secret: "secret",
           name: "test tool",
           url: "http://www.tool.com/launch",
-          settings: { use_1_3: use_1_3 },
+          lti_version: use_1_3 ? "1.3" : "1.1",
           workflow_state: "public",
           developer_key: dev_key
         )
@@ -10000,7 +10021,7 @@ describe Assignment do
               shared_secret: "secret2",
               name: "test tool 2",
               url: "http://www.tool2.com/launch",
-              settings: { use_1_3: different_tool_use_1_3 },
+              lti_version: different_tool_use_1_3 ? "1.3" : "1.1",
               workflow_state: "public"
             )
           end
@@ -10123,11 +10144,10 @@ describe Assignment do
     describe "#create_results_from_prior_grades" do
       let(:dev_key) { DeveloperKey.create! }
       let(:tool) do
-        external_tool_model(opts: {
-                              settings: { use_1_3: true },
-                              workflow_state: "public",
-                              developer_key: dev_key
-                            })
+        external_tool_1_3_model(opts: {
+                                  workflow_state: "public",
+                                  developer_key: dev_key
+                                })
       end
       let(:assignment) { @course.assignments.create!(submission_types: "online_text_entry", **assignment_valid_attributes) }
       let(:teacher) { course.enroll_teacher(user_factory, enrollment_state: "active").user }

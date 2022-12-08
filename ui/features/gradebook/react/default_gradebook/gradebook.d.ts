@@ -18,6 +18,21 @@
 
 import StudentDatastore from './stores/StudentDatastore'
 import type {StatusColors} from './constants/colors'
+import type {
+  AssignmentGroup,
+  AttachmentData,
+  GradingPeriod,
+  GradingPeriodSet,
+  GradingType,
+  Module,
+  ModuleMap,
+  Section,
+  Student,
+  StudentGroupCategory,
+  StudentMap,
+  SubmissionType,
+  WorkflowState,
+} from '../api.d'
 
 export type CourseSettingsType = {
   filter_speed_grader_by_student_group: boolean
@@ -25,13 +40,45 @@ export type CourseSettingsType = {
 }
 
 export type GradebookSettings = {
-  hide_assignment_group_totals: string
-  show_separate_first_last_names: string
-  show_unpublished_assignments: string
-  show_concluded_enrollments: string
-  show_inactive_enrollments: string
-  hide_assignment_group_totals: string
-  hide_total: string
+  enter_grades_as: any
+  filter_columns_by: {
+    assignment_group_id: string | null
+    grading_period_id: string | null
+    context_module_id: string | null
+    end_date: string | null
+    start_date: string | null
+    submissions: 'has-ungraded-submissions' | 'has-submissions' | null
+  }
+  filter_rows_by: {
+    section_id: string | null
+    student_group_id: string | null
+  }
+  hide_assignment_group_totals: 'false' | 'true'
+  hide_total: 'false' | 'true'
+  selected_view_options_filters: string[]
+  show_concluded_enrollments: 'false' | 'true'
+  show_inactive_enrollments: 'false' | 'true'
+  show_separate_first_last_names: 'false' | 'true'
+  show_unpublished_assignments: 'false' | 'true'
+  sort_rows_by_column_id: string
+  sort_rows_by_direction: 'ascending' | 'descending'
+  sort_rows_by_setting_key: string
+  student_column_display_as: 'last_first' | 'first_last'
+  student_column_secondary_info: string
+  view_ungraded_as_zero: 'false' | 'true'
+  colors?: StatusColors
+}
+
+export type PerformanceControlValues = {
+  active_request_limit?: number
+  api_max_per_page?: number
+  assignment_groups_per_page?: number
+  context_modules_per_page?: number
+  custom_column_data_per_page?: number
+  custom_columns_per_page?: number
+  students_chunk_size?: number
+  submissions_chunk_size?: number
+  submissions_per_page?: number
 }
 
 export type GradebookOptions = {
@@ -39,47 +86,53 @@ export type GradebookOptions = {
   allow_apply_score_to_ungraded: boolean
   allow_separate_first_last_names: boolean
   allow_view_ungraded_as_zero: boolean
-  applyScoreToUngradedModalNode: HTMLElement
-  attachment_url: string
-  attachment: AttachmentData
+  attachment_url: null | string
+  attachment: null | AttachmentData
   change_gradebook_version_url: string
   colors: StatusColors
   context_allows_gradebook_uploads: boolean
   context_code: string
   context_id: string
-  context_sis_id: string | null
+  context_sis_id: null | string
   context_url: string
   course_is_concluded: boolean
   course_name: string
   course_settings: CourseSettingsType
   course_url: string
   current_grading_period_id: string
-  currentUserId: string
   custom_column_datum_url: string
-  default_grading_standard: string
+  default_grading_standard: GradingStandard[]
   download_assignment_submissions_url: string
   enhanced_gradebook_filters: boolean
+  enrollments_url: string
+  enrollments_with_concluded_url: string
   export_gradebook_csv_url: string
-  filterNavNode: HTMLElement
+  final_grade_override_enabled: boolean
+  grade_calc_ignore_unposted_anonymous_enabled: boolean
   grade_calc_ignore_unposted_anonymous_enabled: boolean
   gradebook_column_order_settings_url: string
   gradebook_column_order_settings: ColumnOrderSettings
   gradebook_column_size_settings_url: string
   gradebook_column_size_settings: ColumnSizeSettings
-  gradebook_csv_progress: ProgressData
+  gradebook_csv_progress: null | ProgressData
   gradebook_import_url: string
-  gradebook_score_to_ungraded_progress: ProgressData
   gradebook_is_editable: boolean
-  gradebook_score_to_ungraded_progress: ProgressData
+  gradebook_score_to_ungraded_progress: null | ProgressData
   graded_late_submissions_exist: boolean
   grading_period_set: GradingPeriodSet
+  grading_schemes: GradingScheme[]
   grading_standard: boolean
-  group_weighting_scheme: string
-  load_assignments_by_grading_period_enabled: boolean
-  locale: string
+  group_weighting_scheme: null | string
+  has_modules: boolean
+  late_policy: LatePolicy | null
+  login_handle_name: null | string
+  message_attachment_upload_folder_id: string
+  new_gradebook_development_enabled: boolean
   outcome_gradebook_enabled: boolean
-  post_grades_feature: string
+  performance_controls: PerformanceControlValues
+  post_grades_feature: boolean
   post_grades_ltis: Lti[]
+  post_manually: boolean
   publish_to_sis_enabled: boolean
   publish_to_sis_url: string
   re_upload_submissions_url: string
@@ -88,178 +141,62 @@ export type GradebookOptions = {
   setting_update_url: string
   settings_update_url: string
   settings: GradebookSettings
-  show_concluded_enrollments: string
-  show_inactive_enrollments: string
+  show_message_students_with_observers_dialog: boolean
+  show_message_students_with_observers_dialog: boolean
   show_similarity_score: boolean
   show_total_grade_as_points: boolean
+  sis_app_token: null | string
+  sis_app_url: null | string
+  sis_name: null | string
   sis_name: string
   speed_grader_enabled: boolean
-  student_groups: StudentGroupCategoryMap
+  student_groups: StudentGroupCategory[]
   user_asset_string: string
-}
-
-export type Course = {
-  id: string
-}
-
-export type Enrollment = {
-  course_section_id: string
-  type: string
-  grades: {
-    html_url: string
+  teacher_notes: {
+    hidden: boolean
+    id: string
+    position: number
+    read_only: boolean
+    teacher_notes: boolean
+    title: string
   }
+  version: null | string
 }
 
-export type Student = {
-  id: string
-  name: string
-  displayName: string
-  sortable_name: string
-  avatar_url: string
-  enrollments: Enrollment[]
-  loaded: boolean
-  initialized: boolean
-  isConcluded: boolean
-  total_grade: number
-} & {
-  // computed values
-  computed_current_score: number
-  computed_final_score: number
-  isInactive: boolean
-  cssClass: string
-  sections: string[]
+export type GradingStandard = [string, number]
+
+export type GradingScheme = {
+  id?: string
+  title?: string
+  data: GradingStandard[]
 }
 
-export type StudentMap = {
-  [key: string]: Student
+export type LatePolicy = {
+  missing_submission_deduction_enabled: boolean
+  missing_submission_deduction: number
 }
 
-export type StudentGroup = Partial<
-  {
-    avatar_url: null | string
-    concluded: boolean
-    context_type: string
-    course_id: string
-    created_at: string
-    description: null | string
-    group_category_id: string
-    has_submission: boolean
-    id: string
-    is_public: boolean
-    join_level: string
-    leader: null | string
-    max_membership: null | string
-    members_count: string
-    name: string
-    role: null | string
-    sis_group_id: null | string
-    sis_import_id: null | string
-    storage_quota_mb: string
-  },
-  'id' | 'name'
->
-
-export type StudentGroupMap = {
-  [key: string]: StudentGroup
+// TODO: remove the need for this type
+export type LatePolicyCamelized = {
+  missingSubmissionDeductionEnabled: boolean
+  missingSubmissionDeduction: number
+  lateSubmissionInterval: string
 }
 
-export type StudentGroupCategory = Partial<
-  {
-    allows_multiple_memberships: boolean
-    auto_leader: null | string
-    context_type: string
-    course_id: string
-    created_at: string
-    group_limit: null
-    groups: StudentGroup[]
-    id: string
-    is_member: boolean
-    name: string
-    protected: boolean
-    role: null | string
-    self_signup: null | string
-    sis_group_category_id: null | string
-    sis_import_id: null | string
-  },
-  'id' | 'name' | 'groups'
->
-
-export type StudentGroupCategoryMap = {
-  [key: string]: StudentGroupCategory
-}
-
-export type Assignment = {
-  id: string
-  name: string
-  assignment_id: string
-  user_id: string
-  hidden: boolean
-  anonymize_students: boolean
-  published: boolean
-  submission_types: string
-  assignment_group_id: string
-  module_ids: string[]
-  effectiveDueDates: EffectiveDueDateUserMap
-  inClosedGradingPeriod: boolean
-  grading_type: string
-  points_possible: number
-  omit_from_final_grade: boolean
-  only_visible_to_overrides: boolean
-  assignment_visibility: string[]
-  grading_standard_id: string | null
-  hasDownloadedSubmissions: boolean
-  overrides: any
-}
-
-export type AssignmentMap = {
-  [key: string]: Assignment
-}
-
-export type AssignmentGroup = {
-  id: string
-  name: string
-  position: number
-  group_weight: number
-  assignments: Assignment[]
-}
-
-export type AssignmentGroupMap = {
-  [key: string]: AssignmentGroup
-}
-
-export type Submission = {
-  attempt: number | null
-  user_id: string
-  assignment_id: string
-  submitted_at: string
-  gradingType: string
-  excused: boolean
-  hidden: boolean
-  rawGrade: string | null
-  grade: string | null
-  posted_at: string
-  assignment_visible: boolean
-}
-
-export type UserSubmissionGroup = {
-  user_id: string
-  submissions: Submission[]
+export type GradingPeriodAssignmentMap = {
+  [gradingPeriodId: string]: string[]
 }
 
 export type CourseContent = {
-  contextModules: any[]
-  courseGradingScheme: {
-    data: any
-  } | null
-  defaultGradingScheme: {
-    data: any
-  } | null
-  gradingSchemes: any
-  gradingPeriodAssignments: any
-  assignmentStudentVisibility: {[key: string]: null | boolean}
-  latePolicy: any
+  contextModules: Module[]
+  courseGradingScheme: {data: boolean} | null
+  defaultGradingScheme: GradingScheme | null
+  gradingSchemes: GradingScheme[]
+  gradingPeriodAssignments: GradingPeriodAssignmentMap
+  assignmentStudentVisibility: {[assignmentId: string]: null | StudentMap}
+  latePolicy: LatePolicyCamelized
   students: StudentDatastore
-  modulesById: any
+  modulesById: ModuleMap
 }
 
 export type ContentLoadStates = {
@@ -267,7 +204,9 @@ export type ContentLoadStates = {
   contextModulesLoaded: boolean
   assignmentsLoaded: {
     all: boolean
-    gradingPeriod: any
+    gradingPeriod: {
+      [gradingPeriodId: string]: boolean
+    }
   }
   customColumnsLoaded: boolean
   gradingPeriodAssignmentsLoaded: boolean
@@ -281,7 +220,9 @@ export type ContentLoadStates = {
 export type PendingGradeInfo = {
   userId: string
   assignmentId: string
+  excused: boolean
   valid: boolean
+  grade?: string
 }
 
 export type InitialActionStates = {
@@ -294,22 +235,7 @@ export type FlashAlertType = {
   variant: string
 }
 
-export type Module = {
-  id: string
-  name: string
-  position: number
-}
-
-export type Section = {
-  id: string
-  name: string
-}
-
-export type SectionMap = {
-  [key: string]: Section
-}
-
-export type FilterConditionType =
+export type FilterType =
   | 'section'
   | 'module'
   | 'assignment-group'
@@ -319,33 +245,43 @@ export type FilterConditionType =
   | 'end-date'
   | 'submissions'
 
-export type FilterCondition = {
+export type Filter = {
   id: string
-  type?: FilterConditionType
+  type?: FilterType
   value?: string
   created_at: string
 }
 
-export type SubmissionFilterConditionValue =
-  | 'has-ungraded-submissions'
-  | 'has-submissions'
-  | undefined
+export type SubmissionFilterValue = 'has-ungraded-submissions' | 'has-submissions' | undefined
 
-export type Filter = {
+export type FilterPreset = {
   id: string
   name: string
-  conditions: FilterCondition[]
+  filters: Filter[]
   created_at: string
+  updated_at: string
 }
 
-export type PartialFilter = Omit<Filter, 'id'> & {id?: string}
+export type PartialFilterPreset = Omit<FilterPreset, 'id'> & {id?: string}
 
-// export type AppliedFilter = Omit<Filter, 'id'>
+export type FilterDrilldownData = {
+  [key: string]: FilterDrilldownMenuItem
+}
+
+export type FilterDrilldownMenuItem = {
+  id: string
+  parentId?: null | string
+  name: string
+  isSelected?: boolean
+  onToggle?: () => void
+  items?: FilterDrilldownMenuItem[]
+  itemGroups?: FilterDrilldownMenuItem[]
+}
 
 export type GradebookFilterApiRequest = {
   name: string
   payload: {
-    conditions: FilterCondition[]
+    conditions: Filter[]
   }
 }
 
@@ -359,50 +295,14 @@ export type GradebookFilterApiResponseFilter = {
   user_id: string
   name: string
   payload: {
-    conditions: FilterCondition[]
+    conditions: Filter[]
   }
   created_at: string
   updated_at: string
 }
 
-export type AssignmentDueDate = {
-  due_at: string
-  grading_period_id: string | null
-  in_closed_grading_period: boolean
-}
-
-export type EffectiveDueDateUserMap = {
-  [user_id: string]: AssignmentDueDate
-}
-
-export type EffectiveDueDateAssignmentUserMap = {
-  [assignment_id: string]: EffectiveDueDateUserMap
-}
-
-export type GradingPeriod = {
-  id: string
-  title: string
-  startDate: number
-}
-
-export type GradingPeriodSet = {
-  gradingPeriods: GradingPeriod[]
-  displayTotalsForAllGradingPeriods: boolean
-  weighted: any
-}
-
 export type ColumnSizeSettings = {
   [key: string]: string
-}
-
-export type AttachmentData = {
-  attachment: Attachment
-}
-
-export type Attachment = {
-  id: string
-  updated_at: string
-  created_at: string
 }
 
 export type Lti = {
@@ -412,7 +312,10 @@ export type Lti = {
 }
 
 export type ColumnOrderSettings = {
-  freezeTotalGrade: any
+  customOrder?: string[]
+  direction: 'ascending' | 'descending'
+  freezeTotalGrade?: boolean | 'true'
+  sortType: string
 }
 
 export type Progress = {
@@ -433,4 +336,83 @@ export type FlashMessage = {
   key: string
   message: string
   variant: string
+}
+
+// TODO: remove the need for this type
+export type SubmissionCamelized = {
+  anonymousId: string
+  assignmentId: string
+  assignmentVisible?: boolean
+  attempt: number | null
+  enteredGrade: string | null
+  enteredScore: number | null
+  excused: boolean
+  grade: string | null
+  gradeMatchesCurrentSubmission: boolean
+  cachedDueDate: string | null
+  drop?: boolean
+  gradeLocked: boolean
+  gradingPeriodId: string | null
+  gradingType: GradingType
+  hasPostableComments: boolean
+  hidden: boolean
+  id: string
+  latePolicyStatus: null | string
+  late: boolean
+  missing: boolean
+  pointsDeducted: number | null
+  postedAt: string | null
+  rawGrade: string | null
+  redoRequest: boolean
+  score: null | number
+  secondsLate: number | null
+  submissionType: SubmissionType
+  submittedAt: null | Date
+  url: null | string
+  userId: string
+  workflowState: WorkflowState
+}
+
+export type AssignmentStudentMap = {
+  [assignmentId: string]: StudentMap
+}
+
+export type StudentGrade = {
+  score: number
+  possible: number
+  submissions: any
+}
+
+// TODO: store student grades in separate map so that the
+//   student object isn't rendered "any"
+export type GradebookStudent = Student & {
+  [assignmentGroupGradeKey: `assignment_group_${string}`]: StudentGrade
+} & {
+  [assignmentGradeKey: `assignment_${string}`]: StudentGrade
+} & {
+  [columnGradeKey: `custom_col_${string}`]: any
+}
+
+export type GradebookStudentMap = {
+  [studentId: string]: GradebookStudent
+}
+
+export type CustomColumn = {
+  hidden: boolean
+  id: string
+  position: number
+  read_only: boolean
+  teacher_notes: boolean
+  title: string
+}
+
+export type SerializedComment = {
+  id: string
+  comment: string
+  createdAt: Date
+  editedAt: null | Date
+  authorId?: string
+  author?: string
+  authorAvatarUrl?: string
+  authorUrl?: string
 }

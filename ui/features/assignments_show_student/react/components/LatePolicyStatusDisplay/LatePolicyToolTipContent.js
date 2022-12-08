@@ -50,12 +50,12 @@ export default function LatePolicyToolTipContent(props) {
             <Flex.Item margin="0 small 0 0">
               <Text size="small">{I18n.t('Attempt %{attempt}', {attempt})}</Text>
             </Flex.Item>
-            <Flex.Item grow textAlign="end">
+            <Flex.Item shouldGrow={true} textAlign="end">
               <Text size="small">
                 {GradeFormatHelper.formatGrade(originalGrade, {
                   gradingType,
                   pointsPossible,
-                  formatType: 'points_out_of_fraction'
+                  formatType: 'points_out_of_fraction',
                 })}
               </Text>
             </Flex.Item>
@@ -66,7 +66,7 @@ export default function LatePolicyToolTipContent(props) {
             <Flex.Item margin="0 small 0 0">
               <Text size="small">{I18n.t('Late Penalty')}</Text>
             </Flex.Item>
-            <Flex.Item grow textAlign="end">
+            <Flex.Item shouldGrow={true} textAlign="end">
               <Text size="small">
                 {pointsDeducted ? `-${props.pointsDeducted}` : I18n.t('None')}
               </Text>
@@ -78,12 +78,12 @@ export default function LatePolicyToolTipContent(props) {
             <Flex.Item margin="0 small 0 0">
               <Text size="small">{I18n.t('Grade')}</Text>
             </Flex.Item>
-            <Flex.Item grow textAlign="end">
+            <Flex.Item shouldGrow={true} textAlign="end">
               <Text size="small">
                 {GradeFormatHelper.formatGrade(grade, {
                   gradingType,
                   pointsPossible,
-                  formatType: 'points_out_of_fraction'
+                  formatType: 'points_out_of_fraction',
                 })}
               </Text>
             </Flex.Item>
@@ -100,5 +100,5 @@ LatePolicyToolTipContent.propTypes = {
   gradingType: PropTypes.string.isRequired,
   originalGrade: PropTypes.oneOfType([PropTypes.number, PropTypes.string]).isRequired,
   pointsDeducted: PropTypes.number.isRequired,
-  pointsPossible: PropTypes.number.isRequired
+  pointsPossible: PropTypes.number.isRequired,
 }

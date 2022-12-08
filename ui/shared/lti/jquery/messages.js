@@ -21,7 +21,7 @@
 import {
   NAVIGATION_MESSAGE as MENTIONS_NAVIGATION_MESSAGE,
   INPUT_CHANGE_MESSAGE as MENTIONS_INPUT_CHANGE_MESSAGE,
-  SELECTION_MESSAGE as MENTIONS_SELECTION_MESSAGE
+  SELECTION_MESSAGE as MENTIONS_SELECTION_MESSAGE,
 } from '../../rce/plugins/canvas_mentions/constants'
 import buildResponseMessages from './response_messages'
 
@@ -44,7 +44,7 @@ const SUBJECT_ALLOW_LIST = [
   'org.imsglobal.lti.get_data',
   'org.imsglobal.lti.put_data',
   'requestFullWindowLaunch',
-  'toggleCourseNavigationMenu'
+  'toggleCourseNavigationMenu',
 ]
 
 // These are handled elsewhere so ignore them
@@ -53,11 +53,12 @@ const SUBJECT_IGNORE_LIST = [
   'LtiDeepLinkingResponse',
   MENTIONS_NAVIGATION_MESSAGE,
   MENTIONS_INPUT_CHANGE_MESSAGE,
-  MENTIONS_SELECTION_MESSAGE
+  MENTIONS_SELECTION_MESSAGE,
+  'betterchat.is_mini_chat',
 ]
 
-async function ltiMessageHandler(e, platformStorageFeatureFlag = false) {
-  if (e.data.source && e.data.source.includes('react-devtools')) {
+async function ltiMessageHandler(e) {
+  if (e.data?.source?.includes('react-devtools') || e.data.isAngularDevTools) {
     return false
   }
 
@@ -75,41 +76,39 @@ async function ltiMessageHandler(e, platformStorageFeatureFlag = false) {
     targetWindow: e.source,
     origin: e.origin,
     subject,
-    message_id: message.message_id
+    message_id: message.message_id,
   })
 
-  if (SUBJECT_IGNORE_LIST.includes(subject)) {
+  if (
+    SUBJECT_IGNORE_LIST.includes(subject) ||
+    subject === undefined ||
+    responseMessages.isResponse(e)
+  ) {
     // These messages are handled elsewhere
     return false
   } else if (!SUBJECT_ALLOW_LIST.includes(subject)) {
     // Enforce subject allowlist -- unknown type
-    if (platformStorageFeatureFlag) {
-      responseMessages.sendUnsupportedSubjectError()
-    }
-    return false
-  }
-
-  // temporary: ignore LTI Platform Storage messages when feature flag is off
-  if (!platformStorageFeatureFlag && subject.includes('org.imsglobal.lti')) {
+    responseMessages.sendUnsupportedSubjectError()
     return false
   }
 
   try {
-    const handlerModule = await import(`./subjects/${subject}.js`)
+    const handlerModule = await import(
+      /* webpackExclude: /__tests__/ */
+      `./subjects/${subject}.js`
+    )
     const hasSentResponse = handlerModule.default({
       message,
       event: e,
-      responseMessages
+      responseMessages,
     })
-    if (!hasSentResponse && platformStorageFeatureFlag) {
+    if (!hasSentResponse) {
       responseMessages.sendSuccess()
     }
     return true
   } catch (error) {
     console.error(`Error loading or executing message handler for "${subject}": ${error}`)
-    if (platformStorageFeatureFlag) {
-      responseMessages.sendGenericError(error.message)
-    }
+    responseMessages.sendGenericError(error.message)
     return false
   }
 }
@@ -117,9 +116,8 @@ async function ltiMessageHandler(e, platformStorageFeatureFlag = false) {
 let hasListener = false
 
 function monitorLtiMessages() {
-  const platformStorageFeatureFlag = ENV?.FEATURES?.lti_platform_storage
   const cb = e => {
-    if (e.data !== '') ltiMessageHandler(e, platformStorageFeatureFlag)
+    if (e.data !== '') ltiMessageHandler(e)
   }
   if (!hasListener) {
     window.addEventListener('message', cb)

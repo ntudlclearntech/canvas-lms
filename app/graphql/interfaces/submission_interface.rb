@@ -269,7 +269,7 @@ module Interfaces::SubmissionInterface
   def turnitin_data
     return nil if object.turnitin_data.empty?
 
-    promises = object.turnitin_data.except(:last_processed_attempt, :webhook_info, :eula_agreement_timestamp, :assignment_error, :provider).map do |asset_string, data|
+    promises = object.turnitin_data.except(:last_processed_attempt, :webhook_info, :eula_agreement_timestamp, :assignment_error, :provider, :student_error, :status).map do |asset_string, data|
       Loaders::AssetStringLoader.load(asset_string).then do |turnitin_context|
         next if turnitin_context.nil?
 
@@ -284,6 +284,9 @@ module Interfaces::SubmissionInterface
     end
     Promise.all(promises).then(&:compact)
   end
+
+  field :originality_data, GraphQL::Types::JSON, null: true
+  delegate :originality_data, to: :submission
 
   field :submission_draft, Types::SubmissionDraftType, null: true
   def submission_draft

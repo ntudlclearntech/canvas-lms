@@ -25,7 +25,7 @@ import GenericErrorPage from '@canvas/generic-error-page'
 import ObserverOptions from '@canvas/observer-picker'
 import {
   getHandleChangeObservedUser,
-  autoFocusObserverPicker
+  autoFocusObserverPicker,
 } from '@canvas/observer-picker/util/pageReloadHelper'
 import React from 'react'
 import ReactDOM from 'react-dom'
@@ -50,6 +50,7 @@ export default function renderAssignmentsApp(env, elt) {
           <StudentViewQuery
             assignmentLid={ENV.ASSIGNMENT_ID.toString()}
             submissionID={ENV.SUBMISSION_ID?.toString()}
+            reviewerSubmissionID={ENV.REVIEWER_SUBMISSION_ID?.toString()}
           />
         </AlertManager>
       </ErrorBoundary>

@@ -36,7 +36,7 @@ it('renders a "late" status pill if the last graded submission is late', async (
   const props = await mockAssignmentAndSubmission({
     Assignment: {
       gradingType: 'points',
-      pointsPossible: 10
+      pointsPossible: 10,
     },
     Submission: {
       ...SubmissionMocks.graded,
@@ -44,8 +44,8 @@ it('renders a "late" status pill if the last graded submission is late', async (
       deductedPoints: 4,
       enteredGrade: 10,
       grade: 6,
-      submissionStatus: 'late'
-    }
+      submissionStatus: 'late',
+    },
   })
   const {getByText} = render(
     <StudentViewContext.Provider value={{lastSubmittedSubmission: props.submission}}>
@@ -59,7 +59,7 @@ it('shows the grade for a late submission if it is not hidden from the student',
   const props = await mockAssignmentAndSubmission({
     Assignment: {
       gradingType: 'points',
-      pointsPossible: 10
+      pointsPossible: 10,
     },
     Submission: {
       ...SubmissionMocks.graded,
@@ -68,8 +68,8 @@ it('shows the grade for a late submission if it is not hidden from the student',
       enteredGrade: 10,
       grade: 6,
       gradeHidden: false,
-      submissionStatus: 'late'
-    }
+      submissionStatus: 'late',
+    },
   })
   const {getByText} = render(
     <StudentViewContext.Provider value={{lastSubmittedSubmission: props.submission}}>
@@ -83,14 +83,14 @@ it('shows N/A for a late submission if the grade is hidden from the student', as
   const props = await mockAssignmentAndSubmission({
     Assignment: {
       gradingType: 'points',
-      pointsPossible: 10
+      pointsPossible: 10,
     },
     Submission: {
       ...SubmissionMocks.submitted,
       attempt: 1,
       gradeHidden: true,
-      submissionStatus: 'late'
-    }
+      submissionStatus: 'late',
+    },
   })
   const {getByTestId} = render(
     <StudentViewContext.Provider value={{lastSubmittedSubmission: props.submission}}>
@@ -104,7 +104,7 @@ it('shows the number of points deducted in the tooltip when the current grade is
   const props = await mockAssignmentAndSubmission({
     Assignment: {
       gradingType: 'points',
-      pointsPossible: 10
+      pointsPossible: 10,
     },
     Submission: {
       ...SubmissionMocks.graded,
@@ -112,8 +112,8 @@ it('shows the number of points deducted in the tooltip when the current grade is
       deductedPoints: 4,
       enteredGrade: 10,
       grade: 6,
-      submissionStatus: 'late'
-    }
+      submissionStatus: 'late',
+    },
   })
 
   const {getByText} = render(
@@ -131,8 +131,8 @@ it('renders a "missing" status pill if the last graded submission is missing', a
   const props = await mockAssignmentAndSubmission({
     Submission: {
       ...SubmissionMocks.graded,
-      submissionStatus: 'missing'
-    }
+      submissionStatus: 'missing',
+    },
   })
   const {getByText} = render(
     <StudentViewContext.Provider value={{lastSubmittedSubmission: props.submission}}>
@@ -144,7 +144,7 @@ it('renders a "missing" status pill if the last graded submission is missing', a
 
 it('does not render a status pill if the last graded submission is not late or missing', async () => {
   const props = await mockAssignmentAndSubmission({
-    Submission: SubmissionMocks.graded
+    Submission: SubmissionMocks.graded,
   })
   const {queryByText} = render(
     <StudentViewContext.Provider value={{lastSubmittedSubmission: props.submission}}>
@@ -160,8 +160,8 @@ it('shows the most recently received grade as the "canonical" score', async () =
     Submission: {
       ...SubmissionMocks.graded,
       grade: '147',
-      enteredGrade: '147'
-    }
+      enteredGrade: '147',
+    },
   })
 
   const props = await mockAssignmentAndSubmission({
@@ -169,8 +169,8 @@ it('shows the most recently received grade as the "canonical" score', async () =
     Submission: {
       ...SubmissionMocks.graded,
       grade: '131',
-      enteredGrade: '131'
-    }
+      enteredGrade: '131',
+    },
   })
 
   const {getByText} = render(
@@ -187,8 +187,8 @@ it('renders the grade for the currently selected attempt', async () => {
     Submission: {
       ...SubmissionMocks.graded,
       grade: '147',
-      enteredGrade: '147'
-    }
+      enteredGrade: '147',
+    },
   })
 
   const props = await mockAssignmentAndSubmission({
@@ -198,8 +198,8 @@ it('renders the grade for the currently selected attempt', async () => {
       attempt: 7,
       grade: '131',
       enteredGrade: '131',
-      gradingStatus: 'graded'
-    }
+      gradingStatus: 'graded',
+    },
   })
 
   const {container} = render(
@@ -216,8 +216,8 @@ it('renders "N/A" for the currently selected attempt if it has no grade', async 
     Submission: {
       ...SubmissionMocks.graded,
       grade: '147',
-      enteredGrade: '147'
-    }
+      enteredGrade: '147',
+    },
   })
 
   const props = await mockAssignmentAndSubmission({
@@ -227,8 +227,8 @@ it('renders "N/A" for the currently selected attempt if it has no grade', async 
       attempt: 7,
       grade: '131',
       enteredGrade: '131',
-      gradingStatus: 'needs_grading'
-    }
+      gradingStatus: 'needs_grading',
+    },
   })
 
   const {container} = render(
@@ -246,8 +246,8 @@ it('renders "Offline Score" when the student is graded before submitting', async
       ...SubmissionMocks.graded,
       grade: '147',
       enteredGrade: '147',
-      attempt: 0
-    }
+      attempt: 0,
+    },
   })
 
   const props = await mockAssignmentAndSubmission({
@@ -256,8 +256,8 @@ it('renders "Offline Score" when the student is graded before submitting', async
       ...SubmissionMocks.graded,
       attempt: 0,
       grade: '131',
-      enteredGrade: '131'
-    }
+      enteredGrade: '131',
+    },
   })
 
   const {container} = render(
@@ -274,8 +274,8 @@ it('will not render the grade if the last submitted submission is excused', asyn
     Submission: {
       ...SubmissionMocks.excused,
       grade: '147',
-      enteredGrade: '147'
-    }
+      enteredGrade: '147',
+    },
   })
 
   const props = await mockAssignmentAndSubmission({
@@ -283,8 +283,8 @@ it('will not render the grade if the last submitted submission is excused', asyn
     Submission: {
       ...SubmissionMocks.graded,
       grade: '131',
-      enteredGrade: '131'
-    }
+      enteredGrade: '131',
+    },
   })
 
   const {getByTestId} = render(
@@ -298,7 +298,7 @@ it('will not render the grade if the last submitted submission is excused', asyn
 
 it('renders the attempt select', async () => {
   const props = await mockAssignmentAndSubmission({
-    Submission: {...SubmissionMocks.submitted}
+    Submission: {...SubmissionMocks.submitted},
   })
   props.allSubmissions = [props.submission]
   const {queryByTestId} = render(<Header {...props} />)
@@ -314,7 +314,7 @@ it('does not render the attempt select if there is no submission', async () => {
 
 it('does not render the attempt select if allSubmissions is not provided', async () => {
   const props = await mockAssignmentAndSubmission({
-    Submission: {...SubmissionMocks.submitted}
+    Submission: {...SubmissionMocks.submitted},
   })
   const {queryByTestId} = render(<Header {...props} />)
   expect(queryByTestId('attemptSelect')).not.toBeInTheDocument()
@@ -323,7 +323,7 @@ it('does not render the attempt select if allSubmissions is not provided', async
 it('does not render the attempt select if the assignment has non-digital submissions', async () => {
   const props = await mockAssignmentAndSubmission({
     Assignment: {nonDigitalSubmission: true},
-    Submission: {...SubmissionMocks.submitted}
+    Submission: {...SubmissionMocks.submitted},
   })
   const {queryByTestId} = render(<Header {...props} />)
   expect(queryByTestId('attemptSelect')).not.toBeInTheDocument()
@@ -331,17 +331,27 @@ it('does not render the attempt select if the assignment has non-digital submiss
 
 it('does not render the attempt select if peerReviewModeEnabled is set to true', async () => {
   const props = await mockAssignmentAndSubmission({
-    Submission: {...SubmissionMocks.submitted}
+    Submission: {...SubmissionMocks.submitted},
   })
   props.assignment.env.peerReviewModeEnabled = true
   props.allSubmissions = [props.submission]
+  props.reviewerSubmission = {
+    ...props.submission,
+    assignedAssessments: [
+      {
+        anonymousUser: null,
+        anonymousId: 'xaU9cd',
+        workflowState: 'assigned',
+      },
+    ],
+  }
   const {queryByTestId} = render(<Header {...props} />)
   expect(queryByTestId('attemptSelect')).not.toBeInTheDocument()
 })
 
 it('renders the attempt select if peerReviewModeEnabled is set to false', async () => {
   const props = await mockAssignmentAndSubmission({
-    Submission: {...SubmissionMocks.submitted}
+    Submission: {...SubmissionMocks.submitted},
   })
   props.assignment.env.peerReviewModeEnabled = false
   props.allSubmissions = [props.submission]
@@ -394,6 +404,16 @@ describe('submission workflow tracker', () => {
   it('is not rendered if peerReviewModeEnabled is set to true', async () => {
     const props = await mockAssignmentAndSubmission()
     props.assignment.env.peerReviewModeEnabled = true
+    props.reviewerSubmission = {
+      ...props.submission,
+      assignedAssessments: [
+        {
+          anonymousUser: null,
+          anonymousId: 'xaU9cd',
+          workflowState: 'assigned',
+        },
+      ],
+    }
     const {queryByTestId} = render(<Header {...props} />)
     expect(queryByTestId('submission-workflow-tracker')).not.toBeInTheDocument()
   })
@@ -402,17 +422,18 @@ describe('submission workflow tracker', () => {
 describe('originality report', () => {
   it('is rendered when a submission exists with turnitinData attached and the assignment is available with a text entry submission', async () => {
     const props = await mockAssignmentAndSubmission({
-      Submission: {submissionType: 'online_text_entry'}
+      Submission: {submissionType: 'online_text_entry'},
     })
-    props.submission.turnitinData = [
-      {
+
+    props.submission.originalityData = {
+      submission_1: {
         similarity_score: 10,
         state: 'acceptable',
         report_url: 'http://example.com',
         status: 'scored',
-        data: '{}'
-      }
-    ]
+        data: '{}',
+      },
+    }
     props.assignment.env.originalityReportsForA2Enabled = true
     const {queryByTestId} = render(<Header {...props} />)
     expect(queryByTestId('originality_report')).toBeInTheDocument()
@@ -420,20 +441,66 @@ describe('originality report', () => {
 
   it('is not rendered when the originality reports for a2 FF is not enabled', async () => {
     const props = await mockAssignmentAndSubmission({
-      Submission: {submissionType: 'online_text_entry'}
+      Submission: {submissionType: 'online_text_entry'},
     })
-    props.submission.turnitinData = [
-      {
+    props.submission.originalityData = {
+      submission_1: {
         similarity_score: 10,
         state: 'acceptable',
         report_url: 'http://example.com',
         status: 'scored',
-        data: '{}'
-      }
-    ]
+        data: '{}',
+      },
+    }
     props.assignment.env.originalityReportsForA2Enabled = false
     const {queryByTestId} = render(<Header {...props} />)
     expect(queryByTestId('originality_report')).not.toBeInTheDocument()
+  })
+
+  it('is not rendered when the originality report is not visibile to the student', async () => {
+    const props = await mockAssignmentAndSubmission({
+      Submission: {submissionType: 'online_text_entry'},
+    })
+    props.submission.originalityData = {
+      submission_1: {
+        similarity_score: 10,
+        state: 'acceptable',
+        report_url: 'http://example.com',
+        status: 'scored',
+        data: '{}',
+      },
+    }
+    const today = new Date()
+    const tomorrow = new Date(today)
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    props.assignment.dueAt = tomorrow.toString()
+    props.assignment.originalityReportVisibility = 'after_due_date'
+    props.assignment.env.originalityReportsForA2Enabled = true
+    const {queryByTestId} = render(<Header {...props} />)
+    expect(queryByTestId('originality_report')).not.toBeInTheDocument()
+  })
+
+  it('is rendered when the originality report is visibile to the student', async () => {
+    const props = await mockAssignmentAndSubmission({
+      Submission: {submissionType: 'online_text_entry'},
+    })
+    props.submission.originalityData = {
+      submission_1: {
+        similarity_score: 10,
+        state: 'acceptable',
+        report_url: 'http://example.com',
+        status: 'scored',
+        data: '{}',
+      },
+    }
+    const today = new Date()
+    const yesterday = new Date(today)
+    yesterday.setDate(yesterday.getDate() - 1)
+    props.assignment.dueAt = yesterday.toString()
+    props.assignment.originalityReportVisibility = 'after_due_date'
+    props.assignment.env.originalityReportsForA2Enabled = true
+    const {queryByTestId} = render(<Header {...props} />)
+    expect(queryByTestId('originality_report')).toBeInTheDocument()
   })
 
   it('is rendered when a submission exists with turnitinData attached and the assignment is available with a online upload submission with only one attachment', async () => {
@@ -444,20 +511,20 @@ describe('originality report', () => {
       mimeClass: 'image',
       submissionPreviewUrl: '/preview_url',
       thumbnailUrl: '/thumbnail_url',
-      url: '/url'
+      url: '/url',
     }
     const props = await mockAssignmentAndSubmission({
-      Submission: {submissionType: 'online_upload', attachments: [file]}
+      Submission: {submissionType: 'online_upload', attachments: [file]},
     })
-    props.submission.turnitinData = [
-      {
+    props.submission.originalityData = {
+      attachment_1: {
         similarity_score: 10,
         state: 'acceptable',
         report_url: 'http://example.com',
         status: 'scored',
-        data: '{}'
-      }
-    ]
+        data: '{}',
+      },
+    }
     props.assignment.env.originalityReportsForA2Enabled = true
     const {queryByTestId} = render(<Header {...props} />)
     expect(queryByTestId('originality_report')).toBeInTheDocument()
@@ -472,7 +539,7 @@ describe('originality report', () => {
         mimeClass: 'image',
         submissionPreviewUrl: '/preview_url',
         thumbnailUrl: '/thumbnail_url',
-        url: '/url'
+        url: '/url',
       },
       {
         _id: '1',
@@ -481,11 +548,11 @@ describe('originality report', () => {
         mimeClass: 'image',
         submissionPreviewUrl: '/preview_url',
         thumbnailUrl: '/thumbnail_url',
-        url: '/url'
-      }
+        url: '/url',
+      },
     ]
     const props = await mockAssignmentAndSubmission({
-      Submission: {submissionType: 'online_upload', attachments: files}
+      Submission: {submissionType: 'online_upload', attachments: files},
     })
     props.submission.turnitinData = [
       {
@@ -493,15 +560,15 @@ describe('originality report', () => {
         state: 'acceptable',
         report_url: 'http://example.com',
         status: 'scored',
-        data: '{}'
+        data: '{}',
       },
       {
         similarity_score: 10,
         state: 'acceptable',
         report_url: 'http://example.com',
         status: 'scored',
-        data: '{}'
-      }
+        data: '{}',
+      },
     ]
     const {queryByTestId} = render(<Header {...props} />)
     expect(queryByTestId('originality_report')).not.toBeInTheDocument()
@@ -566,7 +633,7 @@ describe('Add Comment/View Feedback button', () => {
   it('renders as "Add Comment" by default for nonDigitalSubmission', async () => {
     const props = await mockAssignmentAndSubmission({
       Assignment: {nonDigitalSubmission: true},
-      Submission: {...SubmissionMocks.submitted}
+      Submission: {...SubmissionMocks.submitted},
     })
     const {getByText} = render(<Header {...props} />)
     expect(getByText('Add Comment')).toBeInTheDocument()
@@ -584,7 +651,7 @@ describe('Add Comment/View Feedback button', () => {
 
   it('renders as "View Feedback" if feedback exists', async () => {
     const props = await mockAssignmentAndSubmission({
-      Submission: {feedbackForCurrentAttempt: true}
+      Submission: {feedbackForCurrentAttempt: true},
     })
     const {getByText} = render(<Header {...props} />)
     expect(getByText('View Feedback')).toBeInTheDocument()
@@ -593,7 +660,7 @@ describe('Add Comment/View Feedback button', () => {
   it('renders as "View Feedback" if feedback exists for nonDigitalSubmission', async () => {
     const props = await mockAssignmentAndSubmission({
       Assignment: {nonDigitalSubmission: true},
-      Submission: {feedbackForCurrentAttempt: true}
+      Submission: {feedbackForCurrentAttempt: true},
     })
     const {getByText} = render(<Header {...props} />)
     expect(getByText('View Feedback')).toBeInTheDocument()
@@ -603,9 +670,11 @@ describe('Add Comment/View Feedback button', () => {
     const props = await mockAssignmentAndSubmission({
       Submission: {
         ...SubmissionMocks.unsubmitted,
-        attempt: 2
-      }
+        attempt: 2,
+      },
     })
+    props.assignment.env.peerReviewModeEnabled = false
+    props.assignment.env.peerReviewAvailable = false
     const {getByText} = render(<Header {...props} />)
     expect(getByText('Add Comment').closest('button')).toBeDisabled()
   })
@@ -614,13 +683,15 @@ describe('Add Comment/View Feedback button', () => {
     const props = await mockAssignmentAndSubmission({
       Submission: {
         ...SubmissionMocks.unsubmitted,
-        attempt: 2
-      }
+        attempt: 2,
+      },
     })
+    props.assignment.env.peerReviewModeEnabled = false
+    props.assignment.env.peerReviewAvailable = false
     const {getByRole} = render(<Header {...props} />)
     expect(
       getByRole('button', {
-        name: /After the first attempt, you cannot leave comments until you submit the assignment./
+        name: /After the first attempt, you cannot leave comments until you submit the assignment./,
       })
     ).toBeInTheDocument()
   })
@@ -629,13 +700,13 @@ describe('Add Comment/View Feedback button', () => {
     const props = await mockAssignmentAndSubmission({
       Submission: {
         ...SubmissionMocks.unsubmitted,
-        attempt: 1
-      }
+        attempt: 1,
+      },
     })
     const {queryByRole} = render(<Header {...props} />)
     expect(
       queryByRole('button', {
-        name: /After the first attempt, you cannot leave comments until you submit the assignment./
+        name: /After the first attempt, you cannot leave comments until you submit the assignment./,
       })
     ).not.toBeInTheDocument()
   })
@@ -644,28 +715,210 @@ describe('Add Comment/View Feedback button', () => {
     const props = await mockAssignmentAndSubmission({
       Submission: {
         ...SubmissionMocks.submitted,
-        attempt: 2
-      }
+        attempt: 2,
+      },
     })
     const {queryByRole} = render(<Header {...props} />)
     expect(
       queryByRole('button', {
-        name: /After the first attempt, you cannot leave comments until you submit the assignment./
+        name: /After the first attempt, you cannot leave comments until you submit the assignment./,
       })
     ).not.toBeInTheDocument()
   })
 
-  it('does not show the unread comments badge if peerReviewModeEnabled is set to true ', async () => {
+  it('does not show the unread comments badge if peerReviewModeEnabled is set to true', async () => {
     const props = await mockAssignmentAndSubmission({Submission: {unreadCommentCount: 1}})
     props.assignment.env.peerReviewModeEnabled = true
+    props.reviewerSubmission = {
+      ...props.submission,
+      assignedAssessments: [
+        {
+          anonymousUser: null,
+          anonymousId: 'xaU9cd',
+          workflowState: 'assigned',
+        },
+      ],
+    }
     const {queryByTestId} = render(<Header {...props} />)
     expect(queryByTestId('unread_comments_badge')).not.toBeInTheDocument()
   })
 
-  it('shows the unread comments badge if peerReviewModeEnabled is set to false ', async () => {
+  it('shows the unread comments badge if peerReviewModeEnabled is set to false', async () => {
     const props = await mockAssignmentAndSubmission({Submission: {unreadCommentCount: 1}})
     props.assignment.env.peerReviewModeEnabled = false
     const {getByTestId} = render(<Header {...props} />)
     expect(getByTestId('unread_comments_badge')).toBeInTheDocument()
+  })
+
+  it('renders as "Add Comment" and disabled if peer review is not available', async () => {
+    const props = await mockAssignmentAndSubmission()
+    props.assignment.env.peerReviewModeEnabled = true
+    props.assignment.env.peerReviewAvailable = false
+    props.reviewerSubmission = {
+      ...props.submission,
+      assignedAssessments: [
+        {
+          anonymousUser: null,
+          anonymousId: 'xaU9cd',
+          workflowState: 'assigned',
+        },
+      ],
+    }
+    const {getByText} = render(<Header {...props} />)
+    expect(getByText('Add Comment').closest('button')).toBeDisabled()
+  })
+
+  it('renders additional info button if peer review is not available', async () => {
+    const props = await mockAssignmentAndSubmission()
+    props.assignment.env.peerReviewModeEnabled = true
+    props.assignment.env.peerReviewAvailable = false
+    const {getByRole} = render(<Header {...props} />)
+    expect(
+      getByRole('button', {
+        name: /You cannot leave comments until reviewer and reviewee submits the assignment./,
+      })
+    ).toBeInTheDocument()
+  })
+})
+
+describe('Peer reviews counter', () => {
+  it('is displayed when peerReviewModeEnabled is set to true', async () => {
+    const props = await mockAssignmentAndSubmission()
+    props.assignment.env.peerReviewModeEnabled = true
+    props.reviewerSubmission = {
+      ...props.submission,
+      assignedAssessments: [
+        {
+          anonymousUser: null,
+          anonymousId: 'xaU9cd',
+          workflowState: 'assigned',
+        },
+      ],
+    }
+    const {queryByTestId} = render(<Header {...props} />)
+    expect(queryByTestId('current-counter')).toBeInTheDocument()
+    expect(queryByTestId('total-counter')).toBeInTheDocument()
+  })
+
+  it('is not displayed when peerReviewModeEnabled is set to false', async () => {
+    const props = await mockAssignmentAndSubmission()
+    props.assignment.env.peerReviewModeEnabled = false
+    const {queryByTestId} = render(<Header {...props} />)
+    expect(queryByTestId('current-counter')).not.toBeInTheDocument()
+    expect(queryByTestId('total-counter')).not.toBeInTheDocument()
+  })
+
+  describe('with anonymous peer reviews enabled', () => {
+    let props
+    beforeAll(async () => {
+      props = await mockAssignmentAndSubmission()
+      props.assignment.env.peerReviewModeEnabled = true
+      props.reviewerSubmission = {
+        ...props.submission,
+        assignedAssessments: [
+          {
+            anonymousId: 'xaU9cd',
+            workflowState: 'assigned',
+          },
+          {
+            anonymousId: 'maT9fd',
+            workflowState: 'assigned',
+          },
+          {
+            anonymousId: 'vaN9fd',
+            workflowState: 'assigned',
+          },
+        ],
+      }
+    })
+
+    it('sets 1 as "current-counter" when anonymousId matches the first assigned assessment"', async () => {
+      props.assignment.env.anonymousAssetId =
+        props.reviewerSubmission.assignedAssessments[0].anonymousId
+      const {queryByTestId} = render(<Header {...props} />)
+      expect(queryByTestId('current-counter')).toHaveTextContent('1')
+    })
+
+    it('sets assigned assessments count as "current-counter" when anonymousId matches the last assigned assessment"', async () => {
+      props.assignment.env.anonymousAssetId =
+        props.reviewerSubmission.assignedAssessments[2].anonymousId
+      const {queryByTestId} = render(<Header {...props} />)
+      expect(queryByTestId('current-counter')).toHaveTextContent('3')
+    })
+
+    it('sets 0 as "current-counter when there are no matches for the anonymousId"', async () => {
+      props.assignment.env.anonymousAssetId = '0baCxm'
+      const {queryByTestId} = render(<Header {...props} />)
+      expect(queryByTestId('current-counter')).toHaveTextContent('0')
+    })
+  })
+
+  describe('with anonymous peer reviews disabled', () => {
+    let props
+    beforeAll(async () => {
+      props = await mockAssignmentAndSubmission()
+      props.assignment.env.peerReviewModeEnabled = true
+      props.reviewerSubmission = {
+        ...props.submission,
+        assignedAssessments: [
+          {
+            anonymizedUser: {_id: '1'},
+            anonymousId: null,
+            workflowState: 'assigned',
+          },
+          {
+            anonymizedUser: {_id: '2'},
+            anonymousId: null,
+            workflowState: 'assigned',
+          },
+          {
+            anonymizedUser: {_id: '3'},
+            anonymousId: null,
+            workflowState: 'assigned',
+          },
+        ],
+      }
+    })
+
+    it('sets 1 as "current-counter" when reviewerId matches the first assigned assessment"', async () => {
+      props.assignment.env.revieweeId =
+        props.reviewerSubmission.assignedAssessments[0].anonymizedUser._id
+      const {queryByTestId} = render(<Header {...props} />)
+      expect(queryByTestId('current-counter')).toHaveTextContent('1')
+    })
+
+    it('sets assigned assessments count as "current-counter" when reviewerId matches the last assigned assessment"', async () => {
+      props.assignment.env.revieweeId =
+        props.reviewerSubmission.assignedAssessments[2].anonymizedUser._id
+      const {queryByTestId} = render(<Header {...props} />)
+      expect(queryByTestId('current-counter')).toHaveTextContent('3')
+    })
+
+    it('sets 0 as "current-counter when there are no matches for the reviewerId"', async () => {
+      props.assignment.env.revieweeId = '4'
+      const {queryByTestId} = render(<Header {...props} />)
+      expect(queryByTestId('current-counter')).toHaveTextContent('0')
+    })
+  })
+
+  it('uses the assigned assessments array length as "total counter"', async () => {
+    const props = await mockAssignmentAndSubmission()
+    props.assignment.env.peerReviewModeEnabled = true
+    props.reviewerSubmission = {
+      ...props.submission,
+      assignedAssessments: [
+        {
+          anonymousId: 'xaU9cd',
+          workflowState: 'assigned',
+        },
+        {
+          anonymousId: 'maT9fd',
+          workflowState: 'assigned',
+        },
+      ],
+    }
+    const {queryByTestId} = render(<Header {...props} />)
+    const assessmentsCount = props.reviewerSubmission.assignedAssessments.length
+    expect(queryByTestId('total-counter')).toHaveTextContent(assessmentsCount.toString())
   })
 })

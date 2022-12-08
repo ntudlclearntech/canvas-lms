@@ -46,14 +46,15 @@ import PropTypes from 'prop-types'
 import ReactDOM from 'react-dom'
 import formatMessage from '../format-message'
 import {Alert} from '@instructure/ui-alerts'
-import {Button} from '@instructure/ui-buttons'
+import {Link} from '@instructure/ui-link'
 import {Text} from '@instructure/ui-text'
 import {PresentationContent, ScreenReaderContent} from '@instructure/ui-a11y-content'
 import {Transition} from '@instructure/ui-motion'
+import RCEGlobals from '../rce/RCEGlobals'
 
 const messageHolderId = 'flashalert_message_holder' // specs fail if I reuse jquery's elements
 const screenreaderMessageHolderId = 'flash_screenreader_holder'
-const timeout = 10000
+const TIMEOUT = 10000
 
 // An Alert with a message and "Details" button which surfaces
 // more info about the error when pressed.
@@ -71,7 +72,7 @@ export default class FlashAlert extends React.Component {
   static defaultProps = {
     error: null,
     variant: 'info',
-    timeout,
+    timeout: TIMEOUT,
     screenReaderOnly: false
   }
 
@@ -157,9 +158,9 @@ export default class FlashAlert extends React.Component {
         details = (
           <span>
             <PresentationContent>
-              <Button variant="link" onClick={this.showDetails}>
+              <Link as="button" onClick={this.showDetails}>
                 {formatMessage('Details')}
-              </Button>
+              </Link>
             </PresentationContent>
             <ScreenReaderContent>{this.renderDetailMessage()}</ScreenReaderContent>
           </span>
@@ -168,7 +169,7 @@ export default class FlashAlert extends React.Component {
     }
 
     return (
-      <Transition transitionOnMount in={this.state.isOpen} type="fade">
+      <Transition transitionOnMount={true} in={this.state.isOpen} type="fade">
         <Alert
           variant={this.props.variant}
           renderCloseButtonLabel={formatMessage('Close')}
@@ -211,15 +212,14 @@ export function showFlashAlert({message, err, type = err ? 'error' : 'info', srO
   }
 
   function renderAlert(parent) {
+    const configuredTimeout = RCEGlobals.getConfig()?.flashAlertTimeout
     ReactDOM.render(
       <FlashAlert
         message={message}
-        timeout={
-          Number.isNaN(parseInt(ENV.flashAlertTimeout, 10)) ? timeout : ENV.flashAlertTimeout
-        }
+        timeout={Number.isNaN(parseInt(configuredTimeout, 10)) ? TIMEOUT : configuredTimeout}
         error={err}
         variant={type}
-        onClose={closeAlert.bind(null, parent)} // eslint-disable-line react/jsx-no-bind
+        onClose={closeAlert.bind(null, parent)}
         screenReaderOnly={srOnly}
       />,
       parent

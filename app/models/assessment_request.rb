@@ -77,6 +77,10 @@ class AssessmentRequest < ActiveRecord::Base
   scope :for_asset, ->(asset_id) { where(asset_id: asset_id) }
   scope :for_assignment, ->(assignment_id) { eager_load(:submission).where(submissions: { assignment_id: assignment_id }) }
   scope :for_courses, ->(courses) { eager_load(:submission).where(submissions: { course_id: courses }) }
+  scope :for_active_users, lambda { |course|
+    current_enrollments = course.current_enrollments.pluck(:user_id)
+    where(user_id: current_enrollments)
+  }
 
   scope :not_ignored_by, lambda { |user, purpose|
     where("NOT EXISTS (?)",
@@ -129,6 +133,10 @@ class AssessmentRequest < ActiveRecord::Base
 
   def incomplete?
     workflow_state == "assigned"
+  end
+
+  def available?
+    asset&.submitted_at.present? && assessor_asset&.submitted_at.present?
   end
 
   on_create_send_to_streams do

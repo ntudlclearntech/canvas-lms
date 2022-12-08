@@ -17,7 +17,7 @@
  */
 
 import {useScope as useI18nScope} from '@canvas/i18n'
-import React from 'react'
+import React, {useState} from 'react'
 import PropTypes from 'prop-types'
 import {Checkbox, CheckboxGroup} from '@instructure/ui-checkbox'
 import {ConferenceAddressBook} from '../ConferenceAddressBook/ConferenceAddressBook'
@@ -29,6 +29,8 @@ import {TextArea} from '@instructure/ui-text-area'
 const I18n = useI18nScope('video_conference')
 
 const BaseModalOptions = props => {
+  const [noTimeLimit, setNoTimeLimit] = useState(props.options.includes('no_time_limit'))
+
   return (
     <>
       <Flex margin="none none large" direction="column">
@@ -40,7 +42,8 @@ const BaseModalOptions = props => {
             onChange={(e, value) => {
               props.onSetName(value)
             }}
-            isRequired
+            isRequired={true}
+            messages={props.nameValidationMessages}
           />
         </Flex.Item>
         <Flex.Item padding="medium">
@@ -48,7 +51,7 @@ const BaseModalOptions = props => {
             <NumberInput
               renderLabel={I18n.t('Duration in Minutes')}
               display="inline-block"
-              value={props.duration}
+              value={noTimeLimit ? '' : props.duration}
               onChange={(e, value) => {
                 if (!Number.isInteger(Number(value))) return
 
@@ -65,7 +68,9 @@ const BaseModalOptions = props => {
 
                 props.onSetDuration(props.duration - 1)
               }}
-              isRequired
+              interaction={noTimeLimit || props.hasBegun ? 'disabled' : 'enabled'}
+              isRequired={!noTimeLimit}
+              messages={props.durationValidationMessages}
             />
           </span>
         </Flex.Item>
@@ -81,6 +86,10 @@ const BaseModalOptions = props => {
             <Checkbox
               label={I18n.t('No time limit (for long-running conferences)')}
               value="no_time_limit"
+              onChange={event => {
+                setNoTimeLimit(event.target.checked)
+              }}
+              disabled={props.hasBegun}
             />
           </CheckboxGroup>
         </Flex.Item>
@@ -103,12 +112,13 @@ const BaseModalOptions = props => {
         {props.showAddressBook && (
           <Flex.Item padding="medium">
             <ConferenceAddressBook
-              data-testId="conference-address-book"
-              selectedIds={props.selectedAttendees}
-              userList={props.availableAttendeesList}
-              onChange={userList => {
-                props.onAttendeesChange(userList.map(u => u.id))
+              data-testid="conference-address-book"
+              selectedItems={props.selectedAttendees}
+              menuItemList={props.availableAttendeesList}
+              onChange={menuItemList => {
+                props.onAttendeesChange(menuItemList)
               }}
+              isEditing={props.isEditing}
             />
           </Flex.Item>
         )}
@@ -120,6 +130,7 @@ const BaseModalOptions = props => {
             onChange={e => {
               props.onSetDescription(e.target.value)
             }}
+            messages={props.descriptionValidationMessages}
           />
         </Flex.Item>
       </Flex>
@@ -141,7 +152,12 @@ BaseModalOptions.propTypes = {
   showAddressBook: PropTypes.bool,
   onAttendeesChange: PropTypes.func,
   availableAttendeesList: PropTypes.arrayOf(PropTypes.object),
-  selectedAttendees: PropTypes.arrayOf(PropTypes.string)
+  selectedAttendees: PropTypes.arrayOf(PropTypes.string),
+  nameValidationMessages: PropTypes.array,
+  descriptionValidationMessages: PropTypes.array,
+  hasBegun: PropTypes.bool,
+  durationValidationMessages: PropTypes.array,
+  isEditing: PropTypes.bool,
 }
 
 export default BaseModalOptions

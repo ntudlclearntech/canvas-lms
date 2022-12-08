@@ -20,6 +20,13 @@ import $ from 'jquery'
 import {View} from '@canvas/backbone'
 import template from '../../jst/newConference.handlebars'
 import '@canvas/rails-flash-notifications'
+import authenticity_token from '@canvas/authenticity-token'
+import { Spinner } from '@instructure/ui-spinner'
+import { Text } from '@instructure/ui-text'
+import ReactDOM from 'react-dom'
+import React from 'react'
+
+import '@canvas/forms/jquery/jquery.instructure_forms' # formSubmit
 
 I18n = useI18nScope('conferences')
 
@@ -33,6 +40,7 @@ export default class ConferenceView extends View
 
   events:
     'click .edit_conference_link': 'edit'
+    'click .sync_conference_link': 'syncAttendees'
     'click .delete_conference_link': 'delete'
     'click .close_conference_link': 'close'
     'click .start-button': 'start'
@@ -43,9 +51,46 @@ export default class ConferenceView extends View
     super
     @model.on('change', @render)
 
+  syncAttendees: (e) ->
+    @el.querySelector("a[data-testid='settings-cog']")?.classList.add('ui-state-disabled')
+    @el.querySelector("a[data-testid='start-button']")?.setAttribute('disabled', '')
+    atag = e.target
+    form = atag.parentElement.querySelector('form')
+    conference_name = form.querySelector("[name='web_conference[title]']").value || ''
+    spinner = React.createElement(Spinner, {renderTitle:"Loading", size:"x-small"})
+    spinnerText = React.createElement(Text, {size: "small"}, I18n.t(' Attendee sync in progress... '))
+    spinnerDomEl = @el.querySelector('.conference-loading-indicator')
+    ReactDOM.render([spinner, spinnerText], spinnerDomEl)
+    @el.querySelector('.conference-loading-indicator').style.display = "block"
+    @$(form).formSubmit(
+      object_name: 'web_conference'
+      success: (data) =>
+        @model.set(data)
+        @model.trigger('sync')
+        @el.querySelector('.conference-loading-indicator').style.display = "none"
+        ReactDOM.unmountComponentAtNode(spinnerDomEl)
+        $.flashMessage(conference_name + I18n.t(" Attendees Synced!"))
+        @el.querySelector("a[data-testid='settings-cog']")?.classList.remove('ui-state-disabled')
+        @el.querySelector("a[data-testid='start-button']")?.removeAttribute('disabled')
+      error: =>
+        @show(@model)
+        @el.querySelector('.conference-loading-indicator').style.display = "none"
+        ReactDOM.unmountComponentAtNode(spinnerDomEl)
+        $.flashError(conference_name + I18n.t(" Attendees Failed to Sync."))
+        @el.querySelector("a[data-testid='settings-cog']")?.classList.remove('ui-state-disabled')
+        @el.querySelector("a[data-testid='start-button']")?.removeAttribute('disabled')
+    )
+    @$(form).submit()
+
+
   edit: (e) ->
     # refocus if edit not finalized
     @$el.find('.al-trigger').focus()
+
+  toJSON: ->
+    json = super
+    json['auth_token'] = authenticity_token()
+    json
 
   delete: (e) ->
     e.preventDefault()

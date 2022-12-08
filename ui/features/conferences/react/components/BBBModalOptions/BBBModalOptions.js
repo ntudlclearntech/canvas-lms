@@ -21,30 +21,40 @@ import React, {useState} from 'react'
 import PropTypes from 'prop-types'
 import {Checkbox, CheckboxGroup} from '@instructure/ui-checkbox'
 import {ConferenceAddressBook} from '../ConferenceAddressBook/ConferenceAddressBook'
+import {IconButton} from '@instructure/ui-buttons'
+import {IconInfoLine} from '@instructure/ui-icons'
 import {TextInput} from '@instructure/ui-text-input'
 import {NumberInput} from '@instructure/ui-number-input'
 import {Flex} from '@instructure/ui-flex'
 import {TextArea} from '@instructure/ui-text-area'
 import {Tabs} from '@instructure/ui-tabs'
+import {Tooltip} from '@instructure/ui-tooltip'
+import {DateTimeInput} from '@instructure/ui-forms'
+import {ScreenReaderContent} from '@instructure/ui-a11y-content'
+import {SETTINGS_TAB, ATTENDEES_TAB} from '../../../util/constants'
+import {View} from '@instructure/ui-view'
+import DateHelper from '@canvas/datetime/dateHelper'
 
 const I18n = useI18nScope('video_conference')
 
-const BBBModalOptions = props => {
-  const SETTINGS_TAB = 'settings'
-  const ATTENDEES_TAB = 'attendees'
+const BBBModalOptions = ({addToCalendar, setAddToCalendar, ...props}) => {
+  const [noTimeLimit, setNoTimeLimit] = useState(props.options.includes('no_time_limit')) // match options.no_time_limit default
 
-  const [tab, setTab] = useState(SETTINGS_TAB)
+  const contextIsGroup = ENV.context_asset_string?.split('_')[0] === 'group'
+  const inviteAllMembersText = contextIsGroup
+    ? I18n.t('Invite all group members')
+    : I18n.t('Invite all course members')
 
   return (
     <Tabs
       onRequestTabChange={(e, {id}) => {
-        setTab(id)
+        props.setTab(id)
       }}
     >
       <Tabs.Panel
         id={SETTINGS_TAB}
         renderTitle={I18n.t('Settings')}
-        selected={tab === SETTINGS_TAB}
+        isSelected={props.tab === SETTINGS_TAB}
       >
         <Flex margin="none none large" direction="column">
           <Flex.Item padding="small">
@@ -55,7 +65,8 @@ const BBBModalOptions = props => {
               onChange={(e, value) => {
                 props.onSetName(value)
               }}
-              isRequired
+              isRequired={true}
+              messages={props.nameValidationMessages}
             />
           </Flex.Item>
           <Flex.Item padding="small">
@@ -63,7 +74,7 @@ const BBBModalOptions = props => {
               <NumberInput
                 renderLabel={I18n.t('Duration in Minutes')}
                 display="inline-block"
-                value={props.duration}
+                value={noTimeLimit ? '' : props.duration}
                 onChange={(e, value) => {
                   if (!Number.isInteger(Number(value))) return
 
@@ -80,7 +91,9 @@ const BBBModalOptions = props => {
 
                   props.onSetDuration(props.duration - 1)
                 }}
-                isRequired
+                interaction={noTimeLimit || props.hasBegun ? 'disabled' : 'enabled'}
+                isRequired={!noTimeLimit}
+                messages={props.durationValidationMessages}
               />
             </span>
           </Flex.Item>
@@ -96,15 +109,99 @@ const BBBModalOptions = props => {
               <Checkbox
                 label={I18n.t('Enable recording for this conference')}
                 value="recording_enabled"
+                disabled={!ENV.bbb_recording_enabled}
               />
               <Checkbox
                 label={I18n.t('No time limit (for long-running conferences)')}
                 value="no_time_limit"
+                onChange={event => {
+                  setNoTimeLimit(event.target.checked)
+                }}
+                disabled={props.hasBegun}
               />
-              <Checkbox label={I18n.t('Enable waiting room')} value="enable_waiting_room" />
-              <Checkbox label={I18n.t('Add to Calendar')} value="add_to_calendar" />
+              <Checkbox
+                label={I18n.t('Enable waiting room')}
+                value="enable_waiting_room"
+                disabled={props.hasBegun}
+              />
+              {!contextIsGroup && ENV.can_manage_calendar && (
+                <Checkbox
+                  label={I18n.t('Add to Calendar')}
+                  value="add_to_calendar"
+                  onChange={event => {
+                    setAddToCalendar(event.target.checked)
+                    // due to calendar api, it sends invite to full course, thus invite_all must be checked
+                    if (event.target.checked) {
+                      props.onSetInvitationOptions(['invite_all'])
+                    }
+                  }}
+                  disabled={props.hasBegun}
+                />
+              )}
             </CheckboxGroup>
           </Flex.Item>
+          {props.startDate && props.hasBegun && (
+            <Flex.Item padding="small" data-testid="plain-text-dates">
+              <div>
+                <span>{`${I18n.t('Start at: ')} ${DateHelper.formatDatetimeForDisplay(
+                  props.startDate
+                )}`}</span>
+              </div>
+              {props.endDate && (
+                <div>
+                  <span>{`${I18n.t('End at: ')} ${DateHelper.formatDatetimeForDisplay(
+                    props.endDate
+                  )}`}</span>
+                </div>
+              )}
+            </Flex.Item>
+          )}
+          {props.showCalendar && !props.hasBegun && (
+            <Flex.Item>
+              <Flex wrap="wrap">
+                <Flex.Item padding="small" align="start">
+                  <DateTimeInput
+                    data-testId="start-date-input"
+                    onChange={(e, newValue) => {
+                      props.onStartDateChange(newValue)
+                    }}
+                    layout="columns"
+                    dateLabel={I18n.t('Start Date')}
+                    timeLabel={I18n.t('Start Time')}
+                    value={props.startDate}
+                    invalidDateTimeMessage={I18n.t('Invalid date and time')}
+                    dateNextLabel={I18n.t('Next Month')}
+                    datePreviousLabel={I18n.t('Previous Month')}
+                    description={
+                      <ScreenReaderContent>
+                        {I18n.t('Start Date for Conference')}
+                      </ScreenReaderContent>
+                    }
+                    messages={props.calendarValidationMessages[0]}
+                  />
+                </Flex.Item>
+                <Flex.Item padding="small none small small" align="start">
+                  <DateTimeInput
+                    data-testId="end-date-input"
+                    onChange={(e, newValue) => {
+                      props.onEndDateChange(newValue)
+                    }}
+                    layout="columns"
+                    dateLabel={I18n.t('End Date')}
+                    timeLabel={I18n.t('End Time')}
+                    value={props.endDate}
+                    invalidDateTimeMessage={I18n.t('Invalid date and time')}
+                    dateNextLabel={I18n.t('Next Month')}
+                    datePreviousLabel={I18n.t('Previous Month')}
+                    description={
+                      <ScreenReaderContent>{I18n.t('End Date for Conference')}</ScreenReaderContent>
+                    }
+                    messages={props.calendarValidationMessages[1]}
+                  />
+                </Flex.Item>
+              </Flex>
+            </Flex.Item>
+          )}
           <Flex.Item padding="small">
             <TextArea
               label={I18n.t('Description')}
@@ -113,6 +210,7 @@ const BBBModalOptions = props => {
               onChange={e => {
                 props.onSetDescription(e.target.value)
               }}
+              messages={props.descriptionValidationMessages}
             />
           </Flex.Item>
         </Flex>
@@ -120,7 +218,7 @@ const BBBModalOptions = props => {
       <Tabs.Panel
         id={ATTENDEES_TAB}
         renderTitle={I18n.t('Attendees')}
-        selected={tab === ATTENDEES_TAB}
+        isSelected={props.tab === ATTENDEES_TAB}
       >
         <Flex margin="none none large" direction="column">
           <Flex.Item padding="small">
@@ -130,24 +228,47 @@ const BBBModalOptions = props => {
                 props.onSetInvitationOptions([...value])
               }}
               defaultValue={props.invitationOptions}
-              description={I18n.t('Invitation Options')}
+              description={
+                <View>
+                  {I18n.t('Invitation Options')}
+                  {addToCalendar && (
+                    <Tooltip
+                      renderTip={I18n.t('All course members must be invited to calendar events.')}
+                      placement="end"
+                      on={['click', 'hover', 'focus']}
+                    >
+                      <IconButton
+                        renderIcon={IconInfoLine}
+                        withBackground={false}
+                        withBorder={false}
+                        screenReaderLabel="Toggle Tooltip"
+                        data-testid="inviteAll-tooltip"
+                      />
+                    </Tooltip>
+                  )}
+                </View>
+              }
             >
-              <Checkbox label={I18n.t('Invite all course members')} value="invite_all" />
-              <Checkbox
-                label={I18n.t('Remove all course observer members')}
-                value="remove_observers"
-              />
+              <Checkbox label={inviteAllMembersText} value="invite_all" disabled={addToCalendar} />
+              {!contextIsGroup && (
+                <Checkbox
+                  label={I18n.t('Remove all course observer members')}
+                  value="remove_observers"
+                  disabled={addToCalendar || !props.invitationOptions.includes('invite_all')}
+                />
+              )}
             </CheckboxGroup>
           </Flex.Item>
           {props.showAddressBook && (
             <Flex.Item padding="small">
               <ConferenceAddressBook
                 data-testId="conference-address-book"
-                selectedIds={props.selectedAttendees}
-                userList={props.availableAttendeesList}
-                onChange={userList => {
-                  props.onAttendeesChange(userList.map(u => u.id))
+                selectedItems={props.selectedAttendees}
+                menuItemList={props.availableAttendeesList}
+                onChange={menuItemList => {
+                  props.onAttendeesChange(menuItemList)
                 }}
+                isEditing={props.isEditing}
               />
             </Flex.Item>
           )}
@@ -160,17 +281,41 @@ const BBBModalOptions = props => {
               defaultValue={props.attendeesOptions}
               description={I18n.t('Allow Attendees To...')}
             >
-              <Checkbox label={I18n.t('Share webcam')} value="share_webcam" />
-              <Checkbox label={I18n.t('See other viewers webcams')} value="share_other_webcams" />
-              <Checkbox label={I18n.t('Share microphone')} value="share_microphone" />
-              <Checkbox label={I18n.t('Send public chat messages')} value="send_public_chat" />
-              <Checkbox label={I18n.t('Send private chat messages')} value="send_private_chat" />
+              <Checkbox
+                label={I18n.t('Share webcam')}
+                value="share_webcam"
+                disabled={props.hasBegun}
+              />
+              <Checkbox
+                label={I18n.t('See other viewers webcams')}
+                value="share_other_webcams"
+                disabled={props.hasBegun}
+              />
+              <Checkbox
+                label={I18n.t('Share microphone')}
+                value="share_microphone"
+                disabled={props.hasBegun}
+              />
+              <Checkbox
+                label={I18n.t('Send public chat messages')}
+                value="send_public_chat"
+                disabled={props.hasBegun}
+              />
+              <Checkbox
+                label={I18n.t('Send private chat messages')}
+                value="send_private_chat"
+                disabled={props.hasBegun}
+              />
             </CheckboxGroup>
           </Flex.Item>
         </Flex>
       </Tabs.Panel>
     </Tabs>
   )
+}
+
+BBBModalOptions.defaultProps = {
+  calendarValidationMessages: [],
 }
 
 BBBModalOptions.propTypes = {
@@ -189,7 +334,22 @@ BBBModalOptions.propTypes = {
   showAddressBook: PropTypes.bool,
   onAttendeesChange: PropTypes.func,
   availableAttendeesList: PropTypes.arrayOf(PropTypes.object),
-  selectedAttendees: PropTypes.arrayOf(PropTypes.string)
+  selectedAttendees: PropTypes.arrayOf(PropTypes.object),
+  showCalendar: PropTypes.bool,
+  setAddToCalendar: PropTypes.func,
+  addToCalendar: PropTypes.bool,
+  onEndDateChange: PropTypes.func,
+  onStartDateChange: PropTypes.func,
+  startDate: PropTypes.string,
+  endDate: PropTypes.string,
+  calendarValidationMessages: PropTypes.array,
+  tab: PropTypes.string,
+  setTab: PropTypes.func,
+  nameValidationMessages: PropTypes.array,
+  descriptionValidationMessages: PropTypes.array,
+  hasBegun: PropTypes.bool,
+  durationValidationMessages: PropTypes.array,
+  isEditing: PropTypes.bool,
 }
 
 export default BBBModalOptions

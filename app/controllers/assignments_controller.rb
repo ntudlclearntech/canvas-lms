@@ -135,12 +135,30 @@ class AssignmentsController < ApplicationController
                  end
 
     peer_review_mode_enabled = @context.feature_enabled?(:peer_reviews_for_a2) && (params[:reviewee_id].present? || params[:anonymous_asset_id].present?)
+    peer_review_available = submission.present? && submission.submitted? && current_user_submission.present? && current_user_submission.submitted?
+
     js_env({
              peer_review_mode_enabled: submission.present? && peer_review_mode_enabled,
-             peer_review_available: submission.present? && submission.submitted? && current_user_submission.present? && current_user_submission.submitted?,
-             peer_display_name: @assignment.anonymous_peer_reviews? ? I18n.t("Anonymous student") : submission.user.name,
+             peer_review_available: peer_review_available,
+             peer_display_name: @assignment.anonymous_peer_reviews? ? I18n.t("Anonymous student") : submission&.user&.name,
              originality_reports_for_a2_enabled: Account.site_admin.feature_enabled?(:originality_reports_for_a2)
            })
+
+    if peer_review_mode_enabled
+      graphql_reviewer_submission_id = nil
+      if current_user_submission
+        graphql_reviewer_submission_id = CanvasSchema.id_from_object(
+          current_user_submission,
+          CanvasSchema.resolve_type(nil, current_user_submission, nil),
+          nil
+        )
+      end
+      js_env({
+               reviewee_id: @assignment.anonymous_peer_reviews? ? nil : params[:reviewee_id],
+               anonymous_asset_id: params[:anonymous_asset_id],
+               REVIEWER_SUBMISSION_ID: graphql_reviewer_submission_id
+             })
+    end
 
     graphql_submission_id = nil
     if submission
@@ -352,7 +370,7 @@ class AssignmentsController < ApplicationController
         end
 
         @external_tools = if @assignment.submission_types.include?("online_upload") || @assignment.submission_types.include?("online_url")
-                            ContextExternalTool.all_tools_for(@context, user: @current_user, placements: :homework_submission)
+                            Lti::ContextToolFinder.all_tools_for(@context, user: @current_user, placements: :homework_submission)
                           else
                             []
                           end
@@ -571,12 +589,13 @@ class AssignmentsController < ApplicationController
     rce_js_env
     add_crumb @context.elementary_enabled? ? t("Important Info") : t("#crumbs.syllabus", "Syllabus")
 
-    @course_home_sub_navigation_tools =
-      ContextExternalTool.all_tools_for(@context, placements: :course_home_sub_navigation,
-                                                  root_account: @domain_root_account, current_user: @current_user).to_a
-    unless @context.grants_any_right?(@current_user, session, :manage_content, *RoleOverride::GRANULAR_MANAGE_COURSE_CONTENT_PERMISSIONS)
-      @course_home_sub_navigation_tools.reject! { |tool| tool.course_home_sub_navigation(:visibility) == "admins" }
-    end
+    can_see_admin_tools = @context.grants_any_right?(
+      @current_user, session, :manage_content, *RoleOverride::GRANULAR_MANAGE_COURSE_CONTENT_PERMISSIONS
+    )
+    @course_home_sub_navigation_tools = Lti::ContextToolFinder.new(
+      @context, type: :course_home_sub_navigation,
+                root_account: @domain_root_account, current_user: @current_user
+    ).all_tools_sorted_array(exclude_admin_visibility: !can_see_admin_tools)
 
     if authorized_action(@context, @current_user, [:read, :read_syllabus])
       return unless tab_enabled?(@context.class::TAB_SYLLABUS)

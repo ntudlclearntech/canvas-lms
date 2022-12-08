@@ -23,6 +23,7 @@ import {Text} from '@instructure/ui-text'
 import {View} from '@instructure/ui-view'
 import {IconInfoLine} from '@instructure/ui-icons'
 import {Tooltip} from '@instructure/ui-tooltip'
+import {ScreenReaderContent} from '@instructure/ui-a11y-content'
 import useCanvasContext from '@canvas/outcomes/react/hooks/useCanvasContext'
 import {useScope as useI18nScope} from '@canvas/i18n'
 
@@ -30,6 +31,8 @@ const I18n = useI18nScope('AlignmentSummary')
 
 const AlignmentStatItem = ({type, count, percent, average}) => {
   const {isMobileView} = useCanvasContext()
+  const statPercentage = I18n.toPercentage((percent * 100).toFixed(), {precision: 0})
+  const statAverage = I18n.n(average.toFixed(1), {precision: 1})
   let statName, statDescription, statType
   if (type === 'outcome') {
     statName = I18n.t(
@@ -57,32 +60,38 @@ const AlignmentStatItem = ({type, count, percent, average}) => {
     statDescription = I18n.t('Avg. Alignments per Artifact')
   }
 
-  const renderTooltip = () => (
-    <Tooltip
-      on={['click', 'hover', 'focus']}
-      color="primary"
-      renderTip={
-        <View as="div" width="12rem" textAlign="center">
-          <Text size="small">{I18n.t('Outcomes may be aligned to rubrics and quizzes')}</Text>
-        </View>
-      }
-    >
-      <div
-        style={{
-          fontSize: isMobileView ? '0.75rem' : '1rem',
-          padding: isMobileView ? '0 0 0.15rem 0.2rem' : '0 0 0.2rem 0.3rem'
-        }}
+  const renderTooltip = () => {
+    const tooltipText = I18n.t('Outcomes may be aligned to rubrics and quizzes')
+    return (
+      <Tooltip
+        on={['click', 'hover', 'focus']}
+        color="primary"
+        renderTip={
+          <View as="div" width="12rem" textAlign="center">
+            <Text size="small">{tooltipText}</Text>
+          </View>
+        }
       >
-        <IconInfoLine tabIndex="0" data-testid="outcome-alignment-stat-info-icon" />
-      </div>
-    </Tooltip>
-  )
+        <div
+          style={{
+            fontSize: isMobileView ? '0.75rem' : '1rem',
+            padding: isMobileView ? '0 0 0.15rem 0.2rem' : '0 0 0.2rem 0.3rem'
+          }}
+        >
+          <IconInfoLine tabIndex="0" data-testid="outcome-alignment-stat-info-icon" />
+          <div style={{position: 'relative'}}>
+            <ScreenReaderContent>{tooltipText}</ScreenReaderContent>
+          </div>
+        </div>
+      </Tooltip>
+    )
+  }
 
   return (
     <View
       as="span"
       display="inline-block"
-      width={isMobileView ? '17rem' : '30rem'}
+      width={isMobileView ? '100%' : '30rem'}
       padding="small"
       margin="0 small 0 0"
       borderRadius="medium"
@@ -94,7 +103,12 @@ const AlignmentStatItem = ({type, count, percent, average}) => {
         <Flex.Item as="div">
           <Flex>
             <Flex.Item>
-              <Text size={isMobileView ? 'medium' : 'large'}>{statName}</Text>
+              <Text
+                size={isMobileView ? 'medium' : 'large'}
+                data-testid="outcome-alignment-stat-name"
+              >
+                {statName}
+              </Text>
             </Flex.Item>
             {type === 'artifact' && <Flex.Item>{renderTooltip()}</Flex.Item>}
           </Flex>
@@ -106,19 +120,37 @@ const AlignmentStatItem = ({type, count, percent, average}) => {
             wrap={isMobileView ? 'no-wrap' : 'wrap'}
           >
             <Flex.Item as="div">
-              <Text size={isMobileView ? 'small' : 'large'} weight="bold">
-                {`${(percent * 100).toFixed()}%`}
+              <Text
+                size={isMobileView ? 'small' : 'large'}
+                weight="bold"
+                data-testid="outcome-alignment-stat-percent"
+              >
+                {statPercentage}
               </Text>
               <View padding="0 small 0 xx-small">
-                <Text size={isMobileView ? 'small' : 'medium'}>{statType}</Text>
+                <Text
+                  size={isMobileView ? 'small' : 'medium'}
+                  data-testid="outcome-alignment-stat-type"
+                >
+                  {statType}
+                </Text>
               </View>
             </Flex.Item>
             <Flex.Item as="div">
-              <Text size={isMobileView ? 'small' : 'large'} weight="bold">
-                {average.toFixed(1)}
+              <Text
+                size={isMobileView ? 'small' : 'large'}
+                weight="bold"
+                data-testid="outcome-alignment-stat-average"
+              >
+                {statAverage}
               </Text>
               <View padding="0 small 0 xx-small">
-                <Text size={isMobileView ? 'small' : 'medium'}>{statDescription}</Text>
+                <Text
+                  size={isMobileView ? 'small' : 'medium'}
+                  data-testid="outcome-alignment-stat-description"
+                >
+                  {statDescription}
+                </Text>
               </View>
             </Flex.Item>
           </Flex>

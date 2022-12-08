@@ -33,13 +33,29 @@ const TEXT_POSITIONS = ['middle', 'bottom-third', 'below']
 
 const getTextSection = () => document.querySelector('#icons-tray-text-section')
 
+const processText = (oldValue, newValue) => {
+  let result = newValue
+  if (newValue.length > MAX_TOTAL_TEXT_CHARS) {
+    if (oldValue.length >= MAX_TOTAL_TEXT_CHARS) {
+      // When typing chars
+      result = oldValue
+    } else {
+      // When pasting text
+      result = result.substring(0, MAX_TOTAL_TEXT_CHARS)
+    }
+  }
+  return result
+}
+
 export const TextSection = ({settings, onChange}) => {
-  const [text, setText] = useDebouncedValue(settings.text, t => {
-    if (t.length <= MAX_TOTAL_TEXT_CHARS) onChange({text: t})
-  })
+  const [text, setText] = useDebouncedValue(
+    settings.text || '',
+    value => onChange({text: value}),
+    value => processText(text, value)
+  )
 
   return (
-    <Group as="section" defaultExpanded summary={formatMessage('Text')}>
+    <Group as="section" defaultExpanded={true} summary={formatMessage('Text')}>
       <Flex
         as="section"
         justifyItems="space-between"
@@ -84,7 +100,7 @@ export const TextSection = ({settings, onChange}) => {
             name="icon-text-color"
             onChange={textColor => onChange({textColor})}
             popoverMountNode={getTextSection}
-            requireColor
+            requireColor={true}
           />
         </Flex.Item>
 

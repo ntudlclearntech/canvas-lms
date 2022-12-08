@@ -24,49 +24,83 @@ import userEvent from '@testing-library/user-event'
 jest.mock('../imageCropUtils', () => ({
   createCroppedImageSvg: jest.fn(() =>
     Promise.resolve({
-      outerHTML: null
+      outerHTML: null,
     })
-  )
+  ),
 }))
 
 describe('ImageCropperModal', () => {
+  let props
+
+  const renderComponent = (overrides = {}) => {
+    return render(<ImageCropperModal {...props} {...overrides} />)
+  }
+
+  beforeEach(() => {
+    props = {
+      open: true,
+      onSubmit: jest.fn(),
+      image: 'data:image/png;base64,asdfasdfjksdf==',
+      trayDispatch: jest.fn(),
+    }
+  })
+
   beforeAll(() => {
     global.fetch = jest.fn().mockResolvedValue({
-      blob: () => Promise.resolve(new Blob(['somedata'], {type: 'image/svg+xml'}))
+      blob: () => Promise.resolve(new Blob(['somedata'], {type: 'image/svg+xml'})),
     })
   })
 
+  afterEach(() => {
+    jest.clearAllMocks()
+  })
+
+  it('renders the message', () => {
+    renderComponent({message: 'Banana'})
+    expect(screen.getByTestId('alert-message')).toBeInTheDocument()
+    expect(screen.getByText(/banana/i)).toBeInTheDocument()
+  })
+
+  it("doesn't render the message", () => {
+    renderComponent()
+    expect(screen.queryByTestId('alert-message')).not.toBeInTheDocument()
+  })
+
   it('calls onSubmit function', async () => {
-    const onSubmit = jest.fn()
-    render(
-      <ImageCropperModal open onSubmit={onSubmit} image="data:image/png;base64,asdfasdfjksdf==" />
-    )
+    renderComponent()
     const button = screen.getByRole('button', {name: /save/i})
     userEvent.click(button)
     await waitFor(() => {
-      expect(onSubmit).toHaveBeenCalled()
+      expect(props.onSubmit).toHaveBeenCalled()
     })
   })
 
   it('call onSubmit function with correct args', async () => {
-    const onSubmit = jest.fn()
-    render(
-      <ImageCropperModal open onSubmit={onSubmit} image="data:image/png;base64,asdfasdfjksdf==" />
-    )
+    renderComponent()
     const button = screen.getByRole('button', {name: /save/i})
     userEvent.click(button)
     await waitFor(() => {
-      expect(onSubmit).toHaveBeenCalledWith(
+      expect(props.onSubmit).toHaveBeenCalledWith(
         {
           image: 'data:image/png;base64,asdfasdfjksdf==',
           rotation: 0,
           scaleRatio: 1,
           shape: 'square',
           translateX: 0,
-          translateY: 0
+          translateY: 0,
         },
         'data:image/svg+xml;base64,bnVsbA=='
       )
+    })
+  })
+
+  it('calls trayDispatch with the correct args', async () => {
+    renderComponent()
+    userEvent.click(screen.getByTestId('shape-select-dropdown'))
+    userEvent.click(screen.getByText('Circle'))
+    userEvent.click(screen.getByRole('button', {name: /save/i}))
+    await waitFor(() => {
+      expect(props.trayDispatch).toHaveBeenCalledWith({shape: 'circle'})
     })
   })
 })

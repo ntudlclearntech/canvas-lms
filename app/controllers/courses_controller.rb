@@ -508,13 +508,11 @@ class CoursesController < ApplicationController
           css_bundle :context_list, :course_list
           js_bundle :course_list
 
-          create_permission_root_account = @current_user.create_courses_right(@domain_root_account)
-          create_permission_mcc_account = @current_user.create_courses_right(@domain_root_account.manually_created_courses_account)
           js_env({
                    CREATE_COURSES_PERMISSIONS: {
-                     PERMISSION: create_permission_root_account || create_permission_mcc_account,
-                     RESTRICT_TO_MCC_ACCOUNT: !!(!create_permission_root_account && create_permission_mcc_account)
-                   }
+                     PERMISSION: ccr = @current_user.create_courses_right(@current_user.sub_account_for_course_creation(@domain_root_account)),
+                     RESTRICT_TO_MCC_ACCOUNT: ccr && !@domain_root_account.grants_any_right?(@current_user, session, :manage_courses, :create_courses)
+                   },
                  })
 
           set_k5_mode(require_k5_theme: true)
@@ -824,7 +822,7 @@ class CoursesController < ApplicationController
   #
   # @returns Course
   def create
-    @account = params[:account_id] ? api_find(Account, params[:account_id]) : @domain_root_account.manually_created_courses_account
+    @account = params[:account_id] ? api_find(Account, params[:account_id]) : @current_user.sub_account_for_course_creation(@domain_root_account)
     if authorized_action(@account, @current_user, [:manage_courses, :create_courses])
       params[:course] ||= {}
       params_for_create = course_params
@@ -1555,13 +1553,12 @@ class CoursesController < ApplicationController
                BLUEPRINT_RESTRICTIONS_BY_OBJECT_TYPE: restrictions_by_object_type
              })
 
-      @course_settings_sub_navigation_tools = ContextExternalTool.all_tools_for(@context,
-                                                                                type: :course_settings_sub_navigation,
-                                                                                root_account: @domain_root_account,
-                                                                                current_user: @current_user)
-      unless @context.grants_right?(@current_user, session, :read_as_admin)
-        @course_settings_sub_navigation_tools.reject! { |tool| tool.course_settings_sub_navigation(:visibility) == "admins" }
-      end
+      @course_settings_sub_navigation_tools = Lti::ContextToolFinder.new(
+        @context, type: :course_settings_sub_navigation,
+                  root_account: @domain_root_account, current_user: @current_user
+      ).all_tools_sorted_array(
+        exclude_admin_visibility: !@context.grants_right?(@current_user, session, :read_as_admin)
+      )
     end
   end
 
@@ -2297,12 +2294,13 @@ class CoursesController < ApplicationController
           @recent_feedback = @current_user.recent_feedback(contexts: @contexts) || []
         end
 
-        @course_home_sub_navigation_tools =
-          ContextExternalTool.all_tools_for(@context, placements: :course_home_sub_navigation,
-                                                      root_account: @domain_root_account, current_user: @current_user).to_a
-        unless @context.grants_any_right?(@current_user, session, :manage_content, *RoleOverride::GRANULAR_MANAGE_COURSE_CONTENT_PERMISSIONS)
-          @course_home_sub_navigation_tools.reject! { |tool| tool.course_home_sub_navigation(:visibility) == "admins" }
-        end
+        can_see_admin_tools = @context.grants_any_right?(
+          @current_user, session, :manage_content, *RoleOverride::GRANULAR_MANAGE_COURSE_CONTENT_PERMISSIONS
+        )
+        @course_home_sub_navigation_tools = Lti::ContextToolFinder.new(
+          @context, type: :course_home_sub_navigation,
+                    root_account: @domain_root_account, current_user: @current_user
+        ).all_tools_sorted_array(exclude_admin_visibility: !can_see_admin_tools)
 
         css_bundle :dashboard
         css_bundle :react_todo_sidebar if planner_enabled?
@@ -2548,7 +2546,7 @@ class CoursesController < ApplicationController
         end
       if !@context.concluded? && (@enrollments = EnrollmentsFromUserList.process(list, @context, enrollment_options))
         ActiveRecord::Associations.preload(@enrollments, [:course_section, { user: [:communication_channel, :pseudonym] }])
-        InstStatsd::Statsd.count("course.#{@context.enable_course_paces ? "paced" : "unpaced"}.student_enrollment_count", @context.student_enrollments)
+        InstStatsd::Statsd.count("course.#{@context.enable_course_paces ? "paced" : "unpaced"}.student_enrollment_count", @context.student_enrollments.count)
         json = @enrollments.map do |e|
           { "enrollment" =>
             { "associated_user_id" => e.associated_user_id,
@@ -3489,6 +3487,10 @@ class CoursesController < ApplicationController
     return unless authorized_action(@context, @current_user, :read_as_admin)
 
     assignment_ids = effective_due_dates_params[:assignment_ids]
+    unless validate_assignment_ids(assignment_ids)
+      return render json: { errors: t("%{assignment_ids} param is invalid", assignment_ids: "assignment_ids") }, status: :unprocessable_entity
+    end
+
     due_dates = if assignment_ids.present?
                   EffectiveDueDates.for_course(@context, assignment_ids)
                 else
@@ -3917,7 +3919,17 @@ class CoursesController < ApplicationController
   end
 
   def visibility_configuration(params)
-    @course.apply_visibility_configuration(params[:course_visibility], params[:syllabus_visibility_option])
+    @course.apply_visibility_configuration(params[:course_visibility])
+
+    if params[:custom_course_visibility].present? && !value_to_boolean(params[:custom_course_visibility])
+      Course::CUSTOMIZABLE_PERMISSIONS.each do |key, _|
+        @course.apply_custom_visibility_configuration(key, "inherit")
+      end
+    else
+      Course::CUSTOMIZABLE_PERMISSIONS.each do |key, _|
+        @course.apply_custom_visibility_configuration(key, params[:"#{key}_visibility_option"])
+      end
+    end
   end
 
   def can_change_group_weighting_scheme?
@@ -3963,6 +3975,10 @@ class CoursesController < ApplicationController
   helper_method :visible_self_enrollment_option
 
   private
+
+  def validate_assignment_ids(assignment_ids)
+    assignment_ids.nil? || assignment_ids.all?(/\A\d+\z/)
+  end
 
   def observee_selected?
     @selected_observed_user.present? && @selected_observed_user != @current_user

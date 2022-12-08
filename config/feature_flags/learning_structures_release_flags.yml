@@ -86,17 +86,6 @@ submission_feedback_indicators:
   description: |-
     Adds visual indicators to the submission details page to tell students that unread
     document annotations or rubric comments exist
-word_count_in_speed_grader:
-  state: hidden
-  applies_to: RootAccount
-  display_name: 'Add word count to SpeedGrader'
-  description: |-
-    When enabled, this flag displays a word count in the speed grader for text
-    based submissions.
-  development:
-    state: allowed_on
-  ci:
-    state: allowed_on
 observer_picker:
   applies_to: SiteAdmin
   state: hidden
@@ -114,12 +103,6 @@ calendar_series:
   display_name: Calendar Series
   description: |-
     This flag allows calendar event series to be created from the Canvas Calendar.
-section_level_calendar_permissions:
-  applies_to: SiteAdmin
-  state: allowed_on
-  display_name: Section-level calendar permissions
-  description: |-
-    Allow permissions to manage the calendar to be granted at a section-level.
 account_level_blackout_dates:
   applies_to: SiteAdmin
   state: hidden
@@ -132,3 +115,23 @@ render_both_to_do_lists:
   display_name: Render both To Do lists for teachers with student enrollments
   description: |-
     Renders both To Do lists on the dashboard sidebar for teachers with student enrollments.
+course_paces_for_students:
+  state: hidden
+  display_name: 'Per Student Course Paces'
+  description: Enable unique course paces for students.
+  applies_to: SiteAdmin
+course_paces_redesign:
+  state: hidden
+  display_name: 'Course Pacing Redesign'
+  description: Enable the redesigned course pacing user experience.
+  applies_to: SiteAdmin
+deprecate_faculty_journal:
+  state: hidden
+  display_name: 'Faculty Journal Deprecation'
+  description: Enable the deprecation of the faculty journal functionality.
+  applies_to: SiteAdmin
+  environments:
+    ci:
+      state: allowed_on
+    development:
+      state: allowed_on

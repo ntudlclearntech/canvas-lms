@@ -813,7 +813,7 @@ class Submission < ActiveRecord::Base
         similarity_score: originality_report.originality_score&.round(2),
         state: originality_report.state,
         attachment_id: originality_report.attachment_id,
-        report_url: originality_report.originality_report_url,
+        report_url: originality_report.report_launch_path,
         status: originality_report.workflow_state,
         error_message: originality_report.error_message,
         created_at: originality_report.created_at,
@@ -2495,8 +2495,7 @@ class Submission < ActiveRecord::Base
 
   def self.json_serialization_full_parameters(additional_parameters = {})
     includes = { quiz_submission: {} }
-    methods = %i[submission_history attachments entered_score entered_grade]
-    methods << :word_count if Account.site_admin.feature_enabled?(:word_count_in_speed_grader)
+    methods = %i[submission_history attachments entered_score entered_grade word_count]
     methods << (additional_parameters.delete(:comments) || :submission_comments)
     excepts = additional_parameters.delete :except
 
@@ -2566,18 +2565,21 @@ class Submission < ActiveRecord::Base
 
   def update_participation
     # TODO: can we do this in bulk?
-    return if assignment.deleted? || assignment.muted?
+    return if assignment.deleted?
+
+    return if assignment.muted? && !Account.site_admin.feature_enabled?(:visibility_feedback_student_grades_page)
+
     return unless user_id
 
     return unless saved_change_to_score? || saved_change_to_grade? || saved_change_to_excused?
 
     return unless context.grants_right?(user, :participate_as_student)
 
-    ContentParticipation.create_or_update({
-                                            content: self,
-                                            user: user,
-                                            workflow_state: "unread",
-                                          })
+    if Account.site_admin.feature_enabled?(:visibility_feedback_student_grades_page)
+      ContentParticipation.participate(content: self, user: user)
+    else
+      ContentParticipation.create_or_update({ content: self, user: user, workflow_state: "unread" })
+    end
   end
 
   def update_line_item_result
@@ -2614,12 +2616,17 @@ class Submission < ActiveRecord::Base
   def read_state(current_user)
     return "read" unless current_user # default for logged out user
 
-    uid = current_user.is_a?(User) ? current_user.id : current_user
-    state = if content_participations.loaded?
-              content_participations.detect { |cp2| cp2.user_id == uid }&.workflow_state
-            else
-              content_participations.where(user_id: uid).pick(:workflow_state)
-            end
+    if Account.site_admin.feature_enabled?(:visibility_feedback_student_grades_page)
+      state = ContentParticipation.submission_read_state(self, current_user)
+    else
+      uid = current_user.is_a?(User) ? current_user.id : current_user
+      state = if content_participations.loaded?
+                content_participations.detect { |cp2| cp2.user_id == uid }&.workflow_state
+              else
+                content_participations.where(user_id: uid).pick(:workflow_state)
+              end
+    end
+
     return state if state.present?
     return "read" if assignment.deleted? || assignment.muted? || !user_id
     return "unread" if grade || score
@@ -2642,12 +2649,42 @@ class Submission < ActiveRecord::Base
     !read?(current_user)
   end
 
+  def read_item?(current_user, content_item)
+    ContentParticipation.submission_item_read?(
+      content: self,
+      user: current_user,
+      content_item: content_item
+    )
+  end
+
+  def unread_item?(current_user, content_item)
+    !read_item?(current_user, content_item)
+  end
+
   def mark_read(current_user)
     change_read_state("read", current_user)
   end
 
   def mark_unread(current_user)
     change_read_state("unread", current_user)
+  end
+
+  def mark_item_read(current_user, content_item)
+    ContentParticipation.participate(
+      content: self,
+      user: current_user,
+      content_item: content_item,
+      workflow_state: "read"
+    )
+  end
+
+  def mark_item_unread(current_user, content_item)
+    ContentParticipation.participate(
+      content: self,
+      user: current_user,
+      content_item: content_item,
+      workflow_state: "unread"
+    )
   end
 
   def change_read_state(new_state, current_user)

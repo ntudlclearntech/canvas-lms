@@ -59,6 +59,7 @@ class Attachment < ActiveRecord::Base
   ICON_MAKER_ICONS = "icon_maker_icons"
   UNCATEGORIZED = "uncategorized"
   VALID_CATEGORIES = [ICON_MAKER_ICONS, UNCATEGORIZED].freeze
+  VALID_VISIBILITIES = %w[inherit context institution public].freeze
 
   include HasContentTags
   include ContextModuleItem
@@ -172,7 +173,7 @@ class Attachment < ActiveRecord::Base
   after_save_and_attachment_processing :ensure_media_object
 
   # this mixin can be added to a has_many :attachments association, and it'll
-  # handle finding replaced attachments. In other words, if an attachment fond
+  # handle finding replaced attachments. In other words, if an attachment found
   # by id is deleted but an active attachment in the same context has the same
   # path, it'll return that attachment.
   module FindInContextAssociation
@@ -467,6 +468,7 @@ class Attachment < ActiveRecord::Base
   validates :context_id, :context_type, :workflow_state, :category, presence: true
   validates :content_type, length: { maximum: maximum_string_length, allow_blank: true }
   validates :category, inclusion: { in: VALID_CATEGORIES }
+  validates :visibility_level, inclusion: { in: VALID_VISIBILITIES }
 
   # related_attachments: our root attachment, anyone who shares our root attachment,
   # and anyone who calls us a root attachment
@@ -577,7 +579,7 @@ class Attachment < ActiveRecord::Base
   end
 
   def set_word_count
-    if word_count.nil? && !deleted? && file_state != "broken" && Account.site_admin.feature_enabled?(:word_count_in_speed_grader)
+    if word_count.nil? && !deleted? && file_state != "broken"
       delay(singleton: "attachment_set_word_count_#{global_id}").update_word_count
     end
   end
@@ -1316,8 +1318,15 @@ class Attachment < ActiveRecord::Base
   end
 
   def user_can_read_through_context?(user, session)
-    context&.grants_right?(user, session, :read) ||
-      (context.is_a?(AssessmentQuestion) && context.user_can_see_through_quiz_question?(user, session))
+    return true if context.is_a?(AssessmentQuestion) && context.user_can_see_through_quiz_question?(user, session)
+
+    if supports_visibility?
+      (computed_visibility_level == "public") ||
+        (computed_visibility_level == "institution" && user&.persisted?) ||
+        (computed_visibility_level == "context" && context&.grants_right?(user, session, :read_as_member))
+    else
+      context&.grants_right?(user, session, :read)
+    end
   end
 
   set_policy do
@@ -1356,8 +1365,7 @@ class Attachment < ActiveRecord::Base
 
     given do |_user, session|
       (u = session.try(:file_access_user)) &&
-        (user_can_read_through_context?(u, session) ||
-          (context.respond_to?(:is_public_to_auth_users?) && context.is_public_to_auth_users?)) &&
+        user_can_read_through_context?(u, session) &&
         session["file_access_expiration"] && session["file_access_expiration"].to_i > Time.zone.now.to_i
     end
     can :read
@@ -1369,8 +1377,7 @@ class Attachment < ActiveRecord::Base
 
     given do |_user, session|
       (u = session.try(:file_access_user)) &&
-        (user_can_read_through_context?(u, session) ||
-          (context.respond_to?(:is_public_to_auth_users?) && context.is_public_to_auth_users?)) &&
+        user_can_read_through_context?(u, session) &&
         !locked_for?(u, check_policies: true) &&
         session["file_access_expiration"] && session["file_access_expiration"].to_i > Time.zone.now.to_i
     end
@@ -1508,6 +1515,21 @@ class Attachment < ActiveRecord::Base
   scope :by_exclude_content_types, lambda { |types|
     condition_sql = build_content_types_sql(types)
     where.not(condition_sql)
+  }
+
+  scope :visible_to, lambda { |user, context|
+    return all unless context_supports_visibility?(context)
+
+    vlevels = []
+    vlevels << "context" if context&.grants_right?(user, nil, :read_as_member)
+    vlevels << "institution" if user&.persisted?
+    vlevels << "public"
+
+    context_setting = context.files_visibility_option
+    context_setting = "context" if context_setting == context.class.name.downcase
+    vlevels << "inherit" if vlevels.include?(context_setting)
+
+    where(visibility_level: vlevels)
   }
 
   def self.build_content_types_sql(types)
@@ -2359,5 +2381,23 @@ class Attachment < ActiveRecord::Base
     ["application/vnd.openxmlformats-officedocument.wordprocessingml.document",
      "application/x-docx", "application/rtf",
      "text/rtf"].include?(mimetype) || ["pdf", "text"].include?(mime_class)
+  end
+
+  def self.context_supports_visibility?(context)
+    context.respond_to?(:files_visibility_option)
+  end
+
+  def supports_visibility?
+    self.class.context_supports_visibility?(context)
+  end
+
+  def computed_visibility_level
+    return nil unless supports_visibility?
+    return "context" if context.respond_to?(:available?) && !context.available?
+
+    vl = visibility_level || "inherit"
+    vl = context.files_visibility_option if vl == "inherit"
+    vl = "context" if vl == context.class.name.downcase
+    vl
   end
 end

@@ -66,6 +66,10 @@ describe CoursePace do
     it "has a working for_section scope" do
       expect(@course.course_paces.for_section(@other_section)).to match_array([@section_plan])
     end
+
+    it "has a working section_paces scope" do
+      expect(@course.course_paces.section_paces).to match_array([@section_plan])
+    end
   end
 
   context "course_pace_context" do
@@ -390,6 +394,15 @@ describe CoursePace do
       allow(InstStatsd::Statsd).to receive(:increment).and_call_original
       expect(@course_pace.publish).to eq(true)
       expect(InstStatsd::Statsd).to have_received(:increment).with("course_pacing.submitted_assignment_date_change")
+    end
+
+    it "compresses to hard end dates" do
+      @course_pace.course_pace_module_items.update(duration: 900)
+      expect(AssignmentOverride.count).to eq(0)
+      expect(@course_pace.publish).to eq(true)
+      expect(AssignmentOverride.count).to eq(2)
+      expect(AssignmentOverride.last.due_at).to eq(fancy_midnight_rounded_to_last_second(@course_pace.end_date.to_s))
+      expect(@course_pace.course_pace_module_items.reload.pluck(:duration)).to eq([900, 900])
     end
   end
 

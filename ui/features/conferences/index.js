@@ -37,6 +37,10 @@ import '@canvas/util/templateData'
 import '@canvas/datetime'
 import renderConferenceAlternatives from './react/renderAlternatives'
 import ready from '@instructure/ready'
+import React from 'react'
+import ReactDOM from 'react-dom'
+import {VideoConferenceModal} from './react/components/VideoConferenceModal/VideoConferenceModal'
+import getCookie from '@instructure/get-cookie'
 
 const I18n = useI18nScope('conferences')
 
@@ -49,7 +53,7 @@ if (ENV.can_create_conferences) {
 const ConferencesRouter = Backbone.Router.extend({
   routes: {
     '': 'index',
-    'conference_:id': 'edit'
+    'conference_:id': 'edit',
   },
 
   editView: null,
@@ -73,7 +77,7 @@ const ConferencesRouter = Backbone.Router.extend({
       itemView: ConferenceView,
       collection: this.currentConferences,
       emptyMessage: I18n.t('no_new_conferences', 'There are no new conferences'),
-      listClassName: 'ig-list'
+      listClassName: 'ig-list',
     }))
     view.render()
 
@@ -83,7 +87,7 @@ const ConferencesRouter = Backbone.Router.extend({
       itemView: ConcludedConferenceView,
       collection: this.concludedConferences,
       emptyMessage: I18n.t('no_concluded_conferences', 'There are no concluded conferences'),
-      listClassName: 'ig-list'
+      listClassName: 'ig-list',
     })
     view.render()
 
@@ -106,7 +110,146 @@ const ConferencesRouter = Backbone.Router.extend({
     const conference = new Conference(_.clone(ENV.default_conference))
     conference.once('startSync', () => this.currentConferences.unshift(conference))
     if (conference.get('permissions').create) {
-      this.editView.show(conference)
+      if (ENV.bbb_modal_update) {
+        const {attributes} = conference
+
+        const availableAttendeesList = ENV.users.map(({id, name}) => {
+          return {
+            displayName: name,
+            id,
+            type: 'user',
+            assetCode: `user-${id}`,
+          }
+        })
+
+        const availableSectionsList =
+          ENV.sections?.map(({id, name}) => {
+            return {
+              displayName: name,
+              id,
+              type: 'section',
+              assetCode: `section-${id}`,
+            }
+          }) || []
+
+        const availableGroupsList =
+          ENV.groups?.map(({id, name}) => {
+            return {
+              displayName: name,
+              id,
+              type: 'group',
+              assetCode: `group-${id}`,
+            }
+          }) || []
+
+        const menuData = availableAttendeesList.concat(availableSectionsList, availableGroupsList)
+        ReactDOM.render(
+          <VideoConferenceModal
+            open={true}
+            isEditing={false}
+            availableAttendeesList={menuData}
+            onDismiss={() => {
+              window.location.hash = ''
+              ReactDOM.render(<span />, document.getElementById('react-conference-modal-container'))
+            }}
+            onSubmit={async (e, data) => {
+              const context =
+                attributes.context_type === 'Course'
+                  ? 'courses'
+                  : attributes.context_type === 'Group'
+                  ? 'groups'
+                  : null
+              const contextId = attributes.context_id
+              const inviteAll = data.invitationOptions.includes('invite_all') ? 1 : 0
+              const noTimeLimit = data.options.includes('no_time_limit') ? 1 : 0
+              const enableWaitingRoom = data.options.includes('enable_waiting_room') ? 1 : 0
+              const duration = noTimeLimit ? '' : data.duration
+              const record = data.options.includes('recording_enabled') ? 1 : 0
+              const calendar_event = data.options.includes('add_to_calendar') ? 1 : 0
+              const start_at = calendar_event ? data.startCalendarDate : null
+              const end_at = calendar_event ? data.endCalendarDate : null
+
+              const remove_observers = data.invitationOptions.includes('remove_observers') ? 1 : 0
+
+              const payload = {
+                _method: 'POST',
+                title: data.name,
+                'web_conference[title]': data.name,
+                conference_type: data.conferenceType,
+                'web_conference[conference_type]': data.conferenceType,
+                duration,
+                'web_conference[duration]': duration,
+                'user_settings[record]': record,
+                'web_conference[user_settings][record]': record,
+                'web_conference[user_settings][enable_waiting_room]': enableWaitingRoom,
+                long_running: noTimeLimit,
+                'web_conference[long_running]': noTimeLimit,
+                description: data.description,
+                'web_conference[description]': data.description,
+                'user[all]': inviteAll,
+                'observers[remove]': remove_observers,
+                'web_conference[start_at]': start_at,
+                'web_conference[end_at]': end_at,
+                'web_conference[calendar_event]': calendar_event,
+              }
+              if (inviteAll) {
+                ENV.users.forEach(userId => {
+                  payload[`user[${userId}]`] = 1
+                })
+              } else {
+                data.selectedAttendees.forEach(menuItem => {
+                  if (menuItem.type === 'group') {
+                    payload[`group[${menuItem.id}]`] = 1
+                  } else if (menuItem.type === 'section') {
+                    payload[`section[${menuItem.id}]`] = 1
+                  } else {
+                    payload[`user[${menuItem.id}]`] = 1
+                  }
+                })
+              }
+
+              ;[
+                'share_webcam',
+                'share_microphone',
+                'share_other_webcams',
+                'send_public_chat',
+                'send_private_chat',
+              ].forEach(option => {
+                payload[`web_conference[user_settings][${option}]`] =
+                  data.attendeesOptions.includes(option) ? 1 : 0
+              })
+
+              const requestOptions = {
+                credentials: 'same-origin',
+                method: 'POST',
+                body: new URLSearchParams(payload),
+                headers: {
+                  'X-CSRF-Token': getCookie('_csrf_token'),
+                  Accept: 'application/json',
+                },
+              }
+
+              if (!context) {
+                return false
+              }
+
+              const response = await fetch(`/${context}/${contextId}/conferences`, requestOptions)
+
+              if (response.status === 200) {
+                $.flashMessage(I18n.t('Conference Saved'))
+                window.location.href = window.location.href.split('#')[0]
+                return true
+              } else {
+                $.flashError(I18n.t('There was an error upon saving your conference'))
+                return false
+              }
+            }}
+          />,
+          document.getElementById('react-conference-modal-container')
+        )
+      } else {
+        this.editView.show(conference)
+      }
     }
   },
 
@@ -114,20 +257,209 @@ const ConferencesRouter = Backbone.Router.extend({
     conference =
       this.currentConferences.get(conference) || this.concludedConferences.get(conference)
     if (!conference) return
+    if (!conference.get('permissions').update) {
+      // reached when a user without edit permissions navigates
+      // to a specific conference's url directly
+      $(`#conf_${conference.get('id')}`)[0].scrollIntoView()
+      return
+    }
+    if (ENV.bbb_modal_update) {
+      const {attributes} = conference
+      const options = []
+      const invitationOptions = []
+      const attendeesOptions = []
+      const availableAttendeesList = ENV.users.map(({id, name}) => {
+        return {
+          displayName: name,
+          id,
+          type: 'user',
+          assetCode: `user-${id}`,
+        }
+      })
 
-    if (conference.get('permissions').update) {
+      const availableSectionsList =
+        ENV.sections?.map(({id, name}) => {
+          return {
+            displayName: name,
+            id,
+            type: 'section',
+            assetCode: `section-${id}`,
+          }
+        }) || []
+
+      const availableGroupsList =
+        ENV.groups?.map(({id, name}) => {
+          return {
+            displayName: name,
+            id,
+            type: 'group',
+            assetCode: `group-${id}`,
+          }
+        }) || []
+
+      const menuData = availableAttendeesList.concat(availableSectionsList, availableGroupsList)
+      if (attributes.long_running === 1) {
+        options.push('no_time_limit')
+      }
+
+      if (attributes.user_settings.record) {
+        options.push('recording_enabled')
+      }
+
+      if (attributes.user_settings.enable_waiting_room) {
+        options.push('enable_waiting_room')
+      }
+
+      if (attributes.has_calendar_event && attributes.start_at && attributes.end_at) {
+        options.push('add_to_calendar')
+      }
+
+      ;[
+        'share_webcam',
+        'share_other_webcams',
+        'share_microphone',
+        'send_public_chat',
+        'send_private_chat',
+      ].forEach(option => {
+        if (attributes.user_settings[option]) {
+          attendeesOptions.push(option)
+        }
+      })
+
+      ReactDOM.render(
+        <VideoConferenceModal
+          open={true}
+          isEditing={true}
+          hasBegun={!!attributes.started_at}
+          type={attributes.conference_type}
+          name={attributes.title}
+          duration={!attributes.duration ? 0 : attributes.duration}
+          options={options}
+          description={attributes.description}
+          invitationOptions={invitationOptions}
+          attendeesOptions={attendeesOptions}
+          availableAttendeesList={menuData}
+          selectedAttendees={attributes.user_ids.map(u => {
+            return {assetCode: `user-${u}`, id: u}
+          })}
+          startCalendarDate={attributes.start_at}
+          endCalendarDate={attributes.end_at}
+          onDismiss={() => {
+            window.location.hash = ''
+            ReactDOM.render(<span />, document.getElementById('react-conference-modal-container'))
+          }}
+          onSubmit={async (e, data) => {
+            const context =
+              attributes.context_type === 'Course'
+                ? 'courses'
+                : attributes.context_type === 'Group'
+                ? 'groups'
+                : null
+            const contextId = attributes.context_id
+            const conferenceId = conference.id
+            const inviteAll = data.invitationOptions.includes('invite_all') ? 1 : 0
+            const noTimeLimit = data.options.includes('no_time_limit') ? 1 : 0
+            const duration = noTimeLimit ? '' : data.duration
+            const record = data.options.includes('recording_enabled') ? 1 : 0
+            const enableWaitingRoom = data.options.includes('enable_waiting_room') ? 1 : 0
+            const calendar_event = data.options.includes('add_to_calendar') ? 1 : 0
+            const start_at = calendar_event ? data.startCalendarDate : null
+            const end_at = calendar_event ? data.endCalendarDate : null
+            const remove_observers = data.invitationOptions.includes('remove_observers') ? 1 : 0
+
+            const payload = {
+              _method: 'PUT',
+              title: data.name,
+              'web_conference[title]': data.name,
+              conference_type: data.conferenceType,
+              'web_conference[conference_type]': data.conferenceType,
+              duration,
+              'web_conference[duration]': duration,
+              'user_settings[record]': record,
+              'web_conference[user_settings][record]': record,
+              'web_conference[user_settings][enable_waiting_room]': enableWaitingRoom,
+              long_running: noTimeLimit,
+              'web_conference[long_running]': noTimeLimit,
+              description: data.description,
+              'web_conference[description]': data.description,
+              'user[all]': inviteAll,
+              'observers[remove]': remove_observers,
+              'web_conference[start_at]': start_at,
+              'web_conference[end_at]': end_at,
+              'web_conference[calendar_event]': calendar_event,
+            }
+
+            if (inviteAll) {
+              ENV.users.forEach(userId => {
+                payload[`user[${userId}]`] = 1
+              })
+            } else {
+              data.selectedAttendees.forEach(menuItem => {
+                if (menuItem.type === 'group') {
+                  payload[`group[${menuItem.id}]`] = 1
+                } else if (menuItem.type === 'section') {
+                  payload[`section[${menuItem.id}]`] = 1
+                } else {
+                  payload[`user[${menuItem.id}]`] = 1
+                }
+              })
+            }
+
+            ;[
+              'share_webcam',
+              'share_other_webcams',
+              'share_microphone',
+              'send_public_chat',
+              'send_private_chat',
+            ].forEach(option => {
+              payload[`web_conference[user_settings][${option}]`] = data.attendeesOptions.includes(
+                option
+              )
+                ? 1
+                : 0
+            })
+
+            const requestOptions = {
+              credentials: 'same-origin',
+              method: 'POST',
+              body: new URLSearchParams(payload),
+              headers: {
+                'X-CSRF-Token': getCookie('_csrf_token'),
+                Accept: 'application/json',
+              },
+            }
+
+            if (!context) {
+              return false
+            }
+
+            const response = await fetch(
+              `/${context}/${contextId}/conferences/${conferenceId}`,
+              requestOptions
+            )
+
+            if (response.status === 200) {
+              $.flashMessage(I18n.t('Conference Saved'))
+              window.location.href = window.location.href.split('#')[0]
+              return true
+            } else {
+              $.flashError(I18n.t('There was an error upon saving your conference'))
+              return false
+            }
+          }}
+        />,
+        document.getElementById('react-conference-modal-container')
+      )
+    } else {
       this.editConferenceId = conference.get('id')
       this.editView.show(conference, {isEditing: true})
     }
-    // reached when a user without edit permissions navigates
-    // to a specific conference's url directly
-    $(`#conf_${conference.get('id')}`)[0].scrollIntoView()
   },
 
   close(conference) {
     this.currentConferences.remove(conference)
     this.concludedConferences.unshift(conference)
-  }
+  },
 })
 
 ready(() => {

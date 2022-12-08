@@ -92,6 +92,7 @@ module Lti
     USAGE_RIGHTS_GUARD = -> { @attachment&.usage_rights }
     MEDIA_OBJECT_ID_GUARD = -> { @attachment && (@attachment.media_object || @attachment.media_entry_id) }
     LTI1_GUARD = -> { @tool.is_a?(ContextExternalTool) }
+    INTERNAL_TOOL_GUARD = -> { @tool.internal_service?(@launch_url) }
     MASQUERADING_GUARD = -> { !!@controller && @controller.logged_in_user != @current_user }
     MESSAGE_TOKEN_GUARD = -> { @post_message_token.present? || @launch.instance_of?(Lti::Launch) }
     ORIGINALITY_REPORT_GUARD = -> { @originality_report.present? }
@@ -107,6 +108,14 @@ module Lti
       @controller = controller
       @request = controller.request if controller
       opts.each { |opt, val| instance_variable_set("@#{opt}", val) }
+
+      # This will provide the most accurate version of the actual launch
+      # url used, whether directly provided from a resource link or
+      # calculated from the tool/placement combo. @tool can be an Lti::ToolProxy
+      # or a ContextExternalTool, and this only cares about the latter.
+      if @tool.respond_to? :launch_url
+        @launch_url ||= @tool.launch_url(extension_type: @placement)
+      end
     end
 
     def lti_helper
@@ -257,6 +266,21 @@ module Lti
                          Services::RichContent.env_for[:RICH_CONTENT_APP_HOST]
                        },
                        default_name: "com_instructure_rcs_app_host"
+
+    # Returns the RCS Service JWT for the current user
+    #
+    # @example
+    #   ```
+    #   "base64-encoded-service-jwt"
+    #   ```
+    register_expansion "com.instructure.RCS.service_jwt", [],
+                       lambda {
+                         return "" if @request.nil?
+
+                         @controller.rce_js_env_base[:JWT]
+                       },
+                       INTERNAL_TOOL_GUARD,
+                       default_name: "com_instructure_rcs_service_jwt"
 
     # returns all observee ids linked to this observer as an String separated by `,`
     # @launch_parameter com_instructure_observee_ids
@@ -430,13 +454,29 @@ module Lti
                        -> { Lti::Asset.opaque_identifier_for(@context) },
                        default_name: "context_id"
 
-    # The sourced Id of the context.
+    # If the context is a Course, returns sourced Id of the context
     # @example
     #   ```
     #   1234
     #   ```
+    #
+    # If the placement is :user_navigation, it works like $Person.sourcedId: returns the sis source id for the primary
+    # pseudonym for the user for the account
+    # This may not be the pseudonym the user is actually logged in with.
+    # @duplicates Person.sourcedId
+    # @example
+    #   ```
+    #   "sis_user_42"
+    #   ```
     register_expansion "Context.sourcedId", [],
-                       -> { @context.sis_source_id }
+                       lambda {
+                         if @context.is_a? User
+                           sis_pseudonym.sis_user_id
+                         else
+                           @context.sis_source_id
+                         end
+                       },
+                       -> { @context.is_a?(Course) || (@placement == :user_navigation && @context.is_a?(User) && sis_pseudonym) }
 
     # Returns a string with a comma-separated list of the context ids of the
     # courses in reverse chronological order from which content has been copied.

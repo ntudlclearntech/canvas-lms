@@ -89,7 +89,9 @@ namespace :i18n do
   # in-memory when we run the "check" task and combine that directly with the
   # translations extracted from JS, which are stored on disk
   desc "Extract translations from source code into a YAML file"
-  task extract: [:check_rb, :extract_js] do
+  task extract: [:check_rb] do
+    Rake::Task["i18n:extract_js"].invoke unless ENV["I18N_JS_PRECOMPILED"] == "1"
+
     combined_translations = I18nTasks::Extract.new(
       rb_translations: @check.translations,
       js_translations: JSON.parse(File.read(js_translations_file))["en"].flatten_keys
@@ -118,7 +120,9 @@ namespace :i18n do
   task generate: [:extract]
 
   desc "generate JavaScript translation files"
-  task generate_js: [:i18n_environment, :extract_js] do
+  task generate_js: [:i18n_environment] do
+    Rake::Task["i18n:extract_js"].invoke unless ENV["I18N_JS_PRECOMPILED"] == "1"
+
     generator = I18nTasks::GenerateJs.new(
       index: JSON.parse(File.read(js_index_file))
     )

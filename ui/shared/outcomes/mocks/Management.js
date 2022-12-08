@@ -2478,7 +2478,8 @@ export const courseAlignmentStatsMocks = ({
   alignedOutcomes = 1,
   totalAlignments = 4,
   totalArtifacts = 5,
-  alignedArtifacts = 4,
+  alignedArtifacts = 3,
+  artifactAlignments = 3,
   refetchIncrement = 10
 } = {}) => {
   const returnResult = (inc = 0) => ({
@@ -2490,6 +2491,7 @@ export const courseAlignmentStatsMocks = ({
           totalAlignments: totalAlignments + inc,
           totalArtifacts: totalArtifacts + inc,
           alignedArtifacts: alignedArtifacts + inc,
+          artifactAlignments: artifactAlignments + inc,
           __typename: 'CourseOutcomeAlignmentStats'
         },
         __typename: 'Course'
@@ -2589,7 +2591,7 @@ export const courseAlignmentMocks = ({
             endCursor: 'Mg',
             __typename: 'PageInfo'
           },
-          edges: generateEdges([1, 2], isRefetch),
+          edges: numOfOutcomes > 0 ? generateEdges([1, 2], isRefetch) : [],
           __typename: 'ContentTagConnection'
         }
       }

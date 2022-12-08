@@ -20,6 +20,8 @@
 
 module Outcomes
   module ResultAnalytics
+    include CanvasOutcomesHelper
+    include OutcomeResultResolverHelper
     Rollup = Struct.new(:context, :scores)
     Result = Struct.new(:learning_outcome, :score, :count, :hide_points) # rubocop:disable Lint/StructNewOverride
 
@@ -42,13 +44,57 @@ module Outcomes
         user_id: users.map(&:id),
         learning_outcome_id: outcomes.map(&:id)
       )
+      # muted associations is applied to remove assignments that students
+      # are not yet allowed to see:
+      # Assignment Grades have not be posted yet (i.e. Submission.posted_at = nil)
+      # PostPolicy.post_manually is false or null
+      # Assignment grading_type is not_graded
       unless context.grants_any_right?(user, :manage_grades, :view_all_grades)
         results = results.exclude_muted_associations
       end
+      # LOR hidden is populated for non-scoring rubrics only which is set
+      # by checking Don't post Outcomes results to Learning Mastery Gradebook`
+      # when adding a rubric to an assignment
+      # also see rubric_assessment.create_outcome_result
       unless opts[:include_hidden]
         results = results.where(hidden: false)
       end
       order_results_for_rollup results
+    end
+
+    # Public: Queries Outcome Service to return for outcome results.
+    #
+    # user - User requesting results.
+    # opts - The options for the query. In a later version of ruby, these would
+    #        be named parameters.
+    #        :users    - The users to lookup results for (required)
+    #        :context  - The context to lookup results for (required)
+    #        :outcomes - The outcomes to lookup results for (required)
+    #
+    # Returns a relation of the results
+    def find_outcomes_service_outcome_results(opts)
+      required_opts = %i[users context outcomes]
+      required_opts.each { |p| raise "#{p} option is required" unless opts[p] }
+      users, context, outcomes = opts.values_at(*required_opts)
+      user_uuids = users.pluck(:uuid).join(",")
+      assignment_ids = Assignment.where(context: context).type_quiz_lti.pluck(:id).join(",")
+      outcome_ids = outcomes.pluck(:id).join(",")
+      handle_outcome_service_results(
+        get_lmgb_results(context, assignment_ids, "canvas.assignment.quizzes", outcome_ids, user_uuids),
+        context
+      )
+    end
+
+    def handle_outcome_service_results(results, context)
+      # if results are nil - FF is turned off for the given context
+      # if results are empty - no results were matched
+      if results.blank?
+        Rails.logger.warn("No Outcome Service outcome results found for context: #{context.uuid}")
+        return nil
+      end
+      # if results are not nil or empty (aka not blank) - results were found
+      # return resolved results list of Rollup objects
+      resolve_outcome_results(results)
     end
 
     # Internal: Add an order clause to a relation so results are returned in an
@@ -79,7 +125,6 @@ module Outcomes
     #
     # Returns an Array of Rollup objects.
     def outcome_results_rollups(results:, users: [], excludes: [], context: nil)
-      ActiveRecord::Associations.preload(results, :learning_outcome)
       rollups = results.group_by(&:user_id).map do |_, user_results|
         Rollup.new(user_results.first.user, rollup_user_results(user_results, context))
       end

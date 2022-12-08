@@ -45,18 +45,18 @@ export default class FileType extends React.Component {
     value: string.isRequired,
     options: arrayOf(SubmitOptionShape).isRequired,
     onDelete: func,
-    initialSelection: arrayOf(string)
+    initialSelection: arrayOf(string),
   }
 
   static defaultProps = {
-    readOnly: false
+    readOnly: false,
   }
 
   constructor(props) {
     super(props)
 
     this.state = {
-      selectedOptions: this.props.initialSelection
+      selectedOptions: this.props.initialSelection,
     }
   }
 
@@ -114,7 +114,7 @@ export default class FileType extends React.Component {
             {this.props.options && (
               <Flex.Item>
                 <Select
-                  multiple
+                  multiple={true}
                   closeOnSelect={false}
                   label={<ScreenReaderContent>{I18n.t('Options')}</ScreenReaderContent>}
                   selectedOption={this.state.selectedOptions}
@@ -125,7 +125,7 @@ export default class FileType extends React.Component {
               </Flex.Item>
             )}
             {this.props.readOnly ? null : (
-              <Flex.Item margin="0 0 0 small" grow textAlign="end">
+              <Flex.Item margin="0 0 0 small" shouldGrow={true} textAlign="end">
                 <Button renderIcon={IconTrashLine} onClick={this.onDelete}>
                   <ScreenReaderContent>{I18n.t('Delete this submission type')}</ScreenReaderContent>
                 </Button>

@@ -29,7 +29,7 @@ describe ConferencesController do
   end
 
   before do
-    allow(BigBlueButtonConference).to receive(:send_request).and_return("")
+    allow(BigBlueButtonConference).to receive(:send_request).and_return({ running: false })
     allow(BigBlueButtonConference).to receive(:get_auth_token).and_return("abc123")
   end
 

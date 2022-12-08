@@ -47,7 +47,7 @@ jest.mock('../../../../../shared/StoreContext', () => {
               unlock_at: null,
               lock_at: null,
               date: '2021-11-03T19:21:27Z',
-              uuid: 'E6uaQSJaQYl95XaVMnoqYU7bOlt0WepMsTB9MJ8b'
+              uuid: 'E6uaQSJaQYl95XaVMnoqYU7bOlt0WepMsTB9MJ8b',
             },
             {
               id: 716,
@@ -64,7 +64,7 @@ jest.mock('../../../../../shared/StoreContext', () => {
               unlock_at: null,
               lock_at: null,
               date: '2021-10-27T21:49:19Z',
-              uuid: '9zLFcMIFlNPVtkTHulDGRS1bhiBg8hsL0ms6VeMt'
+              uuid: '9zLFcMIFlNPVtkTHulDGRS1bhiBg8hsL0ms6VeMt',
             },
             {
               id: 715,
@@ -81,26 +81,26 @@ jest.mock('../../../../../shared/StoreContext', () => {
               unlock_at: null,
               lock_at: null,
               date: '2021-10-27T21:49:18Z',
-              uuid: 'rIlrdxCJ1h5Ff18Y4C6KJf7HIvCDn5ZAbtnVpNcw'
-            }
+              uuid: 'rIlrdxCJ1h5Ff18Y4C6KJf7HIvCDn5ZAbtnVpNcw',
+            },
           ],
           bookmark: 'bookmark',
           isLoading: false,
-          hasMore: false
-        }
+          hasMore: false,
+        },
       },
       contextType: 'Course',
       fetchInitialImages: jest.fn(),
-      fetchNextImages: jest.fn()
-    })
+      fetchNextImages: jest.fn(),
+    }),
   }
 })
 
 jest.mock('../../../../../../../bridge', () => {
   return {
     trayProps: {
-      get: () => ({foo: 'bar'})
-    }
+      get: () => ({foo: 'bar'}),
+    },
   }
 })
 
@@ -108,8 +108,8 @@ jest.mock('../../ImageCropper/imageCropUtils', () => {
   return {
     createCroppedImageSvg: () =>
       Promise.resolve({
-        outerHTML: '<svg />'
-      })
+        outerHTML: '<svg />',
+      }),
   }
 })
 
@@ -119,7 +119,7 @@ describe('ImageSection', () => {
     settings: {size: Size.Small},
     editing: false,
     editor: {},
-    onChange: jest.fn()
+    onChange: jest.fn(),
   }
 
   const subject = overrides => render(<ImageSection {...{...defaultProps, ...overrides}} />)
@@ -130,7 +130,9 @@ describe('ImageSection', () => {
   })
 
   afterEach(async () => {
-    await act(async() => { jest.runOnlyPendingTimers() })
+    await act(async () => {
+      jest.runOnlyPendingTimers()
+    })
     jest.clearAllMocks()
   })
 
@@ -149,32 +151,32 @@ describe('ImageSection', () => {
 
     expect(defaultProps.onChange).toHaveBeenCalledWith({
       type: 'SetX',
-      payload: '50%'
+      payload: '50%',
     })
 
     expect(defaultProps.onChange).toHaveBeenCalledWith({
       type: 'SetY',
-      payload: '50%'
+      payload: '50%',
     })
 
     expect(defaultProps.onChange).toHaveBeenCalledWith({
       type: 'SetWidth',
-      payload: 75
+      payload: 75,
     })
 
     expect(defaultProps.onChange).toHaveBeenCalledWith({
       type: 'SetHeight',
-      payload: 75
+      payload: 75,
     })
 
     expect(defaultProps.onChange).toHaveBeenCalledWith({
       type: 'SetTranslateX',
-      payload: -37.5
+      payload: -37.5,
     })
 
     expect(defaultProps.onChange).toHaveBeenCalledWith({
       type: 'SetTranslateY',
-      payload: -37.5
+      payload: -37.5,
     })
   })
 
@@ -186,7 +188,7 @@ describe('ImageSection', () => {
 
       rendered = subject({
         editor: new FakeEditor(),
-        rcsConfig: {features: {icon_maker_cropper: false}}
+        rcsConfig: {features: {icon_maker_cropper: false}},
       })
       fireEvent.click(rendered.getByText('Add Image'))
     })
@@ -210,20 +212,20 @@ describe('ImageSection', () => {
   })
 
   describe('calls onChange passing metadata when state prop changes', () => {
-    let getByTestId, getByText, getByTitle, getByRole, container
+    let getByTestId, getByText, getByTitle, container
 
     const lastPayloadOfActionType = (mockFn, type) =>
       mockFn.mock.calls.reverse().find(call => call[0].type === type)[0].payload
 
     beforeEach(() => {
       const rendered = subject({
-        rcsConfig: {features: {icon_maker_cropper: true}}
+        rcsConfig: {features: {icon_maker_cropper: true}},
+        settings: {size: Size.Small, shape: 'square'},
       })
 
       getByTestId = rendered.getByTestId
       getByText = rendered.getByText
       getByTitle = rendered.getByTitle
-      getByRole = rendered.getByRole
       container = rendered.container
     })
 
@@ -244,8 +246,8 @@ describe('ImageSection', () => {
               // Used to fetch url
               this.onloadend && this.onloadend()
             },
-            result: 'data:image/png;base64,asdfasdfjksdf=='
-          }))
+            result: 'data:image/png;base64,asdfasdfjksdf==',
+          })),
         })
       })
 
@@ -253,14 +255,16 @@ describe('ImageSection', () => {
         fetchMock.restore('http://canvas.docker/files/722/download?download_frd=1')
         Object.defineProperty(global, 'FileReader', {
           writable: true,
-          value: originalFileReader
+          value: originalFileReader,
         })
       })
 
       it('when select mode', async () => {
         fireEvent.click(getByText('Add Image'))
         fireEvent.click(getByText('Course Images'))
-        await act(async() => { jest.runOnlyPendingTimers() })
+        await act(async () => {
+          jest.runOnlyPendingTimers()
+        })
         const payload = lastPayloadOfActionType(defaultProps.onChange, 'SetImageSettings')
         expect(payload.mode).toEqual('Course')
       })
@@ -268,9 +272,13 @@ describe('ImageSection', () => {
       it('when select image', async () => {
         fireEvent.click(getByText('Add Image'))
         fireEvent.click(getByText('Course Images'))
-        await act(async() => { jest.runOnlyPendingTimers() })
+        await act(async () => {
+          jest.runOnlyPendingTimers()
+        })
         fireEvent.click(getByTitle('Click to embed image_one.png'))
-        await act(async() => { jest.runOnlyPendingTimers() })
+        await act(async () => {
+          jest.runOnlyPendingTimers()
+        })
         const payload = lastPayloadOfActionType(defaultProps.onChange, 'SetImageSettings')
         expect(payload.image).toEqual('data:image/png;base64,asdfasdfjksdf==')
         expect(payload.imageName).toEqual('grid.png')
@@ -280,17 +288,18 @@ describe('ImageSection', () => {
         fireEvent.click(getByText('Add Image'))
         fireEvent.click(getByText('Course Images'))
         fireEvent.click(getByTitle('Click to embed image_one.png'))
-        await act(async() => { jest.runOnlyPendingTimers() })
-        fireEvent.click(getByRole('button', {name: /crop image/i}))
-        await act(async() => { jest.runOnlyPendingTimers() })
+        await act(async () => {
+          jest.runOnlyPendingTimers()
+        })
         // Zooms in just to change cropper settings
-        fireEvent.click(
-          document.querySelector(
-            '[data-cid="Modal"] [data-cid="ModalBody"] [direction="row"] span:last-child button'
-          )
+        fireEvent.click(getByTestId('zoom-in-button'))
+        await waitFor(() =>
+          expect(document.querySelector('[data-cid="Modal"] [type="submit"]')).toBeInTheDocument()
         )
         fireEvent.click(document.querySelector('[data-cid="Modal"] [type="submit"]'))
-        await act(async() => { jest.runOnlyPendingTimers() })
+        await act(async () => {
+          jest.runOnlyPendingTimers()
+        })
         const payload = lastPayloadOfActionType(defaultProps.onChange, 'SetImageSettings')
         expect(payload.cropperSettings).toEqual({
           image: 'data:image/png;base64,asdfasdfjksdf==',
@@ -298,7 +307,7 @@ describe('ImageSection', () => {
           rotation: 0,
           scaleRatio: 1.1,
           translateX: 0,
-          translateY: 0
+          translateY: 0,
         })
       })
     })
@@ -308,7 +317,9 @@ describe('ImageSection', () => {
       fireEvent.click(getByText('Multi Color Image'))
       await waitFor(() => expect(getByTestId('multicolor-svg-list')).toBeInTheDocument())
       fireEvent.click(getByTestId('icon-maker-art'))
-      await act(async() => { jest.runOnlyPendingTimers() })
+      await act(async () => {
+        jest.runOnlyPendingTimers()
+      })
       const payload = lastPayloadOfActionType(defaultProps.onChange, 'SetImageSettings')
       expect(payload.imageName).toEqual('Art Icon')
     })
@@ -318,14 +329,18 @@ describe('ImageSection', () => {
       fireEvent.click(getByText('Single Color Image'))
       await waitFor(() => expect(getByTestId('singlecolor-svg-list')).toBeInTheDocument())
       fireEvent.click(getByTestId('icon-maker-art'))
-      await act(async() => { jest.runOnlyPendingTimers() })
+      await act(async () => {
+        jest.runOnlyPendingTimers()
+      })
       await waitFor(() => {
         expect(container.querySelector('[name="single-color-image-fill"]')).toBeInTheDocument()
       })
       fireEvent.change(container.querySelector('[name="single-color-image-fill"]'), {
-        target: {value: '#00FF00'}
+        target: {value: '#00FF00'},
       })
-      await act(async() => { jest.runOnlyPendingTimers() })
+      await act(async () => {
+        jest.runOnlyPendingTimers()
+      })
       const payload = lastPayloadOfActionType(defaultProps.onChange, 'SetImageSettings')
       expect(payload.iconFillColor).toEqual('#00FF00')
     })
@@ -339,7 +354,7 @@ describe('ImageSection', () => {
 
       rendered = subject({
         editor: new FakeEditor(),
-        rcsConfig: {features: {icon_maker_cropper: true}}
+        rcsConfig: {features: {icon_maker_cropper: true}},
       })
 
       fireEvent.click(rendered.getByText('Add Image'))
@@ -402,8 +417,8 @@ describe('ImageSection', () => {
             readAsDataURL() {
               this.onloadend()
             },
-            result: 'data:image/png;base64,asdfasdfjksdf=='
-          }))
+            result: 'data:image/png;base64,asdfasdfjksdf==',
+          })),
         })
 
         // Click the first image
@@ -414,31 +429,37 @@ describe('ImageSection', () => {
         fetchMock.restore('http://canvas.docker/files/722/download?download_frd=1')
         Object.defineProperty(global, 'FileReader', {
           writable: true,
-          value: originalFileReader
+          value: originalFileReader,
         })
       })
 
       it('dispatches an action to update parent state image', async () => {
-        await act(async() => { jest.runOnlyPendingTimers() })
+        await act(async () => {
+          jest.runOnlyPendingTimers()
+        })
         expect(defaultProps.onChange).toHaveBeenCalledWith({
           type: 'SetEncodedImage',
-          payload: 'data:image/png;base64,asdfasdfjksdf=='
+          payload: 'data:image/png;base64,asdfasdfjksdf==',
         })
       })
 
       it('dispatches an action to update parent state image type', async () => {
-        await act(async() => { jest.runOnlyPendingTimers() })
+        await act(async () => {
+          jest.runOnlyPendingTimers()
+        })
         expect(defaultProps.onChange).toHaveBeenCalledWith({
           type: 'SetEncodedImageType',
-          payload: 'Course'
+          payload: 'Course',
         })
       })
 
       it('dispatches an action to update parent state image name', async () => {
-        await act(async() => { jest.runOnlyPendingTimers() })
+        await act(async () => {
+          jest.runOnlyPendingTimers()
+        })
         expect(defaultProps.onChange).toHaveBeenCalledWith({
           type: 'SetEncodedImageName',
-          payload: 'grid.png'
+          payload: 'grid.png',
         })
       })
     })
@@ -516,10 +537,12 @@ describe('ImageSection', () => {
         await waitFor(() => {
           expect(container.querySelector('[name="single-color-image-fill"]')).toBeInTheDocument()
           fireEvent.change(container.querySelector('[name="single-color-image-fill"]'), {
-            target: {value: '#00FF00'}
+            target: {value: '#00FF00'},
           })
         })
-        await act(async() => { jest.runOnlyPendingTimers() })
+        await act(async () => {
+          jest.runOnlyPendingTimers()
+        })
         await waitFor(() => {
           expect(spyFn).toHaveBeenCalledWith('#00FF00')
           expect(getByTestId('selected-image-preview')).toHaveStyle(
@@ -541,10 +564,10 @@ describe('ImageSection', () => {
               settings: {
                 encodedImage: 'data:image/jpg;base64,asdfasdfjksdf==',
                 encodedImageType: 'Course',
-                encodedImageName: 'banana.jpg'
+                encodedImageName: 'banana.jpg',
               },
-              editing: true
-            }
+              editing: true,
+            },
           }}
         />
       )
@@ -561,10 +584,10 @@ describe('ImageSection', () => {
               settings: {
                 encodedImage: 'data:image/jpg;base64,asdfasdfjksdf==',
                 encodedImageType: 'Course',
-                encodedImageName: 'banana.jpg'
+                encodedImageName: 'banana.jpg',
               },
-              editing: true
-            }
+              editing: true,
+            },
           }}
         />
       )
@@ -586,11 +609,11 @@ describe('ImageSection', () => {
                 encodedImageName: 'banana.jpg',
                 imageSettings: {
                   mode: 'SingleColor',
-                  icon: 'art'
-                }
+                  icon: 'art',
+                },
               },
-              editing: true
-            }
+              editing: true,
+            },
           }}
         />
       )
@@ -613,15 +636,17 @@ describe('ImageSection', () => {
                 imageSettings: {
                   mode: 'SingleColor',
                   icon: 'art',
-                  iconFillColor: '#00FF00'
-                }
+                  iconFillColor: '#00FF00',
+                },
               },
-              editing: true
-            }
+              editing: true,
+            },
           }}
         />
       )
-      await act(async() => { jest.runOnlyPendingTimers() })
+      await act(async () => {
+        jest.runOnlyPendingTimers()
+      })
       expect(rendered.container.querySelector('[name="single-color-image-fill"]')).toHaveValue(
         '#00FF00'
       )

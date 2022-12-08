@@ -596,6 +596,32 @@ describe DueDateCacher do
       end
     end
 
+    describe "re-adding removed students from a quiz" do
+      specs_require_sharding
+
+      it "assigns the correct workflow state to the submission" do
+        @shard2.activate do
+          account = Account.create!
+          course_with_student(active_all: true, account: account)
+
+          @quiz = @course.quizzes.create!
+          @quiz.workflow_state = "available"
+          @quiz.quiz_data = [{ correct_comments: "", assessment_question_id: nil, incorrect_comments: "", question_name: "Question 1", points_possible: 1, question_text: "Write an essay!", name: "Question 1", id: 128, answers: [], question_type: "essay_question" }]
+          @quiz.save!
+
+          @quiz_submission = Quizzes::SubmissionManager.new(@quiz).find_or_create_submission(@student)
+          @quiz_submission.update!(workflow_state: "pending_review")
+
+          submission = @quiz_submission.submission
+          submission.update_columns(grade: "5", workflow_state: "deleted")
+
+          expect { DueDateCacher.new(@course, @quiz.assignment).recompute }.to change {
+            submission.reload.workflow_state
+          }.from("deleted").to("pending_review")
+        end
+      end
+    end
+
     describe "updated_at" do
       it "updates the updated_at when the workflow_state of a submission changes" do
         submission.update!(workflow_state: "deleted")
@@ -678,6 +704,14 @@ describe DueDateCacher do
           expect { cacher.recompute }.to change {
             Submission.active.where(assignment_id: @assignment.id).count
           }.from(0).to(1)
+        end
+
+        it "doesn't blow up when handling BC dates" do
+          bc_date = 5000.years.ago
+          @assignment.update_columns(due_at: bc_date)
+          expect { cacher.recompute }.to change {
+            Submission.find_by(assignment: @assignment, user: @student)&.cached_due_date
+          }.from(nil).to(bc_date.change(usec: 0))
         end
 
         it "deletes submissions for enrollments that are deleted" do

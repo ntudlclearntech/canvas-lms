@@ -69,6 +69,11 @@ class GradebookExporter
     end
   end
 
+  def update_completion(completion)
+    progress = @options[:progress]
+    progress&.update_completion!(completion)
+  end
+
   def buffer_columns(column_name, buffer_value = nil)
     column_count = BUFFER_COLUMN_DEFINITIONS.fetch(column_name).length
     Array.new(column_count, buffer_value)
@@ -82,6 +87,7 @@ class GradebookExporter
       include: gradebook_includes(user: @user, course: @course)
     ).preload(:root_account, :sis_pseudonym)
     student_enrollments = enrollments_for_csv(enrollment_scope)
+    update_completion(10)
 
     student_section_names = {}
     student_enrollments.each do |enrollment|
@@ -115,6 +121,7 @@ class GradebookExporter
                     calc.gradable_assignments
                   end
 
+    update_completion(20)
     Assignment.preload_unposted_anonymous_submissions(assignments)
 
     ActiveRecord::Associations.preload(assignments, :assignment_group)
@@ -129,6 +136,7 @@ class GradebookExporter
     should_show_totals = false
     include_sis_id = false
 
+    update_completion(30)
     CSVWithI18n.generate(**@options.slice(:encoding, :col_sep, :include_bom)) do |csv|
       # First row
       header = @options[:show_student_first_last_name] ? ["LastName", "FirstName"] : ["Student"]
@@ -164,6 +172,7 @@ class GradebookExporter
 
       group_filler_length = groups.size * column_count_per_group
 
+      update_completion(50)
       # Possible "hidden" (muted or manual posting) row
       if assignments.any? { |assignment| show_as_hidden?(assignment) }
         row = [nil, nil, nil, nil]
@@ -222,9 +231,7 @@ class GradebookExporter
         row << read_only << read_only << read_only << read_only
         row.concat(buffer_columns(:grading_standard, read_only)) if @course.grading_standard_enabled?
         if include_final_grade_override?
-          allow_importing = Account.site_admin.feature_enabled?(:import_override_scores_in_gradebook)
-          # Override Score is not read-only if the user can import changes
-          row.concat(buffer_columns(:override_score, allow_importing ? nil : read_only))
+          row.concat(buffer_columns(:override_score))
 
           # Override Grade is always read-only
           row.concat(buffer_columns(:override_grade, read_only)) if @course.grading_standard_enabled?
@@ -236,8 +243,16 @@ class GradebookExporter
       lengths_match = header.length == row.length
       raise "column lengths don't match" if !lengths_match && !Rails.env.production?
 
+      total_batches = (student_enrollments.length / 100.0).ceil
+      batch_completion_increase = 40.0 / total_batches
+      current_completion = 50
+
       # Rest of the Rows
       student_enrollments.each_slice(100) do |student_enrollments_batch|
+        progress = @options[:progress]
+        progress&.reload
+        return if progress&.failed?
+
         student_ids = student_enrollments_batch.map(&:user_id)
 
         visible_assignments = @course.submissions
@@ -302,6 +317,9 @@ class GradebookExporter
 
           csv << row
         end
+
+        current_completion += batch_completion_increase
+        update_completion(current_completion)
       end
     end
   end

@@ -30,13 +30,13 @@ export default function GradebookData(props) {
   )
   const dispatch = useRef(
     new RequestDispatch({
-      activeRequestLimit: performanceControls.current.activeRequestLimit
+      activeRequestLimit: performanceControls.current.activeRequestLimit,
     })
   )
   const courseId = props.gradebookEnv.context_id
   const flashMessages = useStore(state => state.flashMessages)
 
-  const appliedFilterConditions = useStore(state => state.appliedFilterConditions, shallow)
+  const appliedFilters = useStore(state => state.appliedFilters, shallow)
   const isFiltersLoading = useStore(state => state.isFiltersLoading)
   const initializeStagedFilter = useStore(state => state.initializeStagedFilter)
   const fetchFilters = useStore(state => state.fetchFilters)
@@ -45,13 +45,21 @@ export default function GradebookData(props) {
   const isModulesLoading = useStore(state => state.isModulesLoading)
   const fetchModules = useStore(state => state.fetchModules)
 
+  const customColumns = useStore(state => state.customColumns, shallow)
+  const isCustomColumnsLoading = useStore(state => state.isCustomColumnsLoading)
+  const fetchCustomColumns = useStore(state => state.fetchCustomColumns)
+
+  const studentIds = useStore(state => state.studentIds, shallow)
+  const isStudentIdsLoading = useStore(state => state.isStudentIdsLoading)
+  const fetchStudentIds = useStore(state => state.fetchStudentIds)
+
   // Initial state
   // We might be able to do this in gradebook/index.tsx instead
   useEffect(() => {
     useStore.setState({
       courseId,
       dispatch: dispatch.current,
-      performanceControls: performanceControls.current
+      performanceControls: performanceControls.current,
     })
   }, [courseId, props.gradebookEnv.enhanced_gradebook_filters])
 
@@ -73,25 +81,32 @@ export default function GradebookData(props) {
     if (props.gradebookEnv.has_modules) {
       fetchModules()
     }
+    fetchCustomColumns()
   }, [
     fetchFilters,
     fetchModules,
+    fetchCustomColumns,
     props.gradebookEnv.enhanced_gradebook_filters,
     props.gradebookEnv.has_modules,
     initializeStagedFilter,
     props.gradebookEnv.settings.filter_rows_by,
-    props.gradebookEnv.settings.filter_columns_by
+    props.gradebookEnv.settings.filter_columns_by,
   ])
 
   return (
     <Gradebook
       {...props}
+      appliedFilters={appliedFilters}
+      customColumns={customColumns}
+      fetchStudentIds={fetchStudentIds}
       flashAlerts={flashMessages}
       hideGrid={false}
-      appliedFilterConditions={appliedFilterConditions}
+      isCustomColumnsLoading={isCustomColumnsLoading}
       isFiltersLoading={isFiltersLoading}
       isModulesLoading={isModulesLoading}
+      isStudentIdsLoading={isStudentIdsLoading}
       modules={modules}
+      studentIds={studentIds}
       // when the rest of DataLoader is moved we can remove these
       performanceControls={performanceControls.current}
       dispatch={dispatch.current}

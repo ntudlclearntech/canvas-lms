@@ -28,11 +28,11 @@ const I18n = useI18nScope('assignments_2')
 
 const TableHeader = props => {
   const headerStyle = {
-    borderBottom: `1px solid ${theme.variables.colors.borderMedium}`
+    borderBottom: `1px solid ${theme.variables.colors.borderMedium}`,
   }
 
   const renderTableHeader = (name, size, key, grow) => (
-    <Flex.Item padding="xx-small" size={size} key={key} grow={grow}>
+    <Flex.Item padding="xx-small" size={size} key={key} shouldGrow={grow}>
       <Text size="small" weight="bold">
         {name}
       </Text>
@@ -45,12 +45,12 @@ const TableHeader = props => {
     {name: I18n.t('Date Modified'), size: props.columnWidths.dateModifiedWidth, grow: false},
     {name: I18n.t('Modified By'), size: props.columnWidths.modifiedByWidth, grow: false},
     {name: I18n.t('Size'), size: props.columnWidths.fileSizeWidth, grow: false},
-    {name: I18n.t('Published'), size: props.columnWidths.publishedWidth, grow: false}
+    {name: I18n.t('Published'), size: props.columnWidths.publishedWidth, grow: false},
   ]
 
   return (
     <div style={headerStyle}>
-      <Flex aria-hidden>
+      <Flex aria-hidden={true}>
         {tableHeadings.map((header, index) =>
           renderTableHeader(header.name, header.size, index, header.grow)
         )}
@@ -68,8 +68,8 @@ TableHeader.propTypes = {
     dateModifiedWidth: string,
     modifiedByWidth: string,
     fileSizeWidth: string,
-    publishedWidth: string
-  })
+    publishedWidth: string,
+  }),
 }
 
 export default TableHeader

@@ -19,7 +19,8 @@
 import React, {useState, forwardRef} from 'react'
 import PropTypes from 'prop-types'
 import {useScope as useI18nScope} from '@canvas/i18n'
-import {Button, CloseButton} from '@instructure/ui-buttons'
+import {CloseButton} from '@instructure/ui-buttons'
+import {Link} from '@instructure/ui-link'
 import {ApplyTheme} from '@instructure/ui-themeable'
 import {Heading} from '@instructure/ui-heading'
 import {Popover} from '@instructure/ui-popover'
@@ -53,14 +54,15 @@ const OutcomesPopover = forwardRef(({outcomes, outcomeCount, onClearHandler}, re
         placement="top center"
         screenReaderLabel={I18n.t('Outcomes Selected')}
         isShowingContent={showOutcomesList}
-        onToggle={setShowOutcomesList}
-        shouldContainFocus
-        shouldReturnFocus
+        onShowContent={setShowOutcomesList.bind(null, true)}
+        onHideContent={setShowOutcomesList.bind(null, false)}
+        shouldContainFocus={true}
+        shouldReturnFocus={true}
         positionTarget={() => (ref?.current == null ? null : ref.current)}
         renderTrigger={
-          <Button
-            variant="link"
-            size="medium"
+          <Link
+            as="button"
+            isWithinText={false}
             interaction={outcomeCount > 0 ? 'enabled' : 'disabled'}
           >
             {I18n.t(
@@ -72,7 +74,7 @@ const OutcomesPopover = forwardRef(({outcomes, outcomeCount, onClearHandler}, re
                 count: outcomeCount
               }
             )}
-          </Button>
+          </Link>
         }
       >
         <View padding="small" display="block" as="div">
@@ -95,7 +97,7 @@ const OutcomesPopover = forwardRef(({outcomes, outcomeCount, onClearHandler}, re
             overflowX="hidden"
             tabIndex={outcomeCount > 10 ? '0' : '-1'}
           >
-            <List isUnstyled size="small" margin="none small none none">
+            <List isUnstyled={true} size="small" margin="none small none none">
               {Object.values(outcomes)
                 .sort((a, b) => a.title.localeCompare(b.title, ENV.LOCALE, {numeric: true}))
                 .map(({linkId, title}) => (
@@ -107,9 +109,9 @@ const OutcomesPopover = forwardRef(({outcomes, outcomeCount, onClearHandler}, re
           </View>
         </View>
         <View as="div" padding="small" borderWidth="small 0 0">
-          <Button variant="link" size="medium" onClick={closeAndClear}>
+          <Link as="button" isWithinText={false} onClick={closeAndClear}>
             {I18n.t('Clear all')}
-          </Button>
+          </Link>
         </View>
       </Popover>
     </ApplyTheme>
