@@ -8696,6 +8696,8 @@ zh-Hant:
         course_template: 課程範本
         course_visibility: 可見性
         custom_course_visibility: 自訂
+        syllabus: 課程資訊
+        files: 文件
         default_due_time: 預設截止時間
         enable_course_paces: 啟用課程進度
         enable_pace_plans: 啟用進度計畫
