@@ -213,7 +213,7 @@ let $comment_saved
 let $comment_saved_message
 let $reassignment_complete
 let $selectmenu
-let $word_count
+// let $word_count
 let originalRubric
 let browserableCssClasses
 let snapshotCache
@@ -2203,7 +2203,7 @@ EG = {
             count: wordCount
           })}`
         : ''
-      $word_count.html($.raw(wordCountHTML))
+//      $word_count.html($.raw(wordCountHTML))
     }
   },
 
@@ -4115,7 +4115,7 @@ function setupSelectors() {
   $width_resizer = $('#width_resizer')
   $window = $(window)
   $x_of_x_students = $('#x_of_x_students_frd')
-  $word_count = $('#submission_word_count')
+  // $word_count = $('#submission_word_count')
   assignmentUrl = $('#assignment_url').attr('href')
   browserableCssClasses = /^(image|html|code)$/
   fileIndex = 1
