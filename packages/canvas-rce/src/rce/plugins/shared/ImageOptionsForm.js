@@ -55,7 +55,7 @@ const ImageOptionsForm = ({
   id = 'image-options-form',
   isIconMaker = false
 }) => {
-  const TYPE = isIconMaker ? formatMessage('icon') : formatMessage('image')
+  const TYPE = isIconMaker ? 'icon' : 'image'
   const tooltipText = formatMessage('Used by screen readers to describe the content of an {TYPE}', {
     TYPE
   })
@@ -85,7 +85,7 @@ const ImageOptionsForm = ({
     </Flex>
   )
 
-  const TYPE_UPPER = isIconMaker ? formatMessage('Icon') : formatMessage('Image')
+  const TYPE_UPPER = isIconMaker ? 'Icon' : 'Image'
 
   return (
     <Flex direction="column">
@@ -96,17 +96,18 @@ const ImageOptionsForm = ({
           height="4rem"
           label={textAreaLabel}
           onChange={handleAltTextChange}
-          placeholder={formatMessage('(Describe the {TYPE})', {TYPE})}
+          placeholder={formatMessage(`(Describe the ${TYPE})`)}
           resize="vertical"
           value={altText}
         />
       </Flex.Item>
-
+      {/* cool-notice: we dont have Decorative icon key */}
+      {/* but the TYPE variable currently is mostly "image" */}
       <Flex.Item padding="small">
         <Checkbox
           checked={isDecorativeImage}
           disabled={displayAs === 'link'}
-          label={formatMessage('Decorative {TYPE_UPPER}', {TYPE_UPPER})}
+          label={`Decorative ${TYPE}`}
           onChange={handleIsDecorativeChange}
         />
       </Flex.Item>
