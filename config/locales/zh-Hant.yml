@@ -3793,7 +3793,7 @@ zh-Hant:
     gpa_scale_explainer: "GPA 量表評分是什麼？"
     grading_type_options: 
       gpa_scale: "GPA 量表系統"
-      letter_grade: 成績等級
+      letter_grade: 等第制
       not_graded: 未評分
       pass_fail: 完成/未完成
       percent: 百分比
