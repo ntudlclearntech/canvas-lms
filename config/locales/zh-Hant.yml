@@ -13091,6 +13091,8 @@ zh-Hant:
       submissions_upload: "%{assignment} 提交項目已上傳"
     titles: 
       total: 總計
+    lti:
+      button: 成績冊(Beta)
   graded_25cd3fcd: 已評分
   graded_date_by_grader_e8e1ff75: "%{graded_date} 由%{grader}"
   graded_discussion_a873bb3e: 已評分的討論：
