@@ -9038,7 +9038,7 @@ zh-Hant:
   create_new_filter_c244aa92: 建立新篩選器
   create_new_group_bf9561d4: 建立新群組
   create_new_group_fca5cc73: 建立新小組
-  create_new_group_set_13b1f62a: 建立新小組
+  create_new_group_set_13b1f62a: 建立新小組類別
   create_number_of_groups_groups_now_f89f220e: "現在建立 %{number_of_groups} 個群組"
   create_outcome_4dac05a0: 建立成果
   create_pages_581a4d59: 建立頁面
@@ -9231,7 +9231,7 @@ zh-Hant:
       assign_blanks: 將未繳交作業的學生評為零分
     out_of_points_possible: "總分 %{assignment.points_possible}"
     this_is_permanent: 依成績曲線調分的結果將覆蓋目前的分數，且無法復原，請謹慎操作。
-  curving_assignments_e9479ee3: 繪製作業曲線
+  curving_assignments_e9479ee3: 依成績曲線調分
   custom_6979cd81: 定制
   custom_css_and_javascript_may_cause_accessibility__93d2a823: "定制 CSS 和 Javascript 腳本或許會導致訪問故障，或與未來 Canvas 的更新產生衝突！"
   custom_fields_fc3e55af: 自訂字段
@@ -10699,8 +10699,8 @@ zh-Hant:
       delimiters: 分隔符號
       greek: 希臘文
       misc: 雜項
-      operators: 操作員
-      relationships: 關聯
+      operators: 運算子/算符
+      relationships: 關聯式
     titles: 
       insert_edit_image: 插入/編輯影像
     url: URL：
@@ -11025,7 +11025,9 @@ zh-Hant:
   enter_your_description_9e24c917: 輸入您的說明
   enter_your_friendly_description_here_b3c230d3: 在此處輸入您的友好描述
   enter_your_question_and_multiple_answers_31370054: 輸入您的問題和多個選項。
-  enter_your_question_specifying_where_each_blank_sh_2c6e8035: 請輸入您的問題，並指定每個空白的所在處。學生必須在每個空白處的文本框中鍵入正確答案。
+  enter_your_question_specifying_where_each_blank_sh_2c6e8035: |
+    當您在輸入問題時，請以中括號格式，意即例如 [Q1 ] ，標示題目中要設為填空題的位置。接著即可在下方的下拉式選單中輸入每個填空處所有可能的正確答案項目。
+    請注意: 學生必須在題目中的每個空白處輸入正確答案才能得分。此題的「配分」會平均分給每個問題的作答結果。
   enter_your_question_specifying_where_each_dropdown_b428a9ff: 請輸入您的問題，並指定每個下拉式清單的所在處。然後定義每個下拉式清單的潛在答案。
   enter_your_question_text_4729b886: 輸入您的問題文字。
   enter_your_question_text_students_will_see_the_que_f19af9e9: 請輸入您的問題文字。學生們會看到這個問題之後有一個小的文本框，以輸入他們的答案。
@@ -12396,7 +12398,7 @@ zh-Hant:
   grade_calculator_performance_improvements_564af0de: 評分計算機效能改進
   grade_change_activity_75fb525: 評分變更活動
   grade_change_log_231f90e4: 評分變更日誌
-  grade_change_notifications_98461261: 評分變更通知
+  grade_change_notifications_98461261: 作業評分變更
   grade_changes_and_comments_have_been_released_for__3978b741: 各人的評分等級更改和評論已發佈。
   grade_changes_and_comments_have_been_released_for__5d6a01a0: "各人的評分等級更改和評論已發佈，如下：%{section_names}。"
   grade_changes_and_comments_have_been_released_for__624411ff: "先前已評分的各人評分等級更改和評論已發佈，如下：%{section_names}。"
@@ -13150,12 +13152,12 @@ zh-Hant:
   grades_were_successfully_published_to_the_gradeboo_79203993: 成績已成功發佈到成績單。
   grades_were_successfully_released_to_the_gradebook_4c3b07d6: 成績已成功發佈到成績單。
   grades_will_be_hidden_by_default_any_grades_that_h_53a7fb03: "\n\
-      \x20         成績預設為隱藏。仍可看到已公佈的任何成績。\n\
-      \x20         選擇何時公佈成績單中的此作業的成績。\n\
+      \x20         成績預設為隱藏。您可以選擇何時公佈此作業的成績。\n\
+      \x20         學生可以看到在此之前已公佈的成績。\n\
       \x20       "
   grades_will_be_hidden_by_default_any_grades_that_h_b6fac5e5: "\n\
-      \x20           預設隱藏成績。仍可看到任何已公佈的成績。\n\
-      \x20           選擇何時在成績單上的每一欄公佈每個作業的成績。\n\
+      \x20           預設隱藏成績。您可以選擇何時在成績單上公佈各項作業的成績。\n\
+      \x20           學生可以看到在此之前已公佈的成績。\n\
       \x20         "
   grades_will_be_made_visible_to_all_students_1cc4d67e: 所有學生將可看到成績
   grades_will_be_made_visible_to_students_with_grade_d83028d5: 有已評分的提交項目的學生將可看到成績
@@ -13664,8 +13666,8 @@ zh-Hant:
       group_categories: 
         account_group_explanation: 帳戶級別的學生小組是一個用於組織學生的絕佳方式，並且不會將其綁定到特定的課程。每一個學生小組都有其自己的行事曆、討論板和協作工具，所以他們能夠更有效地組織起來，共同努力。
         add_group_set: 新增小組類別
-        course_group_explanation: 學生小組是出於小組專案或論文等事項組織學生的有效途徑。每一個學生小組都有其自己的行事曆、討論板和協作工具，所以他們能夠更有效地組織起來，共同努力。
-        group_assignment_instructions: 您可以隨機指派學生到特定規模的小組，或手動建立和組織小組。在建立了小組之後，可以設定作業為『小組繳交』作業，這意味著每個小組都將有一個針對該小組所有使用者的作業繳交。
+        course_group_explanation: 建立學生小組是管理學生分組作業或報告等事項的有效方法。每個小組會有各自的行事曆、討論版與協作工具可來幫助幫助各組更有效率地討論與合作。
+        group_assignment_instructions: 您可以隨機將學生分配至各小組，或手動建立小組並分配學生。建立小組後，可以將作業設定為『小組繳交』作業，表示各小組內只需要一名成員代表繳交作業，整個小組都會被視為繳交同一份作業。
         group_set: 小組設定
         headings: 
           account_groups: 帳戶級別的學生小組
@@ -13679,6 +13681,11 @@ zh-Hant:
         search_users: 搜尋使用者
       group_category_clone: 
         cancel: 取消
+        warning: |-
+          注意！您將調整此群組的成員。
+          此變更無法讓新進入(或移出)的成員獲得新小組的成績。 意即在小組重新繳交作業之前，所有學生將維持原本已繳交之作業與成績。
+          此變更將導致同一個小組的成員會有不同成績之狀況產生。
+          為避免現有小組遞交的作業產生意外後果，建議為新的作業建立新的小組類別。
       group_category_create: 
         allow_self_signup: 允許自行註冊
         cancel: 取消
@@ -16080,8 +16087,8 @@ zh-Hant:
       delimiters: 分隔符號
       greek: 希臘文
       miscellaneous: 雜項
-      operators: 操作員
-      relationships: 關聯
+      operators: 運算子/算符
+      relationships: 關聯式
   max_attempts_ae7b90bc: 最多嘗試次數
   max_concurrent_a6f135c: 最多同時
   max_dd02d615: 上限
@@ -19601,11 +19608,10 @@ zh-Hant:
   on_time_17ca5ad9: 準時
   on_time_percent_eebffe38: "準時：%{percent}"
   on_whitelist_will_only_be_the_domains_which_have_b_c4c3a861: "開 - 白名單只包含明確添加至此帳戶的網域。"
-  once_a_grade_is_posted_manually_it_will_automatica_26aff290: "\n\
-      \x20             一手動公佈評分時，將會自動傳送且學生可以看到的新通知。\n\
-      \x20             已公佈成績的將來評分變更將不需要手動公佈。\n\
-      \x20           "
-  once_a_grade_is_posted_manually_it_will_automatica_bb90f67c: 當手動公佈成績後，系統會自動向學生發送新通知，而且學生能夠看到。
+  once_a_grade_is_posted_manually_it_will_automatica_26aff290: |
+    手動「公佈成績」後，系統將自動傳送通知給學生，學生亦能查看成績。
+    公佈成績後，未來變更作業評分則無需再次手動「公佈成績」，學生即可直接看到新的成績。
+  once_a_grade_is_posted_manually_it_will_automatica_bb90f67c: 手動「公佈成績」後，系統將自動傳送通知給學生，學生亦能查看成績。
   once_this_feature_is_enabled_you_will_not_be_able__ad338dcb: 啟用該功能之後，您將無法再次將其關閉。因此，確保您在繼續之前，已經準備好啟用『提交文件夾』功能。
   once_you_have_submitted_an_answer_you_will_not_be__840df9e9: 本測驗的設定為一次顯示一題，一旦您進入下一題，將無法回到前一題查看題目與修改答案。
   once_you_start_debugging_all_info_about_the_next_a_e871403b: 在開始偵錯後，將收集有關下一次嘗試登入嘗試的所有資訊。按一下「重新整理」以瞭解是否已收集更多的資料，或「停止偵錯」以清除所收集的資料，並停止目前的偵錯嘗試。
@@ -22213,17 +22219,21 @@ zh-Hant:
           equations: 您可以透過鍵入被括弧括起來的變量名來定義變量
           essay: 學生能夠在文字編輯器中輸入答案。
           file_upload: 學生能夠上傳一個檔案作為此題的答案。
-          fill_in_multiple_blanks: 請輸入您的問題，並指定每個空白的所在處。並以中括號定義填答的空格處，並輸入每個空格的所有正確答案。學生必須在每個空白處的文本框中鍵入其中一個正確答案，才算得分。此題的「配分」會平均分給每個空格的作答結果。
+          fill_in_multiple_blanks: |
+            當您在輸入問題時，請以中括號格式，意即例如 [Q1 ] ，標示題目中要設為填空題的位置。接著即可在下方的下拉式選單中輸入每個填空處所有可能的正確答案項目。
+            請注意: 學生必須在題目中的每個空白處輸入正確答案才能得分。此題的「配分」會平均分給每個問題的作答結果。
           formula_definition: 接下來，您將需要寫下用於計算正確答案的一個或多個公式。只使用與以上所列相同的變量名。
           matching: 建立配對的選項。學生們將會看到左邊的題目，並需要從右邊下拉式清單中選擇相符的答案。不同題目可以有相同的答案，您可以增加額外的誘導答案，將會出現在每題的配對清單中。此題的「配分」會平均分給每個配對的結果。
           missing_word: 定義下拉式清單前後的文字。建立一組可能的答案，並選擇一個正確的答案。
-          multi_answer_sets: 在以下編輯器中，在您要顯示答案方框的每一個地方輸入被中括號括起來的參考文字（不能有空格，僅限英文與阿拉伯數字）
+          multi_answer_sets: 在以下編輯器中，輸入您的問題並以中括號，意即 [  ] ，設定填空題的位置。(中括號內的文字僅限「英文」與「阿拉伯數字」，也不能有空白)
           multiple_answers: |-
               此問題會在每個答案旁邊顯示一個複選框，學生必須選擇您標記為正確的所有答案。  
               此題計分方式為：每個選項占分為總分/正確選項的個數，答對分數減去答錯分數即為本題得分，若沒有選到正確或錯誤的，則不加分也不扣分，扣到0為止。
           multiple_choice: 輸入您的問題和多個選項，然後選擇一個正確的答案。
-          multiple_dropdowns: 請輸入您的問題，並以中括號定義每個填答的下拉式清單處，並輸入下拉式清單的所有選項及正確答案，每個下拉式清單只可設定一個正確答案。此題的「配分」會平均分給每個下拉式清單的作答結果。
-          numerical: 定義正確答案為範圍內的任意數位，或一個數位加上或減去一些誤差邊際。學生將得到一個空的文本框以輸入自己的數值答案。
+          multiple_dropdowns: |
+            當您在輸入問題時，請以中括號格式，意即例如 [Q1 ] ，標示題目中要設為選擇題的位置。接著即可在下方的下拉式選單中輸入選擇題的選項及標示出正確答案。
+            請注意: 每個選擇題只能設定 1 個正確答案。此題的「配分」會平均分給每個選擇題的作答結果。
+          numerical: 定義正確答案為一個範圍內的任意數字，或一個數字且允許誤差範圍。學生需在空格處輸入答案。
           short_answer: |-
               請輸入您的問題文字，然後在下方輸入所有正確答案。學生們會獲得一個填答框，以輸入自己的答案。
           text_only: 適合用做題目引言，或區分題目群組之間的段落文字。不會被計分。
@@ -22272,7 +22282,7 @@ zh-Hant:
           short_answer: 填空題
           text_only: 文字引言
           true_false: 是非題
-        show_possible_answers: "顯示 %{question} 的所有正確答案"
+        show_possible_answers: "顯示 %{question} 的所有答案選項"
         show_possible_answers_no_question: 顯示以下問題的潛在答案：
         titles: 
           click_to_enter_correct_answer_comments: 點選以輸入有關正確答案的評論
@@ -22670,8 +22680,8 @@ zh-Hant:
           warning_icon: 警告
         links: 
           edit: 編輯
-          keep_editing_this_quiz: 保持編輯此測驗
-          keep_editing_this_survey: 保持編輯此調查
+          keep_editing_this_quiz: 編輯此測驗
+          keep_editing_this_survey: 編輯此調查
           message_students_who: 通知以下學生們…
           moderate_this_quiz: 調整學生作答次數
           moderate_this_survey: 調整學生作答次數
@@ -22699,6 +22709,7 @@ zh-Hant:
         warnings: 
           draft_version: 這是測驗的草稿版本的預覽
           quiz_locked: 此測驗已鎖定，學生無法作答。
+        save_quiz: 儲存測驗
         hint: 請勿同時使用多個設備、瀏覽器、分頁開啟同一份測驗的作答畫面，避免作答結果無法正確儲存。
       single_answer: 
         upload: 上傳
@@ -22773,8 +22784,8 @@ zh-Hant:
           time_running: 執行時間
         links: 
           hide_time_running: 隱藏時間
-          keep_editing_quiz: 保持編輯此測驗
-          keep_editing_survey: 保持編輯此調查
+          keep_editing_quiz: 編輯此測驗
+          keep_editing_survey: 編輯此調查
     retrieving_filters: 正在抓取篩選器…
     rubric: 
       loading: 正在載入...
@@ -22943,7 +22954,7 @@ zh-Hant:
     default_quiz_title: 測驗
     default_response_to_essay: 學生提交答案之後要向學生展示的回應
     default_response_to_file_upload: 學生提交答案之後要向學生展示的回應
-    enter_answer_variable_above: "[輸入上面的答案變數]"
+    enter_answer_variable_above: "[自訂變數]"
     errors: 
       adding_questions_failed: 添加問題失敗，請再試一次
       creating_group_failed: 建立群組失敗，請再試一次
@@ -23918,7 +23929,7 @@ zh-Hant:
   scope_9729c11e: 範圍：
   scope_c59afc8a: 範圍
   score_68107950: "%{score}%"
-  score_change_notifications_6b94f27f: 分數變更通知
+  score_change_notifications_6b94f27f: 學期成績變更通知
   score_does_not_include_groups_because_they_have_no_80d12f42: 
     one: "分數不包括 %{groups}，因為他們沒有可能的點"
     other: "分數不包括 %{groups} 因為其沒有可能的分數"
@@ -26070,7 +26081,7 @@ zh-Hant:
     one: "尚未參加調查的學生 (%{count})"
     other: "尚未參加調查的學生 (%{count})"
     zero: 尚未參加調查的學生
-  students_will_automatically_receive_full_credit_on_cc61df39: 在學生參加調查之後，其將自動獲得全部學分
+  students_will_automatically_receive_full_credit_on_cc61df39: 學生參與調查後，將會自動獲得滿分
   students_will_be_able_to_more_easily_recognize_whe_f012275a: "導師/評分者已提供反饋時，學生將可更輕鬆分辨 ..."
   students_will_be_able_to_provide_feedback_on_anoth_b43209db: 學生將可以使用強化的作業檢視提供與其他學生的作業提交項目有關的反饋
   students_will_be_able_to_see_that_the_grades_for_t_5421a866: 學生將能看到已隱藏此作業的成績。
@@ -26144,8 +26155,8 @@ zh-Hant:
   submission_comment_submission_submittor_assignment_3302b9af: "提交項目評論：%{submission_submittor}，%{assignment}，%{context}"
   submission_comment_updated_8d917ded: 已更新作業繳交評論
   submission_comment_user_name_assignment_title_cour_d88ba875: "提交項目評論：%{user_name}，%{assignment_title}，%{course_name}"
-  submission_comments_4fa03a17: 作業繳交的評論
-  submission_comments_b6d65841: 作業繳交的評論
+  submission_comments_4fa03a17: 新增作業評論
+  submission_comments_b6d65841: 新增作業評論
   submission_completed_ba0e552e: 提交項目完成
   submission_data_88085815: 提交項目資料
   submission_date_8f659c0c: 提交項目日期
@@ -27015,7 +27026,7 @@ zh-Hant:
   the_user_must_also_be_enrolled_as_an_instructor_in_e7e22eea: 該使用者必須同時在嘗試跨列表選擇的課程中以導師身份註冊。
   the_user_to_report_on_820dea8a: 要報告使用者的日期
   the_value_of_possible_points_for_this_assignment_c_42396e3: "該任務可能的分值不可超過 999999999。"
-  their_grade_for_the_assignment_c36a60ef: 他們對作業的評分
+  their_grade_for_the_assignment_c36a60ef: 學生的作業評分
   theme_52404e51: 主題
   theme_editor_b7b00f6b: 主題編輯器
   theme_editor_changes_have_been_cancelled_2af5cc5f: 主題編輯器的改動已被取消。
@@ -29886,9 +29897,9 @@ zh-Hant:
   which_account_will_this_subject_be_associated_with_921d6bac: 此主題將與哪一個帳戶關聯？
   which_canvas_account_would_you_like_to_use_to_log__c3718dc6: "您想要使用哪一個 Canvas 帳戶登入？"
   which_course_is_this_question_about_f819a158: 此問題與哪門課程相關？
-  while_the_grades_for_an_assignment_are_set_to_manu_457c38ff: 雖然公佈作業的成績設定為手動，但學生不會收到或能夠看到相關的新通知：
+  while_the_grades_for_an_assignment_are_set_to_manu_457c38ff: 每個作業「公佈成績」前，學生無法檢視評分，也不會收到以下通知：
   while_the_grades_for_this_assignment_are_hidden_st_c5d1992b: 雖然已隱藏此作業的成績，但學生不會收到相關或能夠看到的新通知：
-  while_the_grades_for_this_assignment_are_set_to_ma_cb716ede: 此作業的成績設定為手動時，學生不會收到或無法看到相關的新通知：
+  while_the_grades_for_this_assignment_are_set_to_ma_cb716ede: 尚未「公佈成績」前，學生無法檢視評分，也不會收到以下通知：
   whitelist_count_max_26a270f: "白名單（%{count}/%{max}）"
   whitelist_e88fd8ed: 白名單
   whitelist_editing_is_disabled_when_security_settin_ab40cc90: 從上一級帳戶沿用安全設定時，將禁用白名單編輯。

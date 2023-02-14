@@ -356,7 +356,7 @@
 
                 <%= hidden_field_tag 'quizzes[]', @quiz.id %>
                 <img src='/images/ajax-loader-black-on-white.gif' class='hidden loading' alt=""/>
-                <%= f.submit 'Save It Now', class: 'btn btn-primary' %>
+                <%= f.submit t('save_quiz', 'Save It Now'), class: 'btn btn-primary' %>
               <% end %>
 
             </div>
