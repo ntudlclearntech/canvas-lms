@@ -11028,7 +11028,9 @@ zh-Hant:
   enter_your_question_specifying_where_each_blank_sh_2c6e8035: |
     當您在輸入問題時，請以中括號格式，意即例如 [Q1 ] ，標示題目中要設為填空題的位置。接著即可在下方的下拉式選單中輸入每個填空處所有可能的正確答案項目。
     請注意: 學生必須在題目中的每個空白處輸入正確答案才能得分。此題的「配分」會平均分給每個問題的作答結果。
-  enter_your_question_specifying_where_each_dropdown_b428a9ff: 請輸入您的問題，並指定每個下拉式清單的所在處。然後定義每個下拉式清單的潛在答案。
+  enter_your_question_specifying_where_each_dropdown_b428a9ff: |
+    當您在輸入問題時，請以中括號格式，意即例如 [Q1 ] ，標示題目中要設為選擇題的位置。接著即可在下方的下拉式選單中輸入選擇題的選項及標示出正確答案。
+    請注意: 每個選擇題只能設定 1 個正確答案。此題的「配分」會平均分給每個選擇題的作答結果。
   enter_your_question_text_4729b886: 輸入您的問題文字。
   enter_your_question_text_students_will_see_the_que_f19af9e9: 請輸入您的問題文字。學生們會看到這個問題之後有一個小的文本框，以輸入他們的答案。
   entity_entity_id_not_found_in_federation_name_meta_e622124: "在 %{federation_name} 元數據中無法找到實體 %{entity_id}。"
@@ -13666,7 +13668,7 @@ zh-Hant:
       group_categories: 
         account_group_explanation: 帳戶級別的學生小組是一個用於組織學生的絕佳方式，並且不會將其綁定到特定的課程。每一個學生小組都有其自己的行事曆、討論板和協作工具，所以他們能夠更有效地組織起來，共同努力。
         add_group_set: 新增小組類別
-        course_group_explanation: 建立學生小組是管理學生分組作業或報告等事項的有效方法。每個小組會有各自的行事曆、討論版與協作工具可來幫助幫助各組更有效率地討論與合作。
+        course_group_explanation: 建立學生小組是管理學生分組作業或報告等事項的有效方法。每個小組會有各自的行事曆、討論版與協作工具可來幫助各組更有效率地討論與合作。
         group_assignment_instructions: 您可以隨機將學生分配至各小組，或手動建立小組並分配學生。建立小組後，可以將作業設定為『小組繳交』作業，表示各小組內只需要一名成員代表繳交作業，整個小組都會被視為繳交同一份作業。
         group_set: 小組設定
         headings: 
@@ -13681,11 +13683,6 @@ zh-Hant:
         search_users: 搜尋使用者
       group_category_clone: 
         cancel: 取消
-        warning: |-
-          注意！您將調整此群組的成員。
-          此變更無法讓新進入(或移出)的成員獲得新小組的成績。 意即在小組重新繳交作業之前，所有學生將維持原本已繳交之作業與成績。
-          此變更將導致同一個小組的成員會有不同成績之狀況產生。
-          為避免現有小組遞交的作業產生意外後果，建議為新的作業建立新的小組類別。
       group_category_create: 
         allow_self_signup: 允許自行註冊
         cancel: 取消
@@ -22225,7 +22222,7 @@ zh-Hant:
           formula_definition: 接下來，您將需要寫下用於計算正確答案的一個或多個公式。只使用與以上所列相同的變量名。
           matching: 建立配對的選項。學生們將會看到左邊的題目，並需要從右邊下拉式清單中選擇相符的答案。不同題目可以有相同的答案，您可以增加額外的誘導答案，將會出現在每題的配對清單中。此題的「配分」會平均分給每個配對的結果。
           missing_word: 定義下拉式清單前後的文字。建立一組可能的答案，並選擇一個正確的答案。
-          multi_answer_sets: 在以下編輯器中，輸入您的問題並以中括號，意即 [  ] ，設定填空題的位置。(中括號內的文字僅限「英文」與「阿拉伯數字」，也不能有空白)
+          multi_answer_sets: 在以下編輯器中，輸入您的問題並以中括號，意即 [  ] ，設定要讓學生作答的位置。(中括號內的文字僅限「英文」與「阿拉伯數字」，也不能有空白)
           multiple_answers: |-
               此問題會在每個答案旁邊顯示一個複選框，學生必須選擇您標記為正確的所有答案。  
               此題計分方式為：每個選項占分為總分/正確選項的個數，答對分數減去答錯分數即為本題得分，若沒有選到正確或錯誤的，則不加分也不扣分，扣到0為止。
@@ -29733,7 +29730,11 @@ zh-Hant:
   warning_if_there_are_any_users_with_this_role_they_1a7c1fef: 警告：如果任何使用者有此角色，他們將保持當前權限，但是您將無法創建有此角色的新使用者。
   warning_step_has_children_that_aren_t_stepitem_com_32a3f351: "警告 步驟包含並非 StepItem 組件的兒童"
   warning_step_has_two_stepitems_with_a_status_of_in_77138e9e: "警告：步驟包含兩個狀態為進行中的 StepItems"
-  warning_you_are_about_to_adjust_this_group_s_membe_a04281b6: "警告！您將要調整此群組的成員。*此變更將影響現有的小組遞交作業、註釋，並導致此群組和學生之前的群組的評論及成績都會丟失數據。*** 為防止現有的小組遞交作業產生意外後果，會為以后的作業創建一個新的小組。**"
+  warning_you_are_about_to_adjust_this_group_s_membe_a04281b6: |
+    注意！您將要調整此群組的成員。
+    *此變更無法讓新進入(或移出)的成員獲得新小組的成績。意即在小組重新繳交作業之前，所有學生將維持原本已繳交之作業與成績。*
+    *此變更將導致同一個小組的成員會有不同成績之狀況產生。*
+    **為避免現有小組遞交的作業產生意外後果，建議為新的作業建立新的小組類別**
   warnings: 
     test_install: 
       periodic_message: "此 Canvas 安裝僅用於測試，*並會定期進行重設。*"
