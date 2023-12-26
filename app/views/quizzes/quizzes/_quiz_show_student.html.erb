@@ -22,7 +22,7 @@
   <% if @quiz.description.present? %>
     <h2><%= t 'Instructions' %></h2>
     <div class="description user_content">
-      <%= public_user_content(@quiz.description) %>
-    </div>
-  <% end %>
+      <%= prevent_image_cache(public_user_content(@quiz.description)) %>
+
+    </div>  <% end %>
 <% end %>

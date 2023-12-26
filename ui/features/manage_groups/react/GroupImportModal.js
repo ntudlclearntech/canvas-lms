@@ -104,11 +104,11 @@ export default function ImportGroupsModal(props) {
           {I18n.t('To assign students to a group, enter group names in the "group_name" column.')}
         </Text>
       </View>
-      <View as="div" margin="large auto" textAlign="center">
+      {/* <View as="div" margin="large auto" textAlign="center">
         <Link href="/doc/api/file.group_category_csv.html" target="_blank">
           {I18n.t('Group Import API Documentation')}
         </Link>
-      </View>
+      </View> */}
     </CanvasModal>
   )
 }

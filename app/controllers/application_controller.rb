@@ -249,6 +249,7 @@ class ApplicationController < ActionController::Base
             collapse_global_nav: @current_user&.collapse_global_nav?,
             release_notes_badge_disabled: @current_user&.release_notes_badge_disabled?,
           },
+          DOC_VIEWER_URL: Rails.configuration.predoc["viewer_url"],
           FULL_STORY_ENABLED: fullstory_enabled_for_session?(session),
           RAILS_ENVIRONMENT: Canvas.environment
         }
@@ -2429,6 +2430,12 @@ class ApplicationController < ActionController::Base
   end
   helper_method :page_views_enabled?
 
+  def verified_google_preview_file_download_url(attachment, context = nil, permission_map_id = nil, *opts)
+    verifier = Attachments::Verification.new(attachment).verifier_for_user(@current_user,
+                                                                           context: context.try(:asset_string), permission_map_id: permission_map_id, expires: 5.minutes.from_now)
+    file_download_url(attachment, { verifier: verifier }, *opts)
+  end
+
   def verified_file_download_url(attachment, context = nil, permission_map_id = nil, *opts)
     verifier = Attachments::Verification.new(attachment).verifier_for_user(@current_user,
                                                                            context: context.try(:asset_string),
@@ -2462,6 +2469,19 @@ class ApplicationController < ActionController::Base
     UserContent.escape(rewriter.translate_content(str), request.host_with_port, use_new_math_equation_handling?)
   end
   helper_method :public_user_content
+
+  # Prevent image cache problem #73
+  def prevent_image_cache(description)
+    return "" unless description
+
+    # Description type: ActiveSupport::SafeBuffer
+    # no_cache_description is a string
+    no_cache_description = description.gsub(%r{(img src="/(courses|users)/\d+/files/\d+/preview)(\??)(.*?")}, '\1?random=' + Random.new_seed.to_s + '&\4')
+
+    # the description comes from public_user_content/user_content, so we can suppose the content is safe
+    no_cache_description.html_safe
+  end
+  helper_method :prevent_image_cache
 
   def find_bank(id, check_context_chain = true)
     bank = @context.assessment_question_banks.active.where(id:).first || @current_user.assessment_question_banks.active.where(id:).first

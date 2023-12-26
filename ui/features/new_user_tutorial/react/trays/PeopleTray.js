@@ -25,38 +25,44 @@ const I18n = useI18nScope('new_user_tutorial')
 const PeopleTray = () => (
   <TutorialTrayContent
     heading={I18n.t('People')}
-    subheading={I18n.t('Know your users')}
+    subheading={I18n.t('Add Auditors, TAs, and Teachers to your course')}
     image="/images/tutorial-tray-images/Panda_People.svg"
-    seeAllLink={{
-      label: I18n.t('See more in Canvas Guides'),
-      href: I18n.t('#community.instructor_guide'),
-    }}
     links={[
       {
-        label: I18n.t('How do I use the People page in a course as an instructor?'),
-        href: I18n.t('#community.instructor_use_people_page'),
+        label: I18n.t('How to send emails to students'),
+        href: I18n.t(
+          'how_to_send_emails_to_students_url',
+          'https://drive.google.com/file/d/1Nur4yoFQbcGEm0nQwHRSZBeiboHkyQcU/view?usp=sharing'
+        )
       },
       {
-        label: I18n.t('How do I add users to a course?'),
-        href: I18n.t('#community.instructor_add_users'),
+        label: I18n.t('Tutorial Video: Send emails'),
+        href: I18n.t(
+          'tutorial_video_send_emails_url',
+          'https://www.youtube.com/watch?v=kN2roz8R_Do&list=PLKjqFgaBNOo8fv5ZWEIUSlSqzXDVC2SV_&index=19'
+        )
       },
       {
-        label: I18n.t('How do I view a context card for a student in a course?'),
-        href: I18n.t('#community.instructor_view_student_context_card'),
+        label: I18n.t('Tutorial Video: Add members'),
+        href: I18n.t(
+          'tutorial_video_add_members',
+          'https://www.youtube.com/watch?v=nZDvz-rAiCo&list=PLKjqFgaBNOo8fv5ZWEIUSlSqzXDVC2SV_&index=4'
+        )
       },
       {
-        label: I18n.t('How do I view user details for an enrollment in a course?'),
-        href: I18n.t('#community.instructor_view_enrollment_details'),
-      },
+        label: I18n.t('Tutorial Video: Create groups'),
+        href: I18n.t(
+          'tutorial_video_create_groups_url',
+          'https://www.youtube.com/watch?v=8uObPRzoTTc&list=PLKjqFgaBNOo8fv5ZWEIUSlSqzXDVC2SV_&index=5'
+        )
+      }
     ]}
   >
-    {I18n.t(
-      `What's a class without people to take and lead it? The People page
-      shows the list of users in your course. Depending on your permissions,
-      you may be able to add students, teacher assistants, and observers to
-      your course. You can also create student groups to house group assignments,
-      discussions, and files.`
-    )}
+    {I18n.t(`NTU COOL will automatically synchronize the student list with the NTU
+          Course Selection System. Therefore, enrolled students including NTU
+          and NTU System (NTUST and NTNU) students will be added to NTU COOL
+          automatically. You can add members such as auditors or manage student
+          groups on this page.`)}
   </TutorialTrayContent>
 )
 

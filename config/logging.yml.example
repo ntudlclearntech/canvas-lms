@@ -12,6 +12,7 @@ test:
 
 production:
   logger: rails
+  log_level: info
 #  logger: syslog
 #  app_ident: canvas-lms
 #  daemon_ident: canvas-lms-daemon

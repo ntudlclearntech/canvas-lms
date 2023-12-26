@@ -332,7 +332,8 @@ class DiscussionTopicsController < ApplicationController
               scope.by_position_legacy
             end
 
-    scope = DiscussionTopic.search_by_attribute(scope, :title, params[:search_term])
+    search_term = DiscussionTopic.decode_search_term(params[:search_term])
+    scope = DiscussionTopic.search_by_attribute(scope, :title, search_term)
 
     scope = scope.unread_for(@current_user) if params[:filter_by] == "unread"
 

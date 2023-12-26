@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU Affero General Public License along
 # with this program. If not, see <http://www.gnu.org/licenses/>.
 %>
-
+&nbsp;
 <div id="people-options" class="al-dropdown__container" style="position: relative;">
   <button type="button" class="al-trigger Button">
     <i class="icon-more" aria-hidden="true"></i>
@@ -61,7 +61,8 @@
 
     <% if can_do(@context, @current_user, :read_roster) %>
       <li role="presentation">
-      <%= sidebar_button context_url(@context, :context_user_services_url),
+      <%# 如帳戶-聯絡方式隱藏，此處也應隱藏 %>
+      <% sidebar_button context_url(@context, :context_user_services_url),
                          t('links.view_services', 'View Registered Services'),
                          'link' %>
       </li>

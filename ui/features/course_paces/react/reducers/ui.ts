@@ -23,6 +23,7 @@ import {StoreState, UIState} from '../types'
 import {Constants as UIConstants, UIAction} from '../actions/ui'
 import {getCoursePaceType, getPacePublishing} from './course_paces'
 import {getBlackoutDatesSyncing} from '../shared/reducers/blackout_dates'
+import {Constants as CoursePaceConstants} from '../actions/course_paces'
 
 export const initialState: UIState = {
   autoSaving: false,

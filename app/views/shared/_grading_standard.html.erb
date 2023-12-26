@@ -71,22 +71,25 @@
           </th>
         </tr>
       </thead>
-      <tr class="insert_grading_standard" style="display: none; font-size: 0.7em; line-height: 0.6em;">
-        <td colspan="4">
-          <a
-            aria-label="<%= t('insert above %{row}', row: grading_standard.data.first[0]) %>"
-            class="insert_grading_standard_link"
-            href="#"
-          >
-            <%= t('insert here') %>
-          </a>
-        </td>
-      </tr>
+      <% if false # This is use to prevent adding new grade to grading standard
+      %>
+        <tr class="insert_grading_standard" style="display: none; font-size: 0.7em; line-height: 0.6em;">
+          <td colspan="4">
+            <a
+              aria-label="<%= t('insert above %{row}', row: grading_standard.data.first[0]) %>"
+              class="insert_grading_standard_link"
+              href="#"
+            >
+              <%= t('insert here') %>
+            </a>
+          </td>
+        </tr>
+      <% end %>
       <% grading_standard.data.each_with_index do |row, idx| %>
         <tr class="grading_standard_row">
           <td style="width: 25%;">
             <div class="editing_box">
-              <input type="text" class="standard_name" name="grading_standard[standard_data][scheme_<%= idx %>][name]" value="<%= row[0] %>" style="width: 100px;" aria-labelledby="name_header"/>
+              <input type="text" class="standard_name" name="grading_standard[standard_data][scheme_<%= idx %>][name]" value="<%= row[0] %>" style="width: 100px;" aria-labelledby="name_header" disabled/>
             </div>
             <div class="displaying name">
               <%= row[0] %>
@@ -141,17 +144,20 @@
             </a>
           </td>
         </tr>
-        <tr class="insert_grading_standard" style="display: none; font-size: 0.7em; line-height: 0.6em;">
-          <td colspan="4">
-            <a
-              aria-label="<%= t('insert below %{row}', row: row[0]) %>"
-              class="insert_grading_standard_link"
-              href="#"
-            >
-              <%= t('insert_here', 'insert here') %>
-            </a>
-          </td>
-        </tr>
+        <% if false # This is use to prevent adding new grade to grading standard
+        %>
+          <tr class="insert_grading_standard" style="display: none; font-size: 0.7em; line-height: 0.6em;">
+            <td colspan="4">
+              <a
+                aria-label="<%= t('insert below %{row}', row: row[0]) %>"
+                class="insert_grading_standard_link"
+                href="#"
+              >
+                <%= t('insert_here', 'insert here') %>
+              </a>
+            </td>
+          </tr>
+        <% end %>
       <% end %>
       <tr class="grading_standard_row blank" style="display: none;">
         <td>
@@ -186,6 +192,38 @@
       </tr>
     </table>
     <div class="displaying" style="text-align: <%= direction('right') %>;">
+      <p style="text-align:left; font-size:12px;">
+        <%= t(
+          'grading_scheme_instruction_1',
+          '1. Default grading scheme is based on the %{href}, so users can’t add or edit the letter grades.',
+          href: link_to(
+            t(
+              'national_taiwan_university_students_grading_policy',
+              '"National Taiwan University Students Grading Policy"'
+            ),
+            t(
+              'national_taiwan_university_students_grading_policy_url',
+              'https://www.aca.ntu.edu.tw/WebUPD/acaEN/GAADRules/110學生成績評量辦法.pdf'
+            )
+          )
+        ) %>
+        <br />
+        <%= t(
+          'grading_scheme_instruction_2',
+          '2. Default grade to score converting rule is also based on the %{href}. If users customize the grading scheme, the converting score will be the median of the percentage scale.',
+          href: link_to(
+            t(
+              'national_taiwan_university_students_grading_policy',
+              '"National Taiwan University Students Grading Policy"'
+            ),
+            t(
+              'national_taiwan_university_students_grading_policy_url',
+              'https://www.aca.ntu.edu.tw/WebUPD/acaEN/GAADRules/110學生成績評量辦法.pdf'
+            )
+          )
+        ) %>
+        <br />
+      </p>
       <% if !read_only %>
         <a href="<%= context_url(@context, :context_grading_standards_url) %>"><%= t('managing_grading_standards', 'manage grading schemes') %></a>
       <% end %>

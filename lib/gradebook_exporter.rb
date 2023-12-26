@@ -133,6 +133,8 @@ class GradebookExporter
     include_root_account = @course.root_account.trust_exists?
     should_show_totals = show_totals?
     include_sis_id = @options[:include_sis_id]
+    should_show_totals = false
+    include_sis_id = false
 
     update_completion(30)
     CSVWithI18n.generate(**@options.slice(:encoding, :col_sep, :include_bom)) do |csv|
@@ -193,12 +195,12 @@ class GradebookExporter
           row.concat([nil] * group_filler_length)
           row.concat(buffer_columns(:points)) if include_points?
           row.concat(buffer_columns(:total_scores))
-        end
 
-        row.concat(buffer_columns(:grading_standard)) if @course.grading_standard_enabled?
-        if include_final_grade_override?
-          row.concat(buffer_columns(:override_score))
-          row.concat(buffer_columns(:override_grade)) if @course.grading_standard_enabled?
+          row.concat(buffer_columns(:grading_standard)) if @course.grading_standard_enabled?
+          if include_final_grade_override?
+            row.concat(buffer_columns(:override_score))
+            row.concat(buffer_columns(:override_grade)) if @course.grading_standard_enabled?
+          end
         end
 
         lengths_match = header.length == row.length

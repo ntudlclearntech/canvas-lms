@@ -1532,13 +1532,10 @@ class RCEWrapper extends React.Component {
           insert: {
             title: formatMessage('Insert'),
             items:
-              'instructure_links instructure_image instructure_media instructure_document instructure_icon_maker | instructure_equation inserttable instructure_media_embed | hr',
+              'instructure_links instructure_image instructure_media instructure_document instructure_icon_maker | instructure_equation inserttable media | hr'
           },
-          tools: {title: formatMessage('Tools'), items: 'instructure_wordcount lti_tools_menuitem'},
-          view: {
-            title: formatMessage('View'),
-            items: 'instructure_fullscreen instructure_exit_fullscreen instructure_html_view',
-          },
+          tools: {title: formatMessage('Tools'), items: 'wordcount lti_tools_menuitem'},
+          view: {title: formatMessage('View'), items: 'instructure_html_view'}
         },
         options.menu
       ),
@@ -1581,8 +1578,8 @@ class RCEWrapper extends React.Component {
           },
           {
             name: formatMessage('Miscellaneous'),
-            items: ['removeformat', 'table', 'instructure_equation', 'instructure_media_embed'],
-          },
+            items: ['removeformat', 'table', 'instructure_equation', 'media']
+          }
         ],
         options.toolbar
       ),
@@ -1613,7 +1610,7 @@ class RCEWrapper extends React.Component {
           'instructure_condensed_buttons',
           'instructure_links',
           'instructure_html_view',
-          'instructure_media_embed',
+          'media',
           'a11y_checker',
           'wordcount',
           'instructure_wordcount',

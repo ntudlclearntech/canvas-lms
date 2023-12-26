@@ -232,7 +232,7 @@ export class CourseSelect extends React.Component {
   getGroupLabel = groupKey => {
     switch (groupKey) {
       case 'favoriteCourses':
-        return I18n.t('Favorite Courses')
+        return I18n.t('Favorite Courses', 'Current Courses')
       case 'moreCourses':
         return I18n.t('More Courses')
       case 'concludedCourses':

@@ -415,6 +415,27 @@ class ContentZipper
     users_name = get_user_name(students, submission) unless @assignment.anonymize_students?
     filename = get_filename(users_name, submission)
 
+    begin
+      if @assignment.anonymize_students?
+        new_filename = "anon_#{submission.anonymous_id}"
+      else
+        user = submission.user
+        # If is group assignemts and not grade_group_students_individually mode,
+        # the students name/sortable_name will be group name.
+        # The user.id is the user who submits the attachment.
+        if !@submission.group_id.nil? && !@assignment.grade_group_students_individually
+          new_filename = "#{students[submission.user_id].name}#_#{user.id}"
+        else
+          unique_id = user.pseudonyms.first().unique_id
+          unique_id = unique_id.gsub(/@.*/, "")
+          new_filename = "#{unique_id}#_#{user.name}_#{user.id}"
+        end
+      end
+      filename = new_filename
+    rescue
+      # If an unknown error occurred, use the original filename
+    end
+
     case submission.submission_type
     when "online_upload"
       add_upload_submission(submission, zipfile, filename)

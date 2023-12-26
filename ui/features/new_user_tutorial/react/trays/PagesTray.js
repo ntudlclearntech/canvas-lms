@@ -25,37 +25,24 @@ const I18n = useI18nScope('new_user_tutorial')
 const PagesTray = () => (
   <TutorialTrayContent
     heading={I18n.t('Pages')}
-    subheading={I18n.t('Create interactive course content')}
+    subheading={I18n.t('Create and compile educational resources')}
     image="/images/tutorial-tray-images/Panda_Pages.svg"
     imageWidth="14.5rem"
-    seeAllLink={{
-      label: I18n.t('See more in Canvas Guides'),
-      href: I18n.t('#community.instructor_guide'),
-    }}
     links={[
       {
-        label: I18n.t('How do I create a new page in a course?'),
-        href: I18n.t('#community.instructor_create_page'),
-      },
-      {
-        label: I18n.t('How do I publish or unpublish a page as an instructor?'),
-        href: I18n.t('#community.instructor_publish_page'),
-      },
-      {
-        label: I18n.t('How do I use the Pages Index Page?'),
-        href: I18n.t('#community.instructor_use_pages_index'),
-      },
-      {
-        label: I18n.t('How do I set a Front Page in a course?'),
-        href: I18n.t('#community.instructor_set_front_page'),
-      },
+        label: I18n.t('How do I edit Pages'),
+        href: I18n.t(
+          'how_do_i_edit_pages_url',
+          'https://docs.google.com/document/d/1_pgN6BAVIK4RmJzVy6DUs5HV8e25zTiLoc287QnMgzk/edit#heading=h.kq9xgh62ph56'
+        )
+      }
     ]}
   >
-    {I18n.t(`Pages let you create interactive content directly in Canvas,
-      whether it's a weekly update, a collaborative course wiki, or a
-      list of educational resources. Pages can include text, multimedia,
-      and links to files and other course content or pages. You can also
-      allow students to contribute to specific pages in the course.`)}
+    {I18n.t(`Teachers and TAs can build Pages containing content and educational
+          resources that help students learn but aren't assignments. Include text,
+          multimedia, and links to files and external resources. Students can also
+          create content on Pages if they were given the authority by teachers or
+          teaching assistants.`)}
   </TutorialTrayContent>
 )
 

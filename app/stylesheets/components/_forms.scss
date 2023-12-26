@@ -133,6 +133,17 @@ input + .hint-text {
     bottom: 60px;
     overflow: auto;
     padding: 20px;
+
+    &.cool-custom {
+      top: 51px;
+      bottom: 59px;
+      padding: 1em;
+      padding-top: 0;
+    }
+  }
+
+  .form-hint-cool-custom {
+    padding-top: 5px;
   }
 }
 

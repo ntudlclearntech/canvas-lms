@@ -1,5 +1,4 @@
-/*
- * Copyright (C) 2017 - present Instructure, Inc.
+/* * Copyright (C) 2017 - present Instructure, Inc.
  *
  * This file is part of Canvas.
  *
@@ -25,38 +24,25 @@ const I18n = useI18nScope('new_user_tutorial')
 const DiscussionsTray = () => (
   <TutorialTrayContent
     heading={I18n.t('Discussions')}
-    subheading={I18n.t('Encourage student discourse')}
+    subheading={I18n.t('Facilitate course interaction')}
     image="/images/tutorial-tray-images/Panda_Discussions.svg"
     imageWidth="9rem"
-    seeAllLink={{
-      label: I18n.t('See more in Canvas Guides'),
-      href: I18n.t('#community.instructor_guide'),
-    }}
     links={[
       {
-        label: I18n.t('How do I create a discussion as an instructor?'),
-        href: I18n.t('#community.instructor_create_discussion'),
-      },
-      {
-        label: I18n.t('How do I publish or unpublish a discussion as an instructor?'),
-        href: I18n.t('#community.instructor_publish_discussion'),
-      },
-      {
-        label: I18n.t('How do I reply to a discussion as an instructor?'),
-        href: I18n.t('#community.instructor_reply_discussion'),
-      },
-      {
-        label: I18n.t('How do I view and sort discussion replies as an instructor?'),
-        href: I18n.t('#community.instructor_view_discussion_replies'),
-      },
+        label: I18n.t('Tutorial Video: Discussion'),
+        href: I18n.t(
+          'tutorial_video_discussion_url',
+          'https://www.youtube.com/watch?v=MjSi2tkkMxk&amp;list=PLKjqFgaBNOo8fv5ZWEIUSlSqzXDVC2SV_&amp;index=14'
+        )
+      }
     ]}
   >
-    {I18n.t(`Discussions allow students and instructors to communicate about
-      course topics at any time. Create discussions for a grade, or facilitiate
-      discussions for students to exchange ideas and solve problems. Threaded
-      discussions are perfect for keeping in-depth or long-term discussions
-      organized, while Focused discussions are best suited for short-lived exchanges.`)}
-  </TutorialTrayContent>
+    {I18n.t(`The discussion function allows instructors, teaching assistants, and students
+          to interact and discuss with each other. Students can post questions and share their
+          reflections on it. Besides, instructors and teaching assistants can set up different themes
+          and require students to comment on as graded assignments. Moreover, outstanding works of
+          students can be uploaded to discussion posts for the whole class to appreciate.`)}
+  </TutorialTrayContent >
 )
 
 export default DiscussionsTray

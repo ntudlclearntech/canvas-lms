@@ -20,7 +20,7 @@
 
   <table style="width: 100%; position: relative; _height: 10px; min-height: 10px;">
     <tr>
-      <td class="answer_select" style="width: 30px;">
+      <td class="answer_select" style="width: 33px;padding-top: 6px;">
         <div style="width: 30px;" class="answer_box">
           <% click_to_set_correct = t("Click to set this answer as correct") %>
           <button class="select_answer_link no-hover" title="<%= click_to_set_correct %>" style="border: none; padding: 0; background: none">
@@ -29,21 +29,22 @@
           </button><br/>
           <span class="answer_weight"><input class="float_value" type="text" style="width: 25px;" aria-label="<%= t("Answer Weight") %>" name="answer_weight"/>%</span>
         </div>
-      </td><td>
-        <div class="select_answer answer_type">
-          <label for="answer_text"><b><%= t 'possible_answer', 'Possible Answer' %></b></label>
-          <input type="text" class="disabled_answer" style="width: 200px;" name="answer_text" aria-label="<%= t 'possible_answer', 'Possible Answer' %>" placeholder="<%= t('Answer Text') %>" />
+      </td>
+      <td>
+        <div class="select_answer answer_type" style="min-height: 60px;">
+          <!-- <label for="answer_text"><b><%= t 'possible_answer', 'Possible Answer' %></b></label> -->
+          <input type="text" class="disabled_answer" style="width: 200px;" name="answer_text" aria-label="<%= t 'possible_answer', 'Possible Answer' %>" placeholder="<%= t( 'option', 'Answer Text') %>" />
           <input type="hidden" name="answer_html"/>
           <span class="answer_html" style="display:inline-block;width:100%;"></span>
         </div>
-        <div class="fixed_answer answer_type">
+        <div class="fixed_answer answer_type" style="padding-top: 6px; margin-bottom: 22px;">
           <b class="answer_text" tabindex="0"></b>
         </div>
-        <div class="short_answer answer_type">
-          <label class="short_answer_header" for="answer_text"><b><%= t 'possible_answer', 'Possible Answer' %></b></label>
-          <input type="text" name="answer_text" aria-label="<%= t 'possible_answer', 'Possible Answer' %>" placeholder="<%= t('Answer Text') %>"/>
+        <div class="short_answer answer_type" style="min-height: 60px;">
+          <!-- <label class="short_answer_header" for="answer_text"><b><%= t 'possible_answer', 'Possible Answer' %></b></label> -->
+          <input type="text" name="answer_text" aria-label="<%= t 'possible_answer', 'Possible Answer' %>" placeholder="<%= t 'answer_placeholder', 'Answer Text' %>"/>
         </div>
-        <div class="matching_answer answer_match answer_type">
+        <div class="matching_answer answer_match answer_type" style="min-height: 60px;">
           <div class="answer_match_left">
             <% matching_left_text = t('Matching left side') %>
             <input type="text" style="width: 85%;" name="answer_match_left" placeholder="<%= matching_left_text %>" aria-label="<%= matching_left_text %>"/>
@@ -85,7 +86,8 @@
           <span class="id">&nbsp;</span>
           <span class="match_id">&nbsp;</span>
         </div>
-      </td><td style="vertical-align: top; padding-top: 0.5em; text-align: <%= direction('right') %>; width: 40px;">
+      </td>
+      <td style="vertical-align: top; padding-top: 0.5em; text-align: <%= direction('right') %>; width: 40px;">
         <div class="question_actions">
           <% edit_html_text = t("Toggle editing answer text as HTML") %>
           <% delete_html_text = t("Delete this Answer") %>
@@ -104,7 +106,7 @@
     </tr>
     <tr>
       <td colspan="3">
-       <div class="answer_comments comment empty" tabindex="0">
+       <div class="answer_comments comment empty" tabindex="0" style="display:none;">
         <div class="comment_top"></div>
          <% edit_comment_text = t("Click to enter comments, if the student chooses this answer") %>
          <span class="comment_focus" title="<%= edit_comment_text %>" tabindex="-1">

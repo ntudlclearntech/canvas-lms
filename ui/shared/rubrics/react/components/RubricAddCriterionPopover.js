@@ -71,14 +71,6 @@ class RubricAddCriterionPopover extends React.Component {
           </Menu.Group>
         </Menu>
         {/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
-        <a
-          href="#"
-          id="add_learning_outcome_link"
-          className="icon-search find_outcome_link outcome"
-        >
-          {I18n.t('Find Outcome')}
-        </a>
-        {/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
         <a href="#" id="add_criterion_link" className="hidden icon-plus add_criterion_link">
           {I18n.t('New Criterion')}
         </a>

@@ -416,7 +416,7 @@ class ContextModuleItemsApiController < ApplicationController
 
       item_params[:url] = params[:module_item][:external_url]
 
-      if (iframe = params[:module_item][:iframe])
+      if (iframe = params[:module_item][:iframe]) && !iframe[:width].empty? && !iframe[:height].empty?
         item_params[:link_settings] = { selection_width: iframe[:width], selection_height: iframe[:height] }
       end
 

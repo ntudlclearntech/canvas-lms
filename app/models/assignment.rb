@@ -76,7 +76,7 @@ class Assignment < ActiveRecord::Base
     anonymous_instructor_annotations
   ].freeze
 
-  DEFAULT_POINTS_POSSIBLE = 0
+  DEFAULT_POINTS_POSSIBLE = 100
 
   DUPLICATED_IN_CONTEXT = "duplicated_in_context"
 
@@ -4040,7 +4040,7 @@ class Assignment < ActiveRecord::Base
     post_manually = if course.default_post_policy.present?
                       course.default_post_policy.post_manually
                     else
-                      false
+                      true
                     end
 
     create_post_policy!(course:, post_manually:)

@@ -162,6 +162,7 @@ CreateAssignmentView.prototype.generateNewAssignment = function () {
   if (this.assignmentGroup) {
     assign.assignmentGroupId(this.assignmentGroup.id)
   }
+  assign.pointsPossible(100)
   return assign
 }
 

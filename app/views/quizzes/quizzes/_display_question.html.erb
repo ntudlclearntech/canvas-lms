@@ -209,7 +209,7 @@
             :question => question, :answers => @stored_params, :answer_list => answer_list, :editable => assessing
           }) %>
         <% else %>
-          <%= user_content(hash_get(question, :question_text)) %>
+          <%= prevent_image_cache(user_content(hash_get(question, :question_text))) %>
         <% end %>
       </div>
       <% if question_type && question_type.unsupported %>

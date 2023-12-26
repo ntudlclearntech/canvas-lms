@@ -88,6 +88,7 @@ class ContextController < ApplicationController
       can_add_enrollments = @context.grants_any_right?(@current_user, session, *add_enrollment_permissions(@context))
       js_permissions = {
         read_sis: @context.grants_any_right?(@current_user, session, :read_sis, :manage_sis),
+        read_prior_roster: @context.grants_any_right?(@current_user, session, :read_prior_roster),
         view_user_logins: @context.grants_right?(@current_user, session, :view_user_logins),
         manage_students:,
         add_users_to_course: can_add_enrollments,

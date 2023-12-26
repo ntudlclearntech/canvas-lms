@@ -28,11 +28,6 @@
       <option value="letter_grade" {{selectedIf gradingType "letter_grade"}}>
         {{gradingTypeMap.letter_grade}}
       </option>
-
-        <option value="gpa_scale" {{selectedIf gradingType "gpa_scale"}}>
-          {{gradingTypeMap.gpa_scale}}
-        </option>
-
       {{#unless preventNotGraded}}
         <option value="not_graded" {{selectedIf isNotGraded}}>
           {{gradingTypeMap.not_graded}}

@@ -34,4 +34,5 @@ group :development do
     gem "debase", "0.2.5.beta2", require: false
     gem "ruby-debug-ide", "0.7.3", require: false
   end
+  gem "lograge", "0.12.0"
 end

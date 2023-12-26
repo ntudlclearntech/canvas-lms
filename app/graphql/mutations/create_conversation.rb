@@ -121,6 +121,9 @@ class Mutations::CreateConversation < Mutations::BaseMutation
         if message[:attachment_ids].present?
           InstStatsd::Statsd.increment("inbox.message.sent.attachment.react")
         end
+        if message[:attachment_ids].present?
+          InstStatsd::Statsd.increment("inbox.message.sent.attachment.react")
+        end
         if input[:user_note]
           InstStatsd::Statsd.increment("inbox.conversation.sent.faculty_journal.react")
         end

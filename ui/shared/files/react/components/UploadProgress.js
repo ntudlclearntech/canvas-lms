@@ -105,9 +105,14 @@ class UploadProgress extends React.Component {
 
   renderProgressBar() {
     if (this.props.uploader.error) {
-      const errorMessage = this.props.uploader.error.message
+      let errorMessage = this.props.uploader.error.message
         ? I18n.t('Error: %{message}', {message: this.props.uploader.error.message})
         : I18n.t('Error uploading file.')
+
+      const responseErrorMessage = this.props.uploader.error?.response?.data?.message
+      if (responseErrorMessage) {
+        errorMessage = I18n.t('Error: %{message}', {message: responseErrorMessage})
+      }
 
       showFlashAlert({message: errorMessage, type: 'error', srOnly: true})
 

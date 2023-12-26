@@ -25,46 +25,40 @@ const I18n = useI18nScope('new_user_tutorial')
 const GradesTray = () => (
   <TutorialTrayContent
     heading={I18n.t('Grades')}
-    subheading={I18n.t('Enter and distribute grades')}
+    subheading={I18n.t("Track students' assignment submission status and grades")}
     image="/images/tutorial-tray-images/Panda_Grades.svg"
     imageWidth="8.5rem"
-    seeAllLink={{
-      label: I18n.t('See more in Canvas Guides'),
-      href: I18n.t('#community.instructor_guide'),
-    }}
     links={[
       {
-        label: I18n.t('How do I use the Gradebook?'),
-        href: I18n.t('#community.instructor_use_gradebook'),
+        label: I18n.t('How to manage scores'),
+        href: I18n.t(
+          'how_to_nanage_scores_url',
+          'https://drive.google.com/file/d/19TSuAISnxKnP90Bs2l-007X6p47Mprpm/view?usp=sharing'
+        )
       },
       {
-        label: I18n.t('How do I enter and edit grades in the Gradebook?'),
-        href: I18n.t('#community.instructor_edit_gradebook'),
+        label: I18n.t('Tutorial Video: Manage scores'),
+        href: I18n.t(
+          'tutorial_video_manage_scores_url',
+          'https://www.youtube.com/watch?v=cg12SK8NISk&list=PLKjqFgaBNOo8fv5ZWEIUSlSqzXDVC2SV_&index=13'
+        )
       },
       {
-        label: I18n.t('How do I post grades for an assignment in the Gradebook?'),
-        href: I18n.t('#community.instructor_post_grades'),
-      },
-      {
-        label: I18n.t('How do I view assignments or students individually in the Gradebook?'),
-        href: I18n.t('#community.instructor_gradebook_individual_view'),
-      },
-      {
-        label: I18n.t('How do I use SpeedGrader?'),
-        href: I18n.t('#community.basics_speedgrader'),
-      },
-      {
-        label: I18n.t('How do I view the details of a submission for a student in SpeedGrader?'),
-        href: I18n.t('#community.instructor_speedgrader_submission_details'),
-      },
+        label: I18n.t('How do I import and export grades'),
+        href: I18n.t(
+          'how_do_i_import_and_export_grades_url',
+          'https://docs.google.com/document/d/1_pgN6BAVIK4RmJzVy6DUs5HV8e25zTiLoc287QnMgzk/edit#heading=h.hhzohz9fudr'
+        )
+      }
     ]}
   >
-    {I18n.t(`Display grades as
-      points, percentages, complete/incomplete, or any other method that matches
-      your course grading scheme, and filter and arrange Gradebook entries
-      according to your preferences. Automatically apply a grade for missing or
-      late submissions, and easily hide grades until you're ready for students
-      to view them. For simplified grading, use SpeedGrader to view and grade submissions.`)}
+    {I18n.t(`On this page, you can track the assignment submission status and
+          student's grades. You can also export a CSV file and add new graded
+          items such as midterms based on the file format. After you import the file
+          to the grade book, it will automatically create a column for the new
+          graded item that you add on the file. If you want to change the points,
+          groups, and weights of assignments, you need to set them on the
+          assignment page.`)}
   </TutorialTrayContent>
 )
 

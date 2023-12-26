@@ -71,6 +71,54 @@ export function gradeToScoreLowerBound(grade: null | number, gradingSchemes: Gra
   return round(matchingSchemeValue * 100, 2)
 }
 
+export function gradeToScoreMean(grade, gradingScheme) {
+  // This is NTU COOL's customised function
+  const index = indexOfGrade(grade, gradingScheme)
+
+  if (index === -1) {
+    return null
+  }
+
+  const matchingSchemeValue = gradingScheme[index][1] * 100
+  if (index === 0) {
+    return round((100 + matchingSchemeValue) / 2, 2)
+  }
+
+  const nextHigherSchemeValue = gradingScheme[index - 1][1] * 100
+
+  return round((nextHigherSchemeValue + matchingSchemeValue) / 2, 2)
+}
+
+export function NTUGradeToScore(grade) {
+  // This is NTU COOL's customised function
+  switch (grade) {
+    case 'A+':
+      return 95
+    case 'A':
+      return 87
+    case 'A-':
+      return 82
+    case 'B+':
+      return 78
+    case 'B':
+      return 75
+    case 'B-':
+      return 70
+    case 'C+':
+      return 68
+    case 'C':
+      return 65
+    case 'C-':
+      return 60
+    case 'F':
+      return 50
+    case 'X':
+      return 0
+    default:
+      return 0
+  }
+}
+
 export function scoreToGrade(score: number, gradingSchemes: GradingScheme[]) {
   // Because scoreToGrade is being used in a non typescript file, ui/features/grade_summary/jquery/index.js,
   // score can be NaN despite its type being declared as a number

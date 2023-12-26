@@ -80,11 +80,11 @@ class RoleOverride < ActiveRecord::Base
     ENROLLMENT_TYPE_LABELS
   end
 
-  def self.get_custom_role_label(custom_role)
-    if custom_role.name == '旁聽生' || custom_role.name.downcase == 'auditor'
-      return t('roles.auditor', 'Auditor')
+  def self.get_custom_role_label(custom_name)
+    if custom_name && (custom_name == "旁聽生" || custom_name.downcase == "auditor")
+      t("roles.auditor", "Auditor")
     else
-      return custom_role.name
+      custom_name
     end
   end
 

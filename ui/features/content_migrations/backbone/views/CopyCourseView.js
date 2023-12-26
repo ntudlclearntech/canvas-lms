@@ -28,6 +28,9 @@ function CopyCourseView() {
 
 CopyCourseView.prototype.template = template
 
+// For templates jst/content_migrations/CopyCourse
+CopyCourseView.optionProperty('isAdmin')
+
 CopyCourseView.child('courseFindSelect', '.courseFindSelect')
 
 CopyCourseView.child('dateShift', '.dateShift')
@@ -35,6 +38,15 @@ CopyCourseView.child('dateShift', '.dateShift')
 CopyCourseView.child('selectContent', '.selectContent')
 
 CopyCourseView.child('importQuizzesNext', '.importQuizzesNext')
+
+CopyCourseView.prototype.afterRender = function () {
+  if (!this.isAdmin) {
+    this.dateShift.$dateAdjustCheckbox.click()
+    this.dateShift.toggleContent()
+    const SelectSpecificContentCheckbox = this.selectContent.$el.find("input[name=selective_import][value='true']")
+    SelectSpecificContentCheckbox.click()
+  }
+}
 
 CopyCourseView.prototype.initialize = function () {
   CopyCourseView.__super__.initialize.apply(this, arguments)

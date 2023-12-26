@@ -428,6 +428,7 @@ class GroupCategoriesController < ApplicationController
           csv << export_headers(include_sis_id, gms_by_user_id.any?)
           users.preload(:pseudonyms).find_each { |u| csv << build_row(u, section_names, gms_by_user_id, include_sis_id) }
         end
+        csv_string = "\xEF\xBB\xBF".freeze + csv_string # Force excel to open with utf-8 encoding by adding BOM
         # keep inside authorized_action block to avoid
         # double render error if user is not authorized
         respond_to do |format|

@@ -49,6 +49,7 @@ module LocaleSelection
         end
       end,
       -> { !ignore_browser_locale && user.try(:browser_locale) },
+      -> { 'zh-Hant' },
       -> { I18n.default_locale.to_s }
     ]
 

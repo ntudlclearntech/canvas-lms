@@ -48,6 +48,15 @@ $left-offset:  16px;
   }
 }
 
+li.feature-flag {
+  &.include_byte_order_mark_in_gradebook_exports,
+  &.use_semi_colon_field_separators_in_gradebook_exports,
+  &.autodetect_field_separators_for_gradebook_exports,
+  &.auto_show_cc {
+    display: none;
+  }
+}
+
 .feature-flag .element_toggler, .feature-flag .element_toggler:hover {
   color: $ic-font-color-dark;
   text-decoration: none;

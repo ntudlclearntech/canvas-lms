@@ -171,7 +171,7 @@ CourseFindSelectView.prototype.autocompleteCourses = function () {
     return {
       label: course.label,
       id: course.id,
-      value: course.label,
+      value: course.course_code,
     }
   })
 }

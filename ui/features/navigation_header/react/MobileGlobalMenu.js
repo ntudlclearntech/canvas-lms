@@ -46,6 +46,7 @@ import HelpDialog from './HelpDialog/index'
 import LogoutButton from './LogoutButton'
 import HighContrastModeToggle from './trays/HighContrastModeToggle'
 import HistoryList from './HistoryList'
+import {isStaff} from '@canvas/util/checkRole'
 
 import {Link} from '@instructure/ui-link'
 
@@ -89,7 +90,7 @@ export default class MobileGlobalMenu extends React.Component {
     // this is all the stuff that relies on the DOM of the desktop global nav
     const showGroups = !!document.getElementById('global_nav_groups_link')
 
-    const externalTools = [...document.querySelectorAll('.globalNavExternalTool')].map(el => {
+    let externalTools = [...document.querySelectorAll('.globalNavExternalTool')].map(el => {
       const svg = el.querySelector('svg')
       return {
         href: el.querySelector('a').getAttribute('href'),
@@ -98,6 +99,13 @@ export default class MobileGlobalMenu extends React.Component {
         ...(svg ? {svgPath: svg.innerHTML} : {imgSrc: el.querySelector('img').getAttribute('src')}),
       }
     })
+
+    // Hide if not a staff
+    if (!isStaff) {
+      const courseBuilderExternalToolId = typeof courseBuilderId !== 'undefined' ? courseBuilderId : 0;
+      externalTools = externalTools.filter((externalTool) => externalTool?.href !== `/accounts/1/external_tools/${courseBuilderExternalToolId}?launch_type=global_navigation`);
+    }
+
     this.setState({externalTools, showGroups})
   }
 
@@ -202,9 +210,11 @@ export default class MobileGlobalMenu extends React.Component {
                   <List.Item>
                     <LogoutButton variant="link" fluidWidth={true} />
                   </List.Item>
+                  {/* removed by NTU COOL
                   <List.Item>
                     <HighContrastModeToggle isMobile={true} />
                   </List.Item>
+                  */}
                 </List>
               </ToggleDetails>
             ) : (
@@ -463,6 +473,7 @@ export default class MobileGlobalMenu extends React.Component {
             </List.Item>
           ))}
 
+          {/*
           <List.Item>
             <ToggleDetails
               iconPosition="end"
@@ -487,8 +498,9 @@ export default class MobileGlobalMenu extends React.Component {
               </View>
             </ToggleDetails>
           </List.Item>
+          */}
 
-          {true /* TODO: put a check for if we should show help */ && (
+          {false /* TODO: put a check for if we should show help */ && (
             <List.Item>
               <ToggleDetails
                 iconPosition="end"

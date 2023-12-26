@@ -199,7 +199,7 @@ const NotificationPreferences = props => {
       {renderNotificationTimesInfoAlert()}
       {renderAccountPrivacyInfoAlert()}
       {contextSelectable && renderContextSelect()}
-      {renderMuteToggle()}
+      {/*renderMuteToggle()*/}
       {renderSendObservedNamesInNotificationsToggle()}
       {renderNotificationPreferences()}
     </Flex>

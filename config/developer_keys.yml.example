@@ -1,0 +1,9 @@
+production:
+  # For customize Oauth2 confirm form
+  u_meeting_id: 0
+
+development:
+  u_meeting_id: 0
+
+test:
+  u_meeting_id: 0

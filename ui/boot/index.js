@@ -19,6 +19,7 @@
 import canvasBaseTheme from '@instructure/canvas-theme'
 import canvasHighContrastTheme from '@instructure/canvas-high-contrast-theme'
 import moment from 'moment'
+import {themeColors} from './themeColors'
 import './initializers/fakeRequireJSFallback'
 // must run before retriggerEarlyClicks to make sure data-method is
 // respected on quickly-clicked buttons
@@ -121,10 +122,56 @@ if (ENV.use_high_contrast) {
       ...transitionOverride,
       ...brandvars,
       typography: {
-        fontFamily:
-          'LatoWeb, "Lato Extended", Lato, "Helvetica Neue", Helvetica, Arial, sans-serif',
+        fontFamily: 'LatoWeb, "Lato Extended", Lato, "Helvetica Neue", Helvetica, Arial, sans-serif'
       },
-    },
+      colors: {
+        ...canvasBaseTheme.colors,
+        /**
+         * Colors - Text
+         */
+        textDarkest: themeColors.gray20,
+        textDark: themeColors.ash,
+        // textLight: themeColors.porcelain,
+        // textLightest: themeColors.white,
+        textBrand: themeColors.brand,
+        textLink: themeColors.brand,
+        textAlert: themeColors.barney,
+        textInfo: themeColors.brand,
+        textSuccess: themeColors.shamrock,
+        textDanger: themeColors.crimson,
+        textWarning: themeColors.orange,
+        /**
+         * Colors - Background
+         */
+        backgroundDarkest: themeColors.midnightBlue,
+        backgroundDark: themeColors.ash,
+        backgroundMedium: themeColors.tiara,
+        // backgroundLight: themeColors.porcelain,
+        // backgroundLightest: themeColors.white,
+        backgroundBrand: themeColors.brand,
+        backgroundBrandSecondary: themeColors.gray20,
+        backgroundAlert: themeColors.barney,
+        backgroundInfo: themeColors.brand,
+        backgroundSuccess: themeColors.shamrock,
+        backgroundDanger: themeColors.crimson,
+        backgroundWarning: themeColors.orange,
+        /**
+         * Colors - Border
+         */
+        // borderLightest: themeColors.white,
+        // borderLight: themeColors.porcelain,
+        borderMedium: themeColors.tiara,
+        borderDark: themeColors.ash,
+        borderDarkest: themeColors.midnightBlue,
+        borderBrand: themeColors.brand,
+        borderAlert: themeColors.barney,
+        borderInfo: themeColors.brand,
+        borderSuccess: themeColors.shamrock,
+        borderDanger: themeColors.crimson,
+        borderWarning: themeColors.orange,
+        borderDebug: themeColors.crimson,
+      }
+    }
   })
 }
 

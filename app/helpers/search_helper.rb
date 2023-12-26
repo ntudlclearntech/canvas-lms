@@ -46,7 +46,7 @@ module SearchHelper
           contexts[:courses][course.id] = {
             id: course.id,
             url: course_url,
-            name: course.name,
+            name: course.course_code,
             type: :course,
             term: term_for_course.call(course),
             state: if type == :current

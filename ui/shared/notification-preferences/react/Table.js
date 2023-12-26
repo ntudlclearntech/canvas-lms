@@ -47,8 +47,8 @@ const notificationCategories = {
     'Due Date': {},
     'Grading Policies': {},
     'Course Content': {},
-    Files: {},
-    Announcement: {},
+    // Files: {},
+    // Announcement: {},
     'Announcement Created By You': {},
     Grading: {},
     Invitation: {},
@@ -60,26 +60,26 @@ const notificationCategories = {
   discussions: {
     Discussion: {},
     DiscussionEntry: {},
-    DiscussionMention: {},
+    // DiscussionMention: {}
   },
   conversations: {
     'Added To Conversation': {},
-    'Conversation Message': {},
-    'Conversation Created': {},
+    // 'Conversation Message': {},
+    'Conversation Created': {}
   },
   scheduling: {
-    'Student Appointment Signups': {},
-    'Appointment Signups': {},
-    'Appointment Cancelations': {},
-    'Appointment Availability': {},
-    Calendar: {},
+    // 'Student Appointment Signups': {},
+    // 'Appointment Signups': {},
+    // 'Appointment Cancelations': {},
+    // 'Appointment Availability': {},
+    Calendar: {}
   },
   groups: {
     'Membership Update': {},
   },
-  conferences: {
-    'Recording Ready': {},
-  },
+  // conferences: {
+  //   'Recording Ready': {}
+  // },
   alerts: {
     Other: {},
     'Content Link Error': {},

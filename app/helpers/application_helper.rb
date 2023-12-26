@@ -1406,6 +1406,10 @@ module ApplicationHelper
     hash[:DEFAULT_DUE_TIME] = context.default_due_time if context&.default_due_time.present? && context.root_account.feature_enabled?(:default_due_time)
   end
 
+  def official_course_pattern
+    /[0-9]{3}-[1|2|3|4]:\w{3}_\w{5}:?\w{2}?/
+  end
+
   def find_heap_application_id
     DynamicSettings.find(tree: :private)&.fetch(:heap_app_id)
   end

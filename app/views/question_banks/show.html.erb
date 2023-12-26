@@ -33,27 +33,6 @@
       <button class="btn button-sidebar-wide disabled" disabled="true"><i class="icon-bookmark" role="presentation"></i><%= t 'buttons.already_bookmarked', "Already Bookmarked" %></button>
     <% end %>
   </div>
-  <% css_bundle("aligned_outcomes") %>
-  <h2 id="aligned_outcomes"><%= t 'headings.aligned_outcomes', "Aligned Outcomes" %></h2>
-  <div class="rs-margin-bottom">
-    <ul class="unstyled_list" id="aligned_outcomes_list">
-      <% @alignments.each do |alignment| %>
-        <li class="outcome" data-id="<%= alignment.learning_outcome_id %>">
-          <span class="short_description"><%= alignment.learning_outcome.short_description %></span>
-          <button type="button" class="delete_outcome_link Button--link"><i class="icon-end"></i></button>
-          <span class="clear"></span>
-          <span class="content"><%= t :mastery_threshold, "mastery at %{threshold_percentage}", :threshold_percentage => raw("<span class=\"mastery_threshold\">#{(alignment.mastery_score || 0) * 100.0}</span>%") %></span>
-        </li>
-      <% end %>
-      <li class="blank outcome" style="display: none;">
-        <span class="short_description">&nbsp;</span>
-        <button type="button" class="delete_outcome_link Button--link"><i class="icon-end"></i></button>
-        <span class="clear"></span>
-        <span class="content"><%= t :mastery_threshold, "mastery at %{threshold_percentage}", :threshold_percentage => raw("<span class=\"mastery_threshold\">&nbsp;</span>%") %></span>
-      </li>
-    </ul>
-    <button type="button" class="btn button-sidebar-wide add_outcome_link"><i class="icon-paperclip"></i> <span class="add_outcome_text"><%= t 'links.align_outcome', "Align Outcome" %></span></button>
-  </div>
   <%= render :partial => 'shared/find_outcome', :locals => {:purpose => 'question_bank'}  %>
 <% end %>
 

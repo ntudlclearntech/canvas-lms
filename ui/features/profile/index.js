@@ -32,6 +32,8 @@ ready(() => {
     hiddenFlags.push('new_user_tutorial_on_off')
   }
 
+  hiddenFlags.push('high_contrast')
+
   ReactDOM.render(
     <FeatureFlags hiddenFlags={hiddenFlags} disableDefaults={true} />,
     // There is only one of these

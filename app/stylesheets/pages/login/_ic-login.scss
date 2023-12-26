@@ -46,7 +46,7 @@
 $ic-Login-border-radius: 5px;
 $modal_box_width: 623px;
 $modal_box_padding: 20px;
-$ic-Login-confirmation-bgd: #34444f;
+$ic-Login-confirmation-bgd: $ic-color-medium-darker;
 
 ////////////////////////////////////////
 // New Login Styles
@@ -100,6 +100,24 @@ body.ic-Login-Body { // apply the background to the body element so that you don
   border: 2px solid var(--ic-brand-Login-Content-inner-body-border);
   padding: direction-sides($ic-sp*1.5 $ic-sp*1.5 $ic-sp $ic-sp*1.5);
   margin-top: $ic-sp;
+
+  .external-user-link {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  a {
+    font-size: 0.8rem;
+  }
+
+  .svg-icon-info {
+    vertical-align: middle;
+    width: 0.8rem;
+    height: 0.8rem;
+    margin-right: 0.8rem;
+    fill: var(--ic-brand-Login-Content-label-text-color);
+  }
 }
 // these have !important because Canvas specificity on labels and
 // links will override these if we don't
@@ -155,6 +173,7 @@ body.ic-Login-Body { // apply the background to the body element so that you don
 
 .ic-Login__actions {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   .ic-Login__actions-timeout {
     flex: 1;
@@ -167,6 +186,10 @@ body.ic-Login-Body { // apply the background to the body element so that you don
         outline: 1px solid var(--ic-brand-Login-Content-password-text-color);
         outline-offset: 1px;
       }
+    }
+
+    label[for=pseudonym_session_remember_me] {
+      font-size: 0.8rem;
     }
   }
   .ic-Login__actions--right {
@@ -181,10 +204,22 @@ body.ic-Login-Body { // apply the background to the body element so that you don
   .ic-Form-control {
     margin-bottom: 0; // override to help vertical alignment
   }
+  .ic-Form-control--login {
+    width: 100%;
+  }
+  #login_forgot_password {
+    font-size: 0.8rem;
+  }
+  #Button--logout-confirm {
+    width: auto;
+  }
   // simulating a ghost button to work for default high contrast login screen
   .Button--login {
+    width: 100%;
+    margin-top: 1rem;
     padding: $ic-sp*0.5 $ic-sp*3;
     background: transparent;
+    background-color: var(--ic-brand-button--primary-bgd);
     color: var(--ic-brand-Login-Content-password-text-color);
     border: 1px solid var(--ic-brand-Login-Content-password-text-color);
     overflow: visible;
@@ -199,6 +234,10 @@ body.ic-Login-Body { // apply the background to the body element so that you don
       border: 1px solid var(--ic-brand-Login-Content-password-text-color);
       border-radius: 0.375rem;
       opacity: 0;
+    }
+
+    &:hover {
+      background-color: var(--ic-brand-button--secondary-bgd);
     }
 
     &:focus {
@@ -358,7 +397,7 @@ body.ic-Login-Body #footer.ic-Login-footer {
 // Styles specific to the confirmation box, using new UI variables
 ////
 body.body--login-confirmation {
-  background: darken($ic-Login-confirmation-bgd, 3%);
+  background: #34444f;
 }
 
 .ic-Login-confirmation {
@@ -387,6 +426,10 @@ body.body--login-confirmation {
   background: $ic-color-light;
   border-bottom-#{direction(left)}-radius: $baseBorderRadius;
   border-bottom-#{direction(right)}-radius: $baseBorderRadius;
+}
+
+p.ic-Login-confirmation__description {
+  font-size: 0.875rem;
 }
 
 .ic-Login-confirmation__auth-icon {
