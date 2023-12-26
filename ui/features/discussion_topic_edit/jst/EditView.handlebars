@@ -191,7 +191,10 @@
           {{/if}}
           {{#if canModerate}}
           {{#unless homeroomCourse}}
-          <div><label class="checkbox short-label podcast_enabled" for="podcast_enabled">
+            {{!--
+            // Podcast feed 點入為亂碼，建議隱藏此功能。
+            // https://gitlab.dlc.ntu.edu.tw/ntu-cool/canvas-lms/-/issues/154
+          <div><label class="checkbox short-label" for="podcast_enabled">
               {{checkbox "podcast_enabled"
               checked=podcast_url
               class="element_toggler"
@@ -199,6 +202,7 @@
               aria-controls="podcast_has_student_posts_container"}}
               {{#t "enable_podcast_feed"}}Enable podcast feed{{/t}}
             </label></div>
+            --}}
 
           {{#if contextIsCourse}}
           <div><label id="podcast_has_student_posts_container" style="{{hiddenUnless podcast_url}}; margin-left: 20px;"
@@ -378,7 +382,7 @@
   </button>
   {{/if}}
   {{#ifAll isAnnouncement willPublish}}
-  <button type="submit" data-text-while-loading="{{#t " publishing"}}Publishing...{{/t}}" class="btn btn-primary submit_button">{{#t
+  <button type="submit" data-text-while-loading="{{#t " saving"}}Saving...{{/t}}" class="btn btn-primary submit_button">{{#t
     "publish"}}Publish{{/t}}</button>
   {{else}}
   <button type="submit" data-text-while-loading="{{#t " saving"}}Saving...{{/t}}" class="btn btn-primary submit_button">{{#t

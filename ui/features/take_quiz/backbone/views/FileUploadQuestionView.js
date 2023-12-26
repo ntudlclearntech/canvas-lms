@@ -18,8 +18,12 @@
 import {View} from '@canvas/backbone'
 import template from '../../jst/fileUploadQuestionState.handlebars'
 import uploadedOrRemovedTemplate from '../../jst/fileUploadedOrRemoved.handlebars'
+import uploadedError from '../../jst/fileUploadedError.handlebars'
 import '@canvas/jquery/jquery.instructure_forms'
 import '@canvas/jquery/jquery.disableWhileLoading'
+import {useScope as useI18nScope} from '@canvas/i18n'
+
+const I18n = useI18nScope('i18n!quizzes_file_upload_question_view')
 
 export default class FileUploadQuestion extends View {
   static initClass() {
@@ -78,7 +82,21 @@ export default class FileUploadQuestion extends View {
   }
 
   // For now we'll just process the first one.
-  processAttachment(_attachment) {
+  processAttachment(attachment) {
+    // NTU COOL: Handle uploaded attachment file size zero byte or null #97
+    if (attachment && !attachment.size) {
+      alert(I18n.t('error.zero_byte', 'Upload failed. Please try again.'))
+
+      // Set uploaded file to null so user can re-upload the same file.
+      this.$fileUpload.val(null)
+
+      // Render Error messages
+      this.$fileUploadBox
+        .parent()
+        .append(uploadedError({...this.model.present(), fileUploadedZeroByte: true}))
+      return
+    }
+
     this.$attachmentID.val(this.model.id).trigger('change')
     this.$fileUploadInprogress.val(false)
     this.$fileUploadBox.addClass('file-upload-box-with-file')

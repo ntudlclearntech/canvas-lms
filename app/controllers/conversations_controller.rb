@@ -478,6 +478,9 @@ class ConversationsController < ApplicationController
         if !message[:attachment_ids].nil? && params[:attachment_ids] != ""
           InstStatsd::Statsd.increment("inbox.message.sent.attachment.legacy")
         end
+        if !message[:attachment_ids].nil? && params[:attachment_ids] != ""
+          InstStatsd::Statsd.increment("inbox.message.sent.attachment.legacy")
+        end
         InstStatsd::Statsd.count("inbox.message.sent.recipients.legacy", @recipients.count)
         if context_type == "Account" || context_type.nil?
           InstStatsd::Statsd.increment("inbox.conversation.sent.account_context.legacy")

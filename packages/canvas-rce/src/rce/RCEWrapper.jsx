@@ -1590,8 +1590,8 @@ class RCEWrapper extends React.Component {
           },
           {
             name: formatMessage('Miscellaneous'),
-            items: ['removeformat', 'table', 'instructure_equation', 'instructure_media_embed'],
-          },
+            items: ['removeformat', 'table', 'instructure_equation', 'media']
+          }
         ],
         options.toolbar
       ),
@@ -1622,7 +1622,7 @@ class RCEWrapper extends React.Component {
           'instructure_condensed_buttons',
           'instructure_links',
           'instructure_html_view',
-          'instructure_media_embed',
+          'media',
           'a11y_checker',
           'wordcount',
           'instructure_wordcount',

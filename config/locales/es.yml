@@ -18405,11 +18405,11 @@ es:
           audio_comment: "Este mensaje incluye comentarios de multimedia. Para escuchar o responder, haga clic en el siguiente vínculo:"
           download: descargar
           pre_you_can: Puede
-          reply_to_conversation_message: "Puede contestar a este mensaje en Canvas respondiendo directamente a este correo electrónico. Si debe incluir un archivo adjunto, inicie sesión en Canvas y responda mediante la bandeja de entrada."
+          # reply_to_conversation_message: "Puede contestar a este mensaje en Canvas respondiendo directamente a este correo electrónico. Si debe incluir un archivo adjunto, inicie sesión en Canvas y responda mediante la bandeja de entrada."
           subject: "%{user_name}, acabas de enviar un mensaje en Canvas."
           unknown_user: "Usuario desconocido"
           view_message: "Ver este mensaje en Conversaciones"
-        reply_to_conversation_message: "Puede contestar a este mensaje en Canvas respondiendo directamente a este correo electrónico."
+        # reply_to_conversation_message: "Puede contestar a este mensaje en Canvas respondiendo directamente a este correo electrónico."
         subject: "%{user_name}, acabas de enviar un mensaje en Canvas."
         unknown_user: "Usuario desconocido"
         view_message: "Ver este mensaje en Conversaciones"
@@ -18432,11 +18432,11 @@ es:
           audio_comment: "Este mensaje incluye comentarios de multimedia. Para escuchar o responder, haga clic en el siguiente vínculo:"
           download: descargar
           pre_you_can: Puede
-          reply_to_conversation_message: "Puede contestar a este mensaje en Canvas respondiendo directamente a este correo electrónico. Si debe incluir un archivo adjunto, inicie sesión en Canvas y responda mediante la bandeja de entrada."
+          # reply_to_conversation_message: "Puede contestar a este mensaje en Canvas respondiendo directamente a este correo electrónico. Si debe incluir un archivo adjunto, inicie sesión en Canvas y responda mediante la bandeja de entrada."
           subject: "%{user_name} acaba de enviarle un mensaje en Canvas."
           unknown_user: "Usuario desconocido"
           view_message: "Ver este mensaje en conversaciones"
-        reply_to_conversation_message: "Puede contestar a este mensaje en Canvas respondiendo directamente a este correo electrónico."
+        # reply_to_conversation_message: "Puede contestar a este mensaje en Canvas respondiendo directamente a este correo electrónico."
         subject: "%{user_name} acaba de enviarle un mensaje en Canvas."
         unknown_user: "Usuario desconocido"
         view_message: "Ver este mensaje en conversaciones"

@@ -69,7 +69,13 @@ MigrationConverterView.prototype.events = lodashExtend(
 
 MigrationConverterView.prototype.toJSON = function (json) {
   json = MigrationConverterView.__super__.toJSON.apply(this, arguments)
-  json.selectOptions = this.selectOptions || ENV.SELECT_OPTIONS
+  // Adjust selectOptions at courses/:course_id/content_migrations #96
+  if (!ENV.current_user_roles.includes('admin')) {
+    json.selectOptions = ENV.SELECT_OPTIONS.filter(option => option.id === 'course_copy_importer')
+  } else {
+    json.selectOptions = this.selectOptions || ENV.SELECT_OPTIONS
+  }
+
   return json
 }
 

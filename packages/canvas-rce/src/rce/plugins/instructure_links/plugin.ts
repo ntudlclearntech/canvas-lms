@@ -109,12 +109,12 @@ function getMenuItems(ed: Editor): Array<{text: string; value: string}> {
     ]
     if (contextType === 'course') {
       items.push({
-        text: formatMessage('Course Link'),
+        text: formatMessage('Course Links'),
         value: 'instructure_course_links',
       })
     } else if (contextType === 'group') {
       items.push({
-        text: formatMessage('Group Link'),
+        text: formatMessage('Group Links'),
         value: 'instructure_group_links',
       })
     }

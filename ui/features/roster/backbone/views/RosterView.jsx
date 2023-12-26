@@ -29,6 +29,8 @@ import {ScreenReaderContent} from '@instructure/ui-a11y-content'
 
 const I18n = useI18nScope('RosterView')
 
+import filterRoles from './filterRoles'
+
 export default class RosterView extends Backbone.View {
   static initClass() {
     this.mixin(ValidatedMixin)
@@ -91,7 +93,8 @@ export default class RosterView extends Backbone.View {
     return (this.addPeopleApp = new AddPeopleApp(this.$createUsersModalHolder[0], {
       courseId: (ENV.course && ENV.course.id) || 0,
       defaultInstitutionName: ENV.ROOT_ACCOUNT_NAME || '',
-      roles: (ENV.ALL_ROLES || []).filter(canAddUser),
+      //roles: (ENV.ALL_ROLES || []).filter(canAddUser),
+      roles: (filterRoles(['StudentEnrollment', 'DesignerEnrollment']) || []).filter(canAddUser),
       sections: ENV.SECTIONS || [],
       onClose: () => this.fetchOnCreateUsersClose(),
       inviteUsersURL: ENV.INVITE_USERS_URL,

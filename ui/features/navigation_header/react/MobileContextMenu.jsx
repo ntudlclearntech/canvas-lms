@@ -130,7 +130,7 @@ export default function MobileContextMenu({spinner, contextType, contextId}) {
         const isTabOff = tab.hidden || tab.unused
         const isCurrentTab = ENV?.active_context_tab === tab.id
         return (
-          <Grid.Row key={tab.id}>
+          <Grid.Row id={tab.id} key={tab.id}>
             <Grid.Col width="auto">
               <Link renderIcon={Icon} href={tab.html_url} isWithinText={false}>
                 <Text weight={isCurrentTab ? 'bold' : 'normal'}>{tab.label}</Text>

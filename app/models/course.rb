@@ -4448,7 +4448,7 @@ class Course < ActiveRecord::Base
   def set_default_post_policy
     return if default_post_policy.present?
 
-    create_default_post_policy(assignment: nil, post_manually: false)
+    create_default_post_policy(assignment: nil, post_manually: true)
   end
 
   def canvas_k6_tab_configuration

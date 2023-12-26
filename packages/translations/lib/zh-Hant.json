@@ -1716,10 +1716,10 @@
         "message": "預覽"
     },
     "preview_in_overlay_ed772c46": {
-        "message": "覆蓋預覽"
+        "message": "以預覽模式開啟檔案"
     },
     "preview_inline_9787330": {
-        "message": "預覽內嵌"
+        "message": "內嵌在RCE中"
     },
     "previous_bd2ac015": {
         "message": "上一個"

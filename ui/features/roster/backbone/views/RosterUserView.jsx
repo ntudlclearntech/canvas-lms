@@ -91,7 +91,18 @@ export default class RosterUserView extends Backbone.View {
     if (!json.isInactive) {
       json.enrollments = reject(json.enrollments, en => en.enrollment_state === 'inactive') // if not _completely_ inactive, treat the inactive enrollments as deleted
     }
+
+    const isAdmin = ENV.current_user_roles.includes('admin') || ENV.current_user_roles.includes('root admin')
+
+    // For hiding deactivate button if enrollment is not admin
+    json.isAdmin = isAdmin
+
+    // if current user is admin, use original logic, otherwise disable remove/edit non-auditor students
     json.canRemoveUsers = every(this.model.get('enrollments'), e => e.can_be_removed)
+    if (!isAdmin) {
+      json.canRemoveUsers = json.canRemoveUsers && every(this.model.get('enrollments'), e => e.role !== 'StudentEnrollment')
+    }
+
     json.canResendInvitation =
       !json.isInactive && (ENV.FEATURES.granular_permissions_manage_users
         ? some(this.model.get('enrollments'), en =>
@@ -106,7 +117,12 @@ export default class RosterUserView extends Backbone.View {
       )
     }
 
+    // if current user is admin, use original logic, otherwise disable edit non-auditor students' sections
     json.canEditSections = !json.isInactive && !isEmpty(this.model.sectionEditableEnrollments())
+    if (!isAdmin) {
+      json.canEditSections = json.canEditSections && every(this.model.get('enrollments'), e => e.role !== 'StudentEnrollment')
+    }
+
     json.canLinkStudents = json.isObserver && !ENV.course.concluded
     json.canViewLoginIdColumn = ENV.permissions.view_user_logins
     json.canViewSisIdColumn = ENV.permissions.read_sis

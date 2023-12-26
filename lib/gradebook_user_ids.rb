@@ -25,7 +25,7 @@ class GradebookUserIds
     @include_inactive = settings[:show_inactive_enrollments] == "true"
     @include_concluded = settings[:show_concluded_enrollments] == "true"
     @column = settings[:sort_rows_by_column_id] || "student"
-    @sort_by = settings[:sort_rows_by_setting_key] || "name"
+    @sort_by = settings[:sort_rows_by_setting_key] || "sis_user_id"
     @selected_grading_period_id = settings.dig(:filter_columns_by, :grading_period_id)
     @selected_section_id = settings.dig(:filter_rows_by, :section_id)
     @selected_student_group_ids = settings.dig(:filter_rows_by, :student_group_ids)

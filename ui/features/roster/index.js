@@ -35,6 +35,7 @@ import ResendInvitationsView from './backbone/views/ResendInvitationsView'
 import $ from 'jquery'
 import '@canvas/context-cards/react/StudentContextCardTrigger'
 
+import filterRoles from './backbone/views/filterRoles'
 const I18n = useI18nScope('roster_publicjs')
 
 const fetchOptions = {
@@ -54,7 +55,7 @@ const users = new RosterUserCollection(null, {
   params: fetchOptions,
 })
 const rolesCollection = new RolesCollection(
-  Array.from(ENV.ALL_ROLES).map(attributes => new Role(attributes))
+  Array.from(filterRoles(['DesignerEnrollment'])).map(attributes => new Role(attributes))
 )
 const course = new Model(ENV.course)
 const inputFilterView = new InputFilterView({collection: users, minLength: 2})

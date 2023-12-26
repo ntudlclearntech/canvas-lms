@@ -37,11 +37,18 @@
     </div>
 
     <%= form_for [@context, GradebookUpload.new], html: { class: 'ic-Form-group', multipart: true, title: t("Choose a CSV file to upload:") } do |f| %>
+    <% if false # Hide user guide from users #260
+    %>  
       <p style="margin-top: 0">
         <a class="icon-question" target="_blank" href="<%= t(:'#community.instructor_import_grades') %>"><%= t "What should the CSV file look like?" %></a>
       </p>
+    <% end %>
       <div class="ic-Form-control">
         <%= f.label :uploaded_data, t("Choose a CSV file to upload:"), class: 'ic-Label' %>
+        <!--COOL mod start-->
+        <%= f.label nil, t('#gradebook_uploads.upload_warning', 'Please choose the Gradebook CSV file exported from NTU COOL. Other CSV files are not accepted.'), class: 'ic-Label', style: 'color: #EE0612; margin-top: 12px; margin-bottom: 0' %>
+        <%= link_to t('#gradebook_uploads.manual', 'NTU COOL Manual: How to upload grades in Excel to NTU COOL'), I18n.locale == :'zh-Hant' ? 'https://drive.google.com/file/d/1bem71DpgFq6lwUUcCJmC0muGQYM_TldR/view' : 'https://drive.google.com/file/d/1itSLafba2cweaylSL11CqQ1gYpdfojy0/view', style: 'display: block; margin-bottom: 20px' %>
+        <!--COOL mod end-->
         <%= f.file_field :uploaded_data, class: 'ic-Input' %>
       </div>
 
@@ -51,3 +58,9 @@
     <% end %>
   </div>
 </div>
+
+<!-- COOL mod start -->
+<%= content_tag :p, t('#gradebook_uploads.how_to_title', 'How to export the Gradebook CSV file from NTU COOL?'), class: 'ic-Label', style: 'margin-top: 46px; margin-bottom: 12px' %>
+<%= content_tag :p, t('#gradebook_uploads.how_to_detail', 'Go to the Grades page → “Import and Export” → “Export Entire Gradebook” → Open the downloaded file. Afterwards, you can edit grades in the file, save as CSV, and upload it to this page.'), style: 'margin-bottom: 6px' %>
+<%= image_tag 'https://files-1.dlc.ntu.edu.tw/canvas/export-gradebook-tutorial.png', title: 'export gradebook tutorial' %>
+<!-- COOL mod end -->

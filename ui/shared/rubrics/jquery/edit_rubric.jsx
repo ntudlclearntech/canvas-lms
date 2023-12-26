@@ -904,13 +904,14 @@ rubricEditing.init = function () {
                 data: {
                   name: context.name,
                   context_code: context.context_code,
-                  rubrics: context.rubrics + ' rubrics',
-                },
+                  rubrics: context.rubrics + I18n.t('messages.rubrics_units', ' rubrics')
+                }
               })
               $rubric_dialog.find('.rubrics_dialog_contexts_select').append($context.show())
             })
-            if (data.length === 0) {
-              $rubric_dialog.find('.loading_message').text('No rubrics found')
+            const codes = {}
+            if (data.length == 0) {
+              $rubric_dialog.find('.loading_message').text(I18n.t('messages.no_rubrics_found', 'No rubrics found'))
             } else {
               $rubric_dialog.find('.loading_message').remove()
             }

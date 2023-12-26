@@ -1,0 +1,8 @@
+production:
+  viewer_url: 'docs.google.com'
+
+development:
+  viewer_url: 'docs.google.com'
+
+test:
+  viewer_url: 'docs.google.com'

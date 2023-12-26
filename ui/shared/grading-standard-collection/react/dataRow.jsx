@@ -170,7 +170,7 @@ class DataRow extends React.Component {
       }
       ref="editContainer"
     >
-      <td className="insert_row_icon_container">{this.renderInsertRowButton()}</td>
+      {/* <td className="insert_row_icon_container">{this.renderInsertRowButton()}</td> */}
       <td className="row_name_container">
         <div>
           <input
@@ -182,6 +182,7 @@ class DataRow extends React.Component {
             aria-label={I18n.t('Range name')}
             name={`grading_standard[standard_data][scheme_${this.props.uniqueId}[name]`}
             value={this.getRowData().name}
+            disabled
           />
         </div>
       </td>

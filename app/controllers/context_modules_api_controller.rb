@@ -159,7 +159,8 @@ class ContextModulesApiController < ApplicationController
       scope = @context.modules_visible_to(@student || @current_user)
 
       includes = Array(params[:include])
-      scope = ContextModule.search_by_attribute(scope, :name, params[:search_term]) unless includes.include?("items")
+      search_term = ContextModule.decode_search_term(params[:search_term])
+      scope = ContextModule.search_by_attribute(scope, :name, search_term) unless includes.include?("items")
       modules = Api.paginate(scope, self, route)
 
       ActiveRecord::Associations.preload(modules, content_tags: :content) if includes.include?("items")

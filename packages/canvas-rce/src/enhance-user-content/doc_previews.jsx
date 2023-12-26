@@ -21,6 +21,8 @@ import ReactDOM from 'react-dom'
 import formatMessage from '../format-message'
 import {Spinner} from '@instructure/ui-spinner'
 import {getData, setData} from './jqueryish_funcs'
+import normalizeLocale from '../rce/normalizeLocale'
+import getTranslations from '../getTranslations'
 
 export const previewableMimeTypes = [
   'application/vnd.openxmlformats-officedocument.wordprocessingml.template',
@@ -181,7 +183,7 @@ export function loadDocPreview($container, options) {
     // else if it's something google docs preview can handle and we can get a public url to this document.
     const loadGooglePreview = function () {
       // this handles both ssl and plain http.
-      const googleDocPreviewUrl = `//docs.google.com/viewer?${new URLSearchParams({
+      const googleDocPreviewUrl = `//${ENV.DOC_VIEWER_URL}/viewer?${new URLSearchParams({
         embedded: true,
         url: opts.public_url,
       }).toString()}`
@@ -239,15 +241,33 @@ export function loadDocPreview($container, options) {
     }
   } else {
     // else fall back with a message that the document can't be viewed inline
-    const paragraph = document.createElement('p')
-    if (opts.attachment_preview_processing) {
-      paragraph.textContent = formatMessage(
-        'The document preview is currently being processed. Please try again later.'
-      )
-    } else {
-      paragraph.textContent = formatMessage('This document cannot be displayed within Canvas.')
-    }
-    $container.empty().append(paragraph)
+    const locale = normalizeLocale(ENV.LOCALE)
+    // eslint-disable-next-line promise/catch-or-return
+    getTranslations(locale)
+      .then(() => {
+        formatMessage.setup({locale})
+      })
+      .catch(err => {
+        // eslint-disable-next-line no-console
+        console.error('Failed loading the language file for', locale, '\n Cause:', err)
+      })
+      .finally(() => {
+        const paragraph = document.createElement('p')
+        if (opts.attachment_preview_processing) {
+          paragraph.textContent = formatMessage(
+            'The document preview is currently being processed. Please try again later.'
+          )
+        } else {
+          paragraph.textContent = formatMessage('This document cannot be displayed.')
+        }
+        // compatible with jQuery and html5 element
+        if ($container.empty) {
+          $container.empty().append(paragraph)
+        } else {
+          $container.innerHTML = ''
+          $container.appendChild(paragraph)
+        }
+      })
   }
 }
 

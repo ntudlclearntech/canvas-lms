@@ -184,7 +184,7 @@ class Role < ActiveRecord::Base
         name
       end
     else
-      name
+      RoleOverride.get_custom_role_label(name)
     end
   end
 
@@ -246,7 +246,7 @@ class Role < ActiveRecord::Base
       new[:label] = br[:label].call
       new[:plural_label] = br[:plural_label].call
       new[:custom_roles] = custom_roles.select { |cr| cr.base_role_type == new[:base_role_name] }.map do |cr|
-        { id: cr.id, base_role_name: cr.base_role_type, name: cr.name, label: RoleOverride.get_custom_role_label(cr), asset_string: cr.asset_string, workflow_state: cr.workflow_state }
+        { id: cr.id, base_role_name: cr.base_role_type, name: cr.name, label: RoleOverride.get_custom_role_label(cr.name), asset_string: cr.asset_string, workflow_state: cr.workflow_state }
       end
       new
     end

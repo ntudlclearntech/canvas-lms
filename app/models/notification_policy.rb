@@ -69,6 +69,9 @@ class NotificationPolicy < ActiveRecord::Base
       end
       user.save!
     else
+      # Prevent users change the files notification manually, view gitlab MR #25 for more details
+      params[:frequency] = "never" if params[:category] == "files"
+      
       # User preference change not being made. Make a notification policy change.
 
       # Using the category name, fetch all Notifications for the category. Will set the desired value on them.
@@ -129,6 +132,10 @@ class NotificationPolicy < ActiveRecord::Base
   # Finds the current policy for a given communication channel, or creates it (with default)
   # and/or updates it
   def self.find_or_update_for(communication_channel, notification_name, frequency = nil)
+
+    # Prevent users change the files notification manually, view gitlab MR #25 for more details
+    frequency = "never" if ([notification_name] & ["new_file_added", "New Files Added", "New File Added"]).present?
+
     # Titlize changes SMS to Sms :sadlol:
     notification_name = notification_name.titleize unless notification_name == "Confirm SMS Communication Channel"
     notification = BroadcastPolicy.notification_finder.by_name(notification_name)

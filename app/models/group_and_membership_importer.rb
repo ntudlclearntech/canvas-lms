@@ -50,7 +50,13 @@ class GroupAndMembershipImporter < ActiveRecord::Base
     return unless progress.reload.running?
 
     begin
-      csv_contents = CSV.read(csv[:fullpath], **SIS::CSV::CSVBaseImporter::PARSE_ARGS)
+      begin
+        option = SIS::CSV::CSVBaseImporter::PARSE_ARGS.clone(freeze: false)
+        option[:encoding] = 'big5'
+        csv_contents = CSV.read(csv[:fullpath], **option)
+      rescue
+        csv_contents = CSV.read(csv[:fullpath], **SIS::CSV::CSVBaseImporter::PARSE_ARGS)
+      end
     rescue CSV::MalformedCSVError
       fail_import(I18n.t("Malformed CSV"))
     end
@@ -75,8 +81,8 @@ class GroupAndMembershipImporter < ActiveRecord::Base
 
   def validate_file(csv)
     fail_import(I18n.t("Unable to read file")) unless File.file?(csv[:fullpath])
-    fail_import(I18n.t("Only CSV files are supported.")) unless File.extname(csv[:fullpath]).casecmp(".csv").zero?
-    fail_import(I18n.t("Invalid UTF-8")) unless Attachment.valid_utf8?(File.open(csv[:fullpath]))
+    fail_import(I18n.t("Only CSV files are supported.")) unless File.extname(csv[:fullpath]).casecmp('.csv').zero?
+    fail_import(I18n.t("Invalid UTF-8 or Big5")) unless Attachment.valid_utf8?(File.open(csv[:fullpath])) || Attachment.valid_big5?(File.open(csv[:fullpath]))
   end
 
   def fail_import(error)

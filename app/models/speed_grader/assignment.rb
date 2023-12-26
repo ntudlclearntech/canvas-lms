@@ -188,6 +188,7 @@ module SpeedGrader
               methods: submission_comment_methods,
               only: student_json_fields
             )
+          json['loginId'] = student.pseudonym&.unique_id
           if anonymous_students?(current_user:, assignment:)
             anonymous_ids =
               student_ids_to_anonymous_ids(

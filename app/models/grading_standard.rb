@@ -164,7 +164,21 @@ class GradingStandard < ActiveRecord::Base
 
   # e.g. convert B to 86
   def grade_to_score(grade)
+    if self.default_standard?
+      return default_score_from_grade(grade)
+    end
+
     idx = place_in_scheme(grade)
+    # The following is the NTU grading standard
+    if idx == 0
+      return ((100 + (ordered_scheme[0].last * 100.0)) / 2.0).round
+    elsif idx
+      return ((ordered_scheme[idx].last + ordered_scheme[idx - 1].last).abs * 100.0 / 2.0).round
+    else
+      return nil
+    end
+
+    # The following is the default standard of Canvas
     if idx == 0
       100.0
     # if there's room to step down at least one whole number, do that. this
@@ -184,6 +198,38 @@ class GradingStandard < ActiveRecord::Base
       else
         (ordered_scheme[idx - 1].last * BigDecimal("100.0")) - BigDecimal("0.1")
       end
+    else
+      nil
+    end
+  end
+
+  def default_score_from_grade(grade)
+    idx = place_in_scheme(grade)
+    if idx == 0 && grade == 'A+'
+      95.0
+    # elsif idx && !(['B-', 'C-', 'F'].include? grade)
+    #   bias = ((ordered_scheme[idx].last - ordered_scheme[idx - 1].last).abs * 100.0 / 2.0).round
+    #   ordered_scheme[idx - 1].last * 100.0 - bias
+    elsif idx && grade == 'A'
+      87.0
+    elsif idx && grade == 'A-'
+      82.0
+    elsif idx && grade == 'B+'
+      78.0
+    elsif idx && grade == 'B'
+      75.0
+    elsif idx && grade == 'B-'
+      70.0
+    elsif idx && grade == 'C+'
+      68.0
+    elsif idx && grade == 'C'
+      65.0
+    elsif idx && grade == 'C-'
+      60.0
+    elsif idx && grade == 'F'
+      50.0
+    elsif idx && grade == 'X'
+      0.0
     else
       nil
     end
@@ -352,18 +398,17 @@ class GradingStandard < ActiveRecord::Base
 
   def self.default_grading_scheme
     {
-      "A" => 0.94,
-      "A-" => 0.90,
-      "B+" => 0.87,
-      "B" => 0.84,
-      "B-" => 0.80,
-      "C+" => 0.77,
-      "C" => 0.74,
-      "C-" => 0.70,
-      "D+" => 0.67,
-      "D" => 0.64,
-      "D-" => 0.61,
-      "F" => 0.0,
+      "A+" => 0.895,
+      "A" => 0.845,
+      "A-" => 0.795,
+      "B+" => 0.765,
+      "B" => 0.725,
+      "B-" => 0.695,
+      "C+" => 0.665,
+      "C" => 0.625,
+      "C-" => 0.595,
+      "F" => 0.0001,
+      "X" => 0.00
     }
   end
 

@@ -13437,7 +13437,7 @@ ms:
           audio_comment: "Mesej ini mengandungi komen media. Klik pautan di bawah untuk mendengar atau membalas:"
           download: "muat turun"
           pre_you_can: "Anda boleh"
-          reply_to_conversation_message: "Anda boleh membalas mesej ini dalam Canvas dengan terus membalas e-mel ini. Jika anda perlu menyertakan kepilan, sila log masuk ke Canvas dan balas melalui Peti masuk."
+          # reply_to_conversation_message: "Anda boleh membalas mesej ini dalam Canvas dengan terus membalas e-mel ini. Jika anda perlu menyertakan kepilan, sila log masuk ke Canvas dan balas melalui Peti masuk."
           unknown_user: "Pengguna Tidak Diketahui"
         unknown_user: "Pengguna Tidak Diketahui"
       sms: 
@@ -13457,7 +13457,7 @@ ms:
           audio_comment: "Mesej ini mengandungi komen media. Klik pautan di bawah untuk mendengar atau membalas:"
           download: "muat turun"
           pre_you_can: "Anda boleh"
-          reply_to_conversation_message: "Anda boleh membalas mesej ini dalam Canvas dengan terus membalas e-mel ini. Jika anda perlu menyertakan kepilan, sila log masuk ke Canvas dan balas melalui Peti masuk."
+          # reply_to_conversation_message: "Anda boleh membalas mesej ini dalam Canvas dengan terus membalas e-mel ini. Jika anda perlu menyertakan kepilan, sila log masuk ke Canvas dan balas melalui Peti masuk."
           unknown_user: "Pengguna Tidak Diketahui"
         unknown_user: "Pengguna Tidak Diketahui"
       sms: 

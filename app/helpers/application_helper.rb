@@ -1423,4 +1423,8 @@ module ApplicationHelper
       Canvas.environment !~ /(production|development)/ &&
       @domain_root_account&.feature_enabled?(:learner_passport)
   end
+
+  def official_course_pattern
+    /[0-9]{3}-[1|2|3|4]:\w{3}_\w{5}:?\w{2}?/
+  end
 end

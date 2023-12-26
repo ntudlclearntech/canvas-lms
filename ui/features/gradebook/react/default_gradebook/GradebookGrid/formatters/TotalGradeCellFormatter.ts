@@ -81,6 +81,7 @@ function render(options) {
   let warningIcon = ''
   let grade
   let letterGrade = ''
+  let gradeContent
 
   if (!options.hideTooltip) {
     let tooltipContent = '–'
@@ -116,6 +117,11 @@ function render(options) {
     letterGrade = `<span class="letter-grade-points">${escapedGrade}</span>`
   }
 
+  if (options.showPointsNotPercent) {
+    gradeContent = `${grade} / ${options.possible}`
+  } else {
+    gradeContent = grade
+  }
   // xsslint safeString.identifier tooltip warningIcon grade letterGrade
   return `
     <div class="gradebook-cell">
@@ -123,7 +129,7 @@ function render(options) {
       <span class="grades">
         <span class="percentage">
           ${warningIcon}
-          ${grade}
+          ${gradeContent} 
         </span>
         ${letterGrade}
       </span>

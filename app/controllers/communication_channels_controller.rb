@@ -264,9 +264,17 @@ class CommunicationChannelsController < ApplicationController
 
       # now that we've retrieved a communication channel record with our
       # nonce we can set the locale based on the associated models
-      I18n.localizer = lambda do
-        infer_locale user: @user,
-                     root_account: @root_account
+      if @course
+        I18n.localizer = lambda do
+          infer_locale context: @course,
+                       user: @user,
+                       root_account: @root_account
+        end
+      else
+        I18n.localizer = lambda do
+          infer_locale user: @user,
+                       root_account: @root_account
+        end
       end
 
       # logged in as an unconfirmed user?! someone's masquerading; just pretend we're not logged in at all

@@ -46,7 +46,7 @@ export default class QuizRegradeView extends DialogBaseView {
 
   defaultOptions() {
     return {
-      title: 'Regrade Options',
+      title: 'Regrade Options / 重新計分選項',
       width: '600px',
     }
   }

@@ -42,10 +42,6 @@ const RubricsTray = () => (
         href: I18n.t('#community.instructor_manage_rubrics'),
       },
       {
-        label: I18n.t('How do I align an outcome with a rubric in a course?'),
-        href: I18n.t('#community.instructor_align_outcome_rubric'),
-      },
-      {
         label: I18n.t('How do I add a rubric to an assignment?'),
         href: I18n.t('#community.instructor_add_rubric_assignment'),
       },

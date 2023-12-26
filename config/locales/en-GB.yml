@@ -2690,7 +2690,7 @@ en-GB:
   all_student_groups_f74cd6c3: "All Student Groups"
   all_students_have_taken_the_quiz_b558f8b4: "All students have taken the quiz"
   all_students_have_taken_the_survey_494f9f42: "All students have taken the survey"
-  all_students_will_be_able_to_see_their_grade_and_o_66c1beab: "All students will be able to see their grade and/or submission comments."
+  all_students_will_be_able_to_see_their_grade_and_o_66c1beab: 'All students will be able to see their grade and/or submission comments. Students that are not graded will see "-". They can see their grades right after instructor has given grade, meaning instructor do not need to re-post the grade.'
   all_subject_navigation_has_been_disabled_f06b0154: "All subject navigation has been disabled."
   all_subjects_5a42cfdb: "All Subjects"
   all_submission_comments_have_been_marked_as_read_74c0683b: "All submission comments have been marked as read"
@@ -16595,8 +16595,8 @@ en-GB:
   label_s_deletion_failed_46f560f5: "Label(s) deletion failed."
   label_selected_list_collapsed_d93e77da: "%{label} selected. List collapsed."
   label_values_76f4b5fa: "Label Values"
-  labels: 
-    lock_module_until: "Lock until"
+#  labels: 
+#    lock_module_until: "Lock until"
   labels_292cd90b: Labels
   language_6b3e2c7c: Language
   language_arts_35b79a8b: "Language Arts"
@@ -18453,11 +18453,11 @@ en-GB:
           audio_comment: "This message includes media comments. To listen or reply, click the link below:"
           download: download
           pre_you_can: "You can"
-          reply_to_conversation_message: "You can reply to this message in Canvas by replying directly to this email. If you need to include an attachment, please log in to Canvas and reply through the inbox."
+          # reply_to_conversation_message: "You can reply to this message in Canvas by replying directly to this email. If you need to include an attachment, please log in to Canvas and reply through the inbox."
           subject: "%{user_name}, you just sent a message in Canvas."
           unknown_user: "Unknown user"
           view_message: "View this message in Conversations"
-        reply_to_conversation_message: "You can reply to this message in Canvas by replying directly to this email."
+        # reply_to_conversation_message: "You can reply to this message in Canvas by replying directly to this email."
         subject: "%{user_name}, you just sent a message in Canvas."
         unknown_user: "Unknown user"
         view_message: "View this message in Conversations"
@@ -18480,11 +18480,11 @@ en-GB:
           audio_comment: "This message includes media comments. To listen or reply, click the link below:"
           download: download
           pre_you_can: "You can"
-          reply_to_conversation_message: "You can reply to this message in Canvas by replying directly to this email. If you need to include an attachment, please log in to Canvas and reply through the Inbox."
+          # reply_to_conversation_message: "You can reply to this message in Canvas by replying directly to this email. If you need to include an attachment, please log in to Canvas and reply through the Inbox."
           subject: "%{user_name} just sent you a message in Canvas."
           unknown_user: "Unknown user"
           view_message: "View this message in Conversations"
-        reply_to_conversation_message: "You can reply to this message in Canvas by replying directly to this email."
+        # reply_to_conversation_message: "You can reply to this message in Canvas by replying directly to this email."
         subject: "%{user_name} just sent you a message in Canvas."
         unknown_user: "Unknown user"
         view_message: "View this message in Conversations"
@@ -27793,7 +27793,7 @@ en-GB:
         other: Hours
     mic_blocked_message: "Permission to use microphone is blocked. To change, go to chrome://settings/content/microphone"
     mute_assignment: "Mute assignment"
-    no_submission_time: "no submission time"
+    # no_submission_time: "no submission time"
     nodetect_message: "No speech was detected. You may need to adjust your microphone settings."
     portion_graded: "%{x}/%{y}"
     recording_expired_message: "Speech recognition has expired due to inactivity. Click the \"Stop\" button to use current text for comment or \"Cancel\" to discard."
@@ -27805,7 +27805,7 @@ en-GB:
       loud_late: LATE
       see_all_quiz_attempts: "See all quiz attempts"
       submission_to_view: "Submission to view:"
-      submitted: "*Submitted:* %{submittedAt}%{proxy_submitter_label_text}"
+      submitted: "*Submission time:* %{submittedAt}%{proxy_submitter_label_text}"
     submit: Submit
     titles: 
       click_to_record: "Speech to Text"
@@ -28169,7 +28169,7 @@ en-GB:
   students_remove_4b27390b: "Students - remove"
   students_remove_4c8b3c3d: "Students - Remove"
   students_see_their_grades_here_ae80f808: "Students see their grades here."
-  students_who_have_received_a_grade_or_a_submission_7ef046cc: "Students who have received a grade or a submission comment will be able to see their grade and/or submission comments."
+  students_who_have_received_a_grade_or_a_submission_7ef046cc: "Students who have received a grade or a submission comment will be able to see their grade and/or submission comments. Students that are not graded will see the assignment remain un-graded. Instructor will need to re-post the grade after giving grades for students to see their grades."
   students_who_have_taken_the_quiz_count_69dbbda0: 
     one: "Students who have taken the quiz (%{count})"
     other: "Students who have taken the quiz (%{count})"
@@ -31168,7 +31168,7 @@ en-GB:
   unlimited_attempts_81a37d4: "Unlimited attempts"
   unlimited_ff19e96d: Unlimited
   unlock_562bc4cb: Unlock
-  unlock_at_bb930b34: "Unlock at"
+  # unlock_at_bb930b34: "Unlock at"
   unlock_at_time_a0bbfb9: "Unlock at: %{time}"
   unlock_date_can_t_be_blank_43efb114: "Unlock date can’t be blank"
   unlock_date_cannot_be_after_due_date_8829d9ca: "Unlock date cannot be after due date"

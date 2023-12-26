@@ -349,7 +349,7 @@ class AuthenticationProvider::SAML < AuthenticationProvider::Delegated
     app_config = config
 
     entity = SAML2::Entity.new
-    entity.entity_id = entity_id
+    entity.entity_id = app_config[:entity_id] || entity_id
 
     contact = SAML2::Contact.new(SAML2::Contact::Type::TECHNICAL)
     contact.surname = app_config[:tech_contact_name] || "Webmaster"

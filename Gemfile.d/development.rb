@@ -25,4 +25,5 @@ group :development do
   gem "active_record_query_trace", "~> 1.8", require: false
 
   gem "debug", "~> 1.8", platform: :mri, require: false
+  gem "lograge", "0.12.0"
 end

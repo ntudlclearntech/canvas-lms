@@ -215,8 +215,9 @@ module Api::V1::Attachment
   end
 
   def infer_upload_content_type(params, default_mimetype = nil)
-    mime_type = params[:content_type].presence
-    return mime_type if valid_mime_type?(mime_type)
+    # comment out because we dont want user to specify malious content type, should be resume after issue resolved
+    # mime_type = params[:content_type].presence
+    # return mime_type if valid_mime_type?(mime_type)
 
     mime_types = valid_mime_types(params)
     mime_types&.first || default_mimetype
@@ -282,7 +283,7 @@ module Api::V1::Attachment
     if opts[:check_quota]
       get_quota
       if params[:size] && @quota < @quota_used + params[:size].to_i
-        over_quota = I18n.t("lib.api.over_quota", "file size exceeds quota")
+        over_quota = I18n.t("lib.api.over_quota", "This file size exceeds the remaining course storage quota.")
         if opts[:return_json]
           return { error: true, message: over_quota }
         else

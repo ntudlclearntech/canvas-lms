@@ -18408,11 +18408,11 @@ ja:
           audio_comment: "このメッセージにはメディア コメントが含まれています。再生または返信するには、下のリンクをクリックしてください:"
           download: ダウンロード
           pre_you_can: 以下ができます：
-          reply_to_conversation_message: "この電子メールに直接返信して、このメッセージへの返信を Canvas に送信できます。添付ファイルを含める必要がある場合には、Canvas にログインして受信箱から返信してください。"
+          # reply_to_conversation_message: "この電子メールに直接返信して、このメッセージへの返信を Canvas に送信できます。添付ファイルを含める必要がある場合には、Canvas にログインして受信箱から返信してください。"
           subject: "%{user_name} は先ほど Canvas でメッセージを送信しました。"
           unknown_user: 不明なユーザ
           view_message: このメッセージを会話に表示
-        reply_to_conversation_message: "この電子メールに直接返信することで、Canvas 内でこのメッセージに返信できます。"
+        # reply_to_conversation_message: "この電子メールに直接返信することで、Canvas 内でこのメッセージに返信できます。"
         subject: "%{user_name} は先ほど Canvas 内でメッセージを送信しました。"
         unknown_user: 不明なユーザ
         view_message: このメッセージを会話に表示
@@ -18435,11 +18435,11 @@ ja:
           audio_comment: "このメッセージにはメディア コメントが含まれています。再生または返信するには、下のリンクをクリックしてください:"
           download: ダウンロード
           pre_you_can: 以下ができます：
-          reply_to_conversation_message: "この電子メールに直接返信して、このメッセージへの返信を Canvas に送信できます。添付ファイルを含める必要がある場合には、Canvas にログインして受信箱から返信してください。"
+          # reply_to_conversation_message: "この電子メールに直接返信して、このメッセージへの返信を Canvas に送信できます。添付ファイルを含める必要がある場合には、Canvas にログインして受信箱から返信してください。"
           subject: "たった今、Canvas で %{user_name} さんからメッセージが送信されました。"
           unknown_user: 不明なユーザ
           view_message: このメッセージを会話に表示
-        reply_to_conversation_message: "この電子メールに直接返信して、このメッセージへの返信を Canvas に送信できます。"
+        # reply_to_conversation_message: "この電子メールに直接返信して、このメッセージへの返信を Canvas に送信できます。"
         subject: "たった今、Canvas で %{user_name} さんからメッセージが送信されました。"
         unknown_user: 不明なユーザ
         view_message: このメッセージを会話に表示

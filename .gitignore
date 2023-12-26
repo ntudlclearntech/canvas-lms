@@ -57,6 +57,7 @@ tsconfig.tsbuildinfo
 # canvas-gems
 /gems/*/coverage
 /gems/*/tmp
+/gems/**/node_modules
 /gems/*/node_modules
 /gems/plugins/*
 !/gems/plugins/academic_benchmark/

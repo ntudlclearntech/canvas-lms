@@ -874,7 +874,7 @@ class ContextModulesController < ApplicationController
   end
 
   def launch_dimensions
-    return nil unless (iframe = params[:item][:iframe])
+    return nil unless (iframe = params[:item][:iframe]) && !iframe[:width].empty? && !iframe[:height].empty?
 
     {
       selection_width: iframe[:width],

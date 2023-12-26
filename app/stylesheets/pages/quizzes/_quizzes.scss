@@ -889,16 +889,28 @@ li.quiz {
       @if $direction == 'rtl' { transform: scale(-1, 1) }
 
       cursor: pointer;
+      background-image: url(/images/partial_answer_round.png);
+      background-size: 20px 20px;
+      width: 100%;
     }
-    &.hover .answer_select .answer_image,
-    .answer_select .select_answer_link:focus .answer_image {
-      background-image: url(/images/partial_answer.png);
-    }
+    // &.hover .answer_select .answer_image,
+    // .answer_select .select_answer_link:focus .answer_image {
+    //   background-image: url(/images/partial_answer.png);
+    // }
     &.partial_answer .answer_select .answer_image {
       background-image: url(/images/partial_answer.png);
     }
     &.negative_answer .answer_select .answer_image {
       background-image: url(/images/negative_answer.png);
+    }
+  }
+}
+
+.question.selectable.multiple_answers_question {
+  .answer {
+    .answer_select .answer_image {
+      background-image: url(/images/partial_answer_square.png);
+      background-size: 20px 20px;
     }
   }
 }
@@ -1047,6 +1059,10 @@ form.question_form {
         .comment_top {
           background-image: url(/images/comment_top_correct.png);
         }
+      }
+      
+      input[type=text] {
+        border-color: #00AC18;
       }
     }
   }
@@ -1269,6 +1285,16 @@ ul#quiz_versions {
   }
   #options_tab{
     overflow-x: scroll;
+
+    .control-label {
+      text-align: right;
+      width: 130px;
+    }
+
+    .controls {
+      margin-left: 150px;
+    }
+
   }
   #quiz_tabs {
     margin-top: $ic-sp;
@@ -1955,10 +1981,16 @@ ul#quiz_versions {
       }
       /* Display persistent correct answer arrow when editing only. */
       &.selectable .form_answers .answer.correct_answer .answer_select .answer_image {
-        background-image: url(/images/correct_answer.png);
+        background-image: url(/images/correct_answer_round.png);
+        background-size: 20px 20px;
+        width: 100%;
 
         // flip the arrow in RTL
         @if $direction == 'rtl' { transform: scale(-1, 1) }
+      }
+      &.selectable.multiple_answers_question .form_answers .answer.correct_answer .answer_select .answer_image {
+        background-image: url(/images/correct_answer_square.png);
+        background-size: 20px 20px;
       }
     }
     .blank_id_select {

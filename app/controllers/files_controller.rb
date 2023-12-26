@@ -133,7 +133,7 @@ class FilesController < ApplicationController
   # brand-config-uploaded JS to work
   # verify_authenticity_token is manually-invoked where @context is not
   # an Account in show_relative
-  protect_from_forgery except: [:api_capture, :show_relative], with: :exception
+  protect_from_forgery except: [:api_capture, :show, :show_relative], with: :exception
 
   before_action :require_user, only: :create_pending
   before_action :require_context, except: %i[
@@ -327,7 +327,8 @@ class FilesController < ApplicationController
         scope = Attachments::ScopedToUser.new(@context || @folder, @current_user).scope
         scope = scope.preload(:user) if params[:include].include?("user") && params[:sort] != "user"
         scope = scope.preload(:usage_rights) if params[:include].include?("usage_rights")
-        scope = Attachment.search_by_attribute(scope, :display_name, params[:search_term], normalize_unicode: true)
+        search_term = Attachment.decode_search_term(params[:search_term])
+        scope = Attachment.search_by_attribute(scope, :display_name, search_term, normalize_unicode: true)
 
         order_clause = case params[:sort]
                        when "position" # undocumented; kept for compatibility
@@ -557,6 +558,7 @@ class FilesController < ApplicationController
         options[:can_view_hidden_files] = can_view_hidden_files?(options[:context], @current_user, session)
       end
       json = attachment_json(@attachment, @current_user, {}, options)
+      json = json.except('uuid')
 
       # Add canvadoc session URL if the file is unlocked
       json.merge!(
@@ -618,6 +620,11 @@ class FilesController < ApplicationController
   def show
     GuardRail.activate(:secondary) do
       params[:id] ||= params[:file_id]
+      get_context
+
+      # Manually-invoke verify_authenticity_token for non-Account contexts
+      # This is to allow Account-level file downloads to skip request forgery protection
+      verify_authenticity_token unless @context.is_a?(Account)
 
       get_context(user_scope: merged_user_scope)
 
@@ -627,7 +634,7 @@ class FilesController < ApplicationController
 
       # NOTE: the /files/XXX URL implicitly uses the current user as the
       # context, even though it doesn't search for the file using
-      # @current_user.attachments.find, since it might not actually be a user
+      # @current_user.attachments.find , since it might not actually be a user
       # attachment.
       # this implicit context magic happens in ApplicationController#get_context
       if @context.nil? || @current_user.nil? || @context == @current_user

@@ -229,6 +229,7 @@ module Api::V1::User
       display_name: user.short_name,
       avatar_image_url: avatar_url_for_user(user),
       html_url: participant_url,
+      sis_user_id: SisPseudonym.for(user, @domain_root_account, type: :trusted)&.sis_user_id || "",
       pronouns: user.pronouns
     }
     hash[:avatar_is_fallback] = user.avatar_image_url.nil? if includes.include?(:avatar_is_fallback) && avatars_enabled_for_user?(user)
@@ -280,6 +281,10 @@ module Api::V1::User
                                 start_at
                                 end_at
                                 type].freeze
+
+  def grades_json(enrollment, user, session)
+    grades_hash(enrollment, user, session)
+  end
 
   def enrollment_json(enrollment, user, session, includes: [], opts: {}, excludes: [])
     only = API_ENROLLMENT_JSON_OPTS.dup

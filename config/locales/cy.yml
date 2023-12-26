@@ -16788,7 +16788,7 @@ cy:
           audio_comment: "Mae’r neges hon yn cynnwys sylwadau ar gyfryngau. I wrando neu ateb, cliciwch y ddolen isod:"
           download: "llwytho i lawr"
           pre_you_can: Gallwch
-          reply_to_conversation_message: "Gallwch ateb y neges hon yn Canvas drwy ateb yn uniongyrchol i’r neges e-bost hon. Os oes angen i chi gynnwys atodiad, mewngofnodwch i Canvas ac ymateb drwy'r Blwch Derbyn."
+          # reply_to_conversation_message: "Gallwch ateb y neges hon yn Canvas drwy ateb yn uniongyrchol i’r neges e-bost hon. Os oes angen i chi gynnwys atodiad, mewngofnodwch i Canvas ac ymateb drwy'r Blwch Derbyn."
           subject: "%{user_name}, rydych chi newydd anfon neges yn Canvas."
           unknown_user: "Defnyddiwr Dieithr"
           view_message: "Gweld y neges hon yn Sgyrsiau"
@@ -16812,7 +16812,7 @@ cy:
           audio_comment: "Mae’r neges hon yn cynnwys sylwadau ar gyfryngau. I wrando neu ateb, cliciwch y ddolen isod:"
           download: "llwytho i lawr"
           pre_you_can: Gallwch
-          reply_to_conversation_message: "Gallwch ateb y neges hon yn Canvas drwy ateb yn uniongyrchol i’r neges e-bost hon. Os oes angen i chi gynnwys atodiad, mewngofnodwch i Canvas ac ymateb drwy'r Blwch Derbyn."
+          # reply_to_conversation_message: "Gallwch ateb y neges hon yn Canvas drwy ateb yn uniongyrchol i’r neges e-bost hon. Os oes angen i chi gynnwys atodiad, mewngofnodwch i Canvas ac ymateb drwy'r Blwch Derbyn."
           subject: "%{user_name} newydd anfon neges atoch chi yn Canvas."
           unknown_user: "Defnyddiwr Dieithr"
           view_message: "Gweld y neges hon yn Sgyrsiau"

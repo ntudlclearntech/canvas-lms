@@ -321,44 +321,45 @@ class Notification < Switchman::UnshardedRecord
 
     case category
     when "All Submissions",
-         "Announcement Created By You",
          "Announcement Reply",
          "Calendar",
          "Course Content",
-         "Conversation Created",
          "Discussion",
          "Files",
          "Student Appointment Signups",
+         "DiscussionEntry",
+         "Late Grading",
+         "Membership Update",
+         "Grading Policies",
+         "Due Date",
+         "Other",
+         "Submission Comment",
+         "Added To Conversation",
+         "Content Link Error",
+         "Blueprint",
          "TestNever"
       FREQ_NEVER
     when "Account Notification",
-         "Added To Conversation",
          "Announcement",
          "Appointment Availability",
          "Appointment Signups",
          "Appointment Cancelations",
          "Conversation Message",
-         "Grading",
-         "Invitation",
          "DiscussionMention",
          "Migration",
          "Recording Ready",
          "Registration",
          "ReportedReply",
+         "Announcement Created By You",
+         "Conversation Created",
          "TestImmediately"
       FREQ_IMMEDIATELY
-    when "Due Date",
-         "Grading Policies",
-         "TestWeekly"
+    when "TestWeekly"
       FREQ_WEEKLY
     else
-      # 'Content Link Error',
-      # 'DiscussionEntry',
-      # 'Late Grading',
-      # 'Membership Update',
-      # 'Other',
       # 'Reminder',
-      # 'Submission Comment',
+      # 'Grading'
+      # 'Invitation'
       # 'TestDaily'
       FREQ_DAILY
     end

@@ -57,7 +57,7 @@ module I18nExtraction::Extensions
   end
 
   module RubyExtractor
-    LABEL_CALLS = %i[label blabel label_tag _label_symbol_translation before_label].freeze
+    LABEL_CALLS = %i[label blabel label_tag _label_symbol_translation before_label before_label_without_colon].freeze
     CANVAS_TRANSLATE_CALLS = [:mt, :ot].freeze
     ALL_CALLS = (I18nliner::Extractors::RubyExtractor::TRANSLATE_CALLS +
       LABEL_CALLS + CANVAS_TRANSLATE_CALLS +
@@ -139,7 +139,7 @@ module I18nExtraction::Extensions
     def process_label_call(receiver, method, args)
       args.shift if !receiver && [:label, :blabel].include?(method) # remove object_name arg
 
-      return if args.size == 1 && method == :before_label
+      return if args.size == 1 && (method == :before_label || method == :before_label_without_colon)
 
       default = nil
       key = args.shift
@@ -148,7 +148,7 @@ module I18nExtraction::Extensions
         key = args.shift
       end
 
-      if method == :before_label
+      if method == (method == :before_label || method == :before_label_without_colon)
         default = args.first
       elsif args.first.is_a?(Hash)
         default = args.first["en"] || args.first[:en]

@@ -15794,7 +15794,7 @@ fi:
           audio_comment: "Tämä viesti sisältää mediakommentteja. Voit kuunnella tai vastata napsauttamalla tätä linkkiä:"
           download: ladata
           pre_you_can: Voit
-          reply_to_conversation_message: "Voit vastata tähän viestiin Canvasissa vastaamalla suoraan tähän sähköpostiviestiin. Jos sinun täytyy lisätä liite, kirjaudu sisään Canvasiin ja vastaa käyttämällä Canvasin Viestejä."
+          # reply_to_conversation_message: "Voit vastata tähän viestiin Canvasissa vastaamalla suoraan tähän sähköpostiviestiin. Jos sinun täytyy lisätä liite, kirjaudu sisään Canvasiin ja vastaa käyttämällä Canvasin Viestejä."
           unknown_user: "Tuntematon käyttäjä"
         unknown_user: "Tuntematon käyttäjä"
       sms: 
@@ -15814,7 +15814,7 @@ fi:
           audio_comment: "Tämä viesti sisältää mediakommentteja. Voit kuunnella tai vastata napsauttamalla tätä linkkiä:"
           download: lataa
           pre_you_can: Voit
-          reply_to_conversation_message: "Voit vastata tähän viestiin Canvasissa vastaamalla suoraan tähän sähköpostiviestiin. Jos sinun täytyy lisätä liite, kirjaudu sisään Canvasiin ja vastaa käyttämällä Canvasin Viestejä."
+          # reply_to_conversation_message: "Voit vastata tähän viestiin Canvasissa vastaamalla suoraan tähän sähköpostiviestiin. Jos sinun täytyy lisätä liite, kirjaudu sisään Canvasiin ja vastaa käyttämällä Canvasin Viestejä."
           unknown_user: "Tuntematon käyttäjä"
         unknown_user: "Tuntematon käyttäjä"
       sms: 

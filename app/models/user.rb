@@ -328,7 +328,7 @@ class User < ActiveRecord::Base
     scopes.map!(&:to_sql)
     from("(#{scopes.join("\nUNION\n")}) users")
   }
-  scope :active, -> { where.not(workflow_state: "deleted") }
+  scope :active, -> { where("users.workflow_state<>'deleted'") }
 
   scope :has_created_account, -> { where("users.workflow_state NOT IN ('creation_pending', 'deleted')") }
 
@@ -992,6 +992,7 @@ class User < ActiveRecord::Base
 
   def set_default_feature_flags
     enable_feature!(:new_user_tutorial_on_off) unless Rails.env.test?
+    enable_feature!(:disable_alert_timeouts) unless Rails.env.test?
   end
 
   def sortable_name

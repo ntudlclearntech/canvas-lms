@@ -1,0 +1,47 @@
+FROM ubuntu:lunar
+WORKDIR /app
+# install asdf
+ARG APT_LIBS="build-essential openssl libxmlsec1-dev libidn11-dev libpq-dev zlib1g-dev libreadline-dev shared-mime-info libsqlite3-dev"
+# file is for the command "file", which will be used in predoc
+# libreoffice is for preview (.txt, .xlsx, etc)
+ARG APT_TOOLS="git curl file libreoffice locales"
+ARG APT_OTHERS="tzdata"
+ENV TIME_ZONE=Asia/Taipei
+RUN sed -i 's/archive.ubuntu/tw.archive.ubuntu/' /etc/apt/sources.list
+RUN apt update && apt install -y ${APT_LIBS} ${APT_TOOLS} ${APT_OTHERS}
+# dependency version
+ARG RUBY_VERSION=2.7.5
+ARG PREDOC_RUBY_VERSION=2.6.3
+ARG NODEJS_VERSION=16.18.1
+ARG YARN_VERSION=1.19.1
+ARG BUNDLER_VERSION=2.3.26
+ARG PREDOC_BUNDLER_VERSION=1.17.2
+ARG NEXT_RUBY_VERSION=3.1.4
+ARG NEXT_BUNDLER_VERSION=2.3.26
+ENV ASDF_DIR=/root/.asdf
+RUN groupadd docker-dev && usermod -g docker-dev root
+RUN sed -i 's/^# en_US.UTF-8/en_US.UTF-8/' /etc/locale.gen && locale-gen
+ENV LANG=en_US.UTF-8
+RUN git clone https://github.com/asdf-vm/asdf.git /root/.asdf --branch v0.12.0 && echo . /root/.asdf/asdf.sh >> /root/.bashrc
+# install programming language and packages
+RUN /bin/bash -c ". ~/.asdf/asdf.sh\
+  && asdf plugin add ruby \
+  && asdf plugin add nodejs"
+RUN /bin/bash -c ". ~/.asdf/asdf.sh\
+  && asdf install nodejs ${NODEJS_VERSION}\
+  && asdf install ruby ${RUBY_VERSION}\
+  && asdf install ruby ${PREDOC_RUBY_VERSION}\
+  && asdf install ruby ${NEXT_RUBY_VERSION}"
+RUN /bin/bash -c ". ~/.asdf/asdf.sh\
+  && asdf global nodejs ${NODEJS_VERSION}\
+  && asdf global ruby ${PREDOC_RUBY_VERSION}\
+  && gem install --no-document bundler:${PREDOC_BUNDLER_VERSION}\
+  && asdf global ruby ${NEXT_RUBY_VERSION}\
+  && gem install --no-document bundler:${NEXT_BUNDLER_VERSION}\
+  && asdf global ruby ${RUBY_VERSION}\
+  && rm -f /root/.asdf/installs/ruby/2.7.5/lib/ruby/gems/2.7.0/specifications/default/bundler*\
+  && gem install --no-document bundler:${BUNDLER_VERSION}\
+  && npm i -g yarn@${YARN_VERSION}\
+  && rm -f ~/.tool-versions"
+CMD /bin/bash -c ". ~/.asdf/asdf.sh\
+  && bundle exec rails server -b 0.0.0.0:3000 -p 3000"

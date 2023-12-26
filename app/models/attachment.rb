@@ -54,6 +54,17 @@ class Attachment < ActiveRecord::Base
 
   CLONING_ERROR_TYPE = "attachment_clone_url"
 
+  ### PREDOC only ###
+  ## Note:  The following values are taken from https://gitlab.dlc.ntu.edu.tw/ntu-cool/predoc/-/blob/dlc-master/config/initializers/predoc.rb.default#L22-27,
+  ##        remember to modify both if you want to make any changes.
+  ## Mime_type
+  ALLOWED_FILE_TYPE = ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                       "application/vnd.ms-excel", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "text/plain", "application/zip"].freeze
+
+  ## Bytes
+  FILE_SIZE_LIMIT = 50 * 1024 * 1024
+  #########################################
+
   ICON_MAKER_ICONS = "icon_maker_icons"
   UNCATEGORIZED = "uncategorized"
   VALID_CATEGORIES = [ICON_MAKER_ICONS, UNCATEGORIZED].freeze
@@ -132,6 +143,12 @@ class Attachment < ActiveRecord::Base
 
   before_validation :assert_attachment
   acts_as_list scope: :folder
+
+  def content_type
+    unsafe_content_types = %w[text/html application/xhtml+xml application/xml text/xml]
+    real_content_type = attribute('content_type')&.downcase
+    unsafe_content_types.include?(real_content_type) ? 'text/plain' : real_content_type
+  end
 
   def self.file_store_config
     # Return existing value, even if nil, as long as it's defined
@@ -303,6 +320,34 @@ class Attachment < ActiveRecord::Base
         error_count += 1
         if !file.eof? && error_count <= 4
           # we may have split a utf-8 character in the chunk - try to resolve it, but only to a point
+          chunk << file.read(1)
+          next
+        else
+          raise
+        end
+      end
+
+      error_count = 0
+      chunk = file.read(read_file_chunk_size)
+    end
+    file.close
+    true
+  rescue EncodingError
+    false
+  end
+
+  def self.valid_big5?(file)
+    # validate Big5
+    chunk = file.read(read_file_chunk_size)
+    error_count = 0
+
+    while chunk
+      begin
+        raise EncodingError unless chunk.dup.force_encoding("Big5").valid_encoding?
+      rescue EncodingError
+        error_count += 1
+        if !file.eof? && error_count <= 4
+          # we may have split a big5 character in the chunk - try to resolve it, but only to a point
           chunk << file.read(1)
           next
         else
@@ -537,7 +582,7 @@ class Attachment < ActiveRecord::Base
 
   def assert_file_extension
     self.content_type = nil if content_type == "application/x-unknown" || content_type&.include?("ERROR")
-    self.content_type ||= mimetype(filename)
+    self.content_type = mimetype(filename)
     if filename && filename.split(".").length < 2
       # we actually have better luck assuming zip files without extensions
       # are docx files than assuming they're zip files
@@ -581,7 +626,7 @@ class Attachment < ActiveRecord::Base
       self.namespace = infer_namespace
     end
 
-    self.media_entry_id ||= "maybe" if new_record? && previewable_media?
+    #self.media_entry_id ||= "maybe" if new_record? && previewable_media?
   end
   protected :default_values
 
@@ -633,7 +678,7 @@ class Attachment < ActiveRecord::Base
       # splitting the string, etc.
       #
       # The infer_root_account_id accessor is still present above, but I didn't verify there
-      # isn't any code still accessing the namespace for the account id directly.
+      # isn't any code still accessing the namespace for the account id directly. d
       ns = root_attachment.try(:namespace) if root_attachment_id
       ns ||= Attachment.current_namespace
       ns ||= context.root_account.file_namespace rescue nil
@@ -796,7 +841,7 @@ class Attachment < ActiveRecord::Base
           quota = CONTEXT_DEFAULT_QUOTA
           quota = context.quota if context.respond_to?(:quota) && context.quota
 
-          attachment_scope = context.attachments.active.where(root_attachment_id: nil)
+          attachment_scope = context.attachments.active
 
           if context.is_a?(User) || context.is_a?(Group)
             excluded_attachment_ids = []
@@ -927,6 +972,9 @@ class Attachment < ActiveRecord::Base
   end
 
   def inline_content?
+    # Embed CSV in iframe src will cause automatic download, so we exclude CSV.
+    return false if self.content_type.match?("text/csv")
+
     self.content_type.start_with?("text") || extension == ".html" || extension == ".htm" || extension == ".swf"
   end
 
@@ -2395,6 +2443,11 @@ class Attachment < ActiveRecord::Base
     canvadoc.try(:available?)
   end
 
+  def predoc_available?
+    # self.size unit is Bytes
+    ALLOWED_FILE_TYPE.include?(self.content_type) && FILE_SIZE_LIMIT >= size.to_i
+  end
+
   def canvadoc_url(user, opts = {})
     return unless canvadocable?
 
@@ -2523,7 +2576,7 @@ class Attachment < ActiveRecord::Base
 
       from_attachments.each do |attachment|
         match = to_attachments.detect { |a| attachment.matches_full_display_path?(a.full_display_path) }
-        next if match && (match.md5&.== attachment.md5)
+        next if match && match.md5 == attachment.md5
 
         if to_context.is_a? User
           attachment.user_id = to_context.id

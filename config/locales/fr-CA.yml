@@ -17437,7 +17437,7 @@ fr-CA:
           audio_comment: "Ce message contient des commentaires multimédias. Pour l’écouter ou répondre, cliquez sur le lien ci-dessous :"
           download: télécharger
           pre_you_can: "Vous pouvez"
-          reply_to_conversation_message: "Vous pouvez répondre à ce message dans Canvas en répondant directement à ce courriel. Si vous avez besoin d'inclure une pièce jointe, veuillez vous connecter à Canvas et répondre via la boîte de réception."
+          # reply_to_conversation_message: "Vous pouvez répondre à ce message dans Canvas en répondant directement à ce courriel. Si vous avez besoin d'inclure une pièce jointe, veuillez vous connecter à Canvas et répondre via la boîte de réception."
           subject: "%{user_name}, vous venez d’envoyer un message dans Canvas."
           unknown_user: "Utilisateur inconnu"
           view_message: "Voir ce message dans Conversations"
@@ -17461,7 +17461,7 @@ fr-CA:
           audio_comment: "Ce message contient des commentaires multimédias. Pour l’écouter ou répondre, cliquez sur le lien ci-dessous :"
           download: télécharger
           pre_you_can: "Vous pouvez"
-          reply_to_conversation_message: "Vous pouvez répondre à ce message dans Canvas en répondant directement à ce courriel. Si vous avez besoin d'inclure une pièce jointe, veuillez vous connecter à Canvas et répondre via la boîte de réception."
+          # reply_to_conversation_message: "Vous pouvez répondre à ce message dans Canvas en répondant directement à ce courriel. Si vous avez besoin d'inclure une pièce jointe, veuillez vous connecter à Canvas et répondre via la boîte de réception."
           subject: "%{user_name} vient de vous envoyer un message dans Canvas."
           unknown_user: "Utilisateur inconnu"
           view_message: "Voir ce message dans Conversations"

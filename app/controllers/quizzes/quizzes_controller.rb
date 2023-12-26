@@ -550,6 +550,7 @@ class Quizzes::QuizzesController < ApplicationController
               @quiz.delay_if_production(priority: Delayed::HIGH_PRIORITY).update_quiz_submission_end_at_times
             end
 
+            @quiz.notify_of_update = true if params[:save_and_publish_clicked]
             @quiz.publish! if params[:publish]
           end
         end

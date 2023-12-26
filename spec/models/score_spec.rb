@@ -242,7 +242,7 @@ describe Score do
 
     it "returns the grade according to the course grading scheme" do
       expect(score.course).to receive(:grading_standard_enabled?).and_return(true)
-      expect(score.current_grade).to eq "B-"
+      expect(score.current_grade).to eq "A-"
     end
   end
 
@@ -259,7 +259,7 @@ describe Score do
 
     it "returns the grade according to the course grading scheme" do
       expect(score.course).to receive(:grading_standard_enabled?).and_return(true)
-      expect(score.final_grade).to eq "C"
+      expect(score.final_grade).to eq "B"
     end
   end
 
@@ -358,12 +358,12 @@ describe Score do
       it "returns a grade commensurate with the override score when one is present" do
         score.update!(override_score: 88)
         allow(score.course).to receive(:grading_standard_enabled?).and_return(true)
-        expect(score.effective_final_grade).to eq "B+"
+        expect(score.effective_final_grade).to eq "A"
       end
 
       it "returns the calculated final grade when no override score is present" do
         allow(score.course).to receive(:grading_standard_enabled?).and_return(true)
-        expect(score.effective_final_grade).to eq "C"
+        expect(score.effective_final_grade).to eq "B"
       end
     end
   end

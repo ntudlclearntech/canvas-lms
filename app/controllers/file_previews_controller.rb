@@ -51,7 +51,7 @@ class FilePreviewsController < ApplicationController
       # google docs
       elsif GoogleDocsPreview.previewable?(@domain_root_account, @file)
         url = GoogleDocsPreview.url_for(@file)
-        redirect_to("//docs.google.com/viewer?" + { embedded: true, url: }.to_query)
+        redirect_to("//" + Rails.configuration.predoc["viewer_url"] + "/viewer?" + { embedded: true, url: url }.to_query) and return
       # images
       elsif @file.content_type&.start_with?("image/")
         render template: "file_previews/img_preview", layout: false
@@ -61,8 +61,9 @@ class FilePreviewsController < ApplicationController
         js_bundle :file_preview
         render template: "file_previews/media_preview", layout: false
       # html files
-      elsif @file.content_type == "text/html"
-        redirect_to context_url(@context, :context_file_preview_url, @file.id)
+      # comment out because we don't want user to preview a html file in iframe
+      # elsif @file.content_type == "text/html"
+      #   redirect_to context_url(@context, :context_file_preview_url, @file.id)
       # no preview available
       else
         @accessed_asset = nil # otherwise it will double-log when they download the file

@@ -112,7 +112,7 @@ const GradebookUploader = {
       const newGrade = {
         id: this.id,
         type: 'assignments',
-        name: htmlEscape(I18n.t('To')),
+        name: htmlEscape(I18n.t('To', 'To')),
         field: this.id,
         width: 125,
         editor: Slick.Editors.UploadGradeCellEditor,
@@ -134,7 +134,7 @@ const GradebookUploader = {
         width: 125,
         formatter: GradebookUploader.createNumberFormatter('original_grade'),
         field: `${this.id}_conflicting`,
-        name: htmlEscape(I18n.t('From')),
+        name: htmlEscape(I18n.t('From', 'From')),
         cssClass: 'conflicting-grade',
       }
 
@@ -155,7 +155,7 @@ const GradebookUploader = {
         id: `custom_col_${column.id}`,
         customColumnId: column.id,
         type: 'custom_column',
-        name: htmlEscape(I18n.t('To')),
+        name: htmlEscape(I18n.t('To', 'To')),
         field: `custom_col_${column.id}`,
         width: 125,
         editor: Slick.Editors.UploadGradeCellEditor,
@@ -171,7 +171,7 @@ const GradebookUploader = {
         width: 125,
         formatter: GradebookUploader.createGeneralFormatter('current_content'),
         field: `custom_col_${column.id}_conflicting`,
-        name: htmlEscape(I18n.t('From')),
+        name: htmlEscape(I18n.t('From', 'From')),
         cssClass: 'conflicting-grade',
       }
 
@@ -523,7 +523,7 @@ const GradebookUploader = {
     const newOverrideScoreColumn = {
       id: `override_score_${id}`,
       type: 'assignment',
-      name: htmlEscape(I18n.t('To')),
+      name: htmlEscape(I18n.t('To', 'To')),
       field: `override_score_${id}`,
       width: 125,
       editor: Slick.Editors.UploadGradeCellEditor,
@@ -539,7 +539,7 @@ const GradebookUploader = {
       width: 125,
       formatter: GradebookUploader.createNumberFormatter('current_score'),
       field: `override_score_${id}_conflicting`,
-      name: htmlEscape(I18n.t('From')),
+      name: htmlEscape(I18n.t('From', 'From')),
       cssClass: 'conflicting-grade',
     }
     gridData.columns.push(conflictingOverrideScoreColumn, newOverrideScoreColumn)

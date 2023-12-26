@@ -416,7 +416,7 @@
         </div>
         <div id="course_grading_scheme">
           <div class="checkbox-flex-container">
-            <%= f.check_box :course_grading_standard_enabled, :class => "grading_standard_checkbox", :disabled => !can_manage %>
+            <%= f.check_box :course_grading_standard_enabled, :class => "grading_standard_checkbox", :disabled => !can_manage_courses %>
             <%= f.label :course_grading_standard_enabled, :en => "Enable course grading scheme" %>
           </div>
           <% if Account.site_admin.feature_enabled?(:grading_scheme_updates) %>

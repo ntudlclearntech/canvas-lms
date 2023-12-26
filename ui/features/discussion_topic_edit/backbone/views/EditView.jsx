@@ -841,6 +841,8 @@ EditView.prototype.validateBeforeSave = function (data, errors) {
             message: I18n.t('A message is required'),
           },
         ]
+        // eslint-disable-next-line no-alert
+        alert(I18n.t('Please add content for the announcement before publishing it.'))
       }
     }
   }

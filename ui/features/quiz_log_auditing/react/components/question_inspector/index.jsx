@@ -48,6 +48,40 @@ class QuestionInspector extends React.Component {
     )
   }
 
+  // Reference: app/helpers/quizzes_helper.rb:277
+  convertTypeLocale(questionType) {
+      switch(questionType) {
+        case "multiple_choice_question":
+          return I18n.t('question_types.multiple_choice', "Multiple Choice")
+        case "true_false_question":
+          return I18n.t('question_types.true_false', "True/False")
+        case "short_answer_question":
+          return I18n.t('question_types.short_answer', "Fill In the Blank")
+        case "fill_in_multiple_blanks_question":
+          return I18n.t('question_types.fill_in_multiple_blanks', "Fill In Multiple Blanks")
+        case "multiple_answers_question":
+          return I18n.t('question_types.multiple_answers', "Multiple Answers")
+        case "multiple_dropdowns_question":
+          return I18n.t('question_types.multiple_dropdowns', "Multiple Dropdowns")
+        case "matching_question":
+          return I18n.t('question_types.matching', "Matching")
+        case "numerical_question":
+          return I18n.t('question_types.numerical', "Numerical Answer")
+        case "calculated_question":
+          return I18n.t('question_types.calculated', "Formula Question")
+        case "missing_word_question":
+          return I18n.t('question_types.missing_word', "Missing Word")
+        case "essay_question":
+          return I18n.t('question_types.essay', "Essay Question")
+        case "file_upload_question":
+          return I18n.t('question_types.file_upload', "File Upload Question")
+        case "text_only_question":
+          return I18n.t('question_types.text_only', "Text (no question)")
+        default:
+          return questionType
+      }
+  }
+
   renderQuestion(question) {
     const currentEventId = this.props.currentEventId
     const answers = []
@@ -85,7 +119,7 @@ class QuestionInspector extends React.Component {
           })}
 
           <span className="ic-QuestionInspector__QuestionType">
-            {I18n.t('question_type', '%{type}', {type: question.readableType})}
+            {I18n.t('question_type', '%{type}', {type: this.convertTypeLocale(question.questionType)})}
           </span>
 
           <span className="ic-QuestionInspector__QuestionId">(id: {question.id})</span>

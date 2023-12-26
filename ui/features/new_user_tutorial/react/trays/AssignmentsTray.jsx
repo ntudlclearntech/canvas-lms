@@ -25,39 +25,44 @@ const I18n = useI18nScope('new_user_tutorial')
 const AssignmentsTray = () => (
   <TutorialTrayContent
     heading={I18n.t('Assignments')}
-    subheading={I18n.t('Reinforce student understanding')}
+    subheading={I18n.t('Create various types of graded assignments')}
     image="/images/tutorial-tray-images/Panda_Assignments.svg"
     imageWidth="11rem"
-    seeAllLink={{
-      label: I18n.t('See more in Canvas Guides'),
-      href: I18n.t('#community.instructor_guide'),
-    }}
     links={[
       {
-        label: I18n.t('How do I create an assignment?'),
-        href: I18n.t('#community.instructor_create_assignment'),
+        label: I18n.t('How to assign assignments'),
+        href: I18n.t(
+          'how_to_assign_assignments_url',
+          'https://drive.google.com/file/d/1z0iIyJeq5RLFwHaggmermbJgfw5t1-Mg/view?usp=sharing'
+        )
       },
       {
-        label: I18n.t('How do I publish or unpublish an assignment as an instructor?'),
-        href: I18n.t('#community.instructor_publish_assignment'),
+        label: I18n.t('How to correct assignments'),
+        href: I18n.t(
+          'how_to_correct_assignments_url',
+          'https://drive.google.com/file/d/1cw70AI3WrCFfbV2EOrcZl2Z12bYSOHXB/view?usp=sharing'
+        )
       },
       {
-        label: I18n.t('What assignment types can I create in a course?'),
-        href: I18n.t('#community.instructor_assignment_types'),
+        label: I18n.t('Tutorial Video: Assign assignments'),
+        href: I18n.t(
+          'tutorial_video_assign_assignments_url',
+          'https://www.youtube.com/watch?v=IeVYgHhMKNU&list=PLKjqFgaBNOo8fv5ZWEIUSlSqzXDVC2SV_&index=10'
+        )
       },
       {
-        label: I18n.t('How do I add or edit details in an assignment?'),
-        href: I18n.t('#community.instructor_assignment_details'),
-      },
+        label: I18n.t('Tutorial Video: Correct assignments'),
+        href: I18n.t(
+          'tutorial_video_correct_assignments_url',
+          'https://www.youtube.com/watch?v=SuxMtw0TzVY&list=PLKjqFgaBNOo8fv5ZWEIUSlSqzXDVC2SV_&index=12'
+        )
+      }
     ]}
   >
-    {I18n.t(`Assignments include quizzes, graded discussions, and many types
-      of online submissions (files, images, text, URLs, and media). Assign
-      them to everyone in a course, or assign different due dates for specific
-      sections or users. Create assignment groups to organize your assignments
-      and to weight groups by percentage. Enable Peer Review so students can
-      review each other's work.`)}
-  </TutorialTrayContent>
+    {I18n.t(`Create assignments on the Assignments page. Organize assignments
+                into groups like Homework, Presentation, Discussions
+                and Quizzes. Assignment groups can be weighted.`)}
+  </TutorialTrayContent >
 )
 
 export default AssignmentsTray

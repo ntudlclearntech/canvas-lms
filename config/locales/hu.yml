@@ -13024,7 +13024,7 @@ hu:
           audio_comment: "Ez az üzenet médiatartalmat tartalmaz. A meghallgatásához vagy a válaszadáshoz kattintson az alábbi linkre:"
           download: letöltés
           pre_you_can: "Ön tud"
-          reply_to_conversation_message: "Erre az üzenetre válaszolhat a Canvas felületén, közvetlen választ küldve erre az e-mailre. Ha mellékletet kell csatolnia, kérjük, lépjen be a Canvas-ba, és válaszoljon az Inbox-on keresztül!"
+          # reply_to_conversation_message: "Erre az üzenetre válaszolhat a Canvas felületén, közvetlen választ küldve erre az e-mailre. Ha mellékletet kell csatolnia, kérjük, lépjen be a Canvas-ba, és válaszoljon az Inbox-on keresztül!"
           subject: "%{user_name}, Ön az imént üzenetet küldött a Canvasban."
           unknown_user: "Ismeretlen felhasználó"
           view_message: "Üzenet megtekintése az üzenetváltások között"
@@ -13048,7 +13048,7 @@ hu:
           audio_comment: "Ez az üzenet médiatartalmat tartalmaz. A meghallgatásához vagy a válaszadáshoz kattintson az alábbi linkre:"
           download: letöltés
           pre_you_can: "Ön tud"
-          reply_to_conversation_message: "Erre az üzenetre válaszolhat a Canvas felületén, közvetlen választ küldve erre az e-mailre. Ha mellékletet kell csatolnia, kérjük, lépjen be a Canvas-ba, és válaszoljon az Inbox-on keresztül!"
+          # reply_to_conversation_message: "Erre az üzenetre válaszolhat a Canvas felületén, közvetlen választ küldve erre az e-mailre. Ha mellékletet kell csatolnia, kérjük, lépjen be a Canvas-ba, és válaszoljon az Inbox-on keresztül!"
           subject: "%{user_name}, Ön az imént üzenetet küldött a Canvasban."
           unknown_user: "Ismeretlen felhasználó"
           view_message: "Üzenet megtekintése az üzenetváltások között"

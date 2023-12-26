@@ -17212,7 +17212,7 @@ ht:
           audio_comment: "Mesaj sa a gen kòmantè medya. Pou ka koute oswa reponn, klike sou lyen pi ba a:"
           download: telechaje
           pre_you_can: "Ou kapab"
-          reply_to_conversation_message: "Ou ka reponn mesaj sa a nan Canvas si w reponn imèl sa a dirèkteman. Si w vle mete yon pyès jwent, tanpri konekte sou Cancas epi reponn nan Bwat resepsyon an."
+          # reply_to_conversation_message: "Ou ka reponn mesaj sa a nan Canvas si w reponn imèl sa a dirèkteman. Si w vle mete yon pyès jwent, tanpri konekte sou Cancas epi reponn nan Bwat resepsyon an."
           subject: "%{user_name}, ou fèk voye yon mesaj sou Canvas."
           unknown_user: "Itilizatè Enkoni"
           view_message: "Afiche mesaj sa a nan Konèsasyon yo"
@@ -17236,7 +17236,7 @@ ht:
           audio_comment: "Mesaj sa a gen kòmantè medya. Pou ka koute oswa reponn, klike sou lyen pi ba a:"
           download: telechaje
           pre_you_can: "Ou kapab"
-          reply_to_conversation_message: "Ou ka reponn mesaj sa a nan Canvas si w reponn imèl sa a dirèkteman. Si w vle mete yon pyès jwent, tanpri konekte sou Cancas epi reponn nan Bwat resepsyon an."
+          # reply_to_conversation_message: "Ou ka reponn mesaj sa a nan Canvas si w reponn imèl sa a dirèkteman. Si w vle mete yon pyès jwent, tanpri konekte sou Cancas epi reponn nan Bwat resepsyon an."
           subject: "%{user_name} fèk voye yon mesaj pou ou sou Canvas."
           unknown_user: "Itilizatè Enkoni"
           view_message: "Afiche mesaj sa a nan Konèsasyon yo"

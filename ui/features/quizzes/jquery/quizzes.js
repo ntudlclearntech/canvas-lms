@@ -1049,7 +1049,7 @@ export const quiz = (window.quiz = {
     }
     $formQuestion.find('.answer.hidden').remove()
     $form.find("input[name='answer_selection_type']").val(result.answer_selection_type).change()
-    $form.find('.add_answer_link').showIf(options.addable)
+    $form.find('.add_answer_link').css("display", options.addable ? "block" : "none") //.showIf(options.addable)
     var $answers = $formQuestion.find('.form_answers .answer')
     if ($answers.length === 0 && result.answer_type !== 'none') {
       $formQuestion
@@ -1073,13 +1073,28 @@ export const quiz = (window.quiz = {
         $answers.filter(':first').addClass('correct_answer')
       }
     }
-    $form.find('.answer').each(function () {
+    $form.find('.answer').each(function (index) {
       let weight = 0
       if ($(this).hasClass('correct_answer')) {
         weight = 100
       }
       $(this).find('.answer_weight').text(weight)
       quiz.updateFormAnswer($(this), result)
+
+      const $answer = $(this)
+      let placeholderText = ""
+      if (question_type == 'multiple_dropdowns_question') {
+        placeholderText = $answer.find('input[name="answer_text"]:text').attr('placeholder')
+        if (!placeholderText.match(/.*\d$/)) {
+          $answer.find('input[name="answer_text"]:text').attr('placeholder', `${placeholderText} ${index + 1}`)
+        }
+      } else if (question_type == 'fill_in_multiple_blanks_question') {
+        placeholderText = $answer.find('input[name="answer_text"]:text:not(".disabled_answer")').attr('placeholder')
+        if (!placeholderText.match(/.*\d$/)) {
+          $answer.find('input[name="answer_text"]:text:not(".disabled_answer")').attr('placeholder', `${placeholderText} ${index + 1}`)
+        }
+      }
+
     })
     $form
       .find('.answer_type')
@@ -2433,6 +2448,12 @@ ready(function () {
       const $publish_input = $(document.createElement('input'))
       $publish_input.attr('type', 'hidden').attr('name', 'publish').prop('value', 'true')
       $quiz_options_form.append($publish_input)
+      const $save_and_publish_clicked_input = $(document.createElement('input'))
+      $save_and_publish_clicked_input
+        .attr('type', 'hidden')
+        .attr('name', 'save_and_publish_clicked')
+        .attr('value', 'true')
+      $quiz_options_form.append($save_and_publish_clicked_input)
 
       $quiz_edit_wrapper
         .find('.btn.save_and_publish')
@@ -2630,6 +2651,13 @@ ready(function () {
       $form.fillFormData(question)
     }
 
+    /**
+     * Issue https://gitlab.dlc.ntu.edu.tw/ntu-cool/canvas-lms/-/issues/269
+     * Function updateFormQuestion will determine whether $form is in the div.group
+     * to decide whether span.question_points_holder is displayed or not,
+     * so we need to insert $form into $question before update FormQuestion.
+     */
+    $question.hide().after($form)
     const data = quiz.updateFormQuestion($form)
     $form.find('.form_answers').empty()
     if (data.question_type === 'calculated_question') {
@@ -2703,6 +2731,16 @@ ready(function () {
         answer.question_type = data.question_type
         const $answer = makeFormAnswer(answer)
         addAriaDescription($answer, index + 1)
+
+        // update input placeholder with index 
+        const id = index + 1
+        let placeholderText = $answer.find('input[name="answer_text"]:text').attr('placeholder')
+        $answer.find('input[name="answer_text"]:text').attr('placeholder', `${placeholderText} ${id}`)
+        placeholderText = $answer.find('input[name="answer_match_left"]:text').attr('placeholder')
+        $answer.find('input[name="answer_match_left"]:text').attr('placeholder', `${placeholderText} ${id}`)
+        placeholderText = $answer.find('input[name="answer_match_right"]:text').attr('placeholder')
+        $answer.find('input[name="answer_match_right"]:text').attr('placeholder', `${placeholderText} ${id}`)
+
         $form.find('.form_answers').append($answer)
       })
     }
@@ -2714,7 +2752,7 @@ ready(function () {
 
     limitTextInputFor($form, question.question_type)
 
-    $question.hide().after($form)
+    // $question.hide().after($form) // comment it For issue #269
     quiz.showFormQuestion($form)
     $form
       .attr('action', $question.find('.update_question_url').attr('href'))
@@ -2808,12 +2846,26 @@ ready(function () {
 
     // create toggler instance on the first click
     if (!toggler) {
+      // COOL: 2021/06/21 upgrade canvas; these lines seem to be removed by Canvas
+      // const tinyOptions = {}
+
       const inputColumn = $comment.parents().find('.answer_type:visible')[0]
+
+      // if (inputColumn) {
+      //   const rightMargin = parseInt($comment.css('marginRight')) || 0
+      //   const leftMargin = parseInt($comment.css('marginLeft')) || 0
+      //   const commentMargin = rightMargin + leftMargin
+
+      //   const rceWidth = inputColumn.offsetWidth - commentMargin
+      //   tinyOptions.width = rceWidth
+      // }
 
       toggler = new EditorToggle($comment_html, {
         editorBoxLabel: $link.title,
+        // tinyOptions
       })
 
+      // toggler.editButton = $link
       toggler.editButton = $comment // focus on the comment box after closing the RCE
       toggler.on('display', () => {
         $comment.removeClass('editing')
@@ -3701,8 +3753,18 @@ ready(function () {
       } else if (answer_selection_type === 'blanks') {
         $answer.addClass('correct_answer')
         $answer.addClass('fill_in_blank_answer')
+        const placeholderText = $answer.find('input[name="answer_text"]:text:not(".disabled_answer")').attr('placeholder')
+        $answer.find('input[name="answer_text"]:text:not(".disabled_answer")').attr('placeholder', `${placeholderText} ${$question.find('.form_answers > .answer').length + 1}`)
       } else if (answer_selection_type === 'matching') {
         $answer.removeClass('correct_answer')
+        const answerNum = $question.find('.form_answers > .answer').length + 1
+        let placeholderText = $answer.find('input[name="answer_match_left"]:text').attr('placeholder')
+        $answer.find('input[name="answer_match_left"]:text').attr('placeholder', `${placeholderText} ${answerNum}`)
+        placeholderText = $answer.find('input[name="answer_match_right"]:text').attr('placeholder')
+        $answer.find('input[name="answer_match_right"]:text').attr('placeholder', `${placeholderText} ${answerNum}`)
+      } else {
+        const placeholderText = $answer.find('input[name="answer_text"]:text').attr('placeholder')
+        $answer.find('input[name="answer_text"]:text').attr('placeholder', `${placeholderText} ${$question.find('.form_answers > .answer').length + 1}`)
       }
       $question.find('.form_answers').append($answer.show())
       if (!skipFocus) {

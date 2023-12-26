@@ -22,6 +22,7 @@
   padding: 35px;
   #context_external_tools_select {
     .tools {
+      margin-left: 0.25rem;
       vertical-align: top;
       padding: 10px 0;
       max-height: 150px;
@@ -54,5 +55,19 @@
         }
       }
     }
+  }
+  #sub_header_title,
+  #content_tag_create_url,
+  #content_tag_create_title,
+  #external_tool_create_url,
+  #external_tool_create_title {
+    margin-left: 0.25rem;
+  }
+
+  #content_tag_indent {
+    margin-left: 0.24rem;
+  }
+  .module_item_description {
+    color: $ic-color-success;
   }
 }

@@ -174,6 +174,7 @@ ConverterViewControl.register({
 
     quizzes_next_enabled: ENV.QUIZZES_NEXT_ENABLED,
     new_quizzes_migration: ENV.NEW_QUIZZES_MIGRATION,
+    isAdmin: ENV.current_user_roles.includes('admin'),
   }),
 })
 

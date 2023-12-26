@@ -279,8 +279,8 @@ class WikiPagesApiController < ApplicationController
       @context.shard.activate do
         scope = WikiPages::ScopedToUser.new(@context.wiki, @current_user, scope).scope
       end
-
-      scope = WikiPage.search_by_attribute(scope, :title, params[:search_term])
+      search_term = WikiPage.decode_search_term(params[:search_term])
+      scope = WikiPage.search_by_attribute(scope, :title, search_term)
 
       order_clause = case params[:sort]
                      when "title"

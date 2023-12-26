@@ -585,6 +585,8 @@ class GradebooksController < ApplicationController
     }
 
     js_env({
+             GRADEBOOK_OPTIONS: gradebook_options,
+             cool_gradebook_id: Rails.configuration.external_tools["cool_gradebook_id"],
              EMOJIS_ENABLED: @context.feature_enabled?(:submission_comment_emojis),
              EMOJI_DENY_LIST: @context.root_account.settings[:emoji_deny_list],
              GRADEBOOK_OPTIONS: gradebook_options
@@ -1645,7 +1647,11 @@ class GradebooksController < ApplicationController
   end
 
   def gradebook_settings(key)
-    @current_user.get_preference(:gradebook_settings, key) || {}
+    @current_user.get_preference(:gradebook_settings, key) ||
+      {
+        student_column_secondary_info: "sis_id",
+        sort_rows_by_setting_key: "sis_user_id"
+      }
   end
 
   def ensure_section_view_filter_enabled(context_settings)

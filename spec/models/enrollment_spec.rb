@@ -398,16 +398,16 @@ describe Enrollment do
       end
 
       it "returns the course current grade" do
-        expect(@enrollment.effective_current_grade).to eq "B+"
+        expect(@enrollment.effective_current_grade).to eq "A"
       end
 
       it "returns the grading period current grade, if given a grading period" do
-        expect(@enrollment.effective_current_grade(grading_period_id: period.id)).to eq "B-"
+        expect(@enrollment.effective_current_grade(grading_period_id: period.id)).to eq "A-"
       end
 
       it "returns the override grade" do
         @enrollment.scores.find_by(course_score: true).update!(override_score: 97.0)
-        expect(@enrollment.effective_current_grade).to eq "A"
+        expect(@enrollment.effective_current_grade).to eq "A+"
       end
 
       it "does not return the override grade if the feature is not allowed" do
@@ -419,7 +419,7 @@ describe Enrollment do
       it "does not return the override grade if the feature is not enabled" do
         @enrollment.scores.find_by(course_score: true).update!(override_score: 97.0)
         @course.disable_feature!(:final_grades_override)
-        expect(@enrollment.effective_current_grade).to eq "B+"
+        expect(@enrollment.effective_current_grade).to eq "A"
       end
 
       it "returns nil if a grading standard is not enabled" do
@@ -495,16 +495,16 @@ describe Enrollment do
       end
 
       it "returns the course final grade" do
-        expect(@enrollment.effective_final_grade).to eq "B+"
+        expect(@enrollment.effective_final_grade).to eq "A"
       end
 
       it "returns the grading period final grade, if given a grading period" do
-        expect(@enrollment.effective_final_grade(grading_period_id: period.id)).to eq "B-"
+        expect(@enrollment.effective_final_grade(grading_period_id: period.id)).to eq "A-"
       end
 
       it "returns the override grade" do
         @enrollment.scores.find_by(course_score: true).update!(override_score: 97.0)
-        expect(@enrollment.effective_final_grade).to eq "A"
+        expect(@enrollment.effective_final_grade).to eq "A+"
       end
 
       it "does not return the override grade if the feature is not allowed" do
@@ -516,7 +516,7 @@ describe Enrollment do
       it "does not return the override grade if the feature is not enabled" do
         @enrollment.scores.find_by(course_score: true).update!(override_score: 97.0)
         @course.disable_feature!(:final_grades_override)
-        expect(@enrollment.effective_final_grade).to eq "B+"
+        expect(@enrollment.effective_final_grade).to eq "A"
       end
 
       it "returns nil if a grading standard is not enabled" do
@@ -606,7 +606,7 @@ describe Enrollment do
       end
 
       it "returns the override grade if an override score exists" do
-        expect(@enrollment.override_grade).to eq "A"
+        expect(@enrollment.override_grade).to eq "A+"
       end
 
       it "can return a grading period's override grade" do
@@ -618,7 +618,7 @@ describe Enrollment do
           title: "period"
         )
         @enrollment.scores.find_by(grading_period: period).update!(override_score: 71.0)
-        expect(@enrollment.override_grade(grading_period_id: period.id)).to eq "C-"
+        expect(@enrollment.override_grade(grading_period_id: period.id)).to eq "B-"
       end
 
       it "optionally accepts a score to use" do
@@ -787,7 +787,7 @@ describe Enrollment do
 
         it "uses the value from the associated score object, if one exists" do
           @enrollment.scores.create!(current_score: 80.3)
-          expect(@enrollment.computed_current_grade).to eq "B-"
+          expect(@enrollment.computed_current_grade).to eq "A-"
         end
 
         it "ignores grading period grades when passed no arguments" do
@@ -804,7 +804,7 @@ describe Enrollment do
         it "computes current grade for a given grading period id" do
           @enrollment.scores.create!(current_score: 70.6, grading_period: period)
           current_grade = @enrollment.computed_current_grade(grading_period_id: period.id)
-          expect(current_grade).to eq "C-"
+          expect(current_grade).to eq "B-"
         end
 
         it "returns nil if a grading period grade is requested and does not exist" do
@@ -821,7 +821,7 @@ describe Enrollment do
 
         it "uses the value from the associated score object, if one exists" do
           @enrollment.scores.create!(unposted_current_score: 80.3)
-          expect(@enrollment.unposted_current_grade).to eq "B-"
+          expect(@enrollment.unposted_current_grade).to eq "A-"
         end
 
         it "ignores grading period grades when passed no arguments" do
@@ -838,7 +838,7 @@ describe Enrollment do
         it "computes current grade for a given grading period id" do
           @enrollment.scores.create!(unposted_current_score: 70.6, grading_period: period)
           unposted_current_grade = @enrollment.unposted_current_grade(grading_period_id: period.id)
-          expect(unposted_current_grade).to eq "C-"
+          expect(unposted_current_grade).to eq "B-"
         end
 
         it "returns nil if a grading period grade is requested and does not exist" do
@@ -1147,7 +1147,7 @@ describe Enrollment do
 
         it "uses the value from the associated score object, if one exists" do
           @enrollment.scores.create!(final_score: 80.3)
-          expect(@enrollment.computed_final_grade).to eq "B-"
+          expect(@enrollment.computed_final_grade).to eq "A-"
         end
 
         it "ignores grading period grades when passed no arguments" do
@@ -1165,7 +1165,7 @@ describe Enrollment do
           @enrollment.scores.create!(final_score: 80.3)
           @enrollment.scores.create!(final_score: 70.6, grading_period: period)
           final_grade = @enrollment.computed_final_grade(grading_period_id: period.id)
-          expect(final_grade).to eq "C-"
+          expect(final_grade).to eq "B-"
         end
 
         it "returns nil if a grading period grade is requested and does not exist" do

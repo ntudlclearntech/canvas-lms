@@ -24,6 +24,7 @@ import template from '../../jst/editRolesView.handlebars'
 import '@canvas/rails-flash-notifications'
 import '@canvas/jquery/jquery.disableWhileLoading'
 
+import filterRoles from './filterRoles'
 const I18n = useI18nScope('course_settings')
 
 export default class EditRolesView extends DialogBaseView {
@@ -52,7 +53,7 @@ export default class EditRolesView extends DialogBaseView {
       json.role_id = this.role_id
     }
 
-    json.roles = ENV.ALL_ROLES
+    json.roles = filterRoles(['StudentEnrollment', 'DesignerEnrollment']);
     return json
   }
 

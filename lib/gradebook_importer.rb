@@ -713,9 +713,18 @@ class GradebookImporter
 
   def semicolon_delimited?(csv_file)
     first_lines = []
-    File.open(csv_file.path) do |csv|
-      while !csv.eof? && first_lines.size < 3
-        first_lines << csv.readline
+    # need to check if big5 is ok in all scenarios
+    begin
+      File.open(csv_file.path, "r:big5:utf-8") do |csv|
+        while !csv.eof? && first_lines.size < 3
+          first_lines << csv.readline
+        end
+      end
+    rescue EncodingError
+      File.open(csv_file.path) do |csv|
+        while !csv.eof? && first_lines.size < 3
+          first_lines << csv.readline
+        end
       end
     end
 
@@ -758,7 +767,13 @@ class GradebookImporter
     # using "foreach" rather than "parse" processes a chunk of the
     # file at a time rather than loading the whole file into memory
     # at once, a boon for memory consumption
-    CSV.foreach(csv_file.path, **csv_parse_options, &)
+    begin
+      csv_parse_options[:encoding] = 'big5'
+      CSV.foreach(csv_file.path, **csv_parse_options, &)
+    rescue EncodingError
+      csv_parse_options[:encoding] = 'utf-8'
+      CSV.foreach(csv_file.path, **csv_parse_options, &)
+    end
   end
 
   def add_root_account_to_pseudonym_cache(root_account)

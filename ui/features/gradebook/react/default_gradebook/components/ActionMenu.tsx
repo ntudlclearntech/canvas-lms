@@ -219,6 +219,12 @@ class ActionMenu extends React.Component<ActionMenuProps, ActionMenuState> {
     ActionMenu.gotoUrl(this.props.publishGradesToSis.publishToSisUrl)
   }
 
+  handleGoToCoolGradebook() {
+    const sTemp = window.location.pathname.match(/\/courses\/(\d+)/)!
+    const coolGradebookId = ENV.cool_gradebook_id
+    window.location.href = '/courses/' + sTemp[1] + '/external_tools/' + coolGradebookId
+  }
+
   disableImports() {
     return !(this.props.gradebookIsEditable && this.props.contextAllowsGradebookUploads)
   }
@@ -353,7 +359,7 @@ class ActionMenu extends React.Component<ActionMenuProps, ActionMenuState> {
         trigger={
           <Link as="button">
             <Text {...buttonTypographyProps}>
-              {I18n.t('Actions')}
+              {I18n.t('Custom.import_and_export', 'Import and Export')}
               <IconMiniArrowDownSolid />
             </Text>
           </Link>
@@ -368,7 +374,7 @@ class ActionMenu extends React.Component<ActionMenuProps, ActionMenuState> {
             this.handleImport()
           }}
         >
-          <span data-menu-id="import">{I18n.t('Import')}</span>
+          <span data-menu-id="import">{I18n.t('Import CSV')}</span>
         </MenuItem>
 
         <MenuItem
@@ -398,6 +404,18 @@ class ActionMenu extends React.Component<ActionMenuProps, ActionMenuState> {
         </MenuItem>
 
         {[...this.renderPreviousExports()]}
+
+        <MenuItemSeparator />
+
+        <MenuItem
+          onClick={() => {
+            this.handleGoToCoolGradebook()
+          }}
+        >
+          <span id="send-to-the-online-grading-system">
+            {I18n.t('Send to the Online Grading System')}
+          </span>
+        </MenuItem>
       </Menu>
     )
   }

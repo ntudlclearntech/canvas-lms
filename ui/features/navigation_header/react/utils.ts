@@ -17,6 +17,7 @@
  */
 
 import {useScope as useI18nScope} from '@canvas/i18n'
+import {isStaff} from '@canvas/util/checkRole'
 
 const I18n = useI18nScope('Navigation')
 
@@ -32,8 +33,15 @@ type SvgTool = CommonProperties & {svgPath: string}
 type ImgTool = CommonProperties & {imgSrc: string}
 
 export type ExternalTool = SvgTool | ImgTool
+declare global {
+  interface Window {
+    courseBuilderId?: number
+  }
+}
 
+// Hide if not a staff #192
 export function getExternalTools(): ExternalTool[] {
+  const courseBuilderId = window.courseBuilderId ?? 0
   return Array.from(document.querySelectorAll('.globalNavExternalTool')).map(el => {
     const svg = el.querySelector('svg')
     return {
@@ -44,7 +52,11 @@ export function getExternalTools(): ExternalTool[] {
         ? {svgPath: svg.innerHTML}
         : {imgSrc: (el.querySelector('img') as HTMLImageElement)?.getAttribute('src') || ''}),
     }
-  })
+  }).filter(tool => {
+      const isCourseBuilderTool =
+        tool.href === `/accounts/1/external_tools/${courseBuilderId}?launch_type=global_navigation`
+      return isStaff || !isCourseBuilderTool
+    })
 }
 
 export type ActiveTray =

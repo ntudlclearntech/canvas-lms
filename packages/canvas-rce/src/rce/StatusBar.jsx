@@ -422,7 +422,7 @@ export default function StatusBar(props) {
         {isAvailable('instructure_wordcount') && renderWordCount()}
         <div className={css(styles.separator)} />
         {isAvailable('instructure_html_view') && renderToggleHtml()}
-        {isAvailable('instructure_fullscreen') && renderFullscreen()}
+        {/* isAvailable('instructure_fullscreen') && renderFullscreen() */}
         {renderResizeHandle()}
       </Flex.Item>
     </Flex>

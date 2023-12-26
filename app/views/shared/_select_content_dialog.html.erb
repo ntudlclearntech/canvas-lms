@@ -58,19 +58,19 @@
         <option value="external_url" class="context_module_content"><%= t :external_url_item, "External URL" %></option>
         <% end %>
         <% if !only || only.include?(:external_tools) %>
-        <option value="context_external_tool" class="context_module_content"><%= t :external_tool_item, "External Tool" %></option>
+        <option value="context_external_tool" class="context_module_content"><%= t :other_teaching_material, "Other Teaching Material" %></option>
         <% end %>
       </select>
       <% }, :wrapper => '<span class="holder_name">\1</span>' %>
     </div>
       <% if !only || only.include?(:sub_headers) %>
       <div id="context_module_sub_headers_select" class="module_item_option">
-        <div style="font-size: 0.8em;">
+        <div class="module_item_description" style="font-size: 0.8em;">
           <%= t :sub_header_notice, "Type the text you'd like to add as a *module* sub-header", :wrapper => '<span class="holder_type">\1</span>' %>
         </div>
         <table>
           <tr>
-            <td><label for="sub_header_title"><%= before_label :header, "Header" %></label></td>
+            <td><label for="sub_header_title"><%= before_label_without_colon :header, "Header" %></label></td>
             <td><input type="text" name="title" id="sub_header_title" style="width: 200px;"/></td>
           </tr>
         </table>
@@ -78,13 +78,15 @@
       <% end %>
       <% if !only || only.include?(:external_urls) %>
       <div id="external_urls_select" class="module_item_option">
-        <div style="font-size: 0.8em;">
+        <div class="module_item_description" style="font-size: 0.8em;">
+          <!--
           <i class="icon-link"></i>
+          -->
           <%= t :external_url_notice, "Enter a URL and page name to add a link to any website URL to this *module*.", :wrapper => '<span class="holder_type">\1</span>' %>
         </div>
         <table>
           <tr>
-            <td><label for="content_tag_create_url"><%= before_label :url, "URL" %></label></td>
+            <td><label for="content_tag_create_url"><%= before_label_without_colon :url, "URL" %></label></td>
             <td>
               <input type="text" name="url" id="content_tag_create_url" style="width: 200px;"/>
               <div id="content_tag_services">
@@ -93,7 +95,7 @@
             </td>
           </tr>
           <tr class='select_item_name'>
-            <td><label for="content_tag_create_title"><%= before_label :page_name, "Page Name" %></label></td>
+            <td><label for="content_tag_create_title"><%= before_label_without_colon :page_name, "Page Name" %></label></td>
             <td><input type="text" name="title" id="content_tag_create_title" style="width: 120px;"/></td>
           </tr>
           <tr>
@@ -107,8 +109,10 @@
       <% end %>
       <% if !only || only.include?(:external_tools) %>
       <div id="context_external_tools_select" class="module_item_option">
-        <div style="font-size: 0.8em;" tabindex="0" role="alert">
+        <div class="module_item_description" style="font-size: 0.8em;" tabindex="0" role="alert">
+          <!--
           <i class="icon-link"></i>
+          -->
           <%= t :external_tool_notice, "Select a tool from the list below, or enter a URL for an external tool you already know is configured with Basic LTI to add a link to it to this *module*.", :wrapper => '<span class="holder_type">\1</span>' %>
         </div>
         <a href="<%= context_url(@context, controller:'lti/lti_apps', action:'launch_definitions', :placements => lti_app_placements, :per_page => '100') %>" class="external_tools_url" style="display: none;">&nbsp;</a>
@@ -122,6 +126,7 @@
         <input type="hidden" name="submission" id="external_tool_create_submission"/>
         <table>
           <tr>
+            <td><label for="external_tool_type"><%= before_label_without_colon :type, "Type" %></label></td>
             <td colspan="2">
               <ul class="tools" style="max-height: 250px; overflow: auto;">
                 <li class="message" style="margin: 10px 0;"><%= t :loading, "Loading..." %></li>
@@ -133,7 +138,7 @@
             </td>
           </tr>
           <tr>
-            <td><label for="external_tool_create_url"><%= before_label :url, "URL" %></label></td>
+            <td><label for="external_tool_create_url"><%= before_label_without_colon :url, "URL" %></label></td>
             <td>
               <input type="text" name="url" id="external_tool_create_url" style="width: 200px;"/>
               <div class="domain_message" style="font-size: 0.8em; display: none;">
@@ -142,7 +147,7 @@
             </td>
           </tr>
           <tr class='select_item_name'>
-            <td><label for="external_tool_create_title"><%= before_label :page_name, "Page Name" %></label></td>
+            <td><label for="external_tool_create_title"><%= before_label_without_colon :page_name, "Page Name" %></label></td>
             <td><input type="text" name="title" id="external_tool_create_title" style="width: 120px;"/></td>
           </tr>
           <tr>
@@ -156,8 +161,10 @@
       <% end %>
       <% if !only || only.include?(:wiki_pages) %>
       <div id="wiki_pages_select" class="module_item_option">
-        <div style="font-size: 0.8em;">
+        <div class="module_item_description" style="font-size: 0.8em;">
+          <!--
           <i class="icon-document"></i>
+          -->
           <%= t 'Select the page you want to associate with this *module*, or add a new page by selecting "Create Page".', :wrapper => '<span class="holder_type">\1</span>' %>
           <% page_label = t 'Select the page you want to associate, or add a new page by selecting "Create Page".' %>
         </div>
@@ -183,8 +190,10 @@
       <% end %>
       <% if !only || only.include?(:attachments) %>
       <div id="attachments_select" class="module_item_option">
-        <div style="font-size: 0.8em;" id="file_select_label">
+        <div class="module_item_description" style="font-size: 0.8em;" id="file_select_label">
+          <!--
           <i class="icon-paperclip" aria-hidden="true"></i>
+          -->
           <%= t 'Select the files you want to associate with this *module*, or add files by selecting "Create File(s)".', :wrapper => '<span class="holder_type">\1</span>' %>
         </div>
         <div style="margin-top: 5px;">
@@ -218,8 +227,10 @@
       <% end %>
       <% if !only || only.include?(:quizzes) %>
       <div id="quizs_select" class="module_item_option">
-        <div style="font-size: 0.8em;">
+        <div class="module_item_description" style="font-size: 0.8em;">
+          <!--
           <i class="icon-quiz"></i>
+          -->
           <%= t :create_quiz_notice, 'Select the quiz you want to associate with this *module*, or add a new one by selecting "Create Quiz".', :wrapper => '<span class="holder_type">\1</span>' %>
           <% quiz_label = t :quiz_select_label_create, 'Select the quiz you want to associate, or add a new one by selecting "Create Quiz".' %>
         </div>
@@ -284,8 +295,10 @@
       <% end %>
       <% if !only || only.include?(:assignments) %>
       <div id="assignments_select" class="module_item_option">
-        <div style="font-size: 0.8em;">
+        <div class="module_item_description" style="font-size: 0.8em;">
+          <!--
           <i class="icon-assignment"></i>
+          -->
           <%= t :create_assignment_notice, 'Select the assignment you want to associate with this *module*, or add an assignment by selecting "Create Assignment".', :wrapper => '<span class="holder_type">\1</span>' %>
           <% assignment_label = t 'assignment_item_select_label_create', 'Select the assignment you want to associate, or add an assignment by selecting "Create Assignment".' %>
         </div>
@@ -313,8 +326,10 @@
       <% end %>
       <% if !only || only.include?(:discussion_topics) %>
       <div id="discussion_topics_select" class="module_item_option">
-        <div style="font-size: 0.8em;">
+        <div class="module_item_description" style="font-size: 0.8em;">
+          <!--
           <i class="icon-discussion"></i>
+          -->
           <%= t :create_topic_notice, 'Select the topic you want to associate with this *module*, or add a topic by selecting "Create Topic".', :wrapper => '<span class="holder_type">\1</span>' %>
           <% topic_label = t 'discussion_topic_select_label_create', 'Select the topic you want to associate, or add a topic by selecting "Create Topic".' %>
         </div>
@@ -336,9 +351,9 @@
       <% end %>
       <% if !only || only.include?(:indentation) %>
       <div class="context_module_content">
-        <%= before_label :indentation, "Indentation" %>
+        <%= before_label_without_colon :indentation, "Indentation" %>
         <select name="content_tag[indent]" id="content_tag_indent" aria-label="<%= before_label :indentation, "Indentation" %>">
-          <% (0..3).each do |level| %>
+          <% (0..5).each do |level| %>
             <%= t(:indent_level, { :zero => "*Don't Indent*", :one => "*Indent 1 Level*", :other => "*Indent %{count} levels*" }, :count => level, :wrapper => "<option value=\"#{level}\">\\1</option>") %>
           <% end %>
         </select>

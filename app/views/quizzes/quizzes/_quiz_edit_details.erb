@@ -48,7 +48,9 @@ content_is_locked = !!js_env.dig(:MASTER_COURSE_DATA, "is_master_course_child_co
 
       <fieldset>
         <div class="control-group">
-          <label class="control-label" for="quiz_assignment_id"><%= t("Quiz Type") %></label>
+          <label class="control-label option-caption" for="quiz_assignment_id">
+            <%= t("Quiz Type") %>
+          </label>
           <div class="controls">
             <select name="quiz[quiz_type]" id="quiz_assignment_id">
               <% ['practice_quiz', 'assignment', 'graded_survey', 'survey'].each do |type| %>
@@ -59,7 +61,9 @@ content_is_locked = !!js_env.dig(:MASTER_COURSE_DATA, "is_master_course_child_co
         </div>
 
         <div class="control-group">
-          <label class="control-label" for="quiz_assignment_group_id"><%= t("Assignment Group") %></label>
+          <label class="control-label option-caption" for="quiz_assignment_group_id">
+            <%= t("Assignment Group") %>
+          </label>
           <div class="controls">
             <select name="quiz[assignment_group_id]" id="quiz_assignment_group_id">
               <% current_group_id = @quiz.assignment && @quiz.assignment.assignment_group_id || @quiz.assignment_group_id
@@ -81,9 +85,9 @@ content_is_locked = !!js_env.dig(:MASTER_COURSE_DATA, "is_master_course_child_co
             </div>
         </div>
 
-        <div class="control-group">
+        <div class="control-group" style="margin-top: 24px;">
+          <label class="control-label option-caption"><%= t("Options") %></label>
           <div class="controls">
-            <p class="option-caption"><strong><%= t("Options") %></strong></p>
 
             <% if Assignment.sis_grade_export_enabled?(@context) %>
               <label class="checkbox" id=post_to_sis_option>
@@ -92,23 +96,22 @@ content_is_locked = !!js_env.dig(:MASTER_COURSE_DATA, "is_master_course_child_co
               </label>
             <% end %>
 
-            <label class="checkbox" for="quiz_shuffle_answers">
-              <%= check_box :quiz, :shuffle_answers %>
-              <%= t("Shuffle Answers") %>
-            </label>
-
             <div>
               <label class="checkbox inline nowrap" for="time_limit_option" style="margin-top:-3px;">
                 <input type="checkbox" <%= "checked" if @quiz.time_limit %> name="time_limit" id="time_limit_option"/>
                 <%= t("Time Limit") %>
               </label>
 
-              <label class="checkbox inline" for="quiz_time_limit" style="padding-top:0;">
+              <label class="checkbox inline" for="quiz_time_limit" style="padding-top:0;padding-left:0;">
                 <%= text_field :quiz, :time_limit, :style => "width: 30px;", :"aria-label" => t("How many minutes?") %>
                 <%= t("Minutes") %>
               </label>
             </div>
 
+            <label class="checkbox" for="quiz_shuffle_answers">
+              <%= check_box :quiz, :shuffle_answers %>
+              <%= t("Shuffle Answers") %>
+            </label>
             <% if @context.root_account.feature_enabled?(:timer_without_autosubmission) %>
               <label class="checkbox" for="quiz_disable_timer_autosubmission" style="margin-left:12px;<%= hidden if @quiz.time_limit.blank? %>">
                 <%= check_box :quiz, :disable_timer_autosubmission %>
@@ -121,6 +124,22 @@ content_is_locked = !!js_env.dig(:MASTER_COURSE_DATA, "is_master_course_child_co
                 <%= check_box :quiz, :anonymous_submissions %>
                 <%= t("Keep Submissions Anonymous") %>
               </label>
+            </div>
+
+            <!-- OQAAT -->
+            <div class="option-group">
+              <label class="checkbox" for="quiz_one_question_at_a_time">
+                <%= hidden_field_tag "quiz[one_question_at_a_time]", "0", :id => nil %>
+                <%= check_box_tag "quiz[one_question_at_a_time]", "1", @quiz.one_question_at_a_time?, :class => "element_toggler"  %>
+                <%= t('Show one question at a time') %>
+              </label>
+              <div id="one_question_at_a_time_options" style="<%= 'display:none;' unless @quiz.one_question_at_a_time? %>" class="options">
+                <label class="checkbox" for="quiz_cant_go_back">
+                  <%= hidden_field_tag "quiz[cant_go_back]", "0", :id => nil %>
+                  <%= check_box_tag "quiz[cant_go_back]", "1", @quiz.cant_go_back? %>
+                  <%= t("Lock questions after answering") %>
+                </label>
+              </div>
             </div>
 
             <!-- Multiple Attempts -->
@@ -235,25 +254,12 @@ content_is_locked = !!js_env.dig(:MASTER_COURSE_DATA, "is_master_course_child_co
               </div>
             </div>
             <% end %>
+          </div>
+        </div>
 
-            <!-- OQAAT -->
-            <div class="option-group">
-              <label class="checkbox" for="quiz_one_question_at_a_time">
-                <%= hidden_field_tag "quiz[one_question_at_a_time]", "0", :id => nil %>
-                <%= check_box_tag "quiz[one_question_at_a_time]", "1", @quiz.one_question_at_a_time?, :class => "element_toggler"  %>
-                <%= t('Show one question at a time') %>
-              </label>
-              <div id="one_question_at_a_time_options" style="<%= 'display:none;' unless @quiz.one_question_at_a_time? %>" class="options">
-                <label class="checkbox" for="quiz_cant_go_back">
-                  <%= hidden_field_tag "quiz[cant_go_back]", "0", :id => nil %>
-                  <%= check_box_tag "quiz[cant_go_back]", "1", @quiz.cant_go_back? %>
-                  <%= t("Lock questions after answering") %>
-                </label>
-              </div>
-            </div>
-
-            <p class="option-caption"><strong><%= t("Quiz Restrictions") %></strong></p>
-
+        <div class="control-group">
+          <label class="control-label option-caption"><%= t("Quiz Restrictions") %></label>
+          <div class="controls">
             <!-- Quiz Restrictions -->
             <div class="option-group">
               <label class="checkbox" for="enable_quiz_access_code">
@@ -294,7 +300,7 @@ content_is_locked = !!js_env.dig(:MASTER_COURSE_DATA, "is_master_course_child_co
       </fieldset>
 
       <div id="overrides-wrapper">
-        <label class="control-label">
+        <label class="control-label option-caption">
           <%= t("Assign") %>
         </label>
         <div class="quiz-overrides-column-right js-assignment-overrides overrideFormFlex">

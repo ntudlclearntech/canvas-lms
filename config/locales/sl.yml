@@ -15114,7 +15114,7 @@ sl:
           audio_comment: "To sporočilo vsebuje komentarje v obliki medijev. Če jih želite poslušati ali odgovoriti nanje, kliknite spodnjo povezavo:"
           download: prenesi
           pre_you_can: Lahko
-          reply_to_conversation_message: "Na to sporočilo v sistemu Canvas lahko odgovorite, tako da odgovorite neposredno na to e-poštno sporočilo. Če morate vključiti prilogo, se prijavite v sistem Canvas in odgovorite prek pošte."
+          # reply_to_conversation_message: "Na to sporočilo v sistemu Canvas lahko odgovorite, tako da odgovorite neposredno na to e-poštno sporočilo. Če morate vključiti prilogo, se prijavite v sistem Canvas in odgovorite prek pošte."
           unknown_user: "Neznani uporabnik"
         unknown_user: "Neznani uporabnik"
       sms: 
@@ -15134,7 +15134,7 @@ sl:
           audio_comment: "To sporočilo vsebuje komentarje v obliki medijev. Če jih želite poslušati ali odgovoriti nanje, kliknite spodnjo povezavo:"
           download: prenesi
           pre_you_can: Lahko
-          reply_to_conversation_message: "Na to sporočilo v sistemu Canvas lahko odgovorite, tako da odgovorite neposredno na to e-poštno sporočilo. Če morate vključiti prilogo, se prijavite v sistem Canvas in odgovorite prek pošte."
+          # reply_to_conversation_message: "Na to sporočilo v sistemu Canvas lahko odgovorite, tako da odgovorite neposredno na to e-poštno sporočilo. Če morate vključiti prilogo, se prijavite v sistem Canvas in odgovorite prek pošte."
           unknown_user: "Neznani uporabnik"
         unknown_user: "Neznani uporabnik"
       sms: 

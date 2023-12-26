@@ -70,7 +70,7 @@ export default function GroupMembershipInput({onChange, value, ...props}) {
       onChange('')
       return setMessages([
         {
-          text: I18n.t('Number must be between %{min} and %{max}', {min: MIN, max: I18n.n(MAX)}),
+          text: I18n.t('invalid_group_member_number', 'Number must be between %{MIN} and %{MAX}, or leave blank to use group set max.', {MIN, MAX}),
           type: 'error',
         },
       ])

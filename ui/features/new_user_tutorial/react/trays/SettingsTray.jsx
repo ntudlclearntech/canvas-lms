@@ -25,34 +25,22 @@ const I18n = useI18nScope('new_user_tutorial')
 const AssignmentsTray = () => (
   <TutorialTrayContent
     heading={I18n.t('Settings')}
-    subheading={I18n.t('Customize course details')}
+    subheading={I18n.t('Change basic settings such as course languages, and the navigation bar')}
     image="/images/tutorial-tray-images/Panda_Map.svg"
-    seeAllLink={{
-      label: I18n.t('See more in Canvas Guides'),
-      href: I18n.t('#community.instructor_guide'),
-    }}
     links={[
       {
-        label: I18n.t('How do I use course settings?'),
-        href: I18n.t('#community.instructor_use_course_settings'),
-      },
-      {
-        label: I18n.t('How do I set details for a course?'),
-        href: I18n.t('#community.instructor_set_course_details'),
-      },
-      {
-        label: I18n.t('How do I change a course name and course code?'),
-        href: I18n.t('#community.instructor_change_name_code'),
-      },
-      {
-        label: I18n.t('How do I add an image to a course card in the Dashboard?'),
-        href: I18n.t('#community.instructor_add_dashboard_image'),
-      },
+        label: I18n.t('How do I change the Settings in a course'),
+        href: I18n.t(
+          'how_do_i_change_the_settings_in_a_course_url',
+          'https://docs.google.com/document/d/1_pgN6BAVIK4RmJzVy6DUs5HV8e25zTiLoc287QnMgzk/edit#heading=h.m9jh3tjgo2kd'
+        )
+      }
+
     ]}
   >
-    {I18n.t(`Make your course your own! Upload an image to represent your
-      course, allow students to manage course content areas, and hide grade
-      details from students. You may also be able to adjust the course name and code.`)}
+    {I18n.t(`On the setting page, you can change the course language, hide
+          unnecessary functions from the navigation bar, or set the start and end
+          date of the course.`)}
   </TutorialTrayContent>
 )
 

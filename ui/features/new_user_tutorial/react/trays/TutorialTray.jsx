@@ -121,14 +121,6 @@ class TutorialTray extends React.Component {
             padding="small medium"
             borderWidth="small none none"
           >
-            <Button
-              onClick={this.handleEndTutorialClick}
-              ref={c => {
-                this.endTutorialButton = c
-              }}
-            >
-              {I18n.t(`Don't Show Again`)}
-            </Button>
           </View>
           <ConfirmEndTutorialDialog
             isOpen={this.state.endUserTutorialShown}

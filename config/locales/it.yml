@@ -16719,7 +16719,7 @@ it:
           audio_comment: "Questo messaggio include commenti multimediali. Per ascoltare o rispondere, fai clic sul link sotto:"
           download: download
           pre_you_can: Puoi
-          reply_to_conversation_message: "Puoi rispondere a questo messaggio in Canvas rispondendo direttamente a questa email. Se è necessario includere un allegato, accedi a Canvas e rispondi tramite la Posta in arrivo."
+          # reply_to_conversation_message: "Puoi rispondere a questo messaggio in Canvas rispondendo direttamente a questa email. Se è necessario includere un allegato, accedi a Canvas e rispondi tramite la Posta in arrivo."
           subject: "%{user_name}, hai appena inviato un messaggio in Canvas."
           unknown_user: "Utente sconosciuto"
           view_message: "Visualizza questo messaggio nelle conversazioni"
@@ -16743,7 +16743,7 @@ it:
           audio_comment: "Questo messaggio include commenti multimediali. Per ascoltare o rispondere, fai clic sul link sotto:"
           download: download
           pre_you_can: Puoi
-          reply_to_conversation_message: "Puoi rispondere a questo messaggio in Canvas rispondendo direttamente a questa email. Se è necessario includere un allegato, accedi a Canvas e rispondi tramite la Posta in arrivo."
+          # reply_to_conversation_message: "Puoi rispondere a questo messaggio in Canvas rispondendo direttamente a questa email. Se è necessario includere un allegato, accedi a Canvas e rispondi tramite la Posta in arrivo."
           subject: "%{user_name} ti ha appena inviato un messaggio in Canvas."
           unknown_user: "Utente sconosciuto"
           view_message: "Visualizza questo messaggio nelle conversazioni"

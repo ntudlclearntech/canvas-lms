@@ -127,6 +127,8 @@ const quizSubmission = (function () {
       $('.question_holder .question').each(function () {
         const value = $(this).hasClass('marked') ? '1' : ''
         data[$(this).attr('id') + '_marked'] = value
+        data.question_types ||= {}
+        data.question_types[$(this).attr('id')] = $(this).find('.question_type')[0].innerText
       })
 
       $lastSaved.text(I18n.t('saving', 'Saving...'))

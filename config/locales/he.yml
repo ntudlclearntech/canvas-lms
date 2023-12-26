@@ -11845,7 +11845,7 @@ he:
           attached_files: "קבצים מצורפים:"
           audio_comment: "הודעה זו כוללת הערות מדיה. להקשיב או להגיב, יש לקליק על הקישור שבהמשך: "
           download: הורדה
-          reply_to_conversation_message: "ניתן לענות להודעה זו בקנבס ע\"י תגובה ישירה להודעת דוא\"ל זו."
+          # reply_to_conversation_message: "ניתן לענות להודעה זו בקנבס ע\"י תגובה ישירה להודעת דוא\"ל זו."
           subject: "%{user_name}, שלחת הודעה בקנבס."
           unknown_user: "משתמש לא מוכר"
           view_message: "עיון בהודעה זו בדיונים."
@@ -11870,7 +11870,7 @@ he:
           attached_files: "קבצים מצורפים: "
           audio_comment: "הודעה זו כוללת הערות מדיה. להקשיב או להגיב, יש לקליק על הקישור שבהמשך: "
           download: "הורדה "
-          reply_to_conversation_message: "ניתן להגיב להודעה זו בקנבס ע\"י מענה ישיר להודעת דוא\"ל זו. "
+          # reply_to_conversation_message: "ניתן להגיב להודעה זו בקנבס ע\"י מענה ישיר להודעת דוא\"ל זו. "
           subject: "%{user_name} שלח לך הודעה בקנבס זה עתה."
           unknown_user: "משתמש לא מוכר"
           view_message: "עיון בהודעה זו בדיונים. "

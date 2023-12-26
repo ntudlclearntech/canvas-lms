@@ -282,7 +282,7 @@ class MessageStudents extends React.Component {
             <form onSubmit={this.handleSubmit} className="MessageStudents__Form">
               <div className="MessageStudents__FormField">
                 <div className="ac">
-                  <FormField id="recipients" label={I18n.t('To')}>
+                  <FormField id="recipients" label={I18n.t('To', 'To')}>
                     <ul className="ac-token-list">{tokens}</ul>
                   </FormField>
                 </div>

@@ -97,6 +97,16 @@ context_modules_header_props = {
 <% end %>
 
 <div class="header-bar">
+  <div class="header-bar-left ic-Form-control module-search">
+    <input
+        class="ic-Input"
+        id="search-module-input"
+        name="search-module-input"
+        type="search"
+        value=""
+        placeholder="<%= t('#context_modules.placeholders.search_module', 'Search for Module') %>"
+      >
+  </div>
   <div class="header-bar-right header-bar__module-layout">
     <div class="header-bar-right__buttons">
       <button class="btn" id="expand_collapse_all" aria-expanded="false" data-expand="false" data-url="<%= context_url(@context, :context_url) %>/collapse_all_modules" aria-label="<%= t('Collapse All Modules') %>"><%= t('Collapse All') %></button>

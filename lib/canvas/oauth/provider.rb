@@ -111,6 +111,11 @@ module Canvas::OAuth
       @scopes.reject { |scope| key.scopes.include?(scope) }
     end
 
+    def is_u_meeting?
+      u_meeting_id = Rails.configuration.developer_keys["u_meeting_id"].to_i
+      u_meeting_id == key.id
+    end
+
     def self.is_oob?(uri)
       uri == OAUTH2_OOB_URI
     end

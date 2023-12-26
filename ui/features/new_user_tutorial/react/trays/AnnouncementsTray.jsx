@@ -25,36 +25,27 @@ const I18n = useI18nScope('new_user_tutorial')
 const AnnouncementsTray = () => (
   <TutorialTrayContent
     heading={I18n.t('Announcements')}
-    subheading={I18n.t('Keep students informed')}
+    subheading={I18n.t('Share important updates with users')}
     image="/images/tutorial-tray-images/Panda_Announcements.svg"
-    seeAllLink={{
-      label: I18n.t('See more in Canvas Guides'),
-      href: I18n.t('#community.instructor_guide'),
-    }}
     links={[
       {
-        label: I18n.t('What are announcements?'),
-        href: I18n.t('#community.basics_announcements'),
+        label: I18n.t('How to post an announcement'),
+        href: I18n.t(
+          'how_to_post_an_announcement_url',
+          'https://drive.google.com/file/d/147ARqRvY3xEzLAT490kiF2dCqsNFOh_y/view?usp=sharing'
+        )
       },
       {
-        label: I18n.t('How do I add an announcement in a course?'),
-        href: I18n.t('#community.instructor_add_announcement'),
-      },
-      {
-        label: I18n.t('How do I edit an announcement in a course?'),
-        href: I18n.t('#community.instructor_edit_announcement'),
-      },
-      {
-        label: I18n.t('How do I use the Announcements Index Page?'),
-        href: I18n.t('#community.instructor_use_announcements_index'),
-      },
+        label: I18n.t('Tutorial Video: Announcements'),
+        href: I18n.t(
+          'tutorial_video_announcements_url',
+          'https://www.youtube.com/watch?v=tupfmCiH558&list=PLKjqFgaBNOo8fv5ZWEIUSlSqzXDVC2SV_&index=6'
+        )
+      }
     ]}
   >
-    {I18n.t(`Share important information about your course with all users.
-      Use announcements to remind students of important dates and tasks,
-      point students to internal and external resources to help them achieve
-      course outcomes, celebrate student success, and highlight events of interest.
-      Announcements can include text, multimedia, and files.`)}
+    {I18n.t(`Share important information with all users in your course.
+          When the announcement was posted, NTU COOL will automatically send a notification to users' emails.`)}
   </TutorialTrayContent>
 )
 

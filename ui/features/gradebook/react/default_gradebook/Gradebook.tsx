@@ -1496,7 +1496,11 @@ class Gradebook extends React.Component<GradebookProps, GradebookState> {
       grades = grades.gradingPeriods[this.gradingPeriodId]
     }
 
-    const scoreType = this.viewUngradedAsZero() ? 'final' : 'current'
+    // COOL#89 COOL#119 force to display unposted final score
+    // const scoreType = this.viewUngradedAsZero() ? 'final' : 'current'
+    // forcing scoreType to be 'final', some code might never be reach
+    // but this way, we can reduce the difference with upstream
+    const scoreType = 'final'
     Object.keys(this.assignmentGroups).forEach((assignmentGroupId: string) => {
       const assignmentGroupGrade: AssignmentGroupGrade = grades.assignmentGroups[assignmentGroupId]
       let grade: AggregateGrade

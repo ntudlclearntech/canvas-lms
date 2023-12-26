@@ -49,6 +49,10 @@ const model = new (isAnnouncement ? Announcement : DiscussionTopic)(
 )
 model.urlRoot = ENV.DISCUSSION_TOPIC.URL_ROOT
 const assignment = model.get('assignment')
+// Set default points_possible to 100 instead of 0
+if (assignment.id == undefined) {
+  assignment.pointsPossible(100)
+}
 
 const announcementsLocked = ENV.ANNOUNCEMENTS_LOCKED
 const sectionList = new SectionCollection(ENV.SECTION_LIST)

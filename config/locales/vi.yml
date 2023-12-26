@@ -13866,7 +13866,7 @@ vi:
           audio_comment: "Tin nhắn này bao gồm các bình luận phương tiện. Để nghe hoặc trả lời, hãy nhấp vào liên kết bên dưới:"
           download: "tải xuống"
           pre_you_can: "Bạn có thể"
-          reply_to_conversation_message: "Bạn có thể trả lời tin nhắn này trong Canvas bằng cách trả lời trực tiếp email này. Nếu bạn cần đính kèm tập tin đính kèm, vui lòng đăng nhập vào Canvas và trả lời thông qua Hộp Thư Đến."
+          # reply_to_conversation_message: "Bạn có thể trả lời tin nhắn này trong Canvas bằng cách trả lời trực tiếp email này. Nếu bạn cần đính kèm tập tin đính kèm, vui lòng đăng nhập vào Canvas và trả lời thông qua Hộp Thư Đến."
           unknown_user: "Người Dùng Không Xác Định"
         unknown_user: "Người Dùng Không Xác Định"
       sms: 
@@ -13886,7 +13886,7 @@ vi:
           audio_comment: "Tin nhắn này bao gồm các bình luận phương tiện. Để nghe hoặc trả lời, hãy nhấp vào liên kết bên dưới:"
           download: "tải xuống"
           pre_you_can: "Bạn có thể"
-          reply_to_conversation_message: "Bạn có thể trả lời tin nhắn này trong Canvas bằng cách trả lời trực tiếp email này. Nếu bạn cần đính kèm tập tin đính kèm, vui lòng đăng nhập vào Canvas và trả lời thông qua Hộp Thư Đến."
+          # reply_to_conversation_message: "Bạn có thể trả lời tin nhắn này trong Canvas bằng cách trả lời trực tiếp email này. Nếu bạn cần đính kèm tập tin đính kèm, vui lòng đăng nhập vào Canvas và trả lời thông qua Hộp Thư Đến."
           unknown_user: "Người Dùng Không Xác Định"
         unknown_user: "Người Dùng Không Xác Định"
       sms: 

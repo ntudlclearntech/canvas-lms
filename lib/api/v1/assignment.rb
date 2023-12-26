@@ -1061,7 +1061,7 @@ module Api::V1::Assignment
 
     if assignment_params[:points_possible].blank? &&
        (assignment.new_record? || assignment_params.key?(:points_possible)) # only change if they're deliberately updating to blank
-      assignment_params[:points_possible] = 0
+      assignment_params[:points_possible] = 100
     end
 
     unless assignment.new_record?

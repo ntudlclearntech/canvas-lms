@@ -41,6 +41,7 @@ $ic-DashboardCard-icon-color: $ic-icon-link-color;
   display: flex;
   align-items: center;
   flex-wrap: wrap;
+  justify-content: space-between;
   border-bottom: 1px solid $ic-border-light;
   background: rgba($ic-color-light, 0.95);
   box-sizing: border-box;

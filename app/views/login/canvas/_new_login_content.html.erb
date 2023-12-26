@@ -72,9 +72,9 @@
                     <%= f.label :remember_me, :en => "Stay signed in" %>
                 <% end %>
 
-                <div class="ic-Login__forgot">
-                  <%= render "login/canvas/forgot_password_link" %>
-                </div>
+              </div>
+              <div class="ic-Login__forgot">
+                <%= render "login/canvas/forgot_password_link" %>
               </div>
               <div class="ic-Form-control ic-Form-control--login">
                 <%= submit_tag t('log_in', 'Log In'), type: login_btn_type, class: "Button Button--login" %>
@@ -103,6 +103,10 @@
               </div> <!-- end ic-Login__actions -->
             </div>
           <% end %>
+          <div class="external-user-link">
+            <%= svg_icon "info" %>
+            <%= link_to t('external_user_link', 'Apply for a Guest Account'), t('external_user_link_url', 'https://drive.google.com/file/d/1hcsa79U7F66uWLmQjVeqJP6tUd1lwRRa/view?usp=sharing'), class: "not_external", target: "_blank" %>
+          </div>
         </div> <!-- end ic-Login__body -->
       </div> <!-- end ic-Login__innerContent  -->
       <footer role="contentinfo" id="footer" class="ic-Login-footer">

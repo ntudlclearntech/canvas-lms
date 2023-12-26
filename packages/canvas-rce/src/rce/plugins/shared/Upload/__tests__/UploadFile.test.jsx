@@ -394,5 +394,94 @@ describe('UploadFile', () => {
         expect(submitBtn).toBeDisabled()
       })
     })
+
+    describe('Unsplash Panel Selected', () => {
+      const fakeUnsplashData = {
+        id: '123abc',
+        url: 'http://instructure.com/img'
+      }
+      it('calls source.pingbackUnsplash', () => {
+        const fakeSource = {
+          pingbackUnsplash: jest.fn()
+        }
+        handleSubmit(fakeEditor, 'images/*', 'UNSPLASH', { unsplashData : fakeUnsplashData }, {}, fakeSource)
+        expect(fakeSource.pingbackUnsplash).toHaveBeenCalledWith('123abc')
+      })
+
+      it('calls inserts an image tag with the proper URL', () => {
+        const fakeSource = {
+          pingbackUnsplash: () => {}
+        }
+        handleSubmit(fakeEditor, 'images/*', 'UNSPLASH', { unsplashData : fakeUnsplashData }, {}, fakeSource)
+        expect(fakeEditor.content).toEqual('<img src="http://instructure.com/img" />')
+      })
+    })
+  })
+
+  describe('Disabled Submit', () => {
+    let renderReturnOptions;
+    let fakeOnSubmit;
+    beforeEach(() => {
+      fakeOnSubmit = jest.fn();
+      renderReturnOptions = render(
+        <UploadFile
+          label="Test"
+          editor={fakeEditor}
+          trayProps={trayProps}
+          onDismiss={() => {}}
+          onSubmit={fakeOnSubmit}
+          panels={['COMPUTER', 'URL', 'UNSPLASH']}
+        />
+      )
+    })
+
+    describe('Computer Panel', () => {
+      it('disables the submit button when there is no file uploaded', () => {
+        const { getByText, getByLabelText } = renderReturnOptions;
+        const computerTab = getByLabelText('Computer')
+        act(() => {
+          userEvent.click(computerTab)
+        })
+        const submitBtn = getByText('Submit').closest('button')
+        expect(submitBtn).toBeDisabled()
+      });
+
+      it('does not allow Enter to submit the form when no file is uploaded', () => {
+        const { getByLabelText } = renderReturnOptions;
+        const computerTab = getByLabelText('Computer')
+        act(() => {
+          userEvent.click(computerTab)
+        })
+        const form = getByLabelText('Test')
+        act(() => {
+          fireEvent.keyDown(form, {keyCode: 13})
+        })
+        expect(fakeOnSubmit).not.toHaveBeenCalled()
+      })
+    })
+
+    describe('Unsplash Panel', () => {
+      it('disables the submit button when there is no unsplash image chosen', () => {
+        const { getByText, getByLabelText } = renderReturnOptions;
+        const unsplashTab = getByLabelText('Unsplash')
+        act(() => {
+          userEvent.click(unsplashTab)
+        })
+        const submitBtn = getByText('Submit').closest('button')
+        expect(submitBtn).toBeDisabled()
+      })
+    })
+
+    describe('URL Panel', () => {
+      it('disables the submit button when there is no URL entered', () => {
+        const { getByText, getByLabelText } = renderReturnOptions;
+        const urlTab = getByLabelText('URL')
+        act(() => {
+          userEvent.click(urlTab)
+        })
+        const submitBtn = getByText('Submit').closest('button')
+        expect(submitBtn).toBeDisabled()
+      })
+    })
   })
 })

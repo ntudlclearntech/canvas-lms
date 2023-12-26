@@ -89,7 +89,7 @@ describe LocaleSelection do
 
   context "locale matching" do
     before do
-      allow(I18n.config).to receive(:available_locales).and_return(%i[en it es fr de pt zh])
+      allow(I18n.config).to receive(:available_locales).and_return(%i[en it es fr de pt zh 'zh-Hant'])
       I18n.config.clear_available_locales_set
       @root_account = Account.create
       @account = Account.create(parent_account: @root_account)
@@ -104,10 +104,10 @@ describe LocaleSelection do
     end
 
     it "uses the default locale if there is no other context" do
-      expect(ls.infer_locale).to eql("en")
-      expect(ls.infer_locale(root_account: @root_account)).to eql("en")
-      expect(ls.infer_locale(root_account: @root_account, user: @user)).to eql("en")
-      expect(ls.infer_locale(root_account: @root_account, user: @user, context: @course)).to eql("en")
+      expect(ls.infer_locale).to eql("zh-Hant")
+      expect(ls.infer_locale(:root_account => @root_account)).to eql("zh-Hant")
+      expect(ls.infer_locale(:root_account => @root_account, :user => @user)).to eql("zh-Hant")
+      expect(ls.infer_locale(:root_account => @root_account, :user => @user, :context => @course)).to eql("zh-Hant")
     end
 
     it "infers the locale from the accept_language" do
@@ -185,7 +185,7 @@ describe LocaleSelection do
       @account.update_attribute(:default_locale, "fr")
       @user.update_attribute(:locale, "de")
 
-      expect(ls.infer_locale(accept_language: "it", root_account: @root_account, context: @account, session_locale: "zh")).to eql("zh")
+      expect(ls.infer_locale(accept_language: "it", root_account: @root_account, context: @account, session_locale: "zh-Hant")).to eql("zh-Hant")
       expect(ls.infer_locale(accept_language: "it", root_account: @root_account, context: @account, user: @user, session_locale: "zh")).to eql("de")
     end
   end

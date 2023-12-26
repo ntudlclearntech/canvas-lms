@@ -41,7 +41,7 @@ class DueDateCalendars extends React.Component {
 
   labelledByForType = dateType => `label-for-${dateType}-${this.props.rowKey}`
 
-  datePicker = (dateType, labelText, disabled, readonly) => {
+  datePicker = (dateType, labelText, disabled, readonly, tooltipContent) => {
     const isNotUnlockAt = dateType !== 'unlock_at'
 
     return (
@@ -56,6 +56,7 @@ class DueDateCalendars extends React.Component {
         labelText={labelText}
         isFancyMidnight={isNotUnlockAt}
         readonly={readonly}
+        tooltipContent={tooltipContent}
         defaultTime={dateType === 'due_at' ? this.props.defaultDueTime : null}
       />
     )
@@ -78,7 +79,8 @@ class DueDateCalendars extends React.Component {
               'due_at',
               I18n.t('Due'),
               this.props.disabled,
-              this.props.dueDatesReadonly
+              this.props.dueDatesReadonly,
+              I18n.t('Custom.Due', 'Submissions after the due date will be marked as late in the gradebook')
             )}
           </div>
         </div>
@@ -98,7 +100,8 @@ class DueDateCalendars extends React.Component {
                   'lock_at',
                   I18n.t('Until'),
                   this.props.disabled,
-                  this.props.availabilityDatesReadonly
+                  this.props.availabilityDatesReadonly,
+                  I18n.t('Custom.Until', 'Students can no longer submit after this date')
                 )}
               </div>
             </div>

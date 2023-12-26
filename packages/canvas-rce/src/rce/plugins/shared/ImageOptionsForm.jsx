@@ -101,7 +101,8 @@ const ImageOptionsForm = ({
           value={altText}
         />
       </Flex.Item>
-
+      {/* cool-notice: we dont have Decorative icon key */}
+      {/* but the TYPE variable currently is mostly "image" */}
       <Flex.Item padding="small">
         <Checkbox
           checked={isDecorativeImage}

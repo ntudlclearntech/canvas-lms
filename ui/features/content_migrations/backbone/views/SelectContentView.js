@@ -126,7 +126,10 @@ SelectContentView.prototype.firstOpen = function () {
     (function (_this) {
       return function () {
         _this.maintainTheTree(_this.$el.find('ul[role=tree]'))
-        return _this.selectContentDialogEvents()
+        _this.selectContentDialogEvents()
+        if (!ENV.current_user_roles.includes('admin')) {
+          return _this.$el.find('li[data-type="syllabus_body"]').hide()
+        }
       }
     })(this)
   )

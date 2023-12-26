@@ -54,9 +54,9 @@ export default function CoursesList() {
       <List.Item>
         <LogoutButton />
       </List.Item>
-      <List.Item>
+      {/* <List.Item>
         <HighContrastModeToggle isMobile={true} />
-      </List.Item>
+      </List.Item> */}
     </List>
   )
 }

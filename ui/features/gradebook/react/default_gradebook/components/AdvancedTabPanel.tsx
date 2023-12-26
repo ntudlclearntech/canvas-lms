@@ -27,7 +27,7 @@ import {useScope as useI18nScope} from '@canvas/i18n'
 const I18n = useI18nScope('gradebook')
 
 export default function AdvancedTabPanel(props) {
-  const {courseSettings, onCourseSettingsChange} = props
+  const {courseSettings, onCourseSettingsChange, gradebookIsEditable} = props
 
   return (
     <div id="AdvancedTabPanel__Container">
@@ -38,6 +38,7 @@ export default function AdvancedTabPanel(props) {
           onChange={event => {
             onCourseSettingsChange({allowFinalGradeOverride: event.target.checked})
           }}
+          disabled={!gradebookIsEditable}
         />
       </View>
     </div>

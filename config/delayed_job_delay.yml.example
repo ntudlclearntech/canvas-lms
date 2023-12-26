@@ -1,0 +1,12 @@
+# Affected code: app/models/discussion_entry.rb:context_module_action_later
+# Check #http://gitlab.dlc.ntu.edu.tw/ntu-cool/canvas-lms/-/issues/216#note_28432 for details.
+
+production:
+  discussion_entry_context_module_action: 5
+
+development:
+  discussion_entry_context_module_action: 5
+
+test:
+  discussion_entry_context_module_action: 5
+

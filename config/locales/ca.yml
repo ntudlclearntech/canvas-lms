@@ -14835,7 +14835,7 @@ ca:
           audio_comment: "Aquest missatge inclou comentaris multimèdia. Per escoltar-lo o respondre, feu clic a l'enllaç següent:"
           download: baixa
           pre_you_can: Podeu
-          reply_to_conversation_message: "Podeu respondre a aquest missatge al Canvas responent directament a aquest correu. Si necessiteu incloure un fitxer adjunt, inicieu la sessió al Canvas i responeu des de la Safata d'entrada."
+          # reply_to_conversation_message: "Podeu respondre a aquest missatge al Canvas responent directament a aquest correu. Si necessiteu incloure un fitxer adjunt, inicieu la sessió al Canvas i responeu des de la Safata d'entrada."
           unknown_user: "Usuari desconegut"
         unknown_user: "Usuari desconegut"
       sms: 
@@ -14855,7 +14855,7 @@ ca:
           audio_comment: "Aquest missatge inclou comentaris multimèdia. Per escoltar-lo o respondre, feu clic a l'enllaç següent:"
           download: baixa
           pre_you_can: Podeu
-          reply_to_conversation_message: "Podeu respondre a aquest missatge al Canvas responent directament a aquest correu. Si necessiteu incloure un fitxer adjunt, inicieu la sessió al Canvas i responeu des de la Safata d'entrada."
+          # reply_to_conversation_message: "Podeu respondre a aquest missatge al Canvas responent directament a aquest correu. Si necessiteu incloure un fitxer adjunt, inicieu la sessió al Canvas i responeu des de la Safata d'entrada."
           unknown_user: "Usuari desconegut"
         unknown_user: "Usuari desconegut"
       sms: 

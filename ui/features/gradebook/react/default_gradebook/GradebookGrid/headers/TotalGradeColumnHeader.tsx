@@ -20,13 +20,14 @@
 import React from 'react'
 import {type PartialStudent} from '@canvas/grading/grading'
 import {bool, func, shape, string} from 'prop-types'
-import {IconMoreSolid} from '@instructure/ui-icons'
+import {IconMoreSolid, IconQuestionLine} from '@instructure/ui-icons'
 import {IconButton} from '@instructure/ui-buttons'
 import {Grid} from '@instructure/ui-grid'
 import {View} from '@instructure/ui-view'
 
 import {Menu} from '@instructure/ui-menu'
 import {Text} from '@instructure/ui-text'
+import {Popover} from '@instructure/ui-popover'
 import {useScope as useI18nScope} from '@canvas/i18n'
 import {ScreenReaderContent} from '@instructure/ui-a11y-content'
 import ColumnHeader from './ColumnHeader'
@@ -104,6 +105,7 @@ type State = {
   menuShown: boolean
   hasFocus: boolean
   skipFocusOnClose: boolean
+  isShowingContent: boolean
 }
 
 export default class TotalGradeColumnHeader extends ColumnHeader<Props, State> {
@@ -154,6 +156,11 @@ export default class TotalGradeColumnHeader extends ColumnHeader<Props, State> {
   }
 
   componentDidMount() {
+    this.state = {
+      ...this.state,
+      isShowingContent: false
+    }
+
     if (this.props.grabFocus) {
       this.focusAtEnd()
     }
@@ -187,6 +194,18 @@ export default class TotalGradeColumnHeader extends ColumnHeader<Props, State> {
     showMessageStudentsWithObserversModal(props, this.focusAtEnd)
   }
 
+  renderLink(url, text) {
+    return (
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+          { text }
+      </a>
+    )
+  }
+
   render() {
     const {sortBySetting, gradeDisplay, position, viewUngradedAsZero} = this.props
     const selectedSortSetting = sortBySetting.isSortColumn && sortBySetting.settingKey
@@ -212,6 +231,95 @@ export default class TotalGradeColumnHeader extends ColumnHeader<Props, State> {
 
               <Grid.Col textAlign="center">
                 <TotalDetailContent viewUngradedAsZero={viewUngradedAsZero} />
+              </Grid.Col>
+
+              <Grid.Col textAlign="center" width="auto">
+                <Popover
+                  renderTrigger={
+                    <IconButton
+                      renderIcon={IconQuestionLine}
+                      withBackground={false}
+                      withBorder={false}
+                      size="small"
+                      screenReaderLabel="Toggle Tooltip"
+                    />
+                  }
+                  isShowingContent={this.state.isShowingContent}
+                  onShowContent={e => {
+                    this.setState({ isShowingContent: true })
+                  }}
+                  onHideContent={e => {
+                    this.setState({ isShowingContent: false })
+                  }}
+                  on={['click']}
+                  shouldContainFocus
+                  shouldReturnFocus
+                  shouldCloseOnDocumentClick
+                  color="primary-inverse"
+                  placement="bottom center"
+                  mountNode={() => document.getElementById('main')}
+                >
+                  <View padding="small" display="block" maxWidth="500px">
+                    <Text fontStyle="normal" size="x-small" weight="bold">
+                      <ol>
+                        <li>
+                          {
+                            I18n.t(
+                              'custom.total_grade_popover_text1',
+                              'Total = sum of all scores student actually received in Assignment / sum of all scores student can received in Assignment * 100%. Groups weight should be applied if there is one. For detail explanation and examples please check '
+                            )
+                          }
+                          {
+                            this.renderLink(
+                              I18n.t(
+                                'custom.how_to_manage_scores_url',
+                                'https://drive.google.com/file/d/19TSuAISnxKnP90Bs2l-007X6p47Mprpm/view'
+                                ),
+                              I18n.t(
+                                'custom.how_to_manage_scores',
+                                '"How to manage scores"'
+                              )) 
+                          }
+                          { ENV.LOCALE === 'zh-Hant' ? '。' : '.' }
+                        </li>
+                        <li>
+                          {
+                            I18n.t(
+                              'custom.total_grade_popover_text2',
+                              'Ungraded assignment items such as homework, and quizzes will be treated as zero points, and counted toward the final grade. Please ensure students receive grades on all graded assignment items.'
+                            )
+                          }
+                        </li>
+                        <li>
+                          {
+                            I18n.t(
+                              'custom.total_grade_popover_text3a',
+                              'The default rule for score to grade conversion is based on the '
+                            )
+                          }
+                          {
+                            this.renderLink(
+                              I18n.t(
+                                'custom.grading_policy_url',
+                                 'https://www.aca.ntu.edu.tw/WebUPD/acaEN/GAADRules/110學生成績評量辦法.pdf'
+                              ),
+                              I18n.t(
+                                'custom.grading_policy',
+                                '"National Taiwan University Students Grading Policy"'
+                              )
+                            )
+                          }
+                          {
+                            I18n.t(
+                              'custom.total_grade_popover_text3b',
+                              ' When the score is a number with decimals, it will be rounded to the nearest whole number.'
+                            )
+                          }
+                        </li>
+                      </ol>
+                    </Text>
+                  </View>
+                </Popover>
               </Grid.Col>
 
               <Grid.Col textAlign="center" width="auto">

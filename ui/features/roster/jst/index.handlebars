@@ -48,6 +48,15 @@
       >{{#t "people"}}People{{/t}}</a>
     {{/if}}
     {{/if}}
+    {{#if permissions.manage_students }}
+      {{#if permissions.manage_admin_users}}
+        {{#if permissions.read_prior_roster}}
+          │ <a class="Button Button--secondary pull-right" href="#" style="padding: 8px 14px; margin-right: 5px" id="external_lti_student_list_btn">
+            <i class="icon-group" style="padding-right: 5px;"></i>{{#t "view_student_list"}}Student List with Dept, ID{{/t}}
+          </a>
+        {{/if}}
+      {{/if}}
+    {{/if}}
     <form data-view="createUsers" class="form-dialog"></form>
 
     <div class="v-gutter">

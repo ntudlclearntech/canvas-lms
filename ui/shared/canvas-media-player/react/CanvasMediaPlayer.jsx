@@ -55,9 +55,11 @@ export function getAutoTrack(tracks) {
   return auto_track?.locale
 }
 export default function CanvasMediaPlayer(props) {
+  // COOL patch (#283): make single source wrapped in Array
+  // should be removed after upstream fixes this bug
   const sorted_sources = Array.isArray(props.media_sources)
     ? props.media_sources.sort(byBitrate)
-    : props.media_sources
+    : [props.media_sources]
   const tracks = Array.isArray(props.media_tracks)
     ? props.media_tracks.map(t => ({locale: t.language, language: t.label, inherited: t.inherited}))
     : null

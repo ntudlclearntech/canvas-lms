@@ -70,9 +70,46 @@ function ProfileTabLink({id, html_url, label, counts}: ProfileTab) {
   )
 }
 
+// currentTabId and targetTabId are string
+function moveTabToUnderTarget(tabs, currentTabId, targetTabId) {
+  let targetTabPosition = -1
+  let currentTabPosition = -1
+  for (let i = 0; i < tabs.length; i++) {
+    if (tabs[i].id == targetTabId) {
+      targetTabPosition = i
+    }
+    if (tabs[i].id == currentTabId) {
+      currentTabPosition = i
+    }
+  }
+
+  if (targetTabPosition !== -1 && currentTabPosition !== -1) {
+    let index = currentTabPosition
+
+    // current tab is under the target tab
+    if (currentTabPosition > targetTabPosition) {
+      while (index > targetTabPosition + 1) {
+        const tempTabPosition = tabs[index - 1]
+        tabs[index - 1] = tabs[index]
+        tabs[index] = tempTabPosition
+        index--
+      }
+    } else {
+      while (index < targetTabPosition) {
+        const tempTabPosition = tabs[index + 1]
+        tabs[index + 1] = tabs[index]
+        tabs[index] = tempTabPosition
+        index++
+      }
+    }
+  }
+
+  return tabs
+}
+
 export default function ProfileTray() {
   const {
-    data: profileTabs,
+    data: profileTabsRaw = [],
     isLoading,
     isSuccess,
   } = useQuery<ProfileTab[], Error>({
@@ -102,6 +139,18 @@ export default function ProfileTray() {
   const userAvatarURL = window.ENV.current_user.avatar_is_fallback
     ? ''
     : window.ENV.current_user.avatar_image_url
+
+  // NTU custom tab order
+  const video_external_tool_tab_id = `context_external_tool_${
+    typeof ntuCoolLmsId !== 'undefined' ? ntuCoolLmsId : 0
+  }`
+  const announcements_external_tool_tab_id = `context_external_tool_${
+    typeof announcementId !== 'undefined' ? announcementId : 0
+  }`
+
+  let profileTabs = [...profileTabsRaw]
+  profileTabs = moveTabToUnderTarget(profileTabs, video_external_tool_tab_id, 'notifications')
+  profileTabs = moveTabToUnderTarget(profileTabs, announcements_external_tool_tab_id, 'past_global_announcements')
 
   return (
     <View as="div" padding="medium">
@@ -143,8 +192,10 @@ export default function ProfileTray() {
             </List.Item>
           ))}
       </List>
+      {/*
       <hr role="presentation" />
       <HighContrastModeToggle />
+      */}
     </View>
   )
 }

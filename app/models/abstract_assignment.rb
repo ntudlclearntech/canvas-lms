@@ -62,7 +62,9 @@ class AbstractAssignment < ActiveRecord::Base
     anonymous_instructor_annotations
   ].freeze
 
-  DEFAULT_POINTS_POSSIBLE = 0
+  # COOL customized patch, see issue #276 for more details
+  # https://gitlab.dlc.ntu.edu.tw/ntu-cool/canvas-lms/-/issues/276
+  DEFAULT_POINTS_POSSIBLE = 100
 
   DUPLICATED_IN_CONTEXT = "duplicated_in_context"
   QUIZ_SUBMISSION_VERSIONS_LIMIT = 65

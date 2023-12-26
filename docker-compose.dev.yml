@@ -1,0 +1,130 @@
+version: '2.3'
+services:
+  shell:
+    platform: linux/amd64
+    build:
+      context: .
+      dockerfile: Dockerfile.cool-dev
+    #image: cached_rails
+    networks:
+      - main
+    volumes:
+      - ./:/app
+      - ./predoc:/predoc
+      - ./canvas-rce-api:/rce-api
+    # to make container alive
+    command: tail -f /dev/null
+    container_name: cv_shell
+  rce:
+    platform: linux/amd64
+    build:
+      context: .
+      dockerfile: Dockerfile.cool-dev
+    #image: cached_rails
+    # rce api will host on port 3001
+    network_mode: host
+    volumes:
+      - ./canvas-rce-api:/rce-api
+    command: bash -c ". ~/.asdf/asdf.sh && cd /rce-api && asdf local nodejs 16.18.1 && sleep 172 && npm install --prod && node app.js"
+    container_name: cv_rce
+    restart: always
+  predoc:
+    platform: linux/amd64
+    build:
+      context: .
+      dockerfile: Dockerfile.cool-dev
+    #image: cached_predoc
+    # predoc will host on port 3002
+    network_mode: host
+    volumes:
+      - ./predoc:/predoc
+    command: bash -c ". ~/.asdf/asdf.sh && cd /predoc && asdf local ruby 2.6.3 && sleep 162 && bundle install && bundle exec rails server -p 3002"
+    container_name: cv_predoc
+    restart: always
+  rails:
+    platform: linux/amd64
+    build:
+      context: .
+      dockerfile: Dockerfile.cool-dev
+    #image: cached_rails
+    ports:
+      - "3000:3000"
+    networks:
+      main:
+        aliases:
+          - rails
+    volumes:
+      - ./:/app
+    command: bash -c ". ~/.asdf/asdf.sh && cd /app && asdf local nodejs 16.18.1 && asdf local ruby 2.7.5 && sleep 3 && bundle install && bundle exec rails server -b 0.0.0.0 -p 3000"
+    restart: always
+    container_name: cv_rails
+    deploy:
+      resources:
+        limits:
+          cpus: '0.65'
+          memory: '4G'
+  jobs:
+    platform: linux/amd64
+    build:
+      context: .
+      dockerfile: Dockerfile.cool-dev
+    #image: cached_rails
+    networks:
+      main:
+        aliases:
+          - jobs
+    volumes:
+      - ./:/app
+    command: bash -c ". ~/.asdf/asdf.sh cd /app && asdf local ruby 2.7.5 && sleep 138 && bundle install && bundle exec script/delayed_job run"
+    restart: always
+    container_name: cv_jobs
+  mailcatcher:
+    image: schickling/mailcatcher
+    ports:
+      - "1080:1080"
+    networks:
+      main:
+        aliases:
+          - mailcatcher
+    restart: always
+    container_name: cv_mailcatcher
+  cassandra:
+    image: cassandra:3
+    environment:
+      CASSANDRA_START_RPC: "true"
+    networks:
+      main:
+        aliases:
+          - cassandra
+    volumes:
+      - cassandra-volume:/var/lib/cassandra
+    restart: always
+    container_name: cv_cassandra
+  postgres:
+    image: postgres:alpine
+    environment:
+      POSTGRES_PASSWORD: secret
+    networks:
+      main:
+        aliases:
+          - postgres
+    restart: always
+    volumes:
+      - postgres-volume:/var/lib/postgresql/data
+    container_name: cv_postgres
+  redis:
+    image: redis:alpine
+    networks:
+      main:
+        aliases:
+          - redis
+    restart: always
+    container_name: cv_redis
+
+volumes:
+  postgres-volume:
+  cassandra-volume:
+
+networks:
+  main:
+    name: cool-network

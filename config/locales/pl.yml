@@ -18863,11 +18863,11 @@ pl:
           audio_comment: "Ten komunikat zawiera komentarze multimedialne. Aby odsłuchać lub powtórzyć, kliknij poniższe łącze:"
           download: pobierz
           pre_you_can: Możesz
-          reply_to_conversation_message: "Możesz odpowiedzieć na ten komunikat w systemie Canvas, odpowiadając bezpośrednio na tego e-maila. Jeśli chcesz dodać załącznik, zaloguj się w Canvas i odpowiedz za pomocą skrzynki odbiorczej."
+          # reply_to_conversation_message: "Możesz odpowiedzieć na ten komunikat w systemie Canvas, odpowiadając bezpośrednio na tego e-maila. Jeśli chcesz dodać załącznik, zaloguj się w Canvas i odpowiedz za pomocą skrzynki odbiorczej."
           subject: "%{user_name}, przesłano właśnie wiadomość do systemu Canvas."
           unknown_user: "Nieznany użytkownik"
           view_message: "Wyświetl tę wiadomość w Konwersacjach"
-        reply_to_conversation_message: "Możesz odpowiedzieć na ten komunikat w systemie Canvas, odpowiadając bezpośrednio na tego e-maila."
+        # reply_to_conversation_message: "Możesz odpowiedzieć na ten komunikat w systemie Canvas, odpowiadając bezpośrednio na tego e-maila."
         subject: "%{user_name}, przesłano właśnie wiadomość do systemu Canvas."
         unknown_user: "Nieznany użytkownik"
         view_message: "Wyświetl tę wiadomość w Konwersacjach"
@@ -18890,11 +18890,11 @@ pl:
           audio_comment: "Ten komunikat zawiera komentarze multimedialne, Aby odsłuchać lub powtórzyć, kliknij poniższe łącze:"
           download: pobieranie
           pre_you_can: Możesz
-          reply_to_conversation_message: "Możesz odpowiedzieć na ten komunikat w systemie Canvas, odpowiadając bezpośrednio na tego e-maila. Jeśli chcesz dodać załącznik, zaloguj się w Canvas i odpowiedz za pomocą skrzynki odbiorczej."
+          # reply_to_conversation_message: "Możesz odpowiedzieć na ten komunikat w systemie Canvas, odpowiadając bezpośrednio na tego e-maila. Jeśli chcesz dodać załącznik, zaloguj się w Canvas i odpowiedz za pomocą skrzynki odbiorczej."
           subject: "Użytkownik %{user_name} właśnie przesłał Ci wiadomość za pośrednictwem systemu Canvas."
           unknown_user: "Nieznany użytkownik"
           view_message: "Wyświetl tę wiadomość w Konwersacjach"
-        reply_to_conversation_message: "Możesz odpowiedzieć na ten komunikat w systemie Canvas, odpowiadając bezpośrednio na tego e-maila."
+        # reply_to_conversation_message: "Możesz odpowiedzieć na ten komunikat w systemie Canvas, odpowiadając bezpośrednio na tego e-maila."
         subject: "Użytkownik %{user_name} właśnie przesłał Ci wiadomość za pośrednictwem systemu Canvas."
         unknown_user: "Nieznany użytkownik"
         view_message: "Wyświetl tę wiadomość w Konwersacjach"

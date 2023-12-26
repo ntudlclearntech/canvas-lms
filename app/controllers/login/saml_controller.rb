@@ -89,11 +89,13 @@ class Login::SamlController < ApplicationController
     # yes, they could be _that_ busted that we put a dangling rescue here.
     provider_attributes = assertion&.attribute_statements&.first.to_h rescue {}
     subject_name_id = assertion&.subject&.name_id
-    unique_id = if aac.login_attribute == "NameID"
-                  subject_name_id&.id
-                else
-                  provider_attributes[aac.login_attribute]
-                end
+    unique_id = if ntu_email = provider_attributes["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress"]
+      ntu_email
+    elsif aac.login_attribute == "NameID"
+      subject_name_id&.id
+    else
+      provider_attributes[aac.login_attribute]
+    end
     if unique_id && aac.strip_domain_from_login_attribute?
       unique_id = unique_id.split("@", 2)[0]
     end
@@ -134,6 +136,25 @@ class Login::SamlController < ApplicationController
       aac.apply_federated_attributes(pseudonym, provider_attributes)
     end
 
+    sis_user_id = subject_name_id&.id&.downcase
+    sis_user_id += /^[a-zA-Z0-9]{9}$/.match(sis_user_id) ? "@ntu.edu.tw" : ""
+    old_sis_user_id = pseudonym['sis_user_id']
+
+    if pseudonym['sis_user_id'] != sis_user_id
+      pseudonym['sis_user_id'] = sis_user_id
+
+      unless pseudonym.save
+        Rails.logger.warn("sis_user_id already exists: #{sis_user_id}")
+        pseudonym['sis_user_id'] = old_sis_user_id
+      end
+
+      if pseudonym.changed?
+        unless pseudonym.save
+          Rails.logger.warn("Unable to save federated pseudonym: #{pseudonym.errors}")
+        end
+      end
+    end
+
     if pseudonym && !pseudonym.suspended? && (user = pseudonym.login_assertions_for_user)
       # Successful login and we have a user
       @domain_root_account.pseudonyms.scoping do
@@ -146,7 +167,7 @@ class Login::SamlController < ApplicationController
       end
 
       session[:saml_unique_id] = unique_id
-      session[:name_id] = subject_name_id&.id
+      session[:name_id] = unique_id
       session[:name_identifier_format] = subject_name_id&.format
       session[:name_qualifier] = subject_name_id&.name_qualifier
       session[:sp_name_qualifier] = subject_name_id&.sp_name_qualifier

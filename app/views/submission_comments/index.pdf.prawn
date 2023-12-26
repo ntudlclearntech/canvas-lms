@@ -66,6 +66,7 @@ prawn_document(page_layout: :portrait, page_size:) do |pdf|
       pdf.indent(10) do
         pdf.text comment_body_and_timestamp, inline_format: true
       end
+      pdf.move_down 1
     end
   end
 end

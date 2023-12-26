@@ -403,6 +403,10 @@ module Helpers
     assert_status(404)
   end
 
+  def assert_unprocessable
+    assert_status(422)
+  end
+
   def assert_require_login
     expect(response).to be_redirect
     expect(flash[:warning]).to eq "You must be logged in to access this page"

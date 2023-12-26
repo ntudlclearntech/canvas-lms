@@ -18387,11 +18387,11 @@ zh-Hans:
           audio_comment: 此邮件包括媒体评论。要收听或回复，请单击下面的链接：
           download: 下载
           pre_you_can: 您可以
-          reply_to_conversation_message: "您可以通过直接回复此邮件在 Canvas 中回复此邮件。如果您需要添加附件，请登录到 Canvas 并通过收件箱进行回复。"
+          # reply_to_conversation_message: "您可以通过直接回复此邮件在 Canvas 中回复此邮件。如果您需要添加附件，请登录到 Canvas 并通过收件箱进行回复。"
           subject: "%{user_name}，您刚刚在 Canvas 中发送了一封邮件。"
           unknown_user: 未知用户
           view_message: 在“对话”中查看此邮件
-        reply_to_conversation_message: "您可以通过直接回复此电子邮件在 Canvas 中回复此邮件。"
+        # reply_to_conversation_message: "您可以通过直接回复此电子邮件在 Canvas 中回复此邮件。"
         subject: "%{user_name}，您刚刚在 Canvas 中发送了一封邮件。"
         unknown_user: 未知用户
         view_message: 在“对话”中查看此邮件
@@ -18414,11 +18414,11 @@ zh-Hans:
           audio_comment: 此邮件包括媒体评论。要收听或回复，请单击下面的链接：
           download: 下载
           pre_you_can: 您可以
-          reply_to_conversation_message: "您可以通过直接回复此邮件在 Canvas 中回复此邮件。如果您需要添加附件，请登录到 Canvas 并通过收件箱进行回复。"
+          # reply_to_conversation_message: "您可以通过直接回复此邮件在 Canvas 中回复此邮件。如果您需要添加附件，请登录到 Canvas 并通过收件箱进行回复。"
           subject: "%{user_name} 刚刚在 Canvas 中向您发送了一封邮件。"
           unknown_user: 未知用户
           view_message: 在“对话”中查看此消息
-        reply_to_conversation_message: "您可以通过直接回复此邮件在 Canvas 中回复此邮件。"
+        # reply_to_conversation_message: "您可以通过直接回复此邮件在 Canvas 中回复此邮件。"
         subject: "%{user_name} 刚刚在 Canvas 中向您发送了一封邮件。"
         unknown_user: 未知用户
         view_message: 在“对话”中查看此消息

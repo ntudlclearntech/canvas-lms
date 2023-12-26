@@ -320,8 +320,28 @@ describe UserMerge do
       expect(user1.submissions.map(&:id)).to include(s3.id)
     end
 
-    it "does not move or delete submission when both users have submissions" do
+    it "moves unsubmitted submissions to the new user (but only if they don't already exist)" do
       a1 = assignment_model
+      s1 = a1.find_or_create_submission(user1)
+      s1.save!
+      s2 = a1.find_or_create_submission(user2)
+      s2.save!
+      a2 = assignment_model
+      s3 = a2.find_or_create_submission(user2)
+      s3.save!
+      expect(user2.submissions.length).to eql(2)
+      expect(user1.submissions.length).to eql(1)
+      UserMerge.from(user2).into(user1)
+      user2.reload
+      user1.reload
+      expect(user2.submissions.length).to eql(1)
+      expect(user2.submissions.first.id).to eql(s2.id)
+      expect(user1.submissions.length).to eql(2)
+      expect(user1.submissions.map(&:id)).to be_include(s1.id)
+      expect(user1.submissions.map(&:id)).to be_include(s3.id)
+    end
+
+    it "does not move or delete submission when both users have submissions" do
       s1 = a1.find_or_create_submission(user1)
       s1.submission_type = "online_quiz"
       s1.save!

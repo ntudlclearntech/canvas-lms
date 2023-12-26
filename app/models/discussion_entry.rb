@@ -422,7 +422,8 @@ class DiscussionEntry < ActiveRecord::Base
   delegate :title, to: :discussion_topic
 
   def context_module_action_later
-    delay_if_production.context_module_action
+    delayed_time = Rails.configuration.delayed_job_delay['discussion_entry_context_module_action'].to_i
+    delay_if_production(run_at: delayed_time.seconds.from_now).context_module_action
   end
   protected :context_module_action_later
 

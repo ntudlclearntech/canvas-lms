@@ -24,12 +24,16 @@ Dir[Rails.root.join("{gems,vendor}/plugins/*/config/pre_routes.rb")].each do |pr
   load pre_routes
 end
 
+load Rails.root.join('config/cool_routes.rb')
+
 CanvasRails::Application.routes.draw do
+  extend CoolRoutes
+
   post "/api/graphql", to: "graphql#execute"
   post "/api/graphql/subgraph", to: "graphql#subgraph_execute"
   # The subgraph endpoint is for use only with the federated API Gateway. See
   # `app/graphql/README.md` for details.
-  get "graphiql", to: "graphql#graphiql"
+  #get "graphiql", to: "graphql#graphiql"
 
   resources :submissions, only: [] do
     resources :submission_comments, path: :comments, only: :index, defaults: { format: :pdf }
@@ -516,7 +520,7 @@ CanvasRails::Application.routes.draw do
 
   resources :page_views, only: :update
   post "media_objects" => "media_objects#create_media_object", :as => :create_media_object
-  get "media_objects/:id" => "media_objects#media_object_inline", :as => :media_object
+  # get "media_objects/:id" => "media_objects#media_object_inline", :as => :media_object
   get "media_objects/:media_object_id/redirect" => "media_objects#media_object_redirect", :as => :media_object_redirect
   get "media_objects/:media_object_id/thumbnail" => "media_objects#media_object_thumbnail", :as => :media_object_thumbnail
   get "media_objects/:media_object_id/info" => "media_objects#show", :as => :media_object_info
@@ -2890,6 +2894,15 @@ CanvasRails::Application.routes.draw do
     end
     scope(controller: :disable_post_to_sis_api) do
       put "courses/:course_id/disable_post_to_sis", action: "disable_post_to_sis", as: :disable_post_to_sis_course_assignments
+    end
+  end
+
+  # New Quizzes Public Api
+  ApiRouteSet.draw(self, "/api/quiz/v1") do
+    scope(module: "new_quizzes") do
+      scope(controller: "quizzes_api") do
+        get "courses/:course_id/quizzes/:assignment_id", action: :show
+      end
     end
   end
 end

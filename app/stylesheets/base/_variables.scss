@@ -49,15 +49,15 @@
 //====================================
 // Abstract Color Variables
 //====================================
-$electric:                  #0374B5; // blue
-@if $use_high_contrast {    $electric: #0073A7; }
-$shamrock:                  #0B874B; // green
+$electric:                  #0099CC; // blue
+@if $use_high_contrast {    $electric: #0770A3; }
+$shamrock:                  #009900; // green
 @if $use_high_contrast {    $shamrock: #127A1B; }
-$barney:                    #BF32A4; // magenta
+$barney:                    #cc3399; // magenta
 @if $use_high_contrast {    $barney: #B8309E; }
-$crimson:                   #E0061F; // red
+$crimson:                   #CC0000; // red
 @if $use_high_contrast {    $crimson: #D01A19; }
-$fire:                      #FC5E13; // orange
+$fire:                      #FF6600; // orange
 @if $use_high_contrast {    $fire: #C23C0D; }
 
 //====================================
@@ -72,15 +72,15 @@ $ic-color-alert:            $fire;
 // Gray-ish Scale
 //====================================
 
-$ic-color-dark:              #2D3B45; // licorice
-$ic-color-medium-darker:     #394B58; // oxford
+$ic-color-dark:              #333333; // licorice
+$ic-color-medium-darker:     #003366; // oxford
 $ic-color-medium:            #73818C; // slate
 @if $use_high_contrast {     $ic-color-medium: #556572; }
-$ic-color-medium-lighter:    #6B7780; // ash
+$ic-color-medium-lighter:    #999999; // ash
 @if $use_high_contrast {     $ic-color-medium-lighter: #556572; }
 $heather:                    #A5AFB5; // heather
 @if $use_high_contrast {     $ic-border-dark: #556572; }
-$tiara:                      #C7CDD1; // tiara
+$tiara:                      #CCCCCC; // tiara
 @if $use_high_contrast {     $ic-border-color: #667887; }
 $ic-color-medium-light:      #F5F5F5; // porcelain
 @if $use_high_contrast {     $ic-color-medium-light: #FFFFFF; }
@@ -94,7 +94,7 @@ $ic-color-light:             #FFFFFF; // white
 // and meet our contrast needs when used with our main color variables
 
 $ic-bg-light-neutral:       $ic-color-medium-light;
-$ic-bg-light-neutral-text:  #394B58;
+$ic-bg-light-neutral-text:  #333333;
 @if $use_high_contrast { $ic-bg-light-neutral: #EBEDEE; }
 $ic-bg-light-primary:       #E5F2F8;
 @if $use_high_contrast { $ic-bg-light-primary: #E6F1F7;}
@@ -108,7 +108,7 @@ $ic-bg-light-alert:         #F9ECE8;
 $ic-bg-light-alert-text:    #C23C0D;
 $ic-bg-light-danger:        #FCE8E7;
 @if $use_high_contrast { $ic-bg-light-danger: #FBE8E8; }
-$ic-bg-light-danger-text:   #E0061F;
+$ic-bg-light-danger-text:   #CC0000;
 @if $use_high_contrast { $ic-bg-light-danger-text: $ic-color-danger; }
 
 //====================================

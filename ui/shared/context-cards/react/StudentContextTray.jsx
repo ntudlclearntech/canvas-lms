@@ -32,6 +32,8 @@ import {Spinner} from '@instructure/ui-spinner'
 import {Button, CloseButton} from '@instructure/ui-buttons'
 import {ScreenReaderContent} from '@instructure/ui-a11y-content'
 import {Tray} from '@instructure/ui-tray'
+import {IconWarningSolid} from '@instructure/ui-icons'
+import CoolActivityDescModal from './CoolActivityDescModal'
 
 import {Link} from '@instructure/ui-link'
 
@@ -89,6 +91,7 @@ export default class StudentContextTray extends React.Component {
     this.state = {
       isOpen: true,
       messageFormOpen: false,
+      modalIsOpen: false,
     }
   }
 
@@ -143,6 +146,10 @@ export default class StudentContextTray extends React.Component {
     )
   }
 
+  handleActivityIconClick = () => {
+    this.setState({ modalIsOpen: !this.state.modalIsOpen });
+  }
+
   /**
    * Renderers
    */
@@ -155,7 +162,7 @@ export default class StudentContextTray extends React.Component {
       <section className="StudentContextTray__Section StudentContextTray-QuickLinks">
         {StudentContextTray.renderQuickLink(
           'grades',
-          I18n.t('Grades'),
+          I18n.t('student_view_grades', 'Grades (Student View)'),
           I18n.t('View grades for %{name}', {name: user.short_name}),
           `/courses/${this.props.courseId}/grades/${this.props.studentId}`,
 
@@ -312,13 +319,28 @@ export default class StudentContextTray extends React.Component {
                   <section className="StudentContextTray__Section StudentContextTray-Ratings">
                     <Heading level="h4" as="h3" border="bottom">
                       {I18n.t('Activity Compared to Class')}
+                      <IconWarningSolid
+                        onClick={this.handleActivityIconClick}
+                        style={{
+                          color: '#EE0612',
+                          width: '1.2rem',
+                          height: '1.2rem',
+                          paddingLeft: '0.2rem',
+                          paddingBottom: '0.3rem',
+                          cursor: 'pointer'
+                        }}
+                      />
+                      <CoolActivityDescModal
+                        modalIsOpen={this.state.modalIsOpen}
+                        onClose={this.handleActivityIconClick}
+                      />
                     </Heading>
                     <div className="StudentContextTray-Ratings__Layout">
                       <Rating
                         metric={user.analytics.participations}
-                        label={I18n.t('Participation')}
+                        label={I18n.t('course_activities', 'Course Activities')}
                       />
-                      <Rating metric={user.analytics.page_views} label={I18n.t('Page Views')} />
+                      <Rating metric={user.analytics.page_views} label={I18n.t('page_views', 'Page Views')} />
                     </div>
                   </section>
                 ) : null}

@@ -210,8 +210,12 @@
             <% preview_document = t('preview_submission', 'Preview your submission')
                button_text = t('view_preview_button', 'Preview')
             %>
+          <% elsif attachment.predoc_available? %>
+            <% preview_document = t('preview_submission', 'Preview your submission')
+               button_text = t('view_preview_button', 'Preview')
+            %>
           <% end %>
-          <% if attachment.crocodoc_available? || attachment.canvadocable? %>
+          <% if attachment.crocodoc_available? || attachment.canvadocable? || attachment.predoc_available? %>
             <a
               href=<%= preview_url %>
               data-tooltip title="<%= preview_document %>"

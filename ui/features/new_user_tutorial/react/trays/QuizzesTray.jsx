@@ -25,40 +25,39 @@ const I18n = useI18nScope('new_user_tutorial')
 const QuizzesTray = () => (
   <TutorialTrayContent
     heading={I18n.t('Quizzes')}
-    subheading={I18n.t('Assess student understanding')}
+    subheading={I18n.t("Assess students' learning efficacy")}
     image="/images/tutorial-tray-images/Panda_Quizzes.svg"
     imageWidth="8rem"
-    seeAllLink={{
-      label: I18n.t('See more in Canvas Guides'),
-      href: I18n.t('#community.instructor_guide'),
-    }}
     links={[
       {
-        label: I18n.t('How do I use the Quizzes Index Page?'),
-        href: I18n.t('#community.instructor_use_quizzes_index'),
+        label: I18n.t('How to create quizzes'),
+        href: I18n.t(
+          'how_to_create_quizzes_url',
+          'https://drive.google.com/file/d/1tYgrJ19wpXhFjxJVMaN2E1wHYJcU0EX4/view?usp=sharing'
+        )
       },
       {
-        label: I18n.t('How do I create an assessment using New Quizzes?'),
-        href: I18n.t('#community.instructor_create_new_quiz'),
+        label: I18n.t('Tutorial Video: Create quizzes'),
+        href: I18n.t(
+          'tutorial_video_create_quizzes_url',
+          'https://www.youtube.com/watch?v=HCviiSfcAUQ&list=PLKjqFgaBNOo8fv5ZWEIUSlSqzXDVC2SV_&index=17'
+        )
       },
       {
-        label: I18n.t('How do I manage settings for an assessment in New Quizzes?'),
-        href: I18n.t('#community.instructor_manage_new_quizzes_settings'),
-      },
-      {
-        label: I18n.t('How do I create a quiz with individual questions?'),
-        href: I18n.t('#community.instructor_create_quiz_questions'),
-      },
-      {
-        label: I18n.t('What options can I set in a quiz?'),
-        href: I18n.t('#community.instructor_quiz_options'),
-      },
+        label: I18n.t('Tutorial Video: Manage quiz results'),
+        href: I18n.t(
+          'tutorial_video_manage_quiz_results_url',
+          'https://www.youtube.com/watch?v=uORfe9tfM8A&list=PLKjqFgaBNOo8fv5ZWEIUSlSqzXDVC2SV_&index=18'
+        )
+      }
     ]}
   >
-    {I18n.t(`Use quizzes to challenge student understanding and assess comprehension
-      of course material. The New Quizzes assessment engine allows you to create up to
-      13 types of question types and content. If New Quizzes isn't enabled for your institution,
-      Classic Quizzes are still available to help you achieve your objectives.`)}
+    {I18n.t(`There are two main functions in NTU COOL quizzes: creating quizzes and
+          managing quiz results. In creating quizzes, you can do the basic settings,
+          such as quiz instructions, points, published date, and whom to assign. The
+          system supports various question types including multiple choices and
+          true or false questions. You can also view the quiz results instantly and
+          download files with detailed results.`)}
   </TutorialTrayContent>
 )
 

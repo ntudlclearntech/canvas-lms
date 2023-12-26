@@ -13994,7 +13994,7 @@ es-ES:
           audio_comment: "Este mensaje incluye comentarios multimedia. Para escuchar o responder, haz clic en el siguiente enlace:"
           download: descargar
           pre_you_can: Puedes
-          reply_to_conversation_message: "Puedes contestar a este mensaje en Canvas respondiendo directamente a este correo electrónico. Si debes incluir un archivo adjunto, inicia sesión en Canvas y responde mediante la bandeja de entrada."
+          # reply_to_conversation_message: "Puedes contestar a este mensaje en Canvas respondiendo directamente a este correo electrónico. Si debes incluir un archivo adjunto, inicia sesión en Canvas y responde mediante la bandeja de entrada."
           unknown_user: "Usuario desconocido"
         unknown_user: "Usuario desconocido"
       sms: 
@@ -14014,7 +14014,7 @@ es-ES:
           audio_comment: "Este mensaje incluye comentarios multimedia. Para escuchar o responder, haz clic en el siguiente enlace:"
           download: descargar
           pre_you_can: Puedes
-          reply_to_conversation_message: "Puedes contestar a este mensaje en Canvas respondiendo directamente a este correo electrónico. Si debes incluir un archivo adjunto, inicia sesión en Canvas y responde mediante la bandeja de entrada."
+          # reply_to_conversation_message: "Puedes contestar a este mensaje en Canvas respondiendo directamente a este correo electrónico. Si debes incluir un archivo adjunto, inicia sesión en Canvas y responde mediante la bandeja de entrada."
           unknown_user: "Usuario desconocido"
         unknown_user: "Usuario desconocido"
       sms: 

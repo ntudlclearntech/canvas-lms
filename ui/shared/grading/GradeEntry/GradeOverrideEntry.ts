@@ -21,7 +21,7 @@ import I18n from '@canvas/i18n'
 
 import round from '@canvas/round'
 import GradeFormatHelper from '../GradeFormatHelper'
-import {gradePointsToPercentage, gradeToScoreLowerBound} from '../GradingSchemeHelper'
+import {gradePointsToPercentage, gradeToScoreLowerBound, gradeToScoreMean, NTUGradeToScore} from '../GradingSchemeHelper'
 import {scoreToGrade} from '@instructure/grading-utils'
 import GradeOverride from '../GradeOverride'
 import {parseEntryValue} from '../GradeInputHelper'
@@ -119,6 +119,31 @@ export default class GradeOverrideEntry extends GradeEntry {
     return currentGradeInfo.grade.percentage !== effectiveGradeInfo.grade.percentage
   }
 
+  isNTUGradingScheme(gradingScheme) {
+    // This is NTU COOL's customised function
+    const ntuGradingScheme = new Map()
+    ntuGradingScheme.set("A+", 0.895)
+    ntuGradingScheme.set("A", 0.845)
+    ntuGradingScheme.set("A-", 0.795)
+    ntuGradingScheme.set("B+", 0.765)
+    ntuGradingScheme.set("B", 0.725)
+    ntuGradingScheme.set("B-", 0.695)
+    ntuGradingScheme.set("C+", 0.665)
+    ntuGradingScheme.set("C", 0.625)
+    ntuGradingScheme.set("C-", 0.595)
+    ntuGradingScheme.set("F", 0.0001)
+    ntuGradingScheme.set("X", 0)
+
+    gradingScheme.data.forEach(scheme => {
+      if (ntuGradingScheme.get(scheme[0]) !== scheme[1]) {
+        return false;
+      }
+      ntuGradingScheme.delete(scheme[0])
+    });
+
+    return ntuGradingScheme.size === 0;
+  }
+
   parseValue(value, inputByUser: boolean = true): GradeOverrideInfo {
     const gradingScheme: string | {data: DeprecatedGradingScheme[]} = this.options.gradingScheme
     const parseResult = parseEntryValue(value, gradingScheme)
@@ -131,9 +156,12 @@ export default class GradeOverrideEntry extends GradeEntry {
     let valid = parseResult.isCleared
 
     if (parseResult.isSchemeKey && typeof gradingScheme === 'object') {
+      const percentage = this.isNTUGradingScheme(gradingScheme) ? 
+        NTUGradeToScore(parseResult.value) : gradeToScoreMean(parseResult.value, gradingScheme.data)
+
       enteredAs = EnterGradesAs.GRADING_SCHEME
       grade = {
-        percentage: gradeToScoreLowerBound(parseResult.value, gradingScheme.data),
+        percentage: percentage, //gradeToScoreLowerBound(parseResult.value, gradingScheme.data),
         schemeKey: String(parseResult.value),
       }
       valid = true

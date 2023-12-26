@@ -57,6 +57,7 @@ export default class ModuleFileDrop extends React.Component {
       contextType: null,
       contextId: null,
       interaction: true,
+      messages: [],
     }
   }
 
@@ -115,6 +116,11 @@ export default class ModuleFileDrop extends React.Component {
     this.setState(folderState)
   }
 
+  // Reference: https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types
+  getAllowedMimeTypes = () => {
+    return ['image/*', 'text/*', 'application/*', 'model/*', 'audio/*']
+  }
+
   handleDragEnter = () => {
     this.setState({hightlightUpload: true})
   }
@@ -123,7 +129,24 @@ export default class ModuleFileDrop extends React.Component {
     this.setState({hightlightUpload: false})
   }
 
-  handleDrop = files => {
+  handleDrop = (acceptedFiles, rejectedFiles) => {
+    // Handle invalid messages
+    if (rejectedFiles.length > 0) {
+      this.setState({
+        messages: [{
+          text: I18n.t(
+            'file_drop.invalid_file_type',
+            '%{invalid_files_count} of the files you upload are invalid.',
+            {invalid_files_count: rejectedFiles.length}
+          ), type: 'error'}]
+        })
+    } else {
+      this.setState({messages: []})
+    }
+
+    if (acceptedFiles.length == 0) return
+
+    const files = acceptedFiles
     const {moduleId, contextModules} = this.props
     const {folder} = this.state
     this.setInteractionOnAll(false)
@@ -159,7 +182,6 @@ export default class ModuleFileDrop extends React.Component {
     const {folder} = this.state
     return (
       <Billboard
-        heading={folder ? I18n.t('Drop files here to add to module') : I18n.t('Loading...')}
         headingLevel="h4"
         hero={size => this.renderHero(size)}
         message={
@@ -180,16 +202,23 @@ export default class ModuleFileDrop extends React.Component {
   }
 
   renderFileDrop() {
-    const {interaction, folder} = this.state
+    const {interaction, folder, messages} = this.state
     return (
-      <FileDrop
-        shouldAllowMultiple={true}
-        renderLabel={this.renderBillboard()}
-        onDragEnter={this.handleDragEnter}
-        onDragLeave={this.handleDragLeave}
-        onDrop={this.handleDrop}
-        interaction={interaction && folder ? 'enabled' : 'disabled'}
-      />
+      <>
+        <FileDrop
+          shouldAllowMultiple
+          accept={this.getAllowedMimeTypes()}
+          renderLabel={this.renderBillboard()}
+          onDragEnter={this.handleDragEnter}
+          onDragLeave={this.handleDragLeave}
+          onDrop={this.handleDrop}
+          messages={messages}
+          interaction={interaction && folder ? 'enabled' : 'disabled'}
+        />
+        <Text color="success">
+          {folder ? I18n.t('file_drop.notice', 'To add lecture videos, please click the “+” button, choose “Other Teaching Material” from the dropdown menu, and upload video files.(We only support MP4 format.)') : I18n.t('Loading...')}
+        </Text>
+      </>
     )
   }
 

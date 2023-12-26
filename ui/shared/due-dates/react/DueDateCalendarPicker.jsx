@@ -25,6 +25,9 @@ import * as tz from '@canvas/datetime'
 import useDateTimeFormat from '@canvas/use-date-time-format-hook'
 import '@canvas/jquery/jquery.instructure_forms'
 import cx from 'classnames'
+import { Tooltip } from '@instructure/ui-tooltip'
+import { IconQuestionLine } from '@instructure/ui-icons'
+import './DueDateCalendarPicker.css'
 
 function DueDateCalendarPicker(props) {
   const dateInput = useRef(null)
@@ -80,6 +83,19 @@ function DueDateCalendarPicker(props) {
     return date
   }
 
+  const renderTooltip = (content) => {
+    if (content){
+      return (
+        <Tooltip
+         renderTip={content}
+         placement="end"
+         color="primary"
+        >
+          <IconQuestionLine />
+        </Tooltip>
+    )}
+  }
+
   const wrapperClassName = () =>
     props.dateType === 'due_at' ? 'DueDateInput__Container' : 'DueDateRow__LockUnlockInput'
 
@@ -89,6 +105,7 @@ function DueDateCalendarPicker(props) {
       <div className={className}>
         <label className={`${props.labelClasses} ic-Label`} htmlFor={props.dateType}>
           {props.labelText}
+          &nbsp;&nbsp;{renderTooltip(props.tooltipContent)}
         </label>
         <div className="ic-Input-group">
           <input
@@ -128,6 +145,7 @@ function DueDateCalendarPicker(props) {
         htmlFor={uniqueId.current}
       >
         {props.labelText}
+        &nbsp;&nbsp;{renderTooltip(props.tooltipContent)}
       </label>
       <div className={wrapperClassName()}>
         <input
@@ -164,6 +182,7 @@ DueDateCalendarPicker.propTypes = {
   labelClasses: string,
   name: string,
   readonly: bool,
+  tooltipContent: string
 }
 
 DueDateCalendarPicker.defaultProps = {

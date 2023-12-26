@@ -167,7 +167,7 @@
 
   <div class="clear"></div>
 
-  <% description = @assignment.description.present? ? public_user_content(@assignment.description) : t("No additional details were added for this assignment.") %>
+  <% description = @assignment.description.present? ? prevent_image_cache(public_user_content(@assignment.description)) : t("No additional details were added for this assignment.") %>
 
   <% if @assignment.annotated_document? %>
     <div class="accessibility_warning">

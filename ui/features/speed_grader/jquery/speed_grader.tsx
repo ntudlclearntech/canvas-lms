@@ -263,7 +263,7 @@ let $comment_saved: JQuery
 let $comment_saved_message: JQuery
 let $reassignment_complete: JQuery
 let $selectmenu: SpeedgraderSelectMenu | null
-let $word_count: JQuery
+// let $word_count: JQuery
 let originalRubric: JQuery
 let browserableCssClasses: RegExp
 let snapshotCache: Record<string, ScoringSnapshot | null>
@@ -549,6 +549,46 @@ function handleStudentOrSectionSelected(
   }
 }
 
+// COOL new function
+function formatStudentNameWithIdentity(student) {
+  const { name, loginId } = student;
+
+  const identity = getDisplayRegNo(loginId);
+
+  let nameWithIdentity: string;
+  if (identity === '') {
+    nameWithIdentity = name;
+  } else if (name.indexOf('(') !== -1) {
+    nameWithIdentity = name.replace('(', `${identity} (`);
+  } else {
+    nameWithIdentity = `${name} ${identity}`;
+  }
+
+  return nameWithIdentity;
+}
+
+const prefixMap = new Map([
+  ['ntu.edu.tw', ''],
+  ['mail.ntust.edu.tw', 'ntust_'],
+  ['ntnu.edu.tw', 'ntnu_']
+]);
+
+function getDisplayRegNo(loginId: string) {
+  if (!loginId) return '';
+
+  const [username, emailDomain] = loginId.split('@')
+
+  const prefix = prefixMap.get(emailDomain) ?? 'external_';
+
+  let regNo = `${prefix}${username.toUpperCase()}`;
+
+  if (regNo.length > 15) {
+    regNo = regNo.slice(0, 15) + '...';
+  }
+
+  return regNo;
+}
+
 function initDropdown() {
   const hideStudentNames = utils.shouldHideStudentNames()
   $('#hide_student_names').prop('checked', hideStudentNames)
@@ -560,8 +600,9 @@ function initDropdown() {
       const className = SpeedgraderHelpers.classNameBasedOnStudent({submission_state, submission})
       if (hideStudentNames || isAnonymous) {
         name = anonymousName(student)
+      } else {
+        name = formatStudentNameWithIdentity(student);
       }
-
       return {[anonymizableId]: student[anonymizableId], anonymizableId, name, className}
     }
   )
@@ -2271,7 +2312,7 @@ EG = {
         count: wordCount,
       })}`
     }
-    $word_count.html(wordCountHTML)
+    // $word_count.html(wordCountHTML)
   },
 
   handleSubmissionSelectionChange() {
@@ -2571,7 +2612,7 @@ EG = {
 
     if (s && s.submission_history && s.submission_history.length > 0) {
       submissionHistory = s.submission_history
-      noSubmittedAt = I18n.t('no_submission_time', 'no submission time')
+      noSubmittedAt = I18n.t('no_submission_time', 'no submitted record')
       selectedIndex = parseInt(
         String($('#submission_to_view').val() || submissionHistory.length - 1),
         10
@@ -2945,7 +2986,7 @@ EG = {
         })
       )
     } else if (!INST?.disableGooglePreviews && isPreviewable(attachment.content_type)) {
-      $no_annotation_warning.show()
+      // $no_annotation_warning.show()
 
       const currentStudentIDAsOfAjaxCall = this.currentStudent[anonymizableId]
       previewOptions = $.extend(previewOptions, {
@@ -3048,7 +3089,7 @@ EG = {
       }
 
       selectMenu.val(idToSelect)
-      const showSelectMenu = isModerator || selectMenu.find('option').length > 1
+      const showSelectMenu = isModerator || selectMenu.find('option').length > 0
       $('#rubric_assessments_list').showIf(showSelectMenu)
 
       const {hide_points} = (window?.jsonData?.rubric_association ?? {}) as {hide_points: boolean}
@@ -4280,7 +4321,7 @@ function setupSelectors() {
   $width_resizer = $('#width_resizer')
   $window = $(window)
   $x_of_x_students = $('#x_of_x_students_frd')
-  $word_count = $('#submission_word_count')
+  // $word_count = $('#submission_word_count')
   assignmentUrl = $('#assignment_url').attr('href') || ''
   browserableCssClasses = /^(image|html|code)$/
   fileIndex = 1
