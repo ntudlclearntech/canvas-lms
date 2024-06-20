@@ -463,7 +463,7 @@ GEM
     barby (0.6.8)
     bcrypt (3.1.16)
     bigdecimal (3.1.3)
-    bindata (2.4.14)
+    bindata (2.5.0)
     bluecloth (2.2.0)
     bootsnap (1.13.0)
       msgpack (~> 1.2)
@@ -613,6 +613,7 @@ GEM
     httparty (0.21.0)
       mini_mime (>= 1.0.0)
       multi_xml (>= 0.5.2)
+    httpclient (2.8.3)
     i18n (1.14.1)
       concurrent-ruby (~> 1.0)
     i18nliner (0.2.4)
@@ -668,10 +669,11 @@ GEM
     jira_ref_parser (1.0.1)
     jmespath (1.6.2)
     json (2.6.3)
-    json-jwt (1.13.0)
+    json-jwt (1.15.3)
       activesupport (>= 4.2)
       aes_key_wrap
       bindata
+      httpclient
     json-schema (2.8.1)
       addressable (>= 2.4)
     json_schemer (0.2.24)
@@ -685,6 +687,11 @@ GEM
     letter_opener (1.7.0)
       launchy (~> 2.2)
     link_header (0.0.8)
+    lograge (0.12.0)
+      actionpack (>= 4)
+      activesupport (>= 4)
+      railties (>= 4)
+      request_store (~> 1.0)
     loofah (2.20.0)
       crass (~> 1.0.2)
       nokogiri (>= 1.5.9)
@@ -1260,6 +1267,7 @@ DEPENDENCIES
   link_header (= 0.0.8)
   linked_in!
   live_events!
+  lograge (= 0.12.0)
   lti-advantage!
   lti_outbound!
   luminosity_contrast (= 0.2.1)
