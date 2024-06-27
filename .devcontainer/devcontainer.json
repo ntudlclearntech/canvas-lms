@@ -1,0 +1,27 @@
+{
+  "name": "canvas-lms",
+  "dockerComposeFile": [
+    "docker-compose.yml",
+    "docker-compose.override.yml"
+  ],
+  "service": "application",
+  "workspaceFolder": "/usr/workspace",
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "#terminal.integrated.profiles.linux#": "/bin/bash",
+        "cSpell.enabled": true
+      },
+      "extensions": [
+        "mikestead.dotenv",
+        "streetsidesoftware.code-spell-checker",
+        "formulahendry.auto-rename-tag",
+        "michelemelluso.code-beautifier",
+        "wmaurer.change-case",
+        "vivaxy.vscode-conventional-commits",
+        "gruntfuggly.todo-tree"
+      ]
+    }
+  },
+  "shutdownAction": "stopCompose"
+}
