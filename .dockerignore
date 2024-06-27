@@ -4,6 +4,8 @@
 .gitignore
 .idea
 
+.bundle/
+
 build/
 !build/vendor/woff-code-latest.zip
 !build/gergich/
