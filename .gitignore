@@ -103,3 +103,6 @@ schema.graphql
 
 # cool
 !/Gemfile.rails70.plugins.lock
+
+# Ignore config.sh generated files, config/* has been ignored above
+Passengerfile.json
