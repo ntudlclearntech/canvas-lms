@@ -42,7 +42,7 @@ module SearchTermHelper
     end
 
     def decode_search_term(raw_term)
-      return raw_term.is_a?(String) ? URI.decode(raw_term) : nil
+      raw_term.is_a?(String) ? URI.decode_www_form_component(raw_term) : nil
     end
 
     private
