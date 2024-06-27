@@ -1,0 +1,22 @@
+services:
+  application:
+    init: true
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        USERNAME: ${USER}
+        USER_UID: 1000 # id -u
+        USER_GID: 1000 # id -g
+        TimeZone: Asia/Taipei
+    image: 'canvas-lms/development:latest'
+    container_name: canvas-lms-development
+    volumes:
+      - ..:/usr/workspace
+      - vscode-extensions:/home/${USER}/.vscode-server/extensions
+      - vscode-extensions:/home/${USER}/.vscode-server-insiders/extensions
+    command: sleep infinity
+
+volumes:
+  vscode-extensions:
+    name: canvas-lms-vscode-extensions
