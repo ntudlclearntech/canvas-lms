@@ -41,10 +41,6 @@ module SearchTermHelper
       filtered_scope(scope, attr, search_term, normalize_unicode)
     end
 
-    def decode_search_term(raw_term)
-      raw_term.is_a?(String) ? URI.decode_www_form_component(raw_term) : nil
-    end
-
     private
 
     def filtered_scope(*filter_args, normalize_unicode)

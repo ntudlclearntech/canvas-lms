@@ -323,8 +323,7 @@ class Quizzes::QuizzesApiController < ApplicationController
 
       value = Rails.cache.fetch(cache_key) do
         api_route = api_v1_course_quizzes_url(@context)
-        search_term = Quizzes::Quiz.decode_search_term(params[:search_term])
-        scope = Quizzes::Quiz.search_by_attribute(@context.quizzes.active, :title, search_term)
+        scope = Quizzes::Quiz.search_by_attribute(@context.quizzes.active, :title, params[:search_term])
         scope = Quizzes::ScopedToUser.new(@context, @current_user, scope).scope
 
         if accepts_jsonapi?
