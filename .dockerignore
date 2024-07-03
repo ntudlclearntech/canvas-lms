@@ -5,6 +5,10 @@
 .idea
 
 .bundle/
+.devcontainer
+.github
+.gitlab
+.vscode
 
 build/
 !build/vendor/woff-code-latest.zip
