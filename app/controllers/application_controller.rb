@@ -2516,12 +2516,6 @@ class ApplicationController < ActionController::Base
   end
   helper_method :page_views_enabled?
 
-  def verified_google_preview_file_download_url(attachment, context = nil, permission_map_id = nil, *opts)
-    verifier = Attachments::Verification.new(attachment).verifier_for_user(@current_user,
-                                                                           context: context.try(:asset_string), permission_map_id: permission_map_id, expires: 5.minutes.from_now)
-    file_download_url(attachment, { verifier: verifier }, *opts)
-  end
-
   def verified_file_download_url(attachment, context = nil, permission_map_id = nil, *opts)
     verifier = Attachments::Verification.new(attachment).verifier_for_user(@current_user,
                                                                            context: context.try(:asset_string),
