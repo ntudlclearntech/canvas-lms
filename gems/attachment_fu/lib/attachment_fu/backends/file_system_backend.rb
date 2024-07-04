@@ -69,6 +69,26 @@ module AttachmentFu # :nodoc:
           protocol = args[0][:secure] ? "https://" : "http://"
         end
         protocol ||= "#{HostUrl.protocol}://"
+
+        if args[0].is_a?(Hash) && !args[0][:expires_in].nil? && args[0][:expires_in].is_a?(ActiveSupport::Duration)
+          expires = args[0][:expires_in].to_i.second.from_now
+
+          # Generate expiring JWT as verifier
+          verifier = Attachments::Verification.new(self).verifier_for_user(nil, expires:)
+
+          # The original URL, using the never-expiring uuid as a verifier
+          original_url = "#{protocol}#{local_storage_path}"
+
+          uri = URI.parse(original_url)
+          query = Rack::Utils.parse_query(uri.query)
+
+          # Replace the verifier value in query
+          query["verifier"] = verifier
+
+          uri.query = Rack::Utils.build_query(query)
+          return uri.to_s
+        end
+
         "#{protocol}#{local_storage_path}"
       end
 
