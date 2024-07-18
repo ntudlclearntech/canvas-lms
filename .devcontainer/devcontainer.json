@@ -10,7 +10,10 @@
     "vscode": {
       "settings": {
         "#terminal.integrated.profiles.linux#": "/bin/bash",
-        "cSpell.enabled": true
+        "cSpell.enabled": true,
+        "[ruby]": {
+          "editor.defaultFormatter": "Shopify.ruby-lsp"
+        }
       },
       "extensions": [
         "mikestead.dotenv",
@@ -19,7 +22,8 @@
         "michelemelluso.code-beautifier",
         "wmaurer.change-case",
         "vivaxy.vscode-conventional-commits",
-        "gruntfuggly.todo-tree"
+        "gruntfuggly.todo-tree",
+        "Shopify.ruby-lsp"
       ]
     }
   },
