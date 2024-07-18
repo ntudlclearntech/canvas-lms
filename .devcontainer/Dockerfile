@@ -74,6 +74,9 @@ RUN apt-get update \
   && apt-get install -y ruby${RUBY_VERSION} ruby${RUBY_VERSION}-dev \
   && gem install bundler:${BUNDLER_VERSION} \
   #
+  # Install ruby-lsp
+  && gem install ruby-lsp \
+  #
   # Install node.js and yarn
   # ref: Dockerfile.cool
   && curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key \
