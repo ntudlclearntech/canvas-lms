@@ -161,61 +161,71 @@ class DataRow extends React.Component {
     </tr>
   )
 
-  renderEditMode = () => (
-    <tr
-      className={
-        this.state.showBottomBorder
-          ? 'grading_standard_row react_grading_standard_row border_below'
-          : 'grading_standard_row react_grading_standard_row'
-      }
-      ref="editContainer"
-    >
-      {/* <td className="insert_row_icon_container">{this.renderInsertRowButton()}</td> */}
-      <td className="row_name_container">
-        <div>
-          <input
-            type="text"
-            ref="nameInput"
-            onChange={this.triggerRowNameChange}
-            className="standard_name"
-            title={I18n.t('Range name')}
-            aria-label={I18n.t('Range name')}
-            name={`grading_standard[standard_data][scheme_${this.props.uniqueId}[name]`}
-            value={this.getRowData().name}
-            disabled
-          />
-        </div>
-      </td>
-      <td className="row_cell max_score_cell edit_max_score">
-        <span className="edit_max_score">
-          {`${this.renderMaxScore()}%`}
-          <span className="screenreader-only">{I18n.t('Upper limit of range')}</span>
-        </span>
-      </td>
-      <td className="row_cell">
-        <div>
-          <span className="range_to" aria-hidden="true">
-            {I18n.t('to ')}
+  renderEditMode = () => {
+    const isCurrentUserAdmin = ENV?.current_user_roles?.includes('admin')
+
+    return (
+      <tr
+        className={
+          this.state.showBottomBorder
+            ? 'grading_standard_row react_grading_standard_row border_below'
+            : 'grading_standard_row react_grading_standard_row'
+        }
+        ref="editContainer"
+      >
+        {
+          // Only admin is allowed to insert grading_standard
+          isCurrentUserAdmin && (
+            <td className="insert_row_icon_container">{this.renderInsertRowButton()}</td>
+          )
+        }
+        <td className="row_name_container">
+          <div>
+            <input
+              type="text"
+              ref="nameInput"
+              onChange={this.triggerRowNameChange}
+              className="standard_name"
+              title={I18n.t('Range name')}
+              aria-label={I18n.t('Range name')}
+              name={`grading_standard[standard_data][scheme_${this.props.uniqueId}[name]`}
+              value={this.getRowData().name}
+              // Only admin is allowed to edit standard_name
+              disabled={!isCurrentUserAdmin}
+            />
+          </div>
+        </td>
+        <td className="row_cell max_score_cell edit_max_score">
+          <span className="edit_max_score">
+            {`${this.renderMaxScore()}%`}
+            <span className="screenreader-only">{I18n.t('Upper limit of range')}</span>
           </span>
-          <input
-            type="text"
-            className="standard_value"
-            ref={input => {
-              this.minScoreInput = input
-            }}
-            onChange={this.triggerRowMinScoreChange}
-            onBlur={this.triggerRowMinScoreBlur}
-            title={I18n.t('Lower limit of range')}
-            aria-label={I18n.t('Lower limit of range')}
-            name={`grading_standard[standard_data][scheme_${this.props.uniqueId}][value]`}
-            value={this.renderMinScore()}
-          />
-          <span aria-hidden="true"> % </span>
-        </div>
-      </td>
-      <td className="row_cell last_row_cell">{this.renderDeleteRowButton()}</td>
-    </tr>
-  )
+        </td>
+        <td className="row_cell">
+          <div>
+            <span className="range_to" aria-hidden="true">
+              {I18n.t('to ')}
+            </span>
+            <input
+              type="text"
+              className="standard_value"
+              ref={input => {
+                this.minScoreInput = input
+              }}
+              onChange={this.triggerRowMinScoreChange}
+              onBlur={this.triggerRowMinScoreBlur}
+              title={I18n.t('Lower limit of range')}
+              aria-label={I18n.t('Lower limit of range')}
+              name={`grading_standard[standard_data][scheme_${this.props.uniqueId}][value]`}
+              value={this.renderMinScore()}
+            />
+            <span aria-hidden="true"> % </span>
+          </div>
+        </td>
+        <td className="row_cell last_row_cell">{this.renderDeleteRowButton()}</td>
+      </tr>
+    )
+  }
 
   render() {
     return this.props.editing ? this.renderEditMode() : this.renderViewMode()

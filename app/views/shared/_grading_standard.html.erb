@@ -71,8 +71,9 @@
           </th>
         </tr>
       </thead>
-      <% if false # This is use to prevent adding new grade to grading standard
-      %>
+      <% is_current_user_admin = @current_user.roles(@domain_root_account).include?("admin") %>
+      <%# Only admin is allowed to insert grading_standard %>
+      <% if is_current_user_admin %>
         <tr class="insert_grading_standard" style="display: none; font-size: 0.7em; line-height: 0.6em;">
           <td colspan="4">
             <a
@@ -89,7 +90,8 @@
         <tr class="grading_standard_row">
           <td style="width: 25%;">
             <div class="editing_box">
-              <input type="text" class="standard_name" name="grading_standard[standard_data][scheme_<%= idx %>][name]" value="<%= row[0] %>" style="width: 100px;" aria-labelledby="name_header" disabled/>
+              <%# Only admin is allowed to edit standard_name %>
+              <input type="text" class="standard_name" name="grading_standard[standard_data][scheme_<%= idx %>][name]" value="<%= row[0] %>" style="width: 100px;" aria-labelledby="name_header" <%= 'disabled' unless is_current_user_admin %> />
             </div>
             <div class="displaying name">
               <%= row[0] %>
