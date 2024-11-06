@@ -874,7 +874,9 @@ class ApplicationController < ActionController::Base
     if !files_domain? && Setting.get("block_html_frames", "true") == "true" && !@embeddable
       append_to_header("Content-Security-Policy", "frame-ancestors 'self' #{csp_frame_ancestors&.uniq&.join(" ")};")
     end
-    headers["Strict-Transport-Security"] = "max-age=31536000" if request.ssl?
+    # For security audits, NTUCOOL must set the HSTS header on all responses, even if a request bypasses any controller (e.g., redirects defined in config/routes.rb).
+    # This configuration is customized in config/environments/development.rb and config/environments/production.rb.
+    # headers["Strict-Transport-Security"] = "max-age=31536000" if request.ssl?
     RequestContext::Generator.store_request_meta(request, @context, @sentry_trace)
     true
   end

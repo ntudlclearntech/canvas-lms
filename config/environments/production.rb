@@ -71,4 +71,7 @@ environment_configuration(defined?(config) && config) do |config|
 
   # eval <env>-local.rb if it exists
   Dir[File.dirname(__FILE__) + "/" + File.basename(__FILE__, ".rb") + "-*.rb"].each { |localfile| eval(File.new(localfile).read, nil, localfile, 1) } # rubocop:disable Security/Eval
+
+  config.force_ssl = true
+  config.ssl_options = { hsts: { preload: true, expires: 1.year, subdomains: true } }
 end
