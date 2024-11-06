@@ -72,7 +72,15 @@ Rails.application.configure do
   config.force_ssl = true
   # We redirect at the apache layer; no reason to do it twice
   # We have historically not set hsts for subdomains, and don't want to increase the possibility of breakage
-  config.ssl_options = { redirect: false, hsts: { subdomains: false } }
+  # config.ssl_options = { redirect: false, hsts: { subdomains: false } }
+
+  # In NTU COOL:
+  # TLS redirect setting has been applied in infra apache config
+  #   https://gitlab.dlc.ntu.edu.tw/search?search=ntu_cool_container.conf&nav_source=navbar&project_id=90&group_id=21&search_code=true&repository_ref=master
+  # HSTS expiration time is set to default
+  #   https://github.com/rails/rails/blob/v7.0.4.3/actionpack/lib/action_dispatch/middleware/ssl.rb
+  # We choose to enable HSTS for subdomains to prioritize security, despite Canvas' vague concerns about "the possibility of breakage."
+  config.ssl_options = { redirect: false, hsts: { subdomains: true } }
 
   # eval <env>-local.rb if it exists
   Dir[File.dirname(__FILE__) + "/" + File.basename(__FILE__, ".rb") + "-*.rb"].each { |localfile| eval(File.new(localfile).read, nil, localfile, 1) } # rubocop:disable Security/Eval
