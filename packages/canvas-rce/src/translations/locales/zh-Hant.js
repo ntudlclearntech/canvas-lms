@@ -425,7 +425,7 @@ const locale = {
     "message": "如果您現在不選擇使用權，那麼該文檔在其上傳之後將會撤銷發佈。"
   },
   "image_8ad06": { "message": "圖片" },
-  "image_c1c98202": { "message": "影像" },
+  "image_c1c98202": { "message": "圖片" },
   "image_filenames_should_not_be_used_as_the_alt_attr_bcfd7780": {
     "message": "圖像檔案名稱不應用作說明圖像內容的替代屬性。"
   },  
@@ -975,8 +975,8 @@ const locale = {
   "thick_right_arrow_3ed5e8f7": { "message": "粗右箭頭" },
   "thick_rightward_arrow_a2e1839e": { "message": "粗向右箭頭" },
   "thick_upward_arrow_acd20328": { "message": "粗向上箭頭" },
-  "this_document_cannot_be_displayed_within_canvas_7aba77be": {
-    "message": "在 Canvas 中無法顯示此文件。"
+  "this_document_cannot_be_displayed_ba55c3c7": {
+    "message": "無法預覽此文件"
   },
   "this_equation_cannot_be_rendered_in_basic_view_9b6c07ae": {
     "message": "此方程式不能在基本視圖中呈現。"

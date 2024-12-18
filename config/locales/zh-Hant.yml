@@ -29089,7 +29089,7 @@ zh-Hant:
       Canvas 的 SAML 實體 ID 為 %{metadata_url}，並且服務提供商
       元數據可透過該 URL 獲取。
   the_chat_tool_must_be_enabled_by_your_canvas_admin_e3b26123: "必須由您的 NTU COOL 管理員啟用聊天工具。"
-  the_chosen_date_and_time_is_invalid_a7c96651: 選擇的曰期和時間無效。
+  the_chosen_date_and_time_is_invalid_a7c96651: 選擇的日期和時間無效。
   the_client_id_clientid_is_disabled_b4a02cb1: "用戶端 ID %{clientId} 停用"
   the_content_security_policy_allows_you_to_restrict_197ca4ff: |-
       內容安全政策允許您限制在您的 NTU COOL 實例中執行的自訂JavaScript。
@@ -29547,7 +29547,7 @@ zh-Hant:
   there_was_an_error_retrieving_the_course_image_d7ea094d: 取回課程影像時出現錯誤
   there_was_an_error_saving_the_assignment_dates_d31903ab: 儲存您的作業日期時發生錯誤。
   there_was_an_error_saving_the_changes_to_the_cours_ed2b1d24: 在儲存課程變更內容時出現錯誤。
-  there_was_an_error_saving_the_custom_grade_status_f184a28c: 儲存自訂評分狀態時的發生錯誤。
+  there_was_an_error_saving_the_custom_grade_status_f184a28c: 儲存自訂評分狀態時發生錯誤。
   there_was_an_error_saving_the_note_please_try_agai_f2f2cd38: 儲存注釋時出現錯誤，請再試一次。
   there_was_an_error_saving_the_rubric_4d62fe89: 儲存評量指標時發生錯誤。
   there_was_an_error_saving_your_blackout_dates_1efee334: 儲存您的管制日期時發生錯誤
@@ -32309,7 +32309,7 @@ zh-Hant:
   view_previous_file_b846db4f: 檢視前一個文件
   view_previous_student_90000459: 查看上一個學生
   view_previous_submission_2b57bb85: 檢視之前的提交項目
-  view_previous_week_6f83849f: 檢視上一周
+  view_previous_week_6f83849f: 檢視上一週
   view_prior_enrollments_9b519b25: 檢視結束權限的成員
   view_question_banks_188a9e0f: 檢視題庫
   view_range_student_details_8116d68a: 查看範圍學生詳細資料
