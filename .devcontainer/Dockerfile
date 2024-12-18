@@ -38,18 +38,19 @@ ENV LC_ALL=en_US.UTF-8
 
 #
 # Set up runtime versions ARG and ENV
-ARG NODE_VERSION=16
+ARG NODE_VERSION=18
+ENV NODE_OPTIONS=--openssl-legacy-provider
 ARG YARN_VERSION=1.19.1
 ARG PASSENGER_VERSION=6.0.19
 ARG RUBY_VERSION=3.1
-ARG BUNDLER_VERSION=2.3.26
+ARG BUNDLER_VERSION=2.4.19
 ENV BUNDLER_VERSION=${BUNDLER_VERSION}
 
 #
 # Set up apt packages
 # ref: Dockerfile.cool
 ARG APT_RUBY_PPA_DEPS="software-properties-common"
-ARG APT_RUBY_GEMS_DEPS="git tzdata automake build-essential libpq-dev libidn-dev libxmlsec1-dev"
+ARG APT_RUBY_GEMS_DEPS="git tzdata automake build-essential libpq-dev libidn-dev libxmlsec1-dev libyaml-dev"
 ARG APT_ADD_SOURCE_LIST_DEPS="dirmngr gnupg apt-transport-https ca-certificates curl"
 ARG APT_QTIMIGRATION_DEPS="python-is-python3 python3-lxml python3-pygments"
 ARG APT_APPLICATION_DEPS="file"
@@ -85,7 +86,7 @@ RUN apt-get update \
     | tee /etc/apt/sources.list.d/nodesource.list \
   && apt-get update \
   && apt-get install -y nodejs \
-  && npm i -g yarn@${YARN_VERION} \
+  && npm i -g yarn@${YARN_VERSION} \
   #
   # Create a non-root user to use if preferred
   && groupadd --force --gid ${USER_GID} ${USERNAME} \
