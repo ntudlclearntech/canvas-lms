@@ -1,0 +1,7 @@
+# frozen_string_literal: true
+
+source "https://rubygems.org"
+
+# Update gem versions here as needed.
+
+gem "ruby-lsp", "~> 0.22.1"

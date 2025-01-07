@@ -11,9 +11,20 @@
       "settings": {
         "#terminal.integrated.profiles.linux#": "/bin/bash",
         "cSpell.enabled": true,
-        "[ruby]": {
-          "editor.defaultFormatter": "Shopify.ruby-lsp"
-        }
+
+        // * Optional: Enable Ruby LSP support.
+        // * To enable:
+        // * 1. Run the following inside '.devcontainer/dev-tools/ruby-lsp/':
+        // *    `bundle _${BUNDLER_VERSION}_ config set --local path 'vendor/bundle'`
+        // *    `bundle _${BUNDLER_VERSION}_ install`
+        // * 2. Uncomment the "editor.defaultFormatter" setting.
+        // * 3. Uncomment "Shopify.ruby-lsp" in the "extensions" list below.
+        // * 4. Rebuild the devcontainer.
+
+        "rubyLsp.bundleGemfile": "/usr/workspace/.devcontainer/dev-tools/ruby-lsp/Gemfile",
+        // "[ruby]": {
+        //   "editor.defaultFormatter": "Shopify.ruby-lsp"
+        // }
       },
       "extensions": [
         "mikestead.dotenv",
@@ -23,7 +34,11 @@
         "wmaurer.change-case",
         "vivaxy.vscode-conventional-commits",
         "gruntfuggly.todo-tree",
-        "Shopify.ruby-lsp"
+
+        // * Optional: Enable Ruby LSP VSCode extension.
+        // * To enable, see 'Enable Ruby LSP support' above.
+
+        // "Shopify.ruby-lsp"
       ]
     }
   },
