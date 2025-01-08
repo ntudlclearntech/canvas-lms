@@ -299,7 +299,11 @@ class MediaObjectsController < ApplicationController
   end
 
   def iframe_media_player
-    if !Account.site_admin.feature_enabled?(:media_links_use_attachment_id) && @attachment
+    # media_links_use_attachment_id will be disabled by cool
+    # currently cool canvas didnt host kaltura instance
+    # all media attachments will not have corresponse media_object
+    # thus we must bypass following if condition
+    if !Account.site_admin.feature_enabled?(:media_links_use_attachment_id) && @attachment && @media_object
       return redirect_to(media_object_iframe_path(@media_object.media_id, params: request.query_parameters))
     end
 

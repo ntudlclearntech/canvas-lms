@@ -57,9 +57,19 @@ ready(() => {
       href_source = `${href_source}${delim}verifier=${parsed_loc.query.verifier}`
     }
 
-    if (is_video) {
-      href_source = [href_source]
-    }
+    // according to @instructure/ui-media-player v9.1.1:
+    // the sources props accept array of object and array of string
+    //   ref: https://www.npmjs.com/package/@instructure/ui-media-player/v/9.1.1?activeTab=code (src/components/Player/PropTypes/index.js ln 50)
+    //   {src: string, label: string, defaultSelected?: boolean}[] | string[]
+    // however it's different from its implementation and readme 
+    //   ref: https://www.npmjs.com/package/@instructure/ui-media-player/v/9.1.1?activeTab=code (README.md ln 103)
+    //   ref: https://www.npmjs.com/package/@instructure/ui-media-player/v/9.1.1?activeTab=code (src/components/Player/index.js ln 306)
+    href_source = [href_source]
+
+    href_source = href_source.map((src, index) => ({
+      src,
+      label: `src-${index}`
+    }))
   }
 
   const mediaTracks = media_object?.media_tracks?.map(track => {
