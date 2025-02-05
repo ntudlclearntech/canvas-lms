@@ -62,6 +62,16 @@ class GradingStandardsController < ApplicationController
 
   def create
     if authorized_action(@context, @current_user, :manage_grades)
+      default_grading_schemes = GradingStandard.default_grading_standard.map {|key, value| key}
+      new_grading_schemes = grading_standard_params["data"].map {|key, value| key}
+
+      is_all_schemes_valid = is_subsequence(new_grading_schemes, default_grading_schemes)
+      is_admin_user = @current_user.roles(@domain_root_account).include?("admin")
+    
+      unless is_all_schemes_valid || is_admin_user
+        render_unauthorized_action
+      end
+
       @standard = @context.grading_standards.build(grading_standard_params)
       if @standard.read_attribute(:data).blank?
         @standard.data = GradingStandard.default_grading_standard
@@ -79,6 +89,17 @@ class GradingStandardsController < ApplicationController
 
   def update
     @standard = GradingStandard.for(@context).find(params[:id])
+
+    current_grading_schemes = @standard.data.map { |sub_array| sub_array[0] }
+    updating_grading_schemes = grading_standard_params["standard_data"].map { |key, value| value["name"] }
+    
+    is_valid_scheme_sequence = is_subsequence(updating_grading_schemes, current_grading_schemes)
+    is_admin_user = @current_user.roles(@domain_root_account).include?("admin")
+    
+    unless is_valid_scheme_sequence || is_admin_user
+      return render_unauthorized_action
+    end
+
     if authorized_action(@standard, @current_user, :manage)
       @standard.user = @current_user
       respond_to do |format|
@@ -118,5 +139,15 @@ class GradingStandardsController < ApplicationController
     return {} unless params[:grading_standard]
 
     params[:grading_standard].permit(:title, standard_data: strong_anything, data: strong_anything)
+  end
+
+  def is_subsequence(array_a, array_b)
+    index_map = array_b.each_with_index.to_h
+    sequence = []
+    array_a.each do |name|
+      return false unless index_map.key?(name)
+      sequence << index_map[name]
+    end
+    sequence.each_cons(2).all? { |a, b| a < b }
   end
 end
