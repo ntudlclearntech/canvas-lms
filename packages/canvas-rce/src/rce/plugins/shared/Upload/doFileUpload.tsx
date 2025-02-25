@@ -46,9 +46,10 @@ export default function doFileUpload(
 } {
   const {accept, panels, preselectedFile} = {...opts}
 
-  const title = accept?.startsWith('image/')
-    ? formatMessage('Upload Image')
-    : formatMessage('Upload File')
+  const title =
+    typeof accept === 'string' && accept?.startsWith('image/')
+      ? formatMessage('Upload Image')
+      : formatMessage('Upload File')
 
   let shownResolve: () => void
   const shownPromise = new Promise<void>(resolve => (shownResolve = resolve))

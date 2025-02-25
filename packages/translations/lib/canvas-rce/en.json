@@ -268,6 +268,15 @@
   "drag_and_drop_or_click_to_browse_your_computer_60772d6d": {
     "message": "Drag and drop, or click to browse your computer"
   },
+  "only_pdf_docx_and_pptx_files_are_supported_to_uplo_a72473ad":{
+    "message": "Only .pdf, .docx, and .pptx files are supported. To upload media files (.mp4, .mp3, .mov), please upload them to Course Files first and then insert them."
+  },
+  "https_docs_google_com_document_d_1jasdlfrbdraye5r__22e6719b":{
+    "message": "https://docs.google.com/document/d/1jasdLFrbDrAye5R_hlpW-6whZhp7pzxr/edit?tab=t.0#heading=h.770aq4fwu9vbdocs.google.com/document/d/1jasdLFrbDrAye5R_hlpW-6whZhp7pzxr/edit#heading=h.770aq4fwu9vb"
+  },
+  "how_to_upload_media_files_e0565053":{
+    "message": "(How to upload media files?)"
+  },
   "drag_handle_use_up_and_down_arrows_to_resize_e29eae5c": {
     "message": "Drag handle. Use up and down arrows to resize"
   },

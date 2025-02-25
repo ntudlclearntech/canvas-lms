@@ -240,6 +240,15 @@
   "drag_and_drop_or_click_to_browse_your_computer_60772d6d": {
     "message": "拖放或按一下以瀏覽您的電腦"
   },
+  "only_pdf_docx_and_pptx_files_are_supported_to_uplo_a72473ad":{
+    "message": "僅支援 .pdf, .docx, .pptx 檔案，如需上傳影音檔 (.mp4, .mp3, .mov) 請先至課程文件上傳再插入"
+  },
+  "https_docs_google_com_document_d_1jasdlfrbdraye5r__22e6719b":{
+    "message": "https://docs.google.com/document/d/1p6Rz_Q0K5BP2wJOXd5zBRE_ZWE9pfY1z/edit#heading=h.17dvmdz7ncuh"
+  },
+  "how_to_upload_media_files_e0565053":{
+    "message": "(如何上傳影音檔?)"
+  },
   "drag_handle_use_up_and_down_arrows_to_resize_e29eae5c": {
     "message": "拖曳控點。使用上下箭頭重新調整大小"
   },

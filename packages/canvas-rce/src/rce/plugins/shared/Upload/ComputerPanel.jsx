@@ -38,6 +38,7 @@ import {TruncateText} from '@instructure/ui-truncate-text'
 import {Flex} from '@instructure/ui-flex'
 import {View} from '@instructure/ui-view'
 import {MediaPlayer} from '@instructure/ui-media-player'
+import {Link} from '@instructure/ui-link'
 
 import {
   RocketSVG,
@@ -280,6 +281,25 @@ export default function ComputerPanel({theFile, setFile, setError, accept, label
           />
         }
       />
+      {/* only show following message when upload document */}
+      {typeof(accept) !== 'string' &&
+        <>
+          <Text color="success">
+            {formatMessage('Only .pdf, .docx, and .pptx files are supported. To upload media files (.mp4, .mp3, .mov), please upload them to Course Files first and then insert them.')}
+          </Text>
+          <Link
+            href={
+              formatMessage(
+                'https://docs.google.com/document/d/1jasdLFrbDrAye5R_hlpW-6whZhp7pzxr/edit#heading=h.770aq4fwu9vb'
+              )
+            }
+            // @ts-expect-error
+            target="_blank"
+          >
+            {formatMessage('(How to upload media files?)')}
+          </Link>
+        </>
+      }
     </div>
   )
 }
