@@ -63,7 +63,8 @@ class GradingStandardsController < ApplicationController
   def create
     if authorized_action(@context, @current_user, :manage_grades)
       default_grading_schemes = GradingStandard.default_grading_standard.map {|key, value| key}
-      new_grading_schemes = grading_standard_params["data"].map {|key, value| key}
+      @new_grading_standard = @context.grading_standards.build(grading_standard_params)
+      new_grading_schemes = @new_grading_standard.data.map {|key, value| key}
 
       is_all_schemes_valid = is_subsequence(new_grading_schemes, default_grading_schemes)
       is_admin_user = @current_user.roles(@domain_root_account).include?("admin")
@@ -91,7 +92,8 @@ class GradingStandardsController < ApplicationController
     @standard = GradingStandard.for(@context).find(params[:id])
 
     current_grading_schemes = @standard.data.map { |sub_array| sub_array[0] }
-    updating_grading_schemes = grading_standard_params["standard_data"].map { |key, value| value["name"] }
+    @updating_grading_standard = @context.grading_standards.build(grading_standard_params)
+    updating_grading_schemes = @updating_grading_standard.data.map {|key, value| key}
     
     is_valid_scheme_sequence = is_subsequence(updating_grading_schemes, current_grading_schemes)
     is_admin_user = @current_user.roles(@domain_root_account).include?("admin")
