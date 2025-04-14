@@ -11899,6 +11899,7 @@ zh-Hant:
     student: 學生
     teacher: 教師
     teacher_assistant: 助教
+    teacher_assistant_no_grading: 助教 (無評分權限)
   enrollment_could_not_be_deleted_76fd477b: 無法刪除註冊
   enrollment_count_8a289702: 註冊計數
   enrollment_count_report_685807b6: 註冊計數報告
@@ -25662,6 +25663,7 @@ zh-Hant:
       tas: 助教
       teacher: 教師
       teachers: 教師
+      ta_no_grading: 助教 (無評分權限)
     tooltips: 
       readonly: 您沒有更改此項的權限。
       toogle: 按一下以啟用或停用此權限

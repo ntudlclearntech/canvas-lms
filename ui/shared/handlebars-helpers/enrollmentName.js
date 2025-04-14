@@ -40,6 +40,11 @@ const types = {
 export default function enrollmentName(type) {
   if (type == '旁聽生' || type.toLowerCase() == 'auditor') {
     return I18n.t('auditor', 'Auditor')
+  } else if (
+    type == '助教 (無評分權限)' ||
+    type.toLowerCase() == 'ta (no permission for grading)'
+  ) {
+    return I18n.t('teacher_assistant_no_grading', 'TA (no permission for grading)')
   } else {
     return types[type] || type
   }

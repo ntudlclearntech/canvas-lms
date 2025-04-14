@@ -83,6 +83,8 @@ class RoleOverride < ActiveRecord::Base
   def self.get_custom_role_label(custom_name)
     if custom_name && (custom_name == "旁聽生" || custom_name.downcase == "auditor")
       t("roles.auditor", "Auditor")
+    elsif custom_name && (custom_name == "助教 (無評分權限)" || custom_name.downcase == "ta (no permission for grading)")
+      t("roles.ta_no_grading", "TA (no permission for grading)")
     else
       custom_name
     end
