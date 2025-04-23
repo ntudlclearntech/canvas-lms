@@ -41,7 +41,7 @@ module BroadcastPolicies
 
       accepting_messages? &&
         assignment.published? &&
-        !assignment.muted? &&
+        # !assignment.muted? &&
         !just_published? &&
         (assignment.saved_change_to_points_possible? || assignment.assignment_changed) &&
         !checkpoint_reply_to_entry?
