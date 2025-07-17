@@ -111,7 +111,7 @@ module CanvasRails
       end
 
       FileUtils.mkdir_p(File.dirname(log_path))
-      config.logger = CanvasLogger.new(log_path, log_level)
+      config.logger = CanvasLogger.new(log_path, level: log_level)
     end
     config.logger.level = log_level
     unless log_config["log_context"] == false
