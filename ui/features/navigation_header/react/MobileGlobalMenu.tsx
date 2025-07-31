@@ -284,7 +284,8 @@ export default function MobileGlobalMenu(props: Props) {
           </List.Item>
         ))}
 
-        <List.Item>
+        {/* Hide History Icon #186 */}
+        {/* <List.Item>
           <ToggleDetails
             iconPosition="end"
             fluidWidth={true}
@@ -303,7 +304,7 @@ export default function MobileGlobalMenu(props: Props) {
               <HistoryList />
             </View>
           </ToggleDetails>
-        </List.Item>
+        </List.Item> */}
 
         {/* Hide Help link #116 */}
         {/* <List.Item>
