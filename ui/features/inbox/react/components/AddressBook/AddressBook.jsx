@@ -160,7 +160,8 @@ export const AddressBook = ({
     ? [
         {
           id: currentFilter.context.contextID,
-          name: `${I18n.t('All in')} ${currentFilter.context.contextName}`,
+          // Cool Mailbox Customize #537
+          name: ENV.LOCALE === 'zh-Hant' ? `${I18n.t('All in')} ${currentFilter.context.contextName} 的成員` : `${I18n.t('All in')} ${currentFilter.context.contextName}`,
           itemType: SELECT_ENTIRE_CONTEXT_TYPE,
           totalRecipientCount: menuData?.totalRecipientCount || 0,
         },

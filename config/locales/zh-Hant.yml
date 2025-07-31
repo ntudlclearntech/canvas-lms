@@ -2662,7 +2662,7 @@ zh-Hant:
   all_groups_cea25817: 所有小組
   all_grouptitle_outcomes_dcc565d1: "所有 %{groupTitle} 學習成果"
   all_image_types_allowed_9c65004d: 允許所有圖片類型
-  all_in_e5ddaee0: 收起所有
+  all_in_e5ddaee0: 所有屬於
   all_items_a49b66c7: 所有項目
   all_items_marked_processed_have_been_saved_by_canv_7045295a: "Canvas 已儲存所有標記為「已處理」的項目。"
   all_jobs_1d82f9d6: 所有工作
@@ -8214,7 +8214,7 @@ zh-Hant:
     message: 
       mark_as_read: 標記為已讀
       mark_as_unread: 標記為未讀
-      no_subject: 無主題
+      no_subject: 無主旨
       open_message: 開啟訊息
       star_conversation: 為交談加星號
       starred: 已加星號
@@ -8227,7 +8227,7 @@ zh-Hant:
       forward: 轉發
       message_actions: 訊息操作
       more_options: 更多選項
-      no_subject: 無主題
+      no_subject: 無主旨
       reply: 回覆
       reply_all: 全部回覆
     message_form_dialog: 
@@ -8249,7 +8249,7 @@ zh-Hant:
         media_comment: 記錄
       media_comment: 媒體評論
       no_course: 無課程
-      no_subject: 無主題
+      no_subject: 無主旨
       search_names_groups_courses: 搜索名稱、群組和課程
       send_individual_messages: 在「已發送」信件匣獨立顯示每個收件者的信件
       titles: 
@@ -16093,11 +16093,11 @@ zh-Hant:
   insert_equella_links_49a8dacd: "插入 Equella 連結"
   insert_here_ccdb022e: 在此處插入
   insert_math_equation_57c6e767: 插入數學方程式
-  insert_or_select_names_a780902c: 插入或選擇名稱
+  insert_or_select_names_a780902c: 輸入或選擇名稱
   insert_row_below_25187f89: 在下方插入一行
   insert_row_below_name_a5b3bd41: "在以下插入一行 %{name}"
   insert_row_in_edit_mode_5976f269: 在編輯模式中插入列
-  insert_subject_9f0d8e49: 插入主題
+  insert_subject_9f0d8e49: 無主旨
   insights_b514ad8d: Insights
   instaccess_tokens_b13a8390: "InstAccess 許可證"
   install_a_new_extension_194fe594: 安裝新的擴充程式
@@ -20646,9 +20646,9 @@ zh-Hant:
   no_students_have_taken_the_quiz_yet_e667644b: 還沒有學生參加該測驗
   no_students_have_taken_the_survey_yet_d378cd35: 還沒有學生參加該調查
   no_students_with_that_name_found_f6004da2: 找不到學生姓名
-  no_subject_58b7941c: 無主題
-  no_subject_970aad80: 無主題
-  no_subject_a8b6ceeb: （無主題）
+  no_subject_58b7941c: 無主旨
+  no_subject_970aad80: 無主旨
+  no_subject_a8b6ceeb: （無主旨）
   no_submission_fb131a40: 無提交項目
   no_submission_for_assignment_a9cb6fe2: "無 %{assignment} 的繳交項目"
   no_submission_for_assignmenttitle_243bd1f4: "無 %{assignmentTitle} 的提交項目"
@@ -20736,8 +20736,8 @@ zh-Hant:
   not_signed_47acf472: 未簽名
   not_specified_24a60319: 未指定
   not_starred_98931190: 未加星號
-  not_starred_no_subject_click_to_star_adfefe93: 未標記星號的『（無主題）』項目，點一下以標記星號。
-  not_starred_no_subject_click_to_star_dc91380: 未標記星號的『（無主題）』項目，點一下以標記星號。
+  not_starred_no_subject_click_to_star_adfefe93: 未標記星號的『（無主旨）』項目，點一下以標記星號。
+  not_starred_no_subject_click_to_star_dc91380: 未標記星號的『（無主旨）』項目，點一下以標記星號。
   not_starred_subject_click_to_star_4ea6eb64: "未標記星號的『%{subject}』項目，點一下以標記星號。"
   not_submitted_7d05fdb4: 未提交
   not_submitted_fff47f17: 未提交
@@ -26539,7 +26539,7 @@ zh-Hant:
   send_a_message_to_student_b2e72576: "傳送訊息至%{student}"
   send_a_message_to_the_teacher_1ae115b6: 發送郵件給教師
   send_a_message_to_this_student_ec46b8dd: 向此學生發送訊息
-  send_an_individual_message_to_each_recipient_e9ddaeb8: 給每個收件者發送一份個人郵件
+  send_an_individual_message_to_each_recipient_e9ddaeb8: 在「已發送」信件匣獨立顯示每個收件者的信件
   send_assignment_name_to_another_user_e2ca494d: "傳送作業 %{name} 給其他學生"
   send_authorization_url_in_lti2_registration_287fcb33: "在 LTI2 注冊中發送授權 URL"
   send_comment_4e05f2fb: 發送評論
@@ -28012,12 +28012,12 @@ zh-Hant:
   standard_status_1b751c6b: 標準狀態
   standard_statuses_76e35e3c: 標準狀態
   star_2d27c137: 星號
-  star_8d156e09: 新增星號
+  star_8d156e09: 標記星號
   star_conversation_2e2ba614: 為信件加上星號
   starred_5a9efa8a: 已加星號
   starred_9523c316: 已加星號
-  starred_no_subject_click_to_unstar_3191d64: 已加星號的『（無主題）』項目，點一下以取消星號。
-  starred_no_subject_click_to_unstar_bff04bce: 已加星號的『（無主題）』項目，點一下以取消星號。
+  starred_no_subject_click_to_unstar_3191d64: 已加星號的『（無主旨）』項目，點一下以取消星號。
+  starred_no_subject_click_to_unstar_bff04bce: 已加星號的『（無主旨）』項目，點一下以取消星號。
   starred_subject_click_to_unstar_6aafcddc: "已加星號的『 %{subject}』項目，點一下以取消星號。"
   start_5a4cfcd6: 開始
   start_a_conversation_with_your_instructor_in_the_c_50c9b8d5: "在 Canvs 收件匣內與您的考試開始交談。"
@@ -28351,7 +28351,7 @@ zh-Hant:
   subaccounts_efd02bd4: 子帳戶
   subaccounts_only_have_ownership_of_courses_and_sec_56385a91: "子帳戶僅擁有課程和分班；並不擁有使用者資料。子帳戶管理員不能檢視 SIS 資訊，除非他們於課程中獲授予導師身份。"
   subdomain_url_1e43b6f0: "子網域 URL"
-  subject_114b2e98: 主題
+  subject_114b2e98: 主旨
   subject_1bc03dea: 主題：
   subject_details_12405b1: 主題詳細資料
   subject_home_8e593f72: 科目首頁
@@ -30329,7 +30329,7 @@ zh-Hant:
   tls_7a2eaba5: TLS
   to_1126ab55: 至
   to_35c6baa2: 至
-  to_51406be9: 至
+  to_51406be9: 收件者
   to_access_a_course_people_page_users_view_list_mus_5a4ee1a5: "要存取課程「成員」頁面，必須同時啟用「使用者 - 檢視清單」。"
   to_access_assignment_submissions_through_assignmen_30c5c8f2: "要透過作業列表或成績單存取作業提交項目，並於 作業批改模式 內查看，必須同時啟用「成績 - 查看所有成績」或「成績 - 編輯」。"
   to_access_assignment_submissions_through_assignmen_ce438715: |-
@@ -31396,7 +31396,7 @@ zh-Hant:
   unselected_course_course_89995a83: "未選擇的課程%{course}"
   unselected_external_tool_tool_1bd68403: "未選擇的外部工具%{tool}"
   unsplash_ee049fbf: 取消開頭顯示
-  unstar_b84daaef: 刪除星號
+  unstar_b84daaef: 取消標記星號
   unstar_conversation_45fc43d6: 刪除交談的星號
   unstarted_932f2990: 未開始
   unsubscribe_8be438ff: 取消訂閱

@@ -155,7 +155,8 @@ const CourseSelect = props => {
   const getGroupLabel = groupKey => {
     switch (groupKey) {
       case 'favoriteCourses':
-        return I18n.t('Favorite Courses', 'Current Courses')
+        // Cool Mailbox Customize #537
+        return ENV?.LOCALE?.startsWith('en') ? 'Current Courses' : I18n.t('Favorite Courses')
       case 'moreCourses':
         return I18n.t('More Courses')
       case 'concludedCourses':

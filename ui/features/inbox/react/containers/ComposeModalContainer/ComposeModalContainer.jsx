@@ -527,7 +527,8 @@ const ComposeModalContainer = props => {
               <Modal.Footer>
                 <ComposeActionButtons
                   onAttachmentUpload={addAttachment}
-                  onMediaUpload={() => setMediaUploadOpen(true)}
+                  // Cool Mailbox Customize #537
+                  // onMediaUpload={() => setMediaUploadOpen(true)}
                   onCancel={dismiss}
                   onSend={() => {
                     if (!validMessageFields()) {
