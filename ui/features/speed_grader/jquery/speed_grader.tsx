@@ -3085,6 +3085,9 @@ EG = {
 
         if (gradingAssessment) {
           idToSelect = gradingAssessment.id
+          // Fallback to first available student rubric if no instructor assessment exists #539
+        } else if (selectMenuOptions.length > 0) {
+          idToSelect = selectMenuOptions[0].id
         }
       }
 
