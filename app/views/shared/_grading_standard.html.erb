@@ -37,14 +37,16 @@
         >
           <i class="icon-edit standalone-icon"></i>
         </a>
-        <a
-          aria-label="<%= t('Remove Grading Scheme %{title}', title: grading_standard.title) %>"
-          class="remove_grading_standard_link no-hover <%= 'read_only' unless grading_standard %>"
-          href="#"
-          title="<%= t('Remove Grading Scheme %{title}', title: grading_standard.title) %>"
-        >
-         <i class="icon-end standalone-icon"></i>
-        </a>
+        <!-- Hide "Remove Grading Scheme" button #540
+          <a
+            aria-label="<%= t('Remove Grading Scheme %{title}', title: grading_standard.title) %>"
+            class="remove_grading_standard_link no-hover <%= 'read_only' unless grading_standard %>"
+            href="#"
+            title="<%= t('Remove Grading Scheme %{title}', title: grading_standard.title) %>"
+          >
+          <i class="icon-end standalone-icon"></i>
+          </a>
+        -->
       </div>
       <% end %>
       <strong class="displaying title"><%= grading_standard.default_standard? ? I18n.t('Default Grading Scheme') : grading_standard.title %></strong>
