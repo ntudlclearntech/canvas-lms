@@ -19,8 +19,9 @@
 #
 
 class GradingStandardsController < ApplicationController
+  # Remove assessed_assignment? key to avoid jQuery syntax problems #431
   JSON_METHODS =
-    %i[display_name context_code assessed_assignment? context_name].freeze
+    %i[display_name context_code context_name].freeze
 
   before_action :require_context
   add_crumb(proc { t "#crumbs.grading_standards", "Grading" }) { |c| c.send :named_context_url, c.instance_variable_get(:@context), :context_grading_standards_url }
@@ -133,8 +134,11 @@ class GradingStandardsController < ApplicationController
     GradingStandard.default_grading_standard
   end
 
+  # Rewrite the standard as_json method to solve the jQuery syntax problems #431
   def standard_as_json(standard)
-    standard.as_json(methods: JSON_METHODS, permissions: { user: @current_user })
+    json = standard.as_json(methods: JSON_METHODS, permissions: { user: @current_user })
+    json['assessed_assignment'] = standard.assessed_assignment?
+    json
   end
 
   def grading_standard_params
