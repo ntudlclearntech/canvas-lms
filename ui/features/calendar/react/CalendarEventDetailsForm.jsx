@@ -464,7 +464,7 @@ const CalendarEventDetailsForm = ({event, closeCB, contextChangeCB, setSetContex
             <TimeSelect
               disabled={!shouldEnableTimeFields()}
               data-testid="event-form-start-time"
-              renderLabel={I18n.t('From')}
+              renderLabel={I18n.t('Start Time')} // Calendar Customize # 544
               value={shouldEnableTimeFields() ? startTime : ''}
               placeholder={I18n.t('Start Time')}
               onChange={(e, {value}) => trySetStartTime(value)}
@@ -480,7 +480,7 @@ const CalendarEventDetailsForm = ({event, closeCB, contextChangeCB, setSetContex
             <TimeSelect
               disabled={!shouldEnableTimeFields()}
               data-testid="event-form-end-time"
-              renderLabel={I18n.t('To')}
+              renderLabel={I18n.t('End Time')} // Calendar Customize # 544
               value={shouldEnableTimeFields() ? endTime : ''}
               placeholder={I18n.t('End Time')}
               onChange={(e, {value}) => trySetEndTime(value)}

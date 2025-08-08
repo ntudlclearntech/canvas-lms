@@ -169,7 +169,8 @@ const HeaderInputs = props => {
             title={
               <PresentationContent>
                 <Text id="address-book-form" size="small">
-                  {I18n.t('To')}
+                  {/* Cool Mailbox Customize #537 */}
+                  {ENV.LOCALE === 'zh-Hant' ? '收件者' : I18n.t('To') }
                 </Text>
               </PresentationContent>
             }
@@ -188,7 +189,8 @@ const HeaderInputs = props => {
                 addressBookMessages={props.addressBookMessages}
                 courseContextCode={props.selectedContext?.contextID || ''}
                 placeholder={I18n.t('Insert or Select Names')}
-                addressBookLabel={I18n.t('To')}
+                // Cool Mailbox Customize #537
+                addressBookLabel={ENV.LOCALE === 'zh-Hant' ? '收件者' : I18n.t('To')}
               />
             }
             shouldGrow={true}

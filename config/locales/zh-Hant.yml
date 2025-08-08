@@ -10330,7 +10330,7 @@ zh-Hant:
   default_conference_title: "%{course_name} 會議"
   default_course_pace_ce0ba0f3: 預設課程進度
   default_course_pacing_d18b6cda: 預設課程進度
-  default_date_will_be_today_s_date_4f85dcdc: 預設曰期將是今天的曰期
+  default_date_will_be_today_s_date_4f85dcdc: 預設日期將是今天的日期
   default_dates_a0a2ae26: 預設日期
   default_due_time_9d0e9140: 預設截止時間
   default_email_5cb9fa04: 預設電子郵件：
@@ -30329,7 +30329,7 @@ zh-Hant:
   tls_7a2eaba5: TLS
   to_1126ab55: 至
   to_35c6baa2: 至
-  to_51406be9: 收件者
+  to_51406be9: 至
   to_access_a_course_people_page_users_view_list_mus_5a4ee1a5: "要存取課程「成員」頁面，必須同時啟用「使用者 - 檢視清單」。"
   to_access_assignment_submissions_through_assignmen_30c5c8f2: "要透過作業列表或成績單存取作業提交項目，並於 作業批改模式 內查看，必須同時啟用「成績 - 查看所有成績」或「成績 - 編輯」。"
   to_access_assignment_submissions_through_assignmen_ce438715: |-
