@@ -55,7 +55,7 @@ module CanvasRails
     config.action_dispatch.rescue_responses["AuthenticationMethods::LoggedOutError"] = 401
     config.action_dispatch.rescue_responses["CanvasHttp::CircuitBreakerError"] = 502
     config.action_dispatch.default_headers.delete("X-Frame-Options")
-    config.action_dispatch.default_headers["Referrer-Policy"] = "no-referrer-when-downgrade"
+    config.action_dispatch.default_headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     config.action_controller.forgery_protection_origin_check = true
     ActiveSupport.to_time_preserves_timezone = true
     # Ensure switchman gets the new version before the main initialize_cache initializer runs
