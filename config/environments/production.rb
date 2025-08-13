@@ -33,7 +33,7 @@ Rails.application.configure do
 
   # Specifies the header that your web server uses for directly sending files
   # If you have mod_xsendfile enabled in apache:
-  config.action_dispatch.x_sendfile_header = 'X-Sendfile'
+  # config.action_dispatch.x_sendfile_header = 'X-Sendfile'
   # For nginx:
   # config.action_dispatch.x_sendfile_header = 'X-Accel-Redirect'
 
