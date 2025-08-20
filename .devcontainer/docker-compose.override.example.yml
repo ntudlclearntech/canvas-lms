@@ -1,0 +1,32 @@
+services:
+  application:
+    build:
+      args:
+        USERNAME: ${USER}
+        USER_UID: 1001 # id -u
+        USER_GID: 1001 # id -g
+    env_file:
+      - ../../../.env.base
+      - ../../../.env.canvas-lms
+      - ../../../.env.canvas-lms.jwk
+    environment:
+      - RAILS_ENV=development 
+      - NODE_ENV=development
+    volumes:
+      # local-services-canvas-lms-docker mounts folder
+      - ../../../mounts/canvas-lms/log/:/usr/workspace/log/
+      - ../../../mounts/canvas-lms/tmp/:/usr/workspace/tmp/
+      - ../../../mounts/canvas-lms/saml/:/usr/workspace/config/saml/
+      - ../../../mounts/canvas-lms/brandable_css/:/usr/workspace/public/dist/brandable_css/
+    networks:
+      - local-infra
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.canvas-lms-dev.entrypoints=port-11600
+      - traefik.http.routers.canvas-lms-dev.tls=true
+      - traefik.http.services.canvas-lms-dev.loadbalancer.server.port=3000
+
+networks:
+  local-infra:
+    external: true
+    name: local-infra-network
