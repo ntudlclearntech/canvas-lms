@@ -52,6 +52,22 @@ const I18n = useI18nScope('calendar.edit')
 
 RichContentEditor.preloadRemoteModule()
 
+// Cool Customize 
+// https://gitlab.dlc.ntu.edu.tw/ntu-cool/canvas-lms/-/issues/551
+const zhDateRegex = /^\d{4}年\d{1,2}月\d{1,2}日$/
+const formatDateString  = (dateString) => {
+  if(!dateString) return dateString
+
+  let parseMoment
+  if(zhDateRegex.test(dateString)){
+    parseMoment = moment(dateString, 'YYYY年MM月DD日')
+  }
+  else{
+    parseMoment = moment(dateString)
+  }
+  return parseMoment.format("MMM D, YYYY")
+}
+
 // #
 // View for editing a calendar event on it's own page
 export default class EditCalendarEventView extends Backbone.View {
@@ -126,7 +142,7 @@ export default class EditCalendarEventView extends Backbone.View {
       this.model.set(attrs)
       this.frequency = attrs.rrule
         ? RRULEToFrequencyOptionValue(
-            moment.tz(attrs.start_date, 'MMM D, YYYY', ENV.TIMEZONE),
+            moment.tz(formatDateString(attrs.start_date), 'MMM D, YYYY', ENV.TIMEZONE),
             attrs.rrule
           )
         : 'not-repeat'
@@ -273,7 +289,8 @@ export default class EditCalendarEventView extends Backbone.View {
   renderRecurringEventFrequencyPicker() {
     if (!this.model.get('use_section_dates')) {
       const pickerNode = document.getElementById('recurring_event_frequency_picker')
-      const start = this.$el.find('[name="start_date"]').val()
+      let start = this.$el.find('[name="start_date"]').val()
+      start = formatDateString(start)
       const eventStart = start ? moment.tz(start, 'MMM D, YYYY', ENV.TIMEZONE) : moment('invalid')
 
       const rrule = this.model.get('rrule')
@@ -316,7 +333,8 @@ export default class EditCalendarEventView extends Backbone.View {
     this.showDuplicates(this.model.get('use_section_dates'))
 
     this.$el.find('[name="start_date"]').on('change', () => {
-      const start = this.$el.find('[name="start_date"]').val()
+      let start = this.$el.find('[name="start_date"]').val()
+      start = formatDateString(start)
       const eventStart = start ? moment.tz(start, 'MMM D, YYYY', ENV.TIMEZONE) : moment('invalid')
       if (eventStart.isValid() && this.model.get('rrule') && this.frequency !== 'saved-custom') {
         this.model.set('rrule', updateRRuleForNewDate(eventStart, this.model.get('rrule')))
