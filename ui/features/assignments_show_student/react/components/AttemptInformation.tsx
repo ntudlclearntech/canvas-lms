@@ -78,9 +78,9 @@ export default ({
         submission.state === 'unsubmitted'
     )
 
-  const unsubmittedDraftMessage = I18n.t(
-    'After the first attempt, you cannot leave comments until you submit the assignment.'
-  )
+  const unsubmittedDraftMessage = ENV?.LOCALE?.startsWith('en')
+    ? 'Please submit the assignment before adding a comment.'
+    : I18n.t('After the first attempt, you cannot leave comments until you submit the assignment.')
   const unavailablePeerReviewMessage = I18n.t(
     'You cannot leave comments until reviewer and reviewee submits the assignment.'
   )
@@ -118,7 +118,9 @@ export default ({
           <Flex.Item>
             <Text size="small">
               {submission.attempt === 0
-                ? I18n.t('Offline Score:')
+                ? ENV?.LOCALE?.startsWith('en')
+                  ? 'Score:'
+                  : I18n.t('Offline Score:')
                 : I18n.t('Attempt %{attempt} Score:', {attempt: submission.attempt})}
             </Text>
           </Flex.Item>

@@ -2183,7 +2183,7 @@ zh-Hant:
       date_at_time: "%b %-d at %k:%M"
       default: "%Y-%m-%d"
       full: "%Y年%m月%-d日 %k:%M"
-      full_with_weekday: "%a %Y年%m月%-d日 %k:%M"
+      full_with_weekday: "星期%a %Y年%m月%-d日 %k:%M"
       long: "%Y %B %-d"
       long_with_weekday: "%A, %B %-d"
       medium: "%Y年%m月%-d日"

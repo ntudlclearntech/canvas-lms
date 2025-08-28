@@ -705,7 +705,7 @@ zh-Hant:
     report_header_student_sis: "學生 SIS"
     report_header_student_sis_id: "學生 SIS ID"
     report_header_student_sortable_name: 可排序的學生名字
-    report_header_submission_date: 提交日期
+    report_header_submission_date: 繳交日期
     report_header_submission_score: 提交分數
     report_header_term: 學期
     report_header_term__id: term_id
@@ -2559,7 +2559,7 @@ zh-Hant:
   after_last_attempt_c9168da2: 僅在繳交次數達到允許的作答次數後，才會顯示
   after_the_assignment_is_graded_53754607: 作業評分之後
   after_the_due_date_eee89c9c: 截止日期之後
-  after_the_first_attempt_you_cannot_leave_comments__3922325f: 第一次嘗試後，您不可留下評論，直到提交作業為止。
+  after_the_first_attempt_you_cannot_leave_comments__3922325f: 請先完成作業繳交，才能新增評論。
   after_throttling_the_selected_jobs_the_newly_creat_44952b37: 調整選取的工作後，將選取新建立的部分。
   agenda_b010136d: 議程
   ahead_21f22939: 之前
@@ -5162,11 +5162,11 @@ zh-Hant:
   attempt_1_7ba3c30f: "嘗試 1"
   attempt_1_grade_484b35e4: "嘗試 1：%{grade}"
   attempt_3dd42b18: 嘗試
-  attempt_attempt_d3911720: "嘗試 %{attempt}"
-  attempt_attempt_feedback_1b042ff5: "嘗試 %{attempt} 反饋"
-  attempt_attempt_feedback_549683ba: "嘗試 %{attempt} 反饋："
+  attempt_attempt_d3911720: "第 %{attempt} 次繳交"
+  attempt_attempt_feedback_1b042ff5: "第 %{attempt} 次繳交 評論"
+  attempt_attempt_feedback_549683ba: "第 %{attempt} 次繳交 評論："
   attempt_attempt_grade_c01f45df: "嘗試 %{attempt}：%{grade}"
-  attempt_attempt_score_2a973edc: "嘗試 %{attempt} 分數："
+  attempt_attempt_score_2a973edc: "第 %{attempt} 次作業繳交分數："
   attempt_count_267a4fc5: "嘗試 %{count}"
   attempt_current_attempt_ef626179: "嘗試 %{current_attempt}"
   attempt_current_attempt_of_max_attempts_427ed508: "第 %{current_attempt} 次嘗試，共可嘗試 %{max_attempts} 次"
@@ -5370,9 +5370,9 @@ zh-Hant:
   availability_dates_438d71e0: 可使用日期
   availability_dates_changed_exceptions_465ba375: 變更可使用日期的例外情況︰
   availability_e415e857: 可用性：
-  available_2ed9f226: 可用：
+  available_2ed9f226: 接受繳交時間：
   available_8606e40c: 可用
-  available_after_3416802b: 此時間後可用：
+  available_after_3416802b: 開放時間：
   available_after_unlock_at_b5682224: "在 %{unlock_at} 之後可用"
   available_after_unlock_at_until_lock_at_499e8092: "在 %{unlock_at} 之後和 %{lock_at} 之前可用"
   available_d3bb0b5c: 可用
@@ -5391,7 +5391,7 @@ zh-Hant:
   available_pronouns_b45330b1: 可用代詞
   available_submission_types_1c577ae5: 可用的提交類型
   available_to_b7350e02: 可用於
-  available_until_3278ebe9: 關閉時間
+  available_until_3278ebe9: 關閉時間：
   available_until_date_2c0ccec3: 關閉日期：
   available_until_date_cd125c62: 關閉日期
   available_until_date_d2fe6cb1: "關閉日期：%{date}"
@@ -5417,7 +5417,7 @@ zh-Hant:
   back_to_announcements_1036e43e: 返回至公告
   back_to_app_center_95420d83: 返回應用程式中心
   back_to_assignment_1df86a69: 返回作業
-  back_to_attempt_attempt_ffb22bb8: "返回嘗試 %{attempt}"
+  back_to_attempt_attempt_ffb22bb8: "返回編輯"
   back_to_production_fed09f33: 返回版本
   back_to_ref_title_377ea1f0: "返回至 %{ref_title}"
   back_to_subject_80a1eb: 返回主題
@@ -6326,7 +6326,7 @@ zh-Hant:
   cancel_rename_aa60a881: 取消重新命名
   cancel_submitting_comment_2666e98b: 取消提交評論
   cancel_updating_comment_6816d855: 取消更新評論
-  canceling_this_attempt_will_permanently_delete_any_21ce850c: 取消此嘗試將永久刪除在此嘗試中執行的任何工作。是否要繼續並刪除您的工作？
+  canceling_this_attempt_will_permanently_delete_any_21ce850c: 取消繳交後，您這次填寫的內容將不會被儲存。確定要繼續嗎？
   cannot_access_group_in_concluded_course_90a8db52: 無法訪問已結束課程的群組
   cannot_add_a_temporary_enrollment_to_a_concluded_c_459a44fa: 無法將臨時註冊的使用者新增到已結束的課程中
   cannot_add_role_name_name_already_in_use_a523639c: "無法新增身份名稱 %{name}：已在使用中"
@@ -6611,7 +6611,7 @@ zh-Hant:
   chcp_student_activity_report_5611dd39: "CHCP 學生活動報告"
   check_back_in_a_little_while_17756399: 稍後回來查看。
   check_back_later_c4234dbc: 稍後再檢查
-  check_back_later_to_view_feedback_b937200a: 稍後返回檢查以檢視反饋。
+  check_back_later_to_view_feedback_b937200a: 之後可以在此頁面查看評論。
   check_permissions_when_masquerading_as_course_admi_ded7106c: 以課程管理員角色偽裝時檢查權限
   check_services_to_enable_8877c451: 檢查服務以啟用
   check_submission_file_type_b3dbf3fd: 檢查提交檔案類型
@@ -6644,7 +6644,7 @@ zh-Hant:
   choose_a_file_to_upload_a63bac0f: 選擇要上傳的檔案
   choose_a_file_to_upload_from_your_device_d1b50d4c: 選擇要從您的裝置上傳的檔案
   choose_a_quiz_engine_8820d521: 選擇測驗引擎
-  choose_a_submission_type_8f45651a: 選擇提交項目類型
+  choose_a_submission_type_8f45651a: 選擇繳交類型
   choose_a_time_808ccc1: 選擇時間
   choose_a_timezone_d9c52998: 選擇時區
   choose_additional_calendars_to_add_to_your_canvas__fdd2a72a: "選擇額外的行事曆以添加到您的 Canvas 行事曆中。"
@@ -7001,7 +7001,7 @@ zh-Hant:
   comment_suggestions_554a0dc6: 評論建議
   comment_updated_2cd56fe2: 評論已更新
   comments_e07bcbe3: 評論
-  comments_for_this_attempt_a5fae61f: 此嘗試的評論
+  comments_for_this_attempt_a5fae61f: 作業評論
   commmessages_9fa33faa: 通訊訊息
   common_cartridge_description: "這可在媒介 json 格式下轉換要導入的通用墨水匣"
   common_cartridge_display: 通用墨水匣
@@ -7223,7 +7223,7 @@ zh-Hant:
   completed_19711ce7: 已完成
   completed_9b809e44: 已完成
   completed_icon_521596e4: 完成的圖標
-  completed_peer_reviews_c134676: 完成的同儕互評
+  completed_peer_reviews_c134676: 已完成互評
   completed_submittedat_66f56614: "已完成 %{submittedAt}"
   compose_a_new_message_db3a68ed: 撰寫新郵件
   compose_message_8abd180a: 新增信件
@@ -7392,7 +7392,7 @@ zh-Hant:
   confirm_reservation_removal_e6350e7c: 確認預約移除
   confirm_restore_5997203d: 確認還原
   confirm_setting_deletion_ccd62cb6: 確認刪除設定
-  confirm_submission_e3b43f1: 確認提交
+  confirm_submission_e3b43f1: 繳交確認
   confirm_suspension_18cc1fd2: 確認暫停
   confirm_unenrollment_64333263: 確認取消註冊
   confirm_unfavorite_course_fa01966d: 確認取消收藏課程
@@ -8400,9 +8400,9 @@ zh-Hant:
     one: "%{count} 關聯的帳戶"
     other: "%{count} 關聯的帳戶"
   count_attempts_allowed_d65a014c: 
-    one: "允許 1 次嘗試"
-    other: "允許 %{count} 次嘗試"
-    zero: 允許無限制的嘗試
+    one: "允許 1 次繳交"
+    other: "允許 %{count} 次繳交"
+    zero: 允許無限制的繳交次數
   count_attempts_d23c69a0: 
     one: "1 次嘗試"
     other: "%{count} 次嘗試"
@@ -10460,8 +10460,8 @@ zh-Hant:
   delete_tool_app_9c9f6d35: "要刪除 %{tool} 應用程式？"
   delete_toolname_app_85f9d4ee: "刪除 %{toolName} 應用程式"
   delete_track_fc21128b: 刪除音軌
-  delete_work_e377128b: 刪除工作
-  delete_your_work_fe136221: 刪除您的工作？
+  delete_work_e377128b: 確定取消
+  delete_your_work_fe136221: 確定要取消繳交嗎？
   deleted_1be5ed1: 已刪除
   deleted_by_deletername_f269211a: "由 %{deleterName} 刪除"
   deleted_by_editor_d3fdc2ee: "由 %{editor} 刪除"
@@ -11347,7 +11347,7 @@ zh-Hant:
   dropped_for_grading_purposes_46256461: 拖放以進行分級
   dropping_course_80aabb72: 放棄課程
   dropping_subject_1d68ccf4: 放棄主題
-  due_5d7267be: 截止日期：
+  due_5d7267be: 截止時間：
   due_639f281d: "截止日期： "
   due_a73610f6: 截止時間
   due_assignment_due_date_time_5acdf3cf: "截止日期：%{assignment_due_date_time}"
@@ -13193,8 +13193,8 @@ zh-Hant:
   filipino_33339264: 菲律賓語
   fill_in_the_blank_answer_d83b83bb: 填空題答案
   fill_in_the_blank_read_surrounding_text_1a6c73c7: 填空，閱讀周圍文字
-  fill_out_rubric_22d4eee5: 填寫評分標準
-  fill_out_the_rubric_below_after_reviewing_the_stud_8eeb46c4: 檢閱學生提交項目後，填寫以下的評分標準以完成此檢閱。
+  fill_out_rubric_22d4eee5: 填寫評量指標
+  fill_out_the_rubric_below_after_reviewing_the_stud_8eeb46c4: 查看作業後，請填寫以下評量指標，以完成同儕互評。
   filled_5d8c39e: 已填充
   filter_9df28e5b: 過濾器：
   filter_announcements_by_unread_495eeeb3: 透過『未讀』篩選器對公告進行篩選
@@ -13380,14 +13380,14 @@ zh-Hant:
     one: "%{formattedPoints} 分"
     other: "%{formattedPoints} 分"
   formattedpoints_points_possible_1d93043f: 
-    one: "*%{formattedPoints}* 可能的分數"
-    other: "*%{formattedPoints}* 可能的分數"
+    one: "總分 *%{formattedPoints}*"
+    other: "總分 *%{formattedPoints}*"
   formattedpoints_points_possible_dad9d40a: 
-    one: "可能 %{formattedPoints} 分"
-    other: "可能 %{formattedPoints} 分"
+    one: "總分 %{formattedPoints}"
+    other: "總分 %{formattedPoints}"
   formattedpoints_possible_points_b0473a26: 
-    one: "可能 *%{formattedPoints}* 分"
-    other: "可能 *%{formattedPoints}* 分"
+    one: "總分 *%{formattedPoints}*"
+    other: "總分 *%{formattedPoints}*"
   formula_many_warning_title: "資料庫內的 %{count} 公式問題需要重新產生可能的答案"
   formula_warning_title: 將需要為公式問題重新產生可能的答案
   forward_d143f64: 轉寄
@@ -14201,7 +14201,7 @@ zh-Hant:
         submit_same_score: 使用同樣的成績重新提交
       loading: 正在載入...
       no_annotation: 注釋不適用於本文件
-      not_newest_notice: 注釋：這不是最近的提交項目
+      not_newest_notice: 注意：這不是最新的作業
       page_header_title: 作業批改模式
       page_title: "%{assignment_name}, 作業批改模式, %{course_name}"
       sort_by: 
@@ -20221,7 +20221,7 @@ zh-Hant:
   my_themes_b72217b8: 我的主題
   n_554bc493: "n"
   n_a_d5d5a207: 不適用
-  n_a_d6f6c42f: 不適用
+  n_a_d6f6c42f: 尚未評分
   n_contextscount_more_2f708db4: "+ %{n_contextsCount} 更多"
   n_count_alignments_a45bebe7: "*%{n_count}* 對齊"
   n_groupweight_percentage_of_total_2ae4d996: "佔總分的 %{n_groupWeight_percentage}"
@@ -20508,16 +20508,16 @@ zh-Hant:
   next_month_b55a387c: 下個月
   next_outcome_fe0a9299: 下一個成果
   next_page_d2a39853: 下一頁
-  next_peer_review_3d05ef23: 下一次同儕互評
+  next_peer_review_3d05ef23: 下一份同儕互評
   next_question_f37bac25: 下一道問題
   next_run_at_635de64a: 下次運行時間
   next_steps_ce0f0d0c: 接下來的步驟
   next_student_79955068: 下一個學生
   next_student_b62869f4: 下一個學生
-  next_up_review_feedback_19a15e0e: 下一個：檢閱反饋
-  next_up_review_feedback_59555dbd: 下一個：檢閱反饋
-  next_up_submit_assignment_2fdb7174: 下一個：提交作業
-  next_up_submit_assignment_793a9d41: 下一個：提交作業
+  next_up_review_feedback_19a15e0e: 下一步：查看評論
+  next_up_review_feedback_59555dbd: 下一步：查看評論
+  next_up_submit_assignment_2fdb7174: 下一步：繳交作業
+  next_up_submit_assignment_793a9d41: 下一步：繳交作業
   next_window_window_90271943: "下一個視窗：%{window}"
   nickname_1e6da3ad: 簡稱
   nickname_7df95b09: 簡稱：
@@ -20709,7 +20709,7 @@ zh-Hant:
   not_available_assignment_is_anonymous_94e77edf: 不可用；作業是匿名的
   not_available_at_the_subaccount_level_3fc74ab: 不可於子帳戶級別中使用。
   not_available_at_the_subaccount_level_6ee9b41f: 不可於子帳戶級別中使用
-  not_available_ca8cb4eb: 無法使用
+  not_available_ca8cb4eb: 暫無法進行互評
   not_available_during_sync_ae645e8c: 同步期間不可用
   not_available_until_date_3c1c73c2: "可用起始時間：%{date}"
   not_available_until_next_submission_2175158: 下次提交前不可用
@@ -20749,7 +20749,7 @@ zh-Hant:
   not_yet_assessed_9362f199: 尚未評估
   not_yet_completed_345a0bca: 尚未完成
   not_yet_graded_40475341: 尚未評分
-  not_yet_submitted_2d2b7328: 尚未提交
+  not_yet_submitted_2d2b7328: 暫無法互評（待繳交）
   note_8b73ce09: 顯示備註欄
   note_associated_tools_are_only_listed_once_even_if_ebae2aba: |-
       注: 關聯工具只會列出一次，
@@ -21245,7 +21245,7 @@ zh-Hant:
   off_policy_will_not_apply_to_this_sub_account_8b12386b: "關 - 政策不會應用至此子帳戶"
   off_student_names_and_profile_pictures_will_be_vis_6891e2cf: 關：此課程的其他成員將可看到學生姓名和個人檔案圖片。
   offensive_abusive_c41dcb08: 冒犯的，濫用的
-  offline_score_8d7b4779: 離線分數：
+  offline_score_8d7b4779: 分數：
   offline_web_export_dca67174: 離線網路導出
   oidc_auth_endpoint_changes_show_alert_for_upcoming_49555107: "OIDC 授權端點變更 - 顯示即將進行的變更的提醒"
   ok_c47544a2: 確定
@@ -21919,7 +21919,7 @@ zh-Hant:
   peer_reviews_e3a55964: 同儕互評
   peer_service_6b4828b9: 夥伴服務
   peer_services_102357e3: 夥伴服務
-  peer_submissions_ready_for_review_availablecount_3ac80091: "要檢閱的同儕提交項目就緒：%{availableCount}"
+  peer_submissions_ready_for_review_availablecount_3ac80091: "可進行互評的作業數：：%{availableCount}"
   penalty_adjusted_707df573: "*%{penalty}* **%{adjusted}**"
   pending_3e506a5b: 擱置
   pending_changes_3dcfed35: 擱置的變更
@@ -22044,7 +22044,7 @@ zh-Hant:
   please_allow_arc_to_access_your_webcam_e72e4be4: "請允許 Arc 存取您的網路攝影機。"
   please_allow_canvas_to_access_your_microphone_and__dc2c3079: "請允許 NTU COOL 存取您的麥克風和網路攝影機。"
   please_allow_canvas_to_access_your_webcam_f66bacb1: "請允許 NTU COOL 存取您的網路攝影機。"
-  please_check_back_soon_37d45200: 請稍後再查看。
+  please_check_back_soon_37d45200: 請等待同學繳交後再進行互評。
   please_contact_your_lms_administrator_for_more_det_635afd97: "如需更多詳細資料，請聯絡您的 LMS 管理員。"
   please_create_a_group_set_8db6e8fe: 請建立小組設置
   please_do_not_reply_to_this_email_it_will_not_be_d_1e49982a: 請不要回覆此電子郵件，它不會被發送。
@@ -25022,7 +25022,7 @@ zh-Hant:
     other: 閱讀狀態已變更！
   ready_for_sync_16eaf713: 準備好同步
   ready_to_enroll_panel_46f45abb: 已準備註冊面板
-  ready_to_review_8b2d96ac: 準備好檢閱
+  ready_to_review_8b2d96ac: 可進行互評
   reassign_2edc7f0d: 重新指派
   reassign_assignment_e3a70bcb: 重新指派作業
   reassign_assignments_cfd508c5: 重新指派作業
@@ -25429,7 +25429,7 @@ zh-Hant:
   required_end_date_22dd9ce3: 必填的結束日期
   required_fields_include_key_name_owner_email_tool__b8e42174: "所需欄目包括金鑰名稱、擁有者電郵、工具 ID、重新導向 URL，以及圖示 URL。"
   required_input_message_all_unassigned_students_1e721442: 需要輸入。傳送訊息給所有未指派的學生。
-  required_peer_review_index_b186729c: "需要同儕互評 %{index}"
+  required_peer_review_index_b186729c: "被指派的同儕互評 %{index}"
   required_peer_reviews_23bea465: 需要同儕互評
   required_to_view_quiz_results_dba7368b: 需要檢視測驗結果
   required_values_1eb5841f: 必填的值
@@ -25548,7 +25548,7 @@ zh-Hant:
   revert_to_old_ui_3211da41: "回覆成舊 UI"
   reverts_the_visible_assignments_scope_to_its_origi_87eb35d: 將可見的作業列表範圍回復到其原始形式
   review_7197fba3: "檢閱 "
-  review_feedback_4b4abb38: 檢閱反饋
+  review_feedback_4b4abb38: 查看評論
   review_now_318a6a3e: 立即查看
   reviewer_b993ce28: 檢閲人
   reviewers_successfully_added_bd4b629a: 成功添加檢閲人
@@ -27923,7 +27923,7 @@ zh-Hant:
       grade: "（評分：%{grade}）"
       loud_late: 逾期
       see_all_quiz_attempts: 檢視所有測驗作答紀錄
-      submission_to_view: 檢視作業繳交：
+      submission_to_view: 查看作業：
       submitted: "*繳交時間：* %{submittedAt}%{proxy_submitter_label_text}"
     submit: 提交
     titles: 
@@ -28572,7 +28572,7 @@ zh-Hant:
   submissions_re_upload_status_page_6cdbc96d: 提交項目重新上傳狀態頁面
   submissions_view_and_make_comments_cafaf361: "提交項目 - 查看和評論"
   submit_a3cc6859: 提交
-  submit_a_comment_7edbf648: 提交評論
+  submit_a_comment_7edbf648: 輸入評論
   submit_a_feature_idea_2d4baa3d: 提交功能理念
   submit_assessment_900ecd29: 提交評估
   submit_assignment: 
@@ -28618,7 +28618,7 @@ zh-Hant:
   submitted_late_3741af29: 逾期繳交
   submitted_late_97730017: 逾期繳交
   submitted_on_a09f839e: 提交日期
-  submitted_on_bb3b53fc: 提交日期
+  submitted_on_bb3b53fc: 繳交日期
   submitted_on_date_13c89fb: "提交日期 %{date}"
   submitted_submitdate_bdd3bf09: "已繳交：%{submitDate}"
   submitting_types_7c5a7096: "正在繳交: %{types}"
@@ -29445,7 +29445,7 @@ zh-Hant:
   there_are_no_pending_changes_to_publish_b4ffc6a7: 沒有要發佈的擱置的變更
   there_are_no_points_associated_with_this_item_449c712a: 沒有與此項目關聯的分數。
   there_are_no_reports_for_you_to_view_b716717a: 沒有可讓您檢視的報告。
-  there_are_no_submissions_available_to_review_just__2149475c: 還沒有可檢閱的提交項目。
+  there_are_no_submissions_available_to_review_just__2149475c: 目前暫無可用的作業。
   there_are_no_unsaved_changes_9276e87c: 沒有未儲存的更改
   there_are_no_unsynced_changes_4e8f0838: 沒有未同步的變更
   there_are_no_unsynched_changes_d208547c: 沒有未同步的變更
@@ -31412,7 +31412,7 @@ zh-Hant:
   unsynched_changes_867a1790: 未同步的變更
   until_4a1f8cda: 關閉時間 
   until_6437a827: 直到
-  until_8bdea3de: 直到
+  until_8bdea3de: 至
   until_date_949017c4: "直到 %{date}"
   until_date_must_be_after_the_available_date_8670dfcd: 結束日期必須晚於可用的日期
   until_date_must_be_after_the_due_date_d961566c: 結束日期必須晚於截止日期
@@ -32279,8 +32279,8 @@ zh-Hant:
   view_faculty_journals_ad0e8c8f: 檢視教職員日誌
   view_feature_options_at_an_account_level_a84cedbe: 檢視帳戶級別的功能選項
   view_feature_settings_at_an_account_level_ec7f5e10: 檢視帳戶級別的功能設定
-  view_feedback_b88c99c: 檢視反饋
-  view_feedback_f2feabca: 檢視反饋
+  view_feedback_b88c99c: 查看評論
+  view_feedback_f2feabca: 查看評論
   view_file_8a1c62e5: 檢視文件
   view_full_page_a985ae30: 檢視完整頁面
   view_gradebook_d6713dd1: 檢視成績單
@@ -32958,7 +32958,7 @@ zh-Hant:
   you_are_ready_to_sync_count_assignments_525eb8b1: 
     one: "您已準備好同步 %{count} 項作業。"
     other: "您已準備好同步 %{count} 項作業。"
-  you_are_submitting_a_submissiontype_submission_onl_29c1cdc1: "您正在提交 %{submissionType} 提交項目。僅允許一種提交類型。所有其他提交類型將被刪除。"
+  you_are_submitting_a_submissiontype_submission_onl_29c1cdc1: "您正在繳交「%{submissionType}」類型作業。系統僅支援一種繳交類型，其他已填寫的類型將會被移除。"
   you_are_subscribed_and_will_be_notified_of_new_com_60b5b62b: 您已訂閱，並將收到新評論的通知。按一下以退訂
   you_are_subscribed_to_this_topic_click_to_unsubscr_d6c09364: 您已訂閱了此主題。按一下以取消訂閱。
   you_are_the_group_leader_for_this_group_b8629b70: 您是本群組的群組領導者
@@ -33083,11 +33083,11 @@ zh-Hant:
     one: "您還剩餘 %{count} 個行事曆"
     other: "您還剩餘 %{count} 個行事曆"
   you_have_count_more_peer_reviews_to_complete_f7773c09: 
-    one: "您還有 %{count} 次同儕互評待完成。"
-    other: "您還有 %{count} 次同儕互評待完成。"
+    one: "您還有 %{count} 份同儕互評待完成。"
+    other: "您還有 %{count} 份同儕互評待完成。"
   you_have_count_peer_reviews_to_complete_219498fb: 
-    one: "您有 %{count} 次同儕互評待完成。"
-    other: "您有 %{count} 次同儕互評待完成。"
+    one: "您有 %{count} 份同儕互評待完成。"
+    other: "您有 %{count} 份同儕互評待完成。"
   you_have_count_peer_reviews_to_complete_52e065e: "您有 %{count} 同儕互評待完成"
   you_have_count_submissions_to_grade_6c5b511a: "您有 %{count} 個提交項目要評分"
   you_have_created_a_comment_that_has_not_been_poste_cd1d3a06: 您已建立尚未公佈的評論。是否要繼續並將此評論另存為草稿？（您可以隨時公佈草稿評論。）
@@ -33139,7 +33139,7 @@ zh-Hant:
                   包括未在您的機構的事先書面許可下
                   從本課程匯出的文件。與您的機構查詢具體的在線
                   使用者協議指南。
-  you_may_not_see_all_comments_for_this_assignment_u_61817628: 您可能看不到此作業的有些評論，直到公佈成績為止。
+  you_may_not_see_all_comments_for_this_assignment_u_61817628: 老師與助教的評論將在成績公佈後顯示。
   you_may_not_see_all_comments_right_now_because_the_96cf2051: 您可能不會立即就看到所有評論，因為目前該作業正在接受評分。
   you_may_not_update_a_locked_event_72708d23: 您不得更新鎖定的活動
   you_may_not_update_one_event_with_a_new_rrule_d3e3f7db: 您不得以新規則更新活動。
@@ -33182,7 +33182,7 @@ zh-Hant:
   you_must_set_usage_rights_87fc1382: 您必須設定使用權限
   you_must_specify_a_usage_right_5eb57f87: 您必須指定一項使用權
   you_must_specify_whether_to_enable_or_disable_micr_56c872c0: "您必須指定是否啟用或停用「Microsoft Teams 同步」"
-  you_must_submit_your_own_work_before_you_can_revie_2dea1448: 您必須在您可以互評同儕前提交您自己的工作。
+  you_must_submit_your_own_work_before_you_can_revie_2dea1448: 請先繳交自己的作業，再進行同儕互評。
   you_must_use_a_number_912ce4bd: 必須使用數字
   you_must_use_a_positive_number_203b86fe: 必須使用一個正數
   you_must_use_an_integer_78d2530f: 您必須使用整數
@@ -33312,7 +33312,7 @@ zh-Hant:
   your_outcomes_were_successfully_imported_c5de884: 您的學習成果已經成功匯入。
   your_password_has_been_changed_df0e72aa: 您的密碼已變更。
   your_password_recovery_instructions_will_be_sent_t_1b7991f5: "您的重設密碼指示將傳送至 *%{email_address}*。最多可能需要 30 分鐘。請務必檢查您的垃圾郵件箱。"
-  your_peer_review_is_complete_e5fa3e40: 您的同儕檢閱完成！
+  your_peer_review_is_complete_e5fa3e40: 已完成同儕互評。
   your_profile_photo_could_not_be_uploaded_you_may_h_1c90540c: 您的個人資料照片無法上傳。您可能已超過上傳限制。
   your_publishing_job_did_not_complete_4560155e: 您的發佈工作未完成。
   your_publishing_job_has_failed_e04f59ce: 您的發佈工作已失敗。
@@ -33330,7 +33330,7 @@ zh-Hant:
   your_time_for_this_quiz_has_been_reduced_394652e9: 您的用於此測驗的時間已減少。
   your_unpublished_changes_will_be_reverted_to_their_fd4ba075: 您的未發佈變更將回復為之前儲存的狀態。
   your_webcam_may_already_be_in_use_6cd64c25: 您的網路攝影機可能已在使用中。
-  your_work_has_been_submitted_519058f8: 您的工作已提交。
+  your_work_has_been_submitted_519058f8: 您的作業已繳交。
   yyyy_mm_dd_hh_mm_a01b6081: "年年年年-月月-日日 時時:分分"
   z_a_b48d8903: "Z - A"
   z_a_be2ab67c: Z–A

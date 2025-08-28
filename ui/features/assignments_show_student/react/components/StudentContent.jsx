@@ -119,7 +119,11 @@ function renderAttemptsAndAvailability(assignment) {
             </Text>
           )}
           <Text as="div">
-            <AvailabilityDates assignment={assignment} formatStyle="long" />
+            <AvailabilityDates
+              assignment={assignment}
+              formatStyle="long"
+              responsiveFormat={false} // COOL Customize #550
+            />
           </Text>
         </View>
       )}

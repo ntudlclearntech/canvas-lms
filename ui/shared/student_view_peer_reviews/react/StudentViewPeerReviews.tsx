@@ -61,7 +61,9 @@ export const StudentViewPeerReviews = ({assignment}: StudentViewPeerReviewsProps
 }
 
 const PeerReview = ({assessment, assignment, index}: PeerReviewProps) => {
-  const title = I18n.t(`Required Peer Review %{index}`, {index: index + 1})
+  const title = ENV?.LOCALE?.startsWith('en')
+    ? `Assigned Peer Review ${index + 1}`
+    : I18n.t(`Required Peer Review %{index}`, {index: index + 1})
   const {name: assignmentName} = assignment
   const screenreaderLabel = I18n.t('%{title} for %{assignmentName}', {title, assignmentName})
   const revieweeUsername = !assessment.available

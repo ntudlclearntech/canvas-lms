@@ -26,12 +26,20 @@ const I18n = useI18nScope('ConfirmationDialog')
 
 const dialogHolderId = 'confirmation_dialog_holder'
 
+/*
+COOL Customize
+- https://gitlab.dlc.ntu.edu.tw/ntu-cool/canvas-lms/-/issues/550
+
+Change Log :
+1. [Enhancement] Added `cancelText` prop to allow customizing the cancel button text. (#550)
+*/
 export default function ConfirmationDialog({
   open,
   label,
   children,
   confirmColor,
   confirmText,
+  cancelText,
   onConfirm,
   onReject,
   size = 'medium',
@@ -45,7 +53,7 @@ export default function ConfirmationDialog({
       footer={
         <>
           <Button data-testid="cancel-button" onClick={onReject}>
-            {I18n.t('Cancel')}
+            {cancelText || I18n.t('Cancel')}
           </Button>
           <Button
             data-testid="confirm-button"
@@ -67,6 +75,7 @@ export async function showConfirmationDialog({
   label,
   body,
   confirmText,
+  cancelText,
   confirmColor,
   size = 'medium',
 }) {
@@ -102,6 +111,7 @@ export async function showConfirmationDialog({
         label={label}
         confirmColor={confirmColor}
         confirmText={confirmText}
+        cancelText={cancelText}
         onConfirm={confirmationFunction}
         onReject={rejectFunction}
         size={size}

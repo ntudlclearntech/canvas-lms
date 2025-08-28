@@ -43,7 +43,9 @@ export default function AssignmentToggleDetails(props) {
       <ToggleDetails
         defaultExpanded={true}
         data-testid="assignments-2-assignment-toggle-details"
-        summary={<Text weight="bold">{I18n.t('Details')}</Text>}
+        summary={
+          <Text weight="bold">{ENV.LOCALE === 'zh-Hant' ? '作業描述' : I18n.t('Details')}</Text>
+        }
       >
         <View margin="0" padding="0">
           {/* html is sanitized on the server side */}

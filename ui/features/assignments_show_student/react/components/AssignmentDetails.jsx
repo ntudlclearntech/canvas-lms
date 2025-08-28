@@ -116,6 +116,7 @@ export default function AssignmentDetails({assignment, submission}) {
                       prefix={I18n.t('Due:')}
                       format={I18n.t('#date.formats.full_with_weekday')}
                       dateTime={assignment.dueAt}
+                      responsiveFormat={false} // COOL Customize #550
                     />
                   </>
                 )}

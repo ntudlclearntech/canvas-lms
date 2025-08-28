@@ -39,14 +39,26 @@ export default function PointsDisplay(props) {
         precision: 2,
         strip_insignificant_zeros: true,
       })
-      return I18n.t(
-        {one: '*1* Point Possible', other: '*%{formattedPoints}* Points Possible'},
-        {
-          count: props.pointsPossible,
-          formattedPoints,
-          wrappers: ['<span class="points-value">$1</span>'],
-        }
-      )
+      return ENV?.LOCALE?.startsWith('en')
+        ? I18n.t(
+            {one: 'Point *1*', other: 'Points *%{formattedPoints}*'},
+            {
+              count: props.pointsPossible,
+              formattedPoints,
+              wrappers: ['<span class="points-value">$1</span>'],
+            }
+          )
+        : I18n.t(
+            {
+              one: '*1* Point Possible',
+              other: '*%{formattedPoints}* Points Possible',
+            },
+            {
+              count: props.pointsPossible,
+              formattedPoints,
+              wrappers: ['<span class="points-value">$1</span>'],
+            }
+          )
     }
 
     return ''

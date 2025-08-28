@@ -32,6 +32,7 @@ type Props = {
   connector?: string
   connectorMobile?: string
   showTime?: boolean
+  responsiveFormat?: boolean
 }
 
 function timeFormatting(dateTime: string | Date, format: string | undefined, showTime: boolean) {
@@ -54,6 +55,13 @@ function timeFormatting(dateTime: string | Date, format: string | undefined, sho
   return {friendly, fudged}
 }
 
+/*
+COOL Customize
+- https://gitlab.dlc.ntu.edu.tw/ntu-cool/canvas-lms/-/issues/550
+
+Change Log :
+1. [Enhancement] Added `responsiveFormat` prop to allow customizing the responsive date format. (#550)
+*/
 export default function ConnectedFriendlyDatetimes({
   format,
   prefix,
@@ -61,6 +69,7 @@ export default function ConnectedFriendlyDatetimes({
   connector,
   connectorMobile,
   showTime = false,
+  responsiveFormat,
   firstDateTime,
   secondDateTime,
 }: Props) {
@@ -83,15 +92,23 @@ export default function ConnectedFriendlyDatetimes({
       </ScreenReaderContent>
 
       <span aria-hidden="true">
-        <span className="visible-desktop">
-          {fixedPrefix + firstTime.friendly + fixedConnector + secondTime.friendly}
-        </span>
-        <span className="hidden-desktop">
-          {fixedPrefixMobile +
-            firstTime.fudged.toLocaleDateString() +
-            fixedConnectorMobile +
-            secondTime.fudged.toLocaleDateString()}
-        </span>
+        {responsiveFormat ? (
+          <>
+            <span className="visible-desktop">
+              {fixedPrefix + firstTime.friendly + fixedConnector + secondTime.friendly}
+            </span>
+            <span className="hidden-desktop">
+              {fixedPrefixMobile +
+                firstTime.fudged.toLocaleDateString() +
+                fixedConnectorMobile +
+                secondTime.fudged.toLocaleDateString()}
+            </span>
+          </>
+        ) : (
+          <>
+            {fixedPrefix + firstTime.friendly + fixedConnector + secondTime.friendly}
+          </>
+        )}
       </span>
     </span>
   )

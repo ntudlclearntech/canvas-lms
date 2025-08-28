@@ -24,6 +24,13 @@ import $ from 'jquery'
 import '../../jquery/index'
 import {ScreenReaderContent} from '@instructure/ui-a11y-content'
 
+/*
+COOL Customize
+- https://gitlab.dlc.ntu.edu.tw/ntu-cool/canvas-lms/-/issues/550
+
+Change Log :
+1. [Enhancement] Added `responsiveFormat` prop to allow customizing the responsive date format. (#550)
+*/
 class FriendlyDatetime extends Component {
   static propTypes = {
     dateTime: PropTypes.oneOfType([PropTypes.string, PropTypes.instanceOf(Date)]),
@@ -31,6 +38,7 @@ class FriendlyDatetime extends Component {
     prefix: PropTypes.string,
     prefixMobile: PropTypes.string,
     showTime: PropTypes.bool,
+    responsiveFormat: PropTypes.bool,
   }
 
   static defaultProps = {
@@ -38,6 +46,7 @@ class FriendlyDatetime extends Component {
     prefix: '',
     prefixMobile: null,
     showTime: false,
+    responsiveFormat: true,
   }
 
   // The original render function is really slow because of all
@@ -92,14 +101,20 @@ class FriendlyDatetime extends Component {
             }}
             aria-hidden="true"
           >
-            <span className="visible-desktop">
-              {/* something like: Mar 6, 2014 */}
-              {fixedPrefix + friendly}
-            </span>
-            <span className="hidden-desktop">
-              {/* something like: 3/3/2014 */}
-              {(fixedPrefixMobile || '') + fudged.toLocaleDateString()}
-            </span>
+            {this.props.responsiveFormat ? (
+              <>
+                <span className="visible-desktop">
+                  {/* something like: Mar 6, 2014 */}
+                  {fixedPrefix + friendly}
+                </span>
+                <span className="hidden-desktop">
+                  {/* something like: 3/3/2014 */}
+                  {(fixedPrefixMobile || '') + fudged.toLocaleDateString()}
+                </span>
+              </>
+            ) : (
+              <span>{fixedPrefix + friendly}</span>
+            )}
           </time>
         </span>
       )

@@ -24,7 +24,14 @@ import ConnectedFriendlyDatetimes from '@canvas/datetime/react/components/Connec
 
 const I18n = useI18nScope('assignments_2')
 
-export default function AvailabilityDates({assignment, formatStyle}) {
+/*
+COOL Customize
+- https://gitlab.dlc.ntu.edu.tw/ntu-cool/canvas-lms/-/issues/550
+
+Change Log :
+1. [Enhancement] Added `responsiveFormat` prop to allow customizing the responsive date format. (#550)
+*/
+export default function AvailabilityDates({ assignment, formatStyle, responsiveFormat }) {
   const longFmt = formatStyle === 'long'
 
   if (assignment.lockAt && assignment.unlockAt) {
@@ -38,6 +45,7 @@ export default function AvailabilityDates({assignment, formatStyle}) {
         format={longFmt ? I18n.t('#date.formats.full') : I18n.t('#date.formats.short')}
         connector={longFmt ? I18n.t('until') : I18n.t('to')}
         connectorMobile={I18n.t('to')}
+        responsiveFormat={responsiveFormat}
       />
     )
   } else if (assignment.lockAt) {
@@ -46,6 +54,7 @@ export default function AvailabilityDates({assignment, formatStyle}) {
         prefix={I18n.t('Available until')}
         dateTime={assignment.lockAt}
         format={longFmt ? I18n.t('#date.formats.full') : I18n.t('#date.formats.short')}
+        responsiveFormat={responsiveFormat}
       />
     )
   } else if (assignment.unlockAt) {
@@ -54,6 +63,7 @@ export default function AvailabilityDates({assignment, formatStyle}) {
         prefix={I18n.t('Available after')}
         dateTime={assignment.unlockAt}
         format={longFmt ? I18n.t('#date.formats.full') : I18n.t('#date.formats.short')}
+        responsiveFormat={responsiveFormat}
       />
     )
   } else {
@@ -67,8 +77,10 @@ AvailabilityDates.propTypes = {
     unlockAt: PropTypes.string,
   }).isRequired,
   formatStyle: PropTypes.oneOf(['short', 'long']),
+  responsiveFormat: PropTypes.bool,
 }
 
 AvailabilityDates.defaultProps = {
   formatStyle: 'long',
+  responsiveFormat: true,
 }

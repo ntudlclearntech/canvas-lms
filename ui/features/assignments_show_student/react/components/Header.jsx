@@ -138,7 +138,7 @@ class Header extends React.Component {
           ) : (
             <>
               {/* EVAL-3711 Remove ICE Feature Flag */}
-              {!window.ENV.FEATURES.instui_nav && (
+              {/* {!window.ENV.FEATURES.instui_nav && (
                 <Flex.Item margin="0 small 0 0">
                   <PeerReviewsCounter
                     current={this.currentAssessmentIndex(
@@ -147,7 +147,7 @@ class Header extends React.Component {
                     total={this.props.reviewerSubmission?.assignedAssessments?.length || 0}
                   />
                 </Flex.Item>
-              )}
+              )} */}
               <Flex.Item>
                 <PeerReviewNavigationLink
                   assignedAssessments={this.props.reviewerSubmission?.assignedAssessments}

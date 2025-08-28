@@ -136,12 +136,15 @@ function CancelAttemptButton({handleCacheUpdate, onError, onSuccess, submission}
     }
 
     const confirmed = await showConfirmationDialog({
-      body: I18n.t(
-        'Canceling this attempt will permanently delete any work performed in this attempt. Do you wish to proceed and delete your work?'
-      ),
+      body: ENV?.LOCALE?.startsWith('en')
+        ? 'If you cancel now, all the work you’ve done in this attempt will be lost and cannot be recovered. Are you sure you want to cancel?'
+        : I18n.t(
+            'Canceling this attempt will permanently delete any work performed in this attempt. Do you wish to proceed and delete your work?'
+          ),
       confirmColor: 'danger',
-      confirmText: I18n.t('Delete Work'),
-      label: I18n.t('Delete your work?'),
+      confirmText: ENV?.LOCALE?.startsWith('en') ? 'Discard Attempt' : I18n.t('Delete Work'),
+      cancelText: ENV.LOCALE === 'zh-Hant' ? '返回編輯' : I18n.t('Cancel'),
+      label: ENV?.LOCALE?.startsWith('en') ? 'Cancel this attempt?' : I18n.t('Delete your work?'),
     })
 
     if (confirmed) {
@@ -155,7 +158,7 @@ function CancelAttemptButton({handleCacheUpdate, onError, onSuccess, submission}
       color="secondary"
       onClick={() => handleCancelDraft(deleteDraftMutation)}
     >
-      {I18n.t('Cancel Attempt %{attempt}', {attempt})}
+      {I18n.t('Cancel')}
     </Button>
   )
 }
@@ -638,7 +641,9 @@ const SubmissionManager = ({
       },
     ])
     setPeerReviewShowSubHeaderBorder(true)
-    setPeerReviewButtonText('Peer Review')
+
+    const peerReviewBtnText = ENV?.LOCALE === 'zh-Hant' ? '前往同儕互評' : I18n.t('Peer Review')
+    setPeerReviewButtonText(peerReviewBtnText)
   }
 
   const handleOpenPeerReviewPromptModal = () => {
