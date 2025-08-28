@@ -27,6 +27,7 @@ import {
   IconArrowOpenDownLine,
   IconArrowOpenUpLine,
   IconKeyboardShortcutsLine,
+  IconCloudUploadLine,
 } from '@instructure/ui-icons'
 import {Button} from '@instructure/ui-buttons'
 import {Menu} from '@instructure/ui-menu'
@@ -131,6 +132,17 @@ export default function EnhancedActionMenu(props: EnhancedActionMenuProps) {
 
   const handleKeyboardShortcuts = () => {
     document.dispatchEvent(openKeyboardShortcut)
+  }
+
+  // Cool Customize
+  // https://gitlab.dlc.ntu.edu.tw/ntu-cool/canvas-lms/-/issues/547
+  const handleGoToCoolGradebook = () => {
+    const match = window.location.pathname.match(/\/courses\/(\d+)/)
+    if (match) {
+      const courseId = match[1]
+      const coolGradebookId = ENV.cool_gradebook_id
+      window.location.href = `/courses/${courseId}/external_tools/${coolGradebookId}`
+    }
   }
 
   const handleExport = async currentView => {
@@ -372,6 +384,20 @@ export default function EnhancedActionMenu(props: EnhancedActionMenuProps) {
         />
       )}
       {renderSyncDropdown()}
+
+      {/* Cool Customize  */}
+      {/* https://gitlab.dlc.ntu.edu.tw/ntu-cool/canvas-lms/-/issues/547  */}
+      <Button
+        color="secondary"
+        margin="0 small 0 0"
+        renderIcon={IconCloudUploadLine}
+        onClick={handleGoToCoolGradebook}
+      >
+        <span data-menu-id="send-to-online-grading-system">
+          {I18n.t('Send to the Online Grading System')}
+        </span>
+      </Button>
+
       <Button
         color="secondary"
         margin="0 small 0 0"
