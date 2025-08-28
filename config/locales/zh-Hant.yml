@@ -13921,7 +13921,7 @@ zh-Hant:
     upload_warning: '請確認您選擇的 CSV 文件是從 NTU COOL 下載的成績單，以避免上傳成績失敗。'
     manual: 'NTU COOL 操作手冊：如何以 CSV 文件上傳成績至NTU COOL'
     how_to_title: '如何從 NTU COOL 下載成績單 CSV 文件？'
-    how_to_detail: '進入成績頁面，點選「匯入成績與登分」，並選擇「匯出整份成績單」，即可編輯 CSV 文件及上傳。'
+    how_to_detail: '進入成績頁面，點選「匯出」，並選擇「匯出整份成績單」，即可編輯 CSV 文件及上傳。'
     errors: 
       select_an_option: 請選擇一個選項
     new: 
