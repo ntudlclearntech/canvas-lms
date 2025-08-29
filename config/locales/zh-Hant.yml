@@ -13563,7 +13563,7 @@ zh-Hant:
   grade_for_assignment_acd954e9: "%{assignment} 的評分"
   grade_for_ce7621f0: 評分
   grade_for_course_ccc8513c: "%{course} 的評分"
-  grade_for_missing_submissions_56f91c83: 欠交項目的評分
+  grade_for_missing_submissions_56f91c83: 缺交項目的分數（為該項目總分的百分之多少）
   grade_for_name_b9df168a: "評分：%{name}"
   grade_for_student_assignment_80fea704: "%{student} - %{assignment} 的評分"
   grade_for_studentname_d124b199: "評分%{studentName}"
@@ -15221,7 +15221,7 @@ zh-Hant:
   hide_all_artifacts_d654fbd5: 隱藏所有項目
   hide_all_details_61d7ebb: 隱藏所有詳細資料
   hide_all_recipients_1ca02da6: 隱藏所有收件者
-  hide_assignment_group_totals_f4fb8660: 隱藏作業小組總數
+  hide_assignment_group_totals_f4fb8660: 隱藏作業類別總分欄位
   hide_correct_answers_at_2421b0aa: 隱藏正確答案日期
   hide_correct_answers_at_b1a59408: 隱藏正確答案於
   hide_count_missing_items_d0f25329: 
@@ -15256,8 +15256,8 @@ zh-Hant:
   hide_students_with_no_results_6a22f991: 隱藏無成績的學生
   hide_sub_accounts_for_account_name_a6de98bd: "隱藏子帳戶%{account_name}"
   hide_the_import_learning_outcomes_button_based_on__433d6ba7: 根據使用者權限隱藏匯入學習成果按鈕
-  hide_total_and_override_columns_6fde3e25: 隱藏總數與重寫欄
-  hide_total_column_6911831e: 隱藏總計欄
+  hide_total_and_override_columns_6fde3e25: 隱藏學期成績與手動調分欄位
+  hide_total_column_6911831e: 隱藏學期成績
   hide_translate_text_1003ba9e: 隱藏翻譯文字
   hide_unassessed_outcomes_a20aa7fd: 隱藏未評估的學習成果
   hide_zero_point_new_quizzes_from_the_student_and_t_b4c22d88: 對學生和教師成績單隱藏零點新測驗
