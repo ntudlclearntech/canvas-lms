@@ -9357,9 +9357,9 @@ en-GB:
       link_to_students_view: 
         link_student_desc: "When an observer is linked to a student, they have access to that student's grades and course interactions."
       resend_invitations: 
-        pending_invitation: "1 invitation has not been accepted."
-        pending_invitations: "%{pendingInvitationsCount} invitations haven't been accepted."
-        re_send_invitations: Resend
+        pending_invitation: "1 student/auditor invitation hasn't been accepted."
+        pending_invitations: "%{pendingInvitationsCount} student/auditor invitations haven't been accepted."
+        re_send_invitations: Resend Student/Auditor Invitation
         re_sending_invitations: Resending...
       role_select: 
         all_roles: "All roles"

@@ -9369,9 +9369,9 @@ zh-Hant:
       link_to_students_view: 
         link_student_desc: 當觀察者連接到學生時，就有機會訪問該學生的成績和課程互動。
       resend_invitations: 
-        pending_invitation: "1 個邀請尚未被接受。"
-        pending_invitations: "%{pendingInvitationsCount} 個邀請尚未被接受。"
-        re_send_invitations: 重新發送
+        pending_invitation: "尚有 1 位學生/旁聽生未接受邀請。"
+        pending_invitations: "尚有 %{pendingInvitationsCount} 位學生/旁聽生未接受邀請。"
+        re_send_invitations: 重新發送邀請給學生/旁聽生
         re_sending_invitations: 正在重新發送...
       role_select: 
         all_roles: 所有角色

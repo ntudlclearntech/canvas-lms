@@ -3135,9 +3135,14 @@ class Course < ActiveRecord::Base
     end
   end
 
+  # Cool Customize
+  # https://gitlab.dlc.ntu.edu.tw/ntu-cool/canvas-lms/-/issues/531
   def invited_count_visible_to(user)
     scope = users_visible_to(user)
-            .where("enrollments.workflow_state in ('invited', 'creation_pending') AND enrollments.type != 'StudentViewEnrollment'")
+            .where("
+              enrollments.workflow_state IN ('invited', 'creation_pending') 
+              AND enrollments.type IN ('StudentEnrollment')
+            ")
     scope.select("users.id").distinct.count
   end
 

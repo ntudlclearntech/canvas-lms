@@ -1,13 +1,23 @@
+{{!-- Cool Customize --}}
+{{!-- https://gitlab.dlc.ntu.edu.tw/ntu-cool/canvas-lms/-/issues/531 --}}
+
+<style>
+  html[lang^="en"] .pending-invitations .not-en { display: none; }
+  html:not([lang^="en"]) .pending-invitations .only-en { display: none; }
+</style>
+
 {{#ifAll canResend pendingInvitationsCount}}
-  <p>
+  <p class="pending-invitations">
     {{#ifEqual pendingInvitationsCount 1}}
-      {{#t "pending_invitation"}}
-        1 invitation hasn't been accepted.
-      {{/t}}
+      <span class="only-en">1 student/auditor invitation hasn’t been accepted.</span>
+      <span class="not-en">
+        {{#t "pending_invitation"}}1 invitation hasn't been accepted.{{/t}}
+      </span>
     {{else}}
-      {{#t "pending_invitations"}}
-        {{pendingInvitationsCount}} invitations haven't been accepted.
-      {{/t}}
+      <span class="only-en">{{pendingInvitationsCount}} student/auditor invitations haven’t been accepted.</span>
+      <span class="not-en">
+        {{#t "pending_invitations"}}{{pendingInvitationsCount}} invitations haven't been accepted.{{/t}}
+      </span>
     {{/ifEqual}}
     {{#if available}}
       {{#if sending}}
@@ -16,7 +26,8 @@
         </a>
       {{else}}
         <a href="javascript:void(0)" class="resend-pending-invitations">
-          {{#t "re_send_invitations"}}Resend{{/t}}
+          <span class="only-en">Resend Student/Auditor Invitation</span>
+          <span class="not-en">{{#t "re_send_invitations"}}Resend{{/t}}</span>
         </a>
       {{/if}}
     {{/if}}
