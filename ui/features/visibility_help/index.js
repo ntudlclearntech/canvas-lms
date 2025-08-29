@@ -24,6 +24,17 @@ import '@canvas/loading-image'
 $(document).on('click', '.visibility_help_link', event => {
   event.preventDefault()
   let $dialog = $('#visibility_help_dialog')
+
+  // Cool Customize
+  // https://gitlab.dlc.ntu.edu.tw/ntu-cool/canvas-lms/-/issues/553
+  if (ENV.LOCALE?.startsWith('en')) {
+    ENV.COURSE_VISIBILITY_OPTION_DESCRIPTIONS = {
+      course: 'All users associated with this course',
+      institution: 'All users with an NTU COOL account',
+      public: 'Anyone, even without an NTU COOL account, can search and access this course',
+    }
+  }
+
   if ($dialog.length === 0) {
     $dialog = $('<div/>').attr('id', 'visibility_help_dialog').hide().appendTo('body').dialog({
       autoOpen: false,

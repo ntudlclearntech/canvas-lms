@@ -2698,8 +2698,8 @@ zh-Hant:
   all_types_allowed_287eb6b0: 允許所有類型
   all_ungraded_artifacts_ec3ba09: 所有未評分的作品
   all_user_data_5d97832: 所有使用者資料
-  all_users_associated_with_this_course_6be8d492: 與此課程關聯的所有使用者
-  all_users_associated_with_this_institution_d29850be: 與此機構關聯的所有使用者
+  all_users_associated_with_this_course_6be8d492: 本課程之所有成員
+  all_users_associated_with_this_institution_d29850be: 具有 NTU COOL 帳號者 (無論是否為本課程成員)
   all_version_history_fbf060a0: 所有版本歷史記錄
   all_versions_student_submission_report_e4def68d: 所有版本學生提交項目報告
   all_weights_must_be_greater_than_or_equal_to_0_cc2dcdf1: "所有加權必須大於或等於 0"
@@ -3884,7 +3884,7 @@ zh-Hant:
   any_sub_account_ec7069f2: 任何子帳戶
   any_term_d49af19f: 任何學期
   anyone_with_a_direct_link_private_b3bc9661: 有直接連結的任何人（私密）
-  anyone_with_the_url_9d7e5e07: "有 URL 的任何人"
+  anyone_with_the_url_9d7e5e07: "任何人皆可透過連結或搜尋進入課程 (無論是否擁有 NTU COOL 帳號)"
   api_7bd66e19: API
   api_host_ddaf400e: "API 主機："
   api_key_eeeb2167: "API 密鑰"
@@ -4808,7 +4808,7 @@ zh-Hant:
       new_assignment: 新作業
       no_due_date: 無截止日期
       no_points: 無
-      no_submission: 無繳交 
+      no_submission: 無須繳交
       points: 總分
       speed_grader: SpeedGrader™
       submission_types: 檔案類型
@@ -13796,8 +13796,8 @@ zh-Hant:
     hide_notes: 隱藏備註欄
     hide_student_names: 隱藏學生姓名
     invalid_assignment_groups_warning: 
-      one: "分數不包括 %{groups}，因為他們沒有可能的點"
-      other: "分數不包括 %{groups}，因為其沒有可能的分數"
+      one: "分數不包括%{groups}，因為沒有可計分的作業"
+      other: "分數不包括%{groups}，因為沒有可計分的作業"
     keyboard_assignment_desc: 移至當前作業的詳細資料頁面
     keyboard_close_menu: 關閉當前活躍作業業功能表
     keyboard_comment_desc: 關於活躍的提交項目評論
@@ -14115,8 +14115,8 @@ zh-Hant:
       titles: 
         submission_graded: "於 %{graded_date}，評分人：%{grader}"
     invalid_assignment_groups_warning: 
-      one: "分數不包括 %{groups}，因為他們沒有可能的點"
-      other: "分數不包括 %{groups}，因為其沒有可能的分數"
+      one: "分數不包括%{groups}，因為沒有可計分的作業"
+      other: "分數不包括%{groups}，因為沒有可計分的作業"
     no_assignments_have_points_warning: 在作業有可能得分之前，無法計算分數
     notices: 
       unauthorized: 您未被授權檢視此課程的考勤
@@ -25947,8 +25947,8 @@ zh-Hant:
   score_details_2995369: 成績詳細資料
   score_distribution_graph_title_45e8fe7e: "成績分佈圖 - %{title}"
   score_does_not_include_groups_because_they_have_no_80d12f42: 
-    one: "分數不包括 %{groups}，因為他們沒有可能的點"
-    other: "分數不包括 %{groups} 因為其沒有可能的分數"
+    one: "分數不包括%{groups}，因為沒有可計分的作業"
+    other: "分數不包括%{groups}，因為沒有可計分的作業"
   score_does_not_include_groups_becuase_they_have_no_ee031bff: 
     one: "分數不包括 %{groups}，因為他們沒有可能的分數"
     other: "分數不包括 %{groups}，因為他們沒有可能的分數"
@@ -32178,7 +32178,7 @@ zh-Hant:
   users_can_temporarily_enroll_another_user_in_a_cou_ce9b48ed: 使用者可以在課程中暫時註冊另一個使用者。註冊學生到期時，從課程中移除指派的使用者。
   users_d1b60cb0: 使用者
   users_designers_22195c6f: "使用者 - 設計者"
-  users_do_not_receive_updated_notifications_when_ed_11038e1a: 編輯通告時，使用者未收到更新的通知。如果您希望使用者透過他們的通知設定收到此更新的通知，您將需要建立新通告。
+  users_do_not_receive_updated_notifications_when_ed_11038e1a: 當公告內容有所改動時，課程成員不會收到相關通知。如果您希望課程成員收到公告改動的相關通知，建議您發一篇新的公告。
   users_generate_observer_pairing_codes_for_students_2c25d52a: "使用者 - 為學生產生觀察者配對代碼"
   users_generate_observer_pairing_codes_for_students_6975caad: "使用者 - 為學生產生觀察者配對代碼"
   users_manage_log_in_details_b944568b: "使用者 - 管理日誌詳細資料"
