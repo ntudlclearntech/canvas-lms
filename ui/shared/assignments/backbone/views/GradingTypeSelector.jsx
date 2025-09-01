@@ -118,7 +118,7 @@ GradingTypeSelector.prototype.showGradingSchemeDialog = function (ev) {
     .dialog({
       title: I18n.t('titles.grading_scheme_info', 'View/Edit Grading Scheme'),
       width: 600,
-      height: 310,
+      // height: 310,
       close() {
         return $(ev.target).focus()
       },
