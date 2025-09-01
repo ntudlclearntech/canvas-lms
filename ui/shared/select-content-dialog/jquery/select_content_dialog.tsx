@@ -341,14 +341,14 @@ export const Events = {
           id: 'resource_selection_dialog',
           style: 'padding: 0; overflow-y: hidden;',
         })
-        $dialog.append(`<div class="before_external_content_info_alert screenreader-only" tabindex="0">
-            <div class="ic-flash-info">
-              <div class="ic-flash__icon" aria-hidden="true">
-                <i class="icon-info"></i>
-              </div>
-              ${htmlEscape(I18n.t('The following content is partner provided'))}
-            </div>
-          </div>`)
+        // $dialog.append(`<div class="before_external_content_info_alert screenreader-only" tabindex="0">
+        //     <div class="ic-flash-info">
+        //       <div class="ic-flash__icon" aria-hidden="true">
+        //         <i class="icon-info"></i>
+        //       </div>
+        //       ${htmlEscape(I18n.t('The following content is partner provided'))}
+        //     </div>
+        //   </div>`)
         $dialog.append(
           $('<iframe/>', {
             id: 'resource_selection_iframe',
@@ -360,14 +360,14 @@ export const Events = {
             'data-lti-launch': 'true',
           })
         )
-        $dialog.append(`<div class="after_external_content_info_alert screenreader-only" tabindex="0">
-            <div class="ic-flash-info">
-              <div class="ic-flash__icon" aria-hidden="true">
-                <i class="icon-info"></i>
-              </div>
-              ${htmlEscape(I18n.t('The preceding content is partner provided'))}
-            </div>
-          </div>`)
+        // $dialog.append(`<div class="after_external_content_info_alert screenreader-only" tabindex="0">
+        //     <div class="ic-flash-info">
+        //       <div class="ic-flash__icon" aria-hidden="true">
+        //         <i class="icon-info"></i>
+        //       </div>
+        //       ${htmlEscape(I18n.t('The preceding content is partner provided'))}
+        //     </div>
+        //   </div>`)
 
         const $external_content_info_alerts = $dialog.find(
           '.before_external_content_info_alert, .after_external_content_info_alert'
