@@ -8,7 +8,7 @@ export default function filterRoles(roles) {
   let allRoles = ENV.ALL_ROLES
   let currentUserRoles = ENV.current_user_roles
 
-  if (currentUserRoles.includes('admin') || currentUserRoles.includes('root admin')) {
+  if (currentUserRoles.includes('admin') || currentUserRoles.includes('root_admin')) {
     filteredRoles = Array.from(allRoles)
   } else {
     filteredRoles = Array.from(allRoles).filter(role => {
