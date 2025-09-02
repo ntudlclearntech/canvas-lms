@@ -56,7 +56,7 @@
             <input type="text"
                    name="child_event_data[{{id}}][start_time]"
                    class="time_field start_time"
-                   {{#unless all_day}} value="{{tTimeToString event.start_at "tiny"}}" {{/unless}}
+                   {{#unless all_day}} value="{{tTimeToString event.start_at "tiny_on_the_hour"}}" {{/unless}}
                    {{#unless this.permissions.manage_calendar}}disabled{{/unless}}
                    aria-label="{{#t "start_time"}}Start Time{{/t}}"
                    placeholder="{{#t "start_time"}}Start Time{{/t}}" />
@@ -71,7 +71,7 @@
           <input type="text"
                    name="child_event_data[{{id}}][end_time]"
                    class="time_field end_time"
-                   {{#unless all_day}} value="{{tTimeToString event.end_at "tiny"}}" {{/unless}}
+                   {{#unless all_day}} value="{{tTimeToString event.end_at "tiny_on_the_hour"}}" {{/unless}}
                    {{#unless this.permissions.manage_calendar}}disabled{{/unless}}
                    aria-label="{{#t "end_time"}}End Time{{/t}}"
                    placeholder="{{#t "end_time"}}End Time{{/t}}" />
