@@ -249,7 +249,11 @@ class ActiveRecord::Base
   end
 
   def touch_context
-    return if @@skip_touch_context ||= false || @skip_touch_context ||= false
+    # Cool customize #554
+    # ref: https://github.com/instructure/canvas-lms/pull/2486
+    class_skip_touch_context = defined?(@@skip_touch_context) && @@skip_touch_context
+    instance_skip_touch_context = @skip_touch_context
+    return if class_skip_touch_context || instance_skip_touch_context
 
     self.class.connection.after_transaction_commit do
       if respond_to?(:context_type) && respond_to?(:context_id) && context_type && context_id
