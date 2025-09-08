@@ -7784,7 +7784,7 @@ zh-Hant:
         more_about_this_user: 關於此使用者的更多資訊
         more_user_details: 更多使用者詳細資料...
         remove_avatar: 刪除頭像圖片
-        report_avatar: 舉報不適當的圖片
+        report_avatar: 回報不適當的圖片
         restore_enrollment: 還原此註冊
         student_teacher_activity: 與您進行的互動
         teacher_activity: 學生互動報告
@@ -20874,7 +20874,7 @@ zh-Hant:
         * 作業內容
     course_content_display: 課程內容
     discussion_description: 您課程中的新討論主題
-    discussion_display: 新主题
+    discussion_display: 新主題
     discussion_mention_description: |-
         討論區中的新提及。
         
@@ -25382,16 +25382,16 @@ zh-Hant:
   report_end_date_bce94160: 報告結束日期
   report_end_date_e5ad8c08: 報告結束日期
   report_has_been_aborted_2b5763ed: 報告已中止
-  report_inappropriate_picture_af4eefeb: 舉報不適當的圖片
+  report_inappropriate_picture_af4eefeb: 回報不適當的圖片
   report_issue_b5f1db0e: 報告問題
-  report_profile_picture_8f1d7535: 報告個人檔案圖片
+  report_profile_picture_8f1d7535: 回報個人檔案圖片
   report_replies_500cdcd3: 報告回覆
   report_reply_5af43ed0: 報告回覆
   report_reply_options_44e47591: 報告回覆選項
   report_start_date_160e7416: 報告開始日期
   report_start_date_f961d8f8: 報告開始日期
   reported_3de7086a: 已報告
-  reported_profile_pictures_will_be_sent_to_administ_50fd4d05: 報告的個人檔案圖片將傳送給管理員進行檢閱。您將無法復原此操作。
+  reported_profile_pictures_will_be_sent_to_administ_50fd4d05: 回報的個人檔案圖片將傳送給管理員查看。您將無法復原此操作。
   reported_replies_will_be_sent_to_your_teacher_for__e7c814ec: 報告的回覆將傳送給您的教師進行檢閱。您將無法復原此操作。
   reported_reply_8e03db37: 報告的回覆
   reportedreply_56f61a42: 報告的回覆
@@ -29326,8 +29326,8 @@ zh-Hant:
   the_previous_sis_batch_was_aborted_d7d89955: "已捨棄先前 SIS 批次"
   the_proficiency_calculation_was_set_by_your_admin__c31f8e95: 能力計算由您的管理員設定，並且套用到此帳戶中的所有課程。
   the_profile_picture_has_been_removed_74d50047: 個人檔案圖片已移除。
-  the_profile_picture_has_been_reported_762e3755: 個人檔案圖片已報告。
-  the_profile_picture_has_been_reported_d609d6dd: 個人檔案圖片已報告
+  the_profile_picture_has_been_reported_762e3755: 個人檔案圖片已回報。
+  the_profile_picture_has_been_reported_d609d6dd: 個人檔案圖片已回報
   the_provided_academic_benchmark_file_has_an_error_4ad2c631: 所提供的學術基準文檔有錯誤
   the_question_text_for_the_question_question_name_w_3a68a2c7: "問題 『%{question_name}』的問題文本太長。"
   the_quiz_is_unavailable_if_you_are_not_logged_in_554dcd43: 如果您未登入，測驗不可用
@@ -31771,7 +31771,7 @@ zh-Hant:
       reporting_image: 正在報告影像…
       updating_user_details: 正在更新使用者詳細資料…
     notices: 
-      image_reported: 此影像已報告
+      image_reported: 此圖片已回報。
   user_name_fe5887fb: 使用者名稱
   user_name_has_just_turned_in_a_late_submission_for_874a9a31: "%{user_name} 剛剛繳交了課程 %{course_name} 之 %{assignment_name} 的逾期提交項目"
   user_name_has_just_turned_in_a_re_submission_for_a_bcd6a6a5: "%{user_name} 剛剛繳交了課程 %{course_name} 之 %{assignment_title} 的重新提交項目"
@@ -32066,7 +32066,7 @@ zh-Hant:
       merge_with_another_user: 與另一個使用者合併
       none: 無
       remove_avatar: 刪除頭像圖片
-      report_naughtiness: 舉報不適當的圖片
+      report_naughtiness: 回報不適當的圖片
       titles: 
         edit_user_details: 編輯使用者詳細資料
         name_and_email: 名稱和電子郵件
