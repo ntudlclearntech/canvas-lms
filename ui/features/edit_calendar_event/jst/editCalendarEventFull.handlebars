@@ -59,7 +59,8 @@
                    {{#unless all_day}} value="{{tTimeToString event.start_at "tiny_on_the_hour"}}" {{/unless}}
                    {{#unless this.permissions.manage_calendar}}disabled{{/unless}}
                    aria-label="{{#t "start_time"}}Start Time{{/t}}"
-                   placeholder="{{#t "start_time"}}Start Time{{/t}}" />
+                   placeholder="{{#t "start_time"}}Start Time{{/t}}"
+                   data-tooltip title="{{accessibleDateFormat 'time'}}"/>
           </div>
           <span class="time_separator">-</span>
           <div class='date_field_container'
@@ -74,7 +75,8 @@
                    {{#unless all_day}} value="{{tTimeToString event.end_at "tiny_on_the_hour"}}" {{/unless}}
                    {{#unless this.permissions.manage_calendar}}disabled{{/unless}}
                    aria-label="{{#t "end_time"}}End Time{{/t}}"
-                   placeholder="{{#t "end_time"}}End Time{{/t}}" />
+                   placeholder="{{#t "end_time"}}End Time{{/t}}"
+                   data-tooltip title="{{accessibleDateFormat 'time'}}"/>
             <input type="hidden"
                    name="child_event_data[{{id}}][context_code]"
                    value="course_section_{{id}}" />
