@@ -25430,7 +25430,7 @@ zh-Hant:
   required_fields_include_key_name_owner_email_tool__b8e42174: "所需欄目包括金鑰名稱、擁有者電郵、工具 ID、重新導向 URL，以及圖示 URL。"
   required_input_message_all_unassigned_students_1e721442: 需要輸入。傳送訊息給所有未指派的學生。
   required_peer_review_index_b186729c: "被指派的同儕互評 %{index}"
-  required_peer_reviews_23bea465: 需要同儕互評
+  required_peer_reviews_23bea465: 被指派的同儕互評
   required_to_view_quiz_results_dba7368b: 需要檢視測驗結果
   required_values_1eb5841f: 必填的值
   requirement_f5b75da1: 要求
@@ -29800,7 +29800,7 @@ zh-Hant:
               更多調整分數和住宿功能。
   this_homeroom_syncs_enrollments_and_subject_start__a3d539ff: "主教室將註冊學生和主題開始/結束日期同步為： "
   this_image_appears_as_a_background_watermark_to_yo_1c6b4497: 本影像將作為您頁面的背景水印。可接受的格式：png、svg、gif、jpeg
-  this_image_has_been_reported_9360e581: 此影像已報告。
+  this_image_has_been_reported_9360e581: 此圖片已回報。
   this_image_is_currently_unavailable_25c68857: 此圖像目前不可用
   this_influences_the_user_interface_for_setting_due_12b7e7c0: 這會影響設定截止日期的使用者介面。在現有的作業截止時不會變更。
   this_influences_the_user_interface_for_setting_due_be0f0273: 這會影響設定截止日期的使用者介面。那不會更改任何現有作業列表的截止時間。
