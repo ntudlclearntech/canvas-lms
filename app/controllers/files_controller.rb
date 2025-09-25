@@ -1622,8 +1622,20 @@ class FilesController < ApplicationController
     log_asset_access(attachment, "files", "files")
   end
 
+  def validate_req_origin(req_origin)
+    uri = URI.parse(req_origin)
+    host = uri.host
+
+    allowed_domains = ['.testing.dlc.ntu.edu.tw', '.dlc.ntu.edu.tw']
+    domain = allowed_domains.find { |domain| host.end_with?(domain)}
+    
+    # Only a single subdomain level is allowed for the specified allowed_domains
+    subdomain = host.delete_suffix(domain)
+    subdomain.match?(/^[^.]+$/)
+  end
+
   def open_cors
-    headers["Access-Control-Allow-Origin"] = "dlc.ntu.edu.tw" if request.headers["origin"].present?
+    headers["Access-Control-Allow-Origin"] = request.headers["origin"] if request.headers["origin"].present? && validate_req_origin(request.headers["origin"])
     headers["Access-Control-Allow-Credentials"] = "true"
     headers["Access-Control-Allow-Methods"] = "POST, PUT, DELETE, GET, OPTIONS"
     headers["Access-Control-Request-Method"] = "*"
@@ -1631,7 +1643,7 @@ class FilesController < ApplicationController
   end
 
   def open_limited_cors
-    headers["Access-Control-Allow-Origin"] = "dlc.ntu.edu.tw" if request.headers["origin"].present?
+    headers["Access-Control-Allow-Origin"] = request.headers["origin"] if request.headers["origin"].present? && validate_req_origin(request.headers["origin"])
     headers["Access-Control-Allow-Credentials"] = "true"
     headers["Access-Control-Allow-Methods"] = "GET, HEAD"
   end
